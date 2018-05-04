@@ -1,0 +1,89 @@
+function [H,dH] = vbmc_ent(vp,grad_flags,jacobian_flag)
+%VBMC_ENT Approximate entropy of variational posterior and gradient
+
+% Check if gradient computation is required
+if nargout < 2                              % No 2nd output, no gradients
+    grad_flags = 0;
+elseif nargin < 2 || isempty(grad_flags)    % By default compute all gradients
+    grad_flags = 1;
+end
+if isscalar(grad_flags); grad_flags = ones(1,3)*grad_flags; end
+
+% By default assume variational parameters were transformed (before the call)
+if nargin < 3 || isempty(jacobian_flag); jacobian_flag = true; end
+
+D = vp.D;           % Number of dimensions
+K = vp.K;           % Number of components
+mu(:,:) = vp.mu;
+sigma(1,:) = vp.sigma;
+lambda(:,1) = vp.lambda(:);
+
+% Check which gradients are computed
+if grad_flags(1); mu_grad = zeros(D,K); else, mu_grad = []; end
+if grad_flags(2); sigma_grad = zeros(K,1); else, sigma_grad = []; end
+if grad_flags(3); lambda_grad = zeros(D,1); else, lambda_grad = []; end
+
+% Reshape in 3-D to allow vectorization
+mu_3(:,1,:) = mu;
+sigma_3(1,1,:) = sigma;
+
+sumsigma2 = bsxfun(@plus, sigma.^2, sigma_3.^2);
+sumsigma = sqrt(sumsigma2);
+
+nconst = 1/(2*pi)^(D/2)/prod(lambda);
+
+d2 = sum(bsxfun(@rdivide, bsxfun(@minus, mu, mu_3), bsxfun(@times, sumsigma, lambda)).^2,1);
+gamma(1,:,:) = bsxfun(@times, nconst./(sumsigma.^D), exp(-0.5*d2));
+gammasum = sum(gamma(1,:,:),2);
+
+H = -1/K * sum(log(1/K * gammasum),3);
+
+% Compute gradient if requested
+if any(grad_flags)
+
+    gammafrac = bsxfun(@rdivide, gamma, gammasum);
+    if grad_flags(1)
+        dmu = bsxfun(@rdivide, bsxfun(@minus, mu_3, mu), bsxfun(@times, sumsigma2, lambda.^2));
+    end
+    if grad_flags(2)
+        dsigma = -D./sumsigma2 + 1./sumsigma2.^2 .* sum(bsxfun(@rdivide, bsxfun(@minus, mu, mu_3), lambda).^2,1);
+    end
+
+    % Loop over mixture components
+    for j = 1:K
+        if grad_flags(1)
+            % Compute terms of gradient with respect to mu_j
+            m1 = sum(bsxfun(@times, gammafrac(:,j,:), dmu(:,j,:)),3);
+            m2 = sum( bsxfun(@times, dmu(:,j,:), gamma(1,j,:)),3) ./ gammasum(j);
+            mu_grad(:,j) = -1/K * (m1 + m2);
+        end
+
+        if grad_flags(2)
+            % Compute terms of gradient with respect to sigma_j
+            s1 = sum(bsxfun(@times, gammafrac(:,j,:), dsigma(:,j,:)),3);
+            s2 = sum( bsxfun(@times, dsigma(:,j,:), gamma(1,j,:)),3) ./ gammasum(j);
+            sigma_grad(j) = -sigma(j)/K * (s1 + s2);
+        end
+    end
+    
+    if grad_flags(3)
+        dmu2 = bsxfun(@rdivide, bsxfun(@minus, mu_3, mu).^2, bsxfun(@times, sumsigma2, lambda.^2));
+        lambda_grad(:,1) = -1/K*sum(bsxfun(@rdivide,sum(bsxfun(@times,dmu2-1,gamma),2),gammasum),3); 
+        % Should be dividing by LAMBDA, see below
+    end
+end
+
+if nargout > 1
+    % Correct for standard log reparameterization of SIGMA
+    if jacobian_flag && grad_flags(2)
+        sigma_grad = bsxfun(@times,sigma_grad, sigma(:));        
+    end
+    % Correct if NOT using standard log reparameterization of LAMBDA
+    if ~jacobian_flag && grad_flags(3)
+        lambda_grad = bsxfun(@rdivide,lambda_grad, lambda(:));        
+    end
+    
+    dH = [mu_grad(:); sigma_grad(:); lambda_grad(:)];
+end
+
+end
