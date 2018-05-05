@@ -103,7 +103,11 @@ switch lower(state)
             t = toc(funtime);
             
             % Check returned function value
-            if ~isscalar(fval_orig) || ~isfinite(fval_orig) || ~isreal(fval_orig)
+            if isscalar(fval_orig) && isreal(fval_orig) && fval_orig == -Inf
+                warning(['vbmc_funlogger:InfiniteFuncValue',...
+                    'The function returned -Inf as function value, which should not be allowed. Trying to continue, but results might be affected.'])
+                fval_orig = log(realmin);
+            elseif ~isscalar(fval_orig) || ~isfinite(fval_orig) || ~isreal(fval_orig)
                 error(['vbmc_funlogger:InvalidFuncValue',...
                     'The returned function value must be a finite real-valued scalar (returned value: ' mat2str(fval_orig) ').']);
             end
