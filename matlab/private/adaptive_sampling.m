@@ -83,6 +83,7 @@ else                    % Adaptive uncertainty sampling
         
         % acq_fast = vbmc_fastacq(Xsearch,vp,vp_old,gp,G,vardiagG,acqfast_flags,0);
         acq_fast = vbmc_negGEV(Xsearch,vp,gp,gev_alphas,0);
+        % acq_fast = vbmc_negeevar(Xsearch,vp,gp,0);
         [~,idx] = min(acq_fast);
         Xacq = Xsearch(idx,:);
         [Xacq,idx_unique] = unique(Xacq,'rows');   % Remove duplicates

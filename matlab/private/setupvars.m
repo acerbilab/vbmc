@@ -104,6 +104,9 @@ optimState.LastWarping = 0;
 % When GP hyperparameter sampling is switched with optimization
 optimState.StopSampling = 0;
 
+% Fully recompute variational posterior
+optimState.RecomputeVarPost = true;
+
 % List of points at the end of each iteration
 optimState.iterList.u = [];
 optimState.iterList.fval = [];
