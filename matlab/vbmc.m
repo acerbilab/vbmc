@@ -48,11 +48,11 @@ end
 
 %% Advanced options (do not modify unless you *know* what you are doing)
 defopts.FunEvalStart       = 'max(D,10)         % Number of initial objective fcn evals';
-defopts.FunEvalsPerIter    = '10                % Number of objective fcn evals per iteration';
+defopts.FunEvalsPerIter    = '5                 % Number of objective fcn evals per iteration';
 defopts.AcqFcn             = '@vbmc_acqkl       % Expensive acquisition fcn';
 % defopts.AcqFcn             = '@vbmc_acqkl       % Expensive acquisition fcn';
 defopts.Nacq               = '20                % Expensive acquisition fcn evals per new point';
-defopts.NSsearch           = '2048              % Samples for fast acquisition fcn eval per new point';
+defopts.NSsearch           = '2^14              % Samples for fast acquisition fcn eval per new point';
 defopts.NSent              = '100               % Samples per component for fast Monte Carlo approx. of the entropy';
 defopts.NSentFine          = '2^15              % Samples per component for refined Monte Carlo approx. of the entropy';
 defopts.NSelbo             = '50                % Samples per component for fast approx. of ELBO';
@@ -68,6 +68,7 @@ defopts.WarpRotoScaling    = 'on                % Rotate and scale input';
 defopts.WarpCovReg         = '0                 % Regularization weight towards diagonal covariance matrix for N training inputs';
 defopts.WarpNonlinear      = 'on                % Nonlinear input warping';
 defopts.WarpEpoch          = '20                % Recalculate warpings after this number of fcn evals';
+defopts.WarpMinFun         = '10 + 2*D          % Minimum training points before starting warping';
 defopts.ELCBOWeight        = '1                 % Uncertainty weight during ELCBO optimization';
 defopts.TolLength          = '1e-6              % Minimum fractional length scale';
 defopts.NoiseObj           = 'off               % Objective fcn returns noise estimate as 2nd argument (unsupported)';
@@ -76,8 +77,8 @@ defopts.CacheFrac          = '0.5               % Fraction of search points from
 defopts.TolFunAdam         = '0.001             % Stopping threshold for Adam optimizer';
 defopts.TolSD              = '0.1               % Tolerance on ELBO uncertainty for stopping (iff variational posterior is stable)';
 defopts.TolsKL             = '0.01*sqrt(nvars)  % Stopping threshold on change of variational posterior per training point';
-defopts.TolStableIters     = '4                 % Number of stable iterations for checking stopping criteria';
-defopts.TolStableFunEvals  = '4*nvars           % Number of stable fcn evals for checking stopping criteria';
+defopts.TolStableIters     = '5                 % Number of stable iterations for checking stopping criteria';
+defopts.TolStableFunEvals  = '5*nvars           % Number of stable fcn evals for checking stopping criteria';
 defopts.KLgauss            = 'yes               % Use Gaussian approximation for symmetrized KL-divergence b\w iters';
 defopts.TrueMean           = '[]                % True mean of the target density (for debugging)';
 defopts.TrueCov            = '[]                % True covariance of the target density (for debugging)';
@@ -200,18 +201,20 @@ while ~isFinished_flag
     vp_old = vp;
     action = '';
     
-    %% Adaptively sample new points into the training set
+    %% Actively sample new points into the training set
+    t = tic;
     optimState.trinfo = vp.trinfo;
     if iter == 1; new_funevals = options.FunEvalStart; else; new_funevals = options.FunEvalsPerIter; end
     [optimState,t_adapt(iter),t_func(iter)] = ...
         adaptive_sampling(optimState,new_funevals,funwrapper,vp,vp_old,gp,options);
     optimState.N = optimState.Xmax;  % Number of training inputs
-
-    timer_fits = tic;
+    timer.activeSampling = toc(t);
         
     % Warping iteration?
+    t = tic;
     isWarping = (optimState.N - optimState.LastWarping) >= options.WarpEpoch ...
-        && (options.MaxFunEvals - optimState.N) >= options.WarpEpoch;
+        && (options.MaxFunEvals - optimState.N) >= options.WarpEpoch ...
+        && optimState.N >= options.WarpMinFun;
     if isWarping
         optimState.LastWarping = optimState.N;
         if isempty(action); action = 'warp'; else; action = [action ', warp']; end
@@ -234,8 +237,10 @@ while ~isFinished_flag
         [vp,optimState,hyp,hyp_warp] = ...
             warp_nonlinear(vp,optimState,hyp,hyp_warp,cmaes_opts,options);
     end
+    timer.warping = toc(t);
         
-    %% Train GP in warped space
+    %% Train GP
+    t = tic;
     
     % Check whether to perform hyperparameter sampling or optimization
     if optimState.StopSampling == 0
@@ -298,29 +303,41 @@ while ~isFinished_flag
         cornerplot(Xgp);
     end
     
-    
-    %% Optimize variational parameters    
+    timer.gpTrain = toc(t);
+        
+    %% Optimize variational parameters   
+    t = tic;
     Knew = getK(optimState.N,options.Kfun);
 
     % Get bounds for variational parameters optimization    
     [vp.LB_theta,vp.UB_theta] = vbmc_vpbnd(vp,X_hpd,Knew,options);
         
-    Nopts = options.NSelbo * Knew; % Number of initial starting points
-    nelcbo_fill = zeros(Nopts,1);
+    Nfastopts = options.NSelbo * Knew; % Number of initial starting points    
+    nelcbo_fill = zeros(Nfastopts,1);
+    
+    if optimState.RecomputeVarPost || 1
+        Nslowopts = options.ElboStarts; % Full optimizations
+        useEntropyApprox = true;
+        optimState.RecomputeVarPost = false;
+    else
+        % Only incremental change
+        Nslowopts = 1;
+        useEntropyApprox = true;
+    end
         
-    nelbo = zeros(options.ElboStarts*2+1,1);     nelcbo = nelbo;
+    nelbo = zeros(Nslowopts*3+1,1);     nelcbo = nelbo;
     varF = nelbo; G = varF; H = varF; varss = varF;
-    theta_new = NaN(options.ElboStarts*2+1,numel(vp.LB_theta));
+    theta_new = NaN(Nslowopts*3+1,numel(vp.LB_theta));
 
     % Generate random initial starting point for variational parameters
-    [vp0_vec,vp0_type] = vbinitrnd(Nopts,vp,Knew,X_hpd,y_hpd);
+    [vp0_vec,vp0_type] = vbinitrnd(Nfastopts,vp,Knew,X_hpd,y_hpd);
 
     compute_var = 2;    % Use diagonal-only approximation
     % Confidence weight
     elcbo_beta = options.ELCBOWeight; % * sqrt(vp.D) / sqrt(optimState.N);
     
     % Quickly estimate ELCBO at each candidate variational posterior
-    for iOpt = 1:Nopts
+    for iOpt = 1:Nfastopts
         [theta0,vp0_vec(iOpt)] = ...
             get_theta(vp0_vec(iOpt),vp.LB_theta,vp.UB_theta,vp.optimize_lambda);        
         [nelbo_tmp,~,~,~,varF_tmp] = vbmc_negelcbo(theta0,0,vp0_vec(iOpt),gp,options.NSent,0,compute_var);
@@ -332,11 +349,12 @@ while ~isFinished_flag
     vp0_vec = vp0_vec(vp0_ord);
     vp0_type = vp0_type(vp0_ord);
     
-    for iOpt = 1:options.ElboStarts        
-        iOpt_start = iOpt*2-1;
-        iOpt_end = iOpt*2;
+    for iOpt = 1:Nslowopts
+        iOpt_start = iOpt*3-2;
+        iOpt_mid = iOpt*3-1;
+        iOpt_end = iOpt*3;
         
-        switch options.ElboStarts
+        switch Nslowopts
             case 1; idx = 1;
             case 2; if iOpt == 1; idx = find(vp0_type == 1,1); else; idx = find(vp0_type == 2 | vp0_type == 3,1); end
             otherwise; idx = find(vp0_type == (mod(iOpt-1,3)+1),1);
@@ -353,101 +371,66 @@ while ~isFinished_flag
         
         vbtrainmc_fun = @(theta_) vbmc_negelcbo(theta_,elcbo_beta,vp0,gp,options.NSent,1,compute_var);
         
-
         % First, fast optimization via entropy approximation
-        vbtrain_options = optimoptions('fmincon','GradObj','on','Display','off','OptimalityTolerance',1e-3);
-        vbtrain_fun = @(theta_) vbmc_negelcbo(theta_,elcbo_beta,vp0,gp,0,1,compute_var);
-        [theta_new(iOpt_end,:),~,~,output] = ...
-            fmincon(vbtrain_fun,theta0(:)',[],[],[],[],vp.LB_theta,vp.UB_theta,[],vbtrain_options);
-        % output, % pause
+        if useEntropyApprox
+            vbtrain_options = optimoptions('fmincon','GradObj','on','Display','off','OptimalityTolerance',1e-3);
+            vbtrain_fun = @(theta_) vbmc_negelcbo(theta_,elcbo_beta,vp0,gp,0,1,compute_var);
+            [theta_new(iOpt_end,:),~,~,output] = ...
+                fmincon(vbtrain_fun,theta0(:)',[],[],[],[],vp.LB_theta,vp.UB_theta,[],vbtrain_options);
+            % output, % pause
+        else
+            theta_new(iOpt_end,:) = theta0(:)';
+        end
 
         % Second, refine with unbiased stochastic entropy approximation
-        theta_new(iOpt_end,:) = ...
+        [theta_new(iOpt_end,:),~,theta_lst,fval_lst] = ...
             fminadam(vbtrainmc_fun,theta_new(iOpt_end,:),vp.LB_theta,vp.UB_theta,options.TolFunAdam);
+                
+        [~,idx_mid] = min(fval_lst);
+        theta_new(iOpt_mid,:) = theta_lst(idx_mid,:);
+        theta_new(iOpt_mid,:) = theta_new(iOpt_end,:);
+        [idx_mid,numel(fval_lst)]
 
-        % Recompute ELCBO at start point and endpoint with full variance and more precision
+        % Recompute ELCBO at start, mid and endpoint with full variance and more precision
         theta_new(iOpt_start,:) = theta0(:)';
         [nelbo(iOpt_start),~,G(iOpt_start),H(iOpt_start),varF(iOpt_start),~,varss(iOpt_start)] = ...
             vbmc_negelcbo(theta_new(iOpt_start,:),0,vp0,gp,options.NSentFine,0,1);
         nelcbo(iOpt_start) = nelbo(iOpt_start) + elcbo_beta*sqrt(varF(iOpt_start));
         
+        [nelbo(iOpt_mid),~,G(iOpt_mid),H(iOpt_mid),varF(iOpt_mid),~,varss(iOpt_mid)] = ...
+            vbmc_negelcbo(theta_new(iOpt_mid,:),0,vp0,gp,options.NSentFine,0,1);
+        nelcbo(iOpt_mid) = nelbo(iOpt_mid) + elcbo_beta*sqrt(varF(iOpt_mid));
+        
         [nelbo(iOpt_end),~,G(iOpt_end),H(iOpt_end),varF(iOpt_end),~,varss(iOpt_end)] = ...
             vbmc_negelcbo(theta_new(iOpt_end,:),0,vp0,gp,options.NSentFine,0,1);
         nelcbo(iOpt_end) = nelbo(iOpt_end) + elcbo_beta*sqrt(varF(iOpt_end));
-                
-        if 1
-            mu = reshape(theta_new(iOpt_end,1:D*Knew),[D,Knew]);
-            sigma = exp(theta_new(iOpt_end,D*Knew+(1:Knew)));
-            if vp.optimize_lambda
-                lambda = exp(theta_new(iOpt_end,D*Knew+Knew+(1:D)));
-            end
-
-            if D == 1
-                hold on;
-                Xs = linspace(min(optimState.X(1:optimState.Xmax,:)),max(optimState.X(1:optimState.Xmax,:)),3e3)';
-                p = zeros(size(Xs));
-                for k = 1:vp.K
-                    p = p + normpdf(Xs,mu(k),sigma(k))/vp.K;
-                end
-                plot(Xs,log(p),'b--','LineWidth',2);
-                hold off;
-                axis([-5 5 -10 3]);
-                drawnow
-            elseif D == 2 && 0
-                hold on;
-                subplot(2,2,4);
-                scatter(mu(1,:),mu(2,:),'ro');
-                axis([-5 5 -5 5]);
-                hold off;
-                drawnow;                
-            end
-            
-            %mu
-            %sigma
-            %if vp.optimize_lambda; lambda, end
-        end
         
         vp0_fine(iOpt_start) = vp0;
-        vp0_fine(iOpt_end) = vp0;
-        
-        % fprintf('.'); 
-        
+        vp0_fine(iOpt_mid) = vp0;
+        vp0_fine(iOpt_end) = vp0;   % Parameters get assigned later
+                
         % [nelbo,nelcbo,sqrt(varF),G,H]
     end
     
     % Finally, add variational parameters from previous iteration
-    vp0_fine(options.ElboStarts*2+1) = vp;
-    [theta0,vp0_fine(options.ElboStarts*2+1)] = get_theta(vp0_fine(options.ElboStarts*2+1),[],[],vp.optimize_lambda);
+    idx_prev = Nslowopts*3+1;
+    vp0_fine(idx_prev) = vp;
+    [theta0,vp0_fine(idx_prev)] = get_theta(vp0_fine(idx_prev),[],[],vp.optimize_lambda);
     theta_new(end,1:numel(theta0)) = theta0;
     [nelbo(end),~,G(end),H(end),varF(end),~,varss(end)] = ...
-        vbmc_negelcbo(theta_new(end,1:numel(theta0)),0,vp0_fine(options.ElboStarts*2+1),gp,options.NSentFine,0,1);        
+        vbmc_negelcbo(theta_new(end,1:numel(theta0)),0,vp0_fine(idx_prev),gp,options.NSentFine,0,1);        
     nelcbo(end) = nelbo(end) + elcbo_beta*sqrt(varF(end));        
         
-    % fprintf('\n');
-    
     % Take variational parameters with best ELCBO
     [~,idx] = min(nelcbo);
     elbo = -nelbo(idx);
     elbo_sd = sqrt(varF(idx));
     varss = varss(idx);
-    % ent = H(idx);
     vp = vp0_fine(idx);
     vp = rescale_params(vp,theta_new(idx,:));
     
-    % Compute symmetrized KL-divergence between old and new posteriors
-    Nkl = 1e5;
-    sKL = max(0,0.5*sum(vbmc_kldiv(vp,vp_old,Nkl,options.KLgauss,1)));
+    idx
     
-    % Compare variational posterior's moments with ground truth
-    if ~isempty(options.TrueMean) && ~isempty(options.TrueCov)
-        [mubar,Sigma] = vbmc_moments(vp);
-        [kl(1),kl(2)] = mvnkl(mubar,Sigma,options.TrueMean,options.TrueCov);
-        0.5*sum(kl)
-    end
-
-    t_fits(iter) = toc(timer_fits);
-    
-    dt = (t_adapt(iter)+t_fits(iter))/new_funevals;
     
     if 1
         if D == 1
@@ -508,13 +491,35 @@ while ~isFinished_flag
     %mubar
     %Sigma
         
+    timer.variationalFit = toc(t);
+    
     %----------------------------------------------------------------------
     %% Finalize iteration
+    t = tic;
+    
+    % Compute symmetrized KL-divergence between old and new posteriors
+    Nkl = 1e5;
+    sKL = max(0,0.5*sum(vbmc_kldiv(vp,vp_old,Nkl,options.KLgauss,1)));
+    
+    % Compare variational posterior's moments with ground truth
+    if ~isempty(options.TrueMean) && ~isempty(options.TrueCov)
+        [mubar,Sigma] = vbmc_moments(vp);
+        [kl(1),kl(2)] = mvnkl(mubar,Sigma,options.TrueMean,options.TrueCov);
+        0.5*sum(kl)
+    end
 
+    % t_fits(iter) = toc(timer_fits);    
+    % dt = (t_adapt(iter)+t_fits(iter))/new_funevals;
+    
+    timer.finalize = toc(t);
+    
+    timer
+    
     % Record all useful stats
-    stats = savestats(stats,optimState,vp,elbo,elbo_sd,varss,sKL,gp,Ns_gp,options.Diagnostics);
-        
-    % Check termination conditions    
+    stats = savestats(stats,optimState,vp,elbo,elbo_sd,varss,sKL,gp,Ns_gp,timer,options.Diagnostics);
+    
+    %----------------------------------------------------------------------
+    %% Check termination conditions    
         
     % Maximum number of new function evaluations
     if optimState.funccount >= options.MaxFunEvals
@@ -569,7 +574,7 @@ end
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function stats = savestats(stats,optimState,vp,elbo,elbo_sd,varss,sKL,gp,Ns_gp,debugflag)
+function stats = savestats(stats,optimState,vp,elbo,elbo_sd,varss,sKL,gp,Ns_gp,timer,debugflag)
 
 iter = optimState.iter;
 stats.iter(iter) = iter;
@@ -582,6 +587,7 @@ stats.elboSD(iter) = elbo_sd;
 stats.sKL(iter) = sKL;
 stats.gpSampleVar(iter) = varss;
 stats.gpNsamples(iter) = Ns_gp;
+stats.timer(iter) = timer;
 
 if debugflag
     stats.vp(iter) = vp;

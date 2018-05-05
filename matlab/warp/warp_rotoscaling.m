@@ -10,9 +10,6 @@ if ~isempty(vp.trinfo.scale); scale_old = vp.trinfo.scale; else; scale_old = one
 % Get covariance matrix in transformed space
 [~,vp_Sigma_mom] = vbmc_moments(vp,0);
 
-
-
-
 % Alternative way of getting covariance - maximize GP and compute Hessian
 if ~isempty(gp)
 %     Thin = 1;
@@ -54,5 +51,8 @@ vp.trinfo.scale = scale;
 [vp,optimState,hyp_warped] = recompute_vp_and_hyp(vp,vp_old,optimState,cmaes_opts,options,1,hyp,gp);
 optimState.trinfo = vp.trinfo;
 hyp = [hyp,hyp_warped];
+
+% Major change, fully recompute variational posterior
+optimState.RecomputeVarPost = true;
 
 end

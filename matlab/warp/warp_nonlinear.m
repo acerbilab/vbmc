@@ -51,6 +51,9 @@ hyp = [hyp,hyp_warp(1:Nhyp,:)];
 [vp,optimState] = recompute_vp_and_hyp(vp,vp_old,optimState,cmaes_opts,options);
 optimState.trinfo = vp.trinfo;
 
+% Major change, fully recompute variational posterior
+optimState.RecomputeVarPost = true;
+
 % [vp.trinfo.alpha;vp.trinfo.beta]
 
 end
