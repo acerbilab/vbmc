@@ -49,8 +49,8 @@ end
 %% Advanced options (do not modify unless you *know* what you are doing)
 defopts.FunEvalStart       = 'max(D,10)         % Number of initial objective fcn evals';
 defopts.FunEvalsPerIter    = '5                 % Number of objective fcn evals per iteration';
-defopts.AcqFcn             = '@vbmc_acqkl       % Expensive acquisition fcn';
-% defopts.AcqFcn             = '@vbmc_acqkl       % Expensive acquisition fcn';
+defopts.AcqFcn             = '@vbmc_acqskl       % Expensive acquisition fcn';
+defopts.SearchAcqFcn       = '{@vbmc_acqGEV,@vbmc_acqexpent,@vbmc_acqgvar}  % Fast search acquisition fcn(s)';
 defopts.Nacq               = '20                % Expensive acquisition fcn evals per new point';
 defopts.NSsearch           = '2^15              % Samples for fast acquisition fcn eval per new point';
 defopts.NSent              = '100               % Samples per component for fast Monte Carlo approx. of the entropy';

@@ -67,8 +67,7 @@ if isempty(gp)     % No GP yet, just use provided points or sample from plausibl
     end
     
 else                    % Adaptive uncertainty sampling
-    
-    gev_alphas = unique([0,1,2,exp(linspace(-log(Nacq),log(3),Nacq))]);
+        
     if ~isfield(optimState,'acqScore') || isempty(optimState.acqScore)
         optimState.acqScore = zeros(1,Nacq); % Measure metrics effectiveness
     end
@@ -81,9 +80,13 @@ else                    % Adaptive uncertainty sampling
         % Create search set from cache and randomly generated
         [Xsearch,idx_cache] = getSearchPoints(NSsearch,Ns,optimState,gp,vp,options);
         
+        % Evaluate fast search acquisition function(s)
+        SearchAcqFcn = options.SearchAcqFcn;        
+        acq_fast = [];
+        for iAcqFast = 1:numel(SearchAcqFcn)
+            acq_fast = [acq_fast,SearchAcqFcn{iAcqFast}(Xsearch,vp,gp,Nacq,0)];
+        end
         % acq_fast = vbmc_fastacq(Xsearch,vp,vp_old,gp,G,vardiagG,acqfast_flags,0);
-        acq_fast = vbmc_negGEV(Xsearch,vp,gp,gev_alphas,0);
-        % acq_fast = vbmc_negeevar(Xsearch,vp,gp,0);
         [~,idx] = min(acq_fast);
         Xacq = Xsearch(idx,:);
         [Xacq,idx_unique] = unique(Xacq,'rows');   % Remove duplicates
@@ -117,7 +120,7 @@ else                    % Adaptive uncertainty sampling
             idx_cache_acq = idx_cache_acq(idx);
         end
         
-        y_orig = [NaN; optimState.Cache.y_orig(:)];
+        y_orig = [NaN; optimState.Cache.y_orig(:)]; % First position is NaN (not from ca
         yacq = y_orig(idx_cache_acq+1);
         idx_nn = ~isnan(yacq);
         if any(idx_nn)

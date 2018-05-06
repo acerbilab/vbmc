@@ -21,7 +21,7 @@ for f = fieldnames(options)'
 end
 
 % OPTIONS fields that need to be evaluated
-evalfields = {'MaxFunEvals','MaxIter','FunEvalStart','FunEvalsPerIter','AcqFcn','Nacq', ...
+evalfields = {'MaxFunEvals','MaxIter','FunEvalStart','FunEvalsPerIter','AcqFcn','SearchAcqFcn','Nacq', ...
     'NSsearch','NSent','NSentFine','NSelbo','ElboStarts', ...
     'NSgpMax','StopGPSampling','TolGPVar','QuadraticMean','Kfun',...
     'HPDFrac', 'WarpRotoScaling', 'WarpNonlinear', 'WarpEpoch', 'WarpCovReg', 'WarpMinFun', 'WarpNonlinearEpoch', 'WarpNonlinearMinFun', ...
@@ -50,12 +50,12 @@ for f = evalfields
 end
 
 % Make cell arrays
-% cellfields = {'PollMethod','PollAcqFcn','SearchMethod','SearchAcqFcn'};
-% for f = cellfields
-%     if ischar(options.(f{:})) || isa(options.(f{:}), 'function_handle')
-%         options.(f{:}) = {options.(f{:})};
-%     end
-% end
+cellfields = {'SearchAcqFcn'};
+for f = cellfields
+    if ischar(options.(f{:})) || isa(options.(f{:}), 'function_handle')
+        options.(f{:}) = {options.(f{:})};
+    end
+end
 
 % Check if MATLAB's Optimization Toolbox� is available
 if isempty(options.OptimToolbox)
