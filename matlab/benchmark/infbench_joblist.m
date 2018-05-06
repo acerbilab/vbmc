@@ -1,7 +1,7 @@
-function parlist = benchmark_joblist(filename,checkdir,probset,prob,subprob,noise,algo,algoset,idlist)
-%BENCHMARK_JOBLIST Write to file list of benchmarks factorially combined.
+function parlist = infbench_joblist(filename,checkdir,probset,prob,subprob,noise,algo,algoset,idlist)
+%INFBENCH_JOBLIST Write to file list of benchmarks factorially combined.
 
-benchdef = benchmark_defaults('options');        % Get default parameters
+benchdef = infbench_defaults('options');        % Get default parameters
 charsep=benchdef.CharFileSep;
 
 % Build combination out of provided factors
