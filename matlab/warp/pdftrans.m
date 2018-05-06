@@ -612,18 +612,30 @@ else
     nvars = varargin{1};
     lb = varargin{2}(:)';
     ub = varargin{3}(:)';
+    if nargin > 3
+        plb = varargin{4}(:)';
+        pub = varargin{5}(:)';
+    else
+        plb = []; pub = [];
+    end
             
     % Empty LB and UB are Infs
     if isempty(lb); lb = -Inf; end
     if isempty(ub); ub = Inf; end
+
+    % Empty plausible bounds equal hard bounds
+    if isempty(plb); plb = lb; end
+    if isempty(pub); pub = ub; end
     
     % Convert scalar inputs to row vectors
     if isscalar(lb); lb = lb*ones(1,nvars); end
     if isscalar(ub); ub = ub*ones(1,nvars); end
+    if isscalar(plb); plb = plb*ones(1,nvars); end
+    if isscalar(pub); pub = pub*ones(1,nvars); end
     
     % Check that the order of bounds is respected
-    assert(all(lb <= ub), ...
-        'Lower bounds LB need to be lower than UB for all variables.');
+    assert(all(lb <= plb & plb < pub & pub <= ub), ...
+        'Variable bounds should be LB <= PLB < PUB <= UB for all variables.');
     
     % Transform to log coordinates
     trinfo.lb_orig = lb;
@@ -639,6 +651,12 @@ else
     % Centering (used only for unbounded variables)
     trinfo.mu = zeros(1,nvars);
     trinfo.delta = ones(1,nvars);
+    for i = 1:nvars
+        if isfinite(plb(i)) && isfinite(pub(i))
+            trinfo.mu(i) = 0.5*(plb(i)+pub(i));
+            trinfo.delta(i) = pub(i)-plb(i);
+        end
+    end
         
     varargout{1} = trinfo;
     

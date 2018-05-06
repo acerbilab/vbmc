@@ -22,7 +22,6 @@ function [vp,elbo,elbo_sd,exitflag,output,stats] = vbmc(fun,x0,LB,UB,PLB,PUB,opt
 % - Check that I am not using other ToolBoxes by mistake.
 
 
-
 %% Basic default options
 
 defopts.Display                 = 'iter         % Level of display ("iter", "notify", "final", or "off")';
