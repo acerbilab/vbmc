@@ -1,7 +1,7 @@
 #!/bin/sh
 echo "Usage: makejobs job# [file#]"
 
-PROJECT="vbmc"
+PROJECT="infbench"
 #source ${HOME}/MATLAB/setroot.sh
 
 module purge
@@ -26,6 +26,7 @@ VBMC18="{'lumpy','studentt','cigar'}"
 
 # Default job list
 PROBSET="'vbmc18'"
+PROBS=${VBMC18}
 DIMS="{'2D','4D','6D','8D'}"
 NOISE="'[]'"
 ALGOS="{'vbmc'}"
@@ -38,10 +39,18 @@ case "${1}" in
 		DIMS="{'2D','4D'}"
 		IDS="{'1','2'}"
 		;;
-	1)	PROBS=${CEC14_1}
+	1)	ALGOSET="{'base'}"
 		;;
-	2)	PROBS=${CEC14_2}
+	2)      ALGOSET="{'acqkl'}"
 		;;
+        3)      ALGOSET="{'acqvar'}"
+                ;;
+        4)      ALGOSET="{'betazero'}"
+                ;;
+        5)      ALGOSET="{'betatiny'}"
+                ;;
+        6)      ALGOSET="{''}"
+                ;;
 
         101)    PROBSET="{'ccn17'}"
                 PROBS="{'visvest_joint'}"
