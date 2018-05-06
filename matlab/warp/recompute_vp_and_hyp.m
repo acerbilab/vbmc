@@ -1,9 +1,14 @@
-function [vp,optimState,hyp_warped] = recompute_vp_and_hyp(vp,vp_old,optimState,cmaes_opts,options,linearflag,hyp,gp)
+function [vp,optimState,hyp_warped] = recompute_vp_and_hyp(vp,vp_old,optimState,cmaes_opts,options,linearflag,hyp,gp,X,y,TolKL)
 %RECOMPUTE_VP_AND_HYP Recompute variational parameters and GP hyperparameters after warping.
 
 if nargin < 6 || isempty(linearflag); linearflag = 0; end
 if nargin < 7; hyp = []; end
 if nargin < 8; gp = []; end
+if nargin < 9; X = []; end
+if nargin < 10; y = []; end
+if nargin < 11; TolKL = []; end
+
+warpGPflag = ~isempty(hyp) && ~isempty(gp) && nargout > 2;
 
 hpd_frac = options.HPDFrac;
 lnToL = log(options.TolLength);
@@ -15,14 +20,27 @@ trinfo_old = vp_old.trinfo;
 if ~isempty(trinfo_old.R_mat); R_mat_old = trinfo_old.R_mat; else; R_mat_old = eye(D); end
 if ~isempty(trinfo_old.scale); scale_old = trinfo_old.scale; else; scale_old = ones(1,D); end        
 
+if isequal(R_mat_old,trinfo.R_mat) && ...
+        isequal(scale_old,trinfo.scale) && ...
+        isequal(trinfo_old.mu,trinfo.mu) && ...
+        isequal(trinfo_old.delta,trinfo.delta)
+    % The two warpings are identical, nothing to recompute
+    hyp_warped = hyp;
+    return;
+end
+
 % Transform variables
-X_orig = optimState.X_orig(1:optimState.Xmax,:);
-y_orig = optimState.y_orig(1:optimState.Xmax);
-X = pdftrans(X_orig,'dir',trinfo);
-dy = pdftrans(X,'logp',trinfo);
-y = y_orig + dy;
-optimState.X(1:optimState.Xmax,:) = X;
-optimState.y(1:optimState.Xmax) = y;
+if isempty(X) || isempty(y) || warpGPflag
+    X_orig = optimState.X_orig(1:optimState.Xmax,:);
+    y_orig = optimState.y_orig(1:optimState.Xmax);
+    X = pdftrans(X_orig,'dir',trinfo);
+    dy = pdftrans(X,'logp',trinfo);
+    y = y_orig + dy;
+end
+if nargout > 1
+    optimState.X(1:optimState.Xmax,:) = X;
+    optimState.y(1:optimState.Xmax) = y;
+end
 
 mu_old = vp_old.mu;
 if linearflag
@@ -43,11 +61,11 @@ Xstar = vbmc_rnd(1e3,vp_old,1,1);
 % mu_orig = pdftrans(vp_old.mu','inv',vp_old.trinfo);
 
 if vp.optimize_lambda
-    vp = recompute_lambda(vp,vp_old,Xstar,X,y,cmaes_opts,hpd_frac,lnToL);
+    vp = recompute_lambda(vp,vp_old,Xstar,X,y,cmaes_opts,hpd_frac,lnToL,TolKL);
 end
 
 % Warp GP hyperparameters
-if ~isempty(hyp) && ~isempty(gp) && nargout > 2
+if warpGPflag
     mu_orig = pdftrans(vp_old.mu','inv',vp_old.trinfo); 
     hyp_warped = recompute_hyp(hyp,gp,trinfo,trinfo_old,X,X_orig,mu_orig,dy);
 else
@@ -57,13 +75,15 @@ end
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function vp = recompute_lambda(vp,vp_old,Xstar,X,y,cmaes_opts,hpd_frac,lnToL)
+function vp = recompute_lambda(vp,vp_old,Xstar,X,y,cmaes_opts,hpd_frac,lnToL,TolKL)
 %WARP_LAMBDA Recompute LAMBDA of variational posterior after warping.
 
 Nkl_fast = 1e2;
 Nkl_fine = 1e5;
 
-ToLKL = [0.25,0.5];    % Maximum tolerance on KL for acceptance at first and second step
+if isempty(TolKL)
+    TolKL = [0.25,0.5];    % Maximum tolerance on KL for acceptance at first and second step
+end
 
 vbwarp_options = cmaes_opts;
 vbwarp_options.EvalParallel = 'no';
@@ -92,7 +112,7 @@ lnlambda(:,1) = lnlambda_warped;
 skl = Inf(1,4);
 skl(1) = minimize_skl(lnlambda(:,1),vp,vp_old,Nkl_fine);    % Warped LAMBDA
 
-if skl(1) > ToLKL(1)   % Make other computations only if needed
+if skl(1) > TolKL(1)   % Make other computations only if needed
 
     % Perform smart grid optimization
     optfill.FunEvals = 200;
@@ -100,14 +120,14 @@ if skl(1) > ToLKL(1)   % Make other computations only if needed
         lnlambda_old,LB_lnlambda,UB_lnlambda,PLB_lnlambda,PUB_lnlambda,[],optfill);
     skl(2) = minimize_skl(lnlambda(:,2),vp,vp_old,Nkl_fine);    % Best point from Sobol grid 
 
-    if min(skl(1:2)) > ToLKL(2) && ~isempty(cmaes_opts)  % Try harder, use CMA-ES
+    if min(skl(1:2)) > TolKL(2) && ~isempty(cmaes_opts) % Try harder, use CMA-ES
         
         try
             insigma = (UB_lnlambda(:) - LB_lnlambda(:))/10;
             vbwarp_options.LBounds = LB_lnlambda(:);
             vbwarp_options.UBounds = UB_lnlambda(:);
             [lnlambda(:,3),~,~,~,~,bestever] = ...
-                cmaes('minimize_skl',lnlambda(:,2),insigma,vbwarp_options,vp,vp_old,Nkl_fast);
+                cmaes_modded('minimize_skl',lnlambda(:,2),insigma,vbwarp_options,vp,vp_old,Nkl_fast);
             lnlambda(:,4) = bestever.x;
             
             skl(3) = minimize_skl(lnlambda(:,3),vp,vp_old,Nkl_fine);    % Output from CMA-ES

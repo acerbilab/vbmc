@@ -19,7 +19,6 @@ if isempty(Nopts); Nopts = 3; end   % Number of hyperparameter optimization runs
 [N,D] = size(X);            % Number of training points and dimension
 [Nhyp,N0] = size(hyp0);      % Hyperparameters and samples
 
-ToL_close = 1e-3;
 ToL = 1e-6;
 Ninit = 2^12;    % Initial design size for hyperparameter optimization
 nf_def = 7;     % Default degrees of freedom for Student's t prior
@@ -187,19 +186,6 @@ optfill.FunEvals = Ninit;
 % if input_warping
 %     derivcheck(gpoptimize_fun,hyp0(:,1),1);
 % end
-
-if input_warping && 0
-    gptrain_options2 = optimoptions('fmincon','GradObj','off','Display','iter');
-    tic
-    % Perform optimization from most promising NOPTS hyperparameter vectors
-    hyp(:,:) = output_fill.X(1:Nopts,:)';
-    for iTrain = 1:Nopts
-        hyp(:,iTrain) = min(UB'-eps(UB'),max(LB'+eps(LB'),hyp(:,iTrain)));
-        [hyp(:,iTrain),nll(iTrain)] = ...
-            fmincon(gpoptimize_fun,hyp(:,iTrain),[],[],[],[],LB,UB,[],gptrain_options2);
-    end
-    toc
-end
 
 %tic
 % Perform optimization from most promising NOPTS hyperparameter vectors

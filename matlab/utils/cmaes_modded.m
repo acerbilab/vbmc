@@ -4,7 +4,7 @@ function [xmin, ...      % minimum search point of last iteration
 	  stopflag, ...  % stop criterion reached
 	  out, ...     % struct with various histories and solutions
 	  bestever ... % struct containing overall best solution (for convenience)
-	 ] = cmaes( ...
+	 ] = cmaes_modded( ...
     fitfun, ...    % name of objective/fitness function
     xstart, ...    % objective variables initial point, determines N
     insigma, ...   % initial coordinate wise standard deviation(s)
@@ -170,7 +170,7 @@ function [xmin, ...      % minimum search point of last iteration
 %       control savemodulo and plotmodulo via signals.par 
 
 
-cmaVersion = '3.62.beta'; 
+cmaVersion = '3.62.beta.mod'; 
 
 % ----------- Set Defaults for Input Parameters and Options -------------
 % These defaults may be edited for convenience
@@ -263,7 +263,7 @@ end
 defopts.Resume   = 'no   % resume former run from SaveFile'; 
 defopts.Science  = 'on  % off==do some additional (minor) problem capturing, NOT IN USE'; 
 defopts.ReadSignals = 'on  % from file signals.par for termination, yet a stumb';
-defopts.Seed = 'sum(100*clock)  % evaluated if it is a string';
+defopts.Seed = '[]  % evaluated if it is a string';
 defopts.DispFinal  = 'on   % display messages like initial and final message';
 defopts.DispModulo = '100  % [0:Inf], disp messages after every i-th iteration';
 defopts.SaveVariables = 'on   % [on|final|off][-v6] save variables to .mat file';
@@ -655,15 +655,18 @@ else % flgresume
     
   % initialize random number generator
   if ischar(opts.Seed)
-    randn('state', eval(opts.Seed));     % random number generator state
+      startseed = eval(opts.Seed);
   else
-    randn('state', opts.Seed);
+      startseed = opts.Seed;
+  end
+  if ~isempty(startseed)
+      randn('state', startseed);     % random number generator state
+      startseed = randn('state');    % for retrieving in saved variables
   end
   %qqq
 %  load(opts.SaveFilename, 'startseed');
 %  randn('state', startseed);
 %  disp(['SEED RELOADED FROM ' opts.SaveFilename]);
-  startseed = randn('state');         % for retrieving in saved variables
 
   % Initialize further constants
   chiN=N^0.5*(1-1/(4*N)+1/(21*N^2));  % expectation of 

@@ -8,7 +8,11 @@ delta_old = vp.trinfo.delta;
 
 X_orig = optimState.X_orig(1:optimState.Xmax,:);
 mu_new = median(X_orig);
-delta_new = quantile(X_orig,0.9) - quantile(X_orig,0.1);
+
+width_bnd = optimState.PUB - optimState.PLB; % Width of plausible bounds
+width_bnd(~isfinite(width_bnd)) = 0;
+width_orig = quantile(X_orig,0.9) - quantile(X_orig,0.1);
+delta_new = max(width_bnd,width_orig);
  
 if any(mu_old ~= mu_new) || any(delta_old ~= delta_new)
 

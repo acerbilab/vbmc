@@ -58,7 +58,7 @@ hypprior.UB = UB_gp;
 if warpflag
     hyp0 = [hyp0;zeros(2*D,1)];    
     hypprior.mu = [hypprior.mu, zeros(1,2*D)];
-    hypprior.sigma = [hypprior.sigma, 0.1*ones(1,2*D)]; % Prior for no or little warping
+    hypprior.sigma = [hypprior.sigma, 0.01*ones(1,2*D)]; % Prior for no or little warping
     hypprior.df = [hypprior.df, 3*ones(1,2*D)];    % Heavy tails - prior can be overridden
     LB_warp = -5*ones(1,2*D);
     UB_warp = 5*ones(1,2*D);

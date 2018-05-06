@@ -96,7 +96,7 @@ else                    % Adaptive uncertainty sampling
         % Additional search with CMA-ES
 %         if cmaes_search && Nacq > size(Xacq,1)
 %             insigma = max(vp.sigma)*vp.lambda;
-%             xsearch_cmaes = cmaes('vbmc_negGEV',Xacq(1,:)',insigma,cmaes_opts,vp,gp,2,1);
+%             xsearch_cmaes = cmaes_modded('vbmc_negGEV',Xacq(1,:)',insigma,cmaes_opts,vp,gp,2,1);
 %             Xacq = [Xacq;xsearch_cmaes'];
 %             idx_cache = [idx_cache(:); 0];
 %             % Double check if the cache indexing is correct
@@ -150,7 +150,11 @@ else                    % Adaptive uncertainty sampling
         if idx > 0; y_orig = optimState.Cache.y_orig(idx); else; y_orig = NaN; end
         timer_func = tic;
         if isnan(y_orig)    % Function value is not available, evaluate
-            [ynew,optimState] = vbmc_funlogger(funwrapper,xnew,optimState,'iter');
+            try
+                [ynew,optimState] = vbmc_funlogger(funwrapper,xnew,optimState,'iter');
+            catch
+                pause
+            end
         else
             [ynew,optimState] = vbmc_funlogger(funwrapper,xnew,optimState,'add',y_orig);
             % Remove point from starting cache
@@ -193,9 +197,14 @@ if size(Xsearch,1) < NSsearch
         toc
         Xrnd = Xrnd(Thin:Thin:end,:);
     else
+        Xrnd = [];
         Nheavy = round(options.HeavyTailSearchFrac*Nrnd);
-        Xrnd = vbmc_rnd(Nheavy,vp,0,1,3);
-        Xrnd = [Xrnd; vbmc_rnd(Nrnd-Nheavy,vp,0,1)];
+        Xrnd = [Xrnd; vbmc_rnd(Nheavy,vp,0,1,3)];
+        [mubar,Sigmabar] = vbmc_moments(vp,0);
+        Nmvn = round(options.MVNSearchFrac*Nrnd);
+        Xrnd = [Xrnd; mvnrnd(mubar,Sigmabar,Nmvn)];
+        Nvp = max(0,Nrnd-Nheavy-Nmvn);
+        Xrnd = [Xrnd; vbmc_rnd(Nvp,vp,0,1)];
     end
     Xsearch = [Xsearch; Xrnd];
     idx_cache = [idx_cache(:); zeros(Nrnd,1)];

@@ -2,7 +2,7 @@ function [mubar,Sigma] = vbmc_moments(vp,origflag,Ns)
 %VBMC_MOMENTS Compute moments of variational posterior.
 
 if nargin < 2 || isempty(origflag); origflag = true; end
-if nargin < 3 || isempty(Ns); Ns = 1e6; end
+if nargin < 3 || isempty(Ns); Ns = 1e5; end
 
 K = vp.K;
 

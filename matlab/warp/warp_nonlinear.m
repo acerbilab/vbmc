@@ -34,7 +34,7 @@ end
 %         xx = vbmc_rnd(1e5,vp,1,1);
 %         hyp_warpt = fmincon(@(hyp) warpgaussfit(hyp,xx,vp.trinfo),hyp_warp(Nhyp+1:end,1),[],[],[],[],LB_warp,UB_warp);
 
-gptrain_options.Nopts = 1;  % Warping is expensive, only one restart
+gptrain_options.Nopts = 3;  % Warping is expensive, only one restart
 X_orig = optimState.X_orig(1:optimState.Xmax,:);
 y_orig = optimState.y_orig(1:optimState.Xmax);
 [gp,hyp_warp] = ...
@@ -54,7 +54,7 @@ optimState.trinfo = vp.trinfo;
 % Major change, fully recompute variational posterior
 optimState.RecomputeVarPost = true;
 
-% [vp.trinfo.alpha;vp.trinfo.beta]
+[vp.trinfo.alpha;vp.trinfo.beta]
 
 end
 

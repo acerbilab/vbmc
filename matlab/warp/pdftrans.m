@@ -302,7 +302,7 @@ if isstruct(varargin{3})
                 idx = trinfo.type == 10;
                 if any(idx)
                     alpha = trinfo.alpha;
-                    beta = trinfo.beta;
+                    beta = trinfo.beta;                                        
                     for ii = find(idx)
                         z = exp(-y(:,ii))./(1+exp(-y(:,ii)));   % 1 - logistic(z)
                         % z = (1-z.^(1/beta(ii))).^(1/alpha(ii));
@@ -310,8 +310,7 @@ if isstruct(varargin{3})
                         x(:,ii) = z*delta(ii) + mu(ii);
                     end
                 end
-                
-                                
+                                                
                 % Force to stay within bounds
                 a(isfinite(a)) = a(isfinite(a)) + eps(a(isfinite(a)));
                 b(isfinite(b)) = b(isfinite(b)) - eps(b(isfinite(b)));

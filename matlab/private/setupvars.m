@@ -100,6 +100,14 @@ optimState.Cache.active = any(isfinite(optimState.Cache.y_orig));
 
 % When was the last warping action performed (number of training inputs)
 optimState.LastWarping = 0;
+optimState.LastNonlinearWarping = 0;
+
+% Number of warpings performed
+optimState.WarpingCount = 0;
+optimState.WarpingNonlinearCount = 0;
+
+% Perform rotoscaling at the end of iteration
+optimState.redoRotoscaling = false;
 
 % When GP hyperparameter sampling is switched with optimization
 optimState.StopSampling = 0;
