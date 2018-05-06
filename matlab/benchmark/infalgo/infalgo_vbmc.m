@@ -13,6 +13,11 @@ algoptions.MaxFunEvals = probstruct.MaxFunEvals;
 switch algoset
     case {0,'debug'}; algoset = 'debug'; algoptions.Debug = 1; algoptions.Plot = 'scatter';
     case {1,'base'}; algoset = 'base';           % Use defaults
+    case {2,'acqkl'}; algoset = 'acqkl'; algoptions.AcqFcn = '@vbmc_acqkl';
+    case {3,'acqvar'}; algoset = 'acqvar'; algoptions.AcqFcn = '@vbmc_acqvar';
+    case {11,'betazero'}; algoset = 'betazero'; algoptions.ELCBOWeight = 0;
+    case {12,'betatiny'}; algoset = 'betatiny'; algoptions.ELCBOWeight = 0.1;
+        
     otherwise
         error(['Unknown algorithm setting ''' algoset ''' for algorithm ''' algo '''.']);
 end
