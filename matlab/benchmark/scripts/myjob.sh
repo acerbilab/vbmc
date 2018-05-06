@@ -37,7 +37,7 @@ echo ${PARAMS} ${VERBOSE} ${USEPRIOR}
 cat<<EOF | matlab -nodisplay
 %addpath(genpath('${HOME}/MATLAB'));
 cd('${WORKDIR}');
-options=struct('RootDirectory','${WORKDIR}','Display',${VERBOSE},'TolFun',${TOLFUN},'MaxFunEvalMultiplier',${MAXFUNMULT},'StopSuccessfulRuns',${STOPSUCCRUNS},'ProblemDirectory','${PROBLEMDIR}');
+options=struct('RootDirectory','${WORKDIR}','Display',${VERBOSE},'MaxFunEvalMultiplier',${MAXFUNMULT},'ProblemDirectory','${PROBLEMDIR}');
 ${PARAMS}
-benchmark_run(${PARAMS},options);
+infbench_run(${PARAMS},options);
 EOF
