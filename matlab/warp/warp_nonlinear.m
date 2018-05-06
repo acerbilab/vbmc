@@ -69,11 +69,11 @@ alpha = exp(hyp_warp(1:D));
 beta = exp(hyp_warp(D+(1:D)));
 trinfo.alpha = alpha(:)';
 trinfo.beta = beta(:)';        
-xx_t = pdftrans(xx,'d',trinfo);
+xx_t = warpvars(xx,'d',trinfo);
 mu = mean(xx_t);
 sigma = std(xx_t);
 nll = 0.5*mean(sum(bsxfun(@rdivide,bsxfun(@minus, xx_t, mu),sigma).^2,2)) + 0.5*D*log(2*pi) + log(prod(sigma));
-nll = nll + mean(pdftrans(xx_t,'l',trinfo));
+nll = nll + mean(warpvars(xx_t,'l',trinfo));
 
 % Student's t prior
 mu_prior = 0;

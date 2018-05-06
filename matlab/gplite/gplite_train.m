@@ -29,7 +29,7 @@ if ~isempty(warp)
         error('gplite_train:NoInputWarpingSampling',...
             'Sampling hyperparameters is currently not supported with input warping.');
     end
-    warp.trinfo = pdftrans(D,warp.LB,warp.UB);    
+    warp.trinfo = warpvars(D,warp.LB,warp.UB);    
     if warp.Nwarp > 0
         warp.trinfo.type = 9*ones(1,D); % Kumaraswamy-logistic transform
         unbnd = (warp.LB == -Inf & warp.UB == Inf);
@@ -72,8 +72,8 @@ if numel(hprior.sigma) < Nhyp; hprior.sigma = [hprior.sigma(:); NaN(Nhyp-numel(h
 if numel(hprior.df) < Nhyp; hprior.df = [hprior.df(:); NaN(Nhyp-numel(hprior.df),1)]; end
 
 if input_warping
-    X_prior = pdftrans(X,'dir',warp.trinfo);
-    y_prior = y + pdftrans(X_prior,'logpdf',warp.trinfo);
+    X_prior = warpvars(X,'dir',warp.trinfo);
+    y_prior = y + warpvars(X_prior,'logpdf',warp.trinfo);
 else
     X_prior = X;
     y_prior = y;
@@ -246,10 +246,10 @@ if isfield(gp,'warp') && ~isempty(gp.warp)
         gp.warp.trinfo.beta = beta(:)';
     end
 
-    gp.X = pdftrans(gp.X,'dir',gp.warp.trinfo);
+    gp.X = warpvars(gp.X,'dir',gp.warp.trinfo);
     if gp.warp.logpdf_flag
         % The function is a log pdf, so apply log Jacobian correction
-        gp.y = gp.y + pdftrans(gp.X,'logp',gp.warp.trinfo);
+        gp.y = gp.y + warpvars(gp.X,'logp',gp.warp.trinfo);
     end
     warp = gp.warp;
 else
@@ -271,11 +271,11 @@ else
         [nlZ,dnlZ,post,K_mat,Q] = gplite_nlZ(hyp(1:end-Nwarp,:),gp,[]);
 
         % Get gradient of warpings (ignores roto-scaling)
-        dg_inv = pdftrans(gp.X,'g',gp.warp.trinfo);
+        dg_inv = warpvars(gp.X,'g',gp.warp.trinfo);
         
         % Get derivatives wrt warping parameters for warping and its derivative
-        dgdtheta = pdftrans(gp.X,'f',gp.warp.trinfo);
-        dgprimedtheta = pdftrans(gp.X,'m',gp.warp.trinfo);
+        dgdtheta = warpvars(gp.X,'f',gp.warp.trinfo);
+        dgprimedtheta = warpvars(gp.X,'m',gp.warp.trinfo);
                 
         % Compute gradient of warping parameters
         ell2 = exp(2*hyp(1:D));

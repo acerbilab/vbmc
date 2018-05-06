@@ -33,8 +33,8 @@ end
 if isempty(X) || isempty(y) || warpGPflag
     X_orig = optimState.X_orig(1:optimState.Xmax,:);
     y_orig = optimState.y_orig(1:optimState.Xmax);
-    X = pdftrans(X_orig,'dir',trinfo);
-    dy = pdftrans(X,'logp',trinfo);
+    X = warpvars(X_orig,'dir',trinfo);
+    dy = warpvars(X,'logp',trinfo);
     y = y_orig + dy;
 end
 if nargout > 1
@@ -50,15 +50,15 @@ if linearflag
     ln_scaling = -sum(log(scale) - log(scale_old));    
 else
     % Update variational posterior
-    vp.mu = pdftrans(pdftrans(mu_old','inv',trinfo_old),'dir',vp.trinfo)';
-    ln_scaling = -(pdftrans(vp.mu','logpdf',vp.trinfo)' - pdftrans(mu_old','logpdf',trinfo_old)');
+    vp.mu = warpvars(warpvars(mu_old','inv',trinfo_old),'dir',vp.trinfo)';
+    ln_scaling = -(warpvars(vp.mu','logpdf',vp.trinfo)' - warpvars(mu_old','logpdf',trinfo_old)');
 end
 
 vp.sigma = vp.sigma .* exp((ln_scaling-mean(ln_scaling))/D);
 %vp.sigma = vp.sigma .* exp(ln_scaling/D);
 
 Xstar = vbmc_rnd(1e3,vp_old,1,1);
-% mu_orig = pdftrans(vp_old.mu','inv',vp_old.trinfo);
+% mu_orig = warpvars(vp_old.mu','inv',vp_old.trinfo);
 
 if vp.optimize_lambda
     vp = recompute_lambda(vp,vp_old,Xstar,X,y,cmaes_opts,hpd_frac,lnToL,TolKL);
@@ -66,7 +66,7 @@ end
 
 % Warp GP hyperparameters
 if warpGPflag
-    mu_orig = pdftrans(vp_old.mu','inv',vp_old.trinfo); 
+    mu_orig = warpvars(vp_old.mu','inv',vp_old.trinfo); 
     hyp_warped = recompute_hyp(hyp,gp,trinfo,trinfo_old,X,X_orig,mu_orig,dy);
 else
     hyp_warped = [];
@@ -92,7 +92,7 @@ vbwarp_options.MaxFunEvals = 100*vp.D;
 %vbwarp_options.DispFinal = 'on';
 %vbwarp_options.DispModulo = 50;
 
-% Xstar = pdftrans(vp_old.mu','inv',vp_old.trinfo);
+% Xstar = warpvars(vp_old.mu','inv',vp_old.trinfo);
 lambda_warped = warp_lengths(vp.lambda',Xstar,vp.trinfo,vp_old.trinfo,0);
 
 [~,ord] = sort(y,'descend');
@@ -184,12 +184,12 @@ end
 if quadratic_mean    
     % Warp center of quadratic mean
     xm = hyp_warped(Ncov+2+(1:D),:)';
-    xm_warped = pdftrans(pdftrans(xm,'inv',trinfo_old),'dir',trinfo);                
+    xm_warped = warpvars(warpvars(xm,'inv',trinfo_old),'dir',trinfo);                
     hyp_warped(Ncov+2+(1:D),:) = xm_warped';
 
     % Warp maximum of quadratic mean
-    dy_old = pdftrans(xm,'logpdf',trinfo_old)';
-    dy = pdftrans(xm_warped,'logpdf',trinfo)';
+    dy_old = warpvars(xm,'logpdf',trinfo_old)';
+    dy = warpvars(xm_warped,'logpdf',trinfo)';
     hyp_warped(Ncov+2,:) = hyp_warped(Ncov+2,:) + dy - dy_old;
     
     % Warp length scale of quadratic mean
@@ -199,7 +199,7 @@ if quadratic_mean
     end
 else
     % Warp constant mean
-    dy_old = pdftrans(X,'logp',trinfo_old);
+    dy_old = warpvars(X,'logp',trinfo_old);
     hyp_warped(Ncov+2,:) = hyp_warped(Ncov+2,:) + mean(dy) - mean(dy_old);
 end
 
@@ -218,7 +218,7 @@ if ~isempty(trinfo_old.R_mat); R_mat_old = trinfo_old.R_mat; else; R_mat_old = e
 if ~isempty(trinfo_old.scale); scale_old = trinfo_old.scale; else; scale_old = ones(1,D); end
 trinfo_old.R_mat = [];
 trinfo_old.scale = [];
-Xt_old = pdftrans(X_orig,'dir',trinfo_old);
+Xt_old = warpvars(X_orig,'dir',trinfo_old);
 stretch_factor_old = std(Xt_old)./std(X_orig);
 
 % Compute stretch factor for new warping
@@ -226,7 +226,7 @@ if ~isempty(trinfo.R_mat); R_mat = trinfo.R_mat; else; R_mat = eye(D); end
 if ~isempty(trinfo.scale); scale = trinfo.scale; else; scale = ones(1,D); end
 trinfo.R_mat = [];
 trinfo.scale = [];
-Xt = pdftrans(X_orig,'dir',trinfo);
+Xt = warpvars(X_orig,'dir',trinfo);
 stretch_factor = std(Xt)./std(X_orig);
 
 % Compute overall transformation of scale lengths

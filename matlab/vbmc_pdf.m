@@ -8,7 +8,7 @@ if nargin < 5 || isempty(transflag); transflag = false; end
 % Convert points to transformed space
 if origflag && ~isempty(vp.trinfo) && ~transflag
     % Xold = X;
-    X = pdftrans(X,'dir',vp.trinfo);
+    X = warpvars(X,'dir',vp.trinfo);
 end
 
 [N,D] = size(X);
@@ -33,10 +33,10 @@ if logflag; y = log(y); end
 % Apply Jacobian correction
 if origflag && ~isempty(vp.trinfo)
     if logflag
-        y = y + pdftrans(X,'logprob',vp.trinfo);
+        y = y + warpvars(X,'logprob',vp.trinfo);
         
     else
-        y = y .* pdftrans(X,'prob',vp.trinfo);
+        y = y .* warpvars(X,'prob',vp.trinfo);
     end
 end
 

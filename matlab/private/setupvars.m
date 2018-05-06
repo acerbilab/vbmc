@@ -17,7 +17,7 @@ optimState.PLB = PLB;
 optimState.PUB = PUB;
 
 % Transform variables
-trinfo = pdftrans(nvars,LB,UB);
+trinfo = warpvars(nvars,LB,UB);
 trinfo.x0_orig = x0;
 if ~isfield(trinfo,'R_mat'); trinfo.R_mat = []; end
 if ~isfield(trinfo,'scale'); trinfo.scale = []; end
@@ -35,7 +35,7 @@ if size(optimState.Cache.X_orig,1) ~= size(optimState.Cache.y_orig,1)
         'The number of points in X0 and of their function values as specified in OPTIONS.Fvals are not the same.');
 end
 
-x0 = pdftrans(x0,'dir',trinfo);
+x0 = warpvars(x0,'dir',trinfo);
 
 %% Initialize variational posterior
 

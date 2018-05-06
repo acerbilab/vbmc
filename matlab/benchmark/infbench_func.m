@@ -111,7 +111,7 @@ else
 end
 
 if isfield(probstruct,'trinfo')
-    x = pdftrans(x,'inv',probstruct.trinfo);
+    x = warpvars(x,'inv',probstruct.trinfo);
 end
 
 % Computational precision (minimum 0; 1 default precision)
@@ -130,7 +130,7 @@ try
         tfun = tic; fval = func(x); t = toc(tfun);
     end
     if isfield(probstruct,'trinfo')
-        fval = fval + pdftrans(x,'logpdf',probstruct.trinfo);
+        fval = fval + warpvars(x,'logpdf',probstruct.trinfo);
     end
     
 catch except

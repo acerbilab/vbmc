@@ -5,8 +5,8 @@ X_orig = optimState.X_orig(1:optimState.Xmax,:);
 y_orig = optimState.y_orig(1:optimState.Xmax);
 
 [N,D] = size(X_orig);
-X = pdftrans(X_orig,'d',optimState.trinfo);
-y = y_orig + pdftrans(X,'logp',optimState.trinfo);
+X = warpvars(X_orig,'d',optimState.trinfo);
+y = y_orig + warpvars(X,'logp',optimState.trinfo);
 
 % Subsample high posterior density dataset
 [~,ord] = sort(y,'descend');

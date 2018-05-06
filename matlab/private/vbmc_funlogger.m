@@ -81,14 +81,14 @@ switch lower(state)
                     optimState.S = [optimState.S; NaN(offset,1)];
                 end
             end
-            optimState.X = pdftrans(optimState.X_orig,'d',optimState.trinfo);
+            optimState.X = warpvars(optimState.X_orig,'d',optimState.trinfo);
         end
         optimState.funevaltime = NaN(nmax,1);
         optimState.totalfunevaltime = 0;
     
     case {'iter','single'} % Evaluate function (and store output for 'iter')
 
-        x_orig = pdftrans(x,'inv',optimState.trinfo);    % Convert back to original space
+        x_orig = warpvars(x,'inv',optimState.trinfo);    % Convert back to original space
         % Heteroscedastic noise?
         if isfield(optimState,'S'); hescnoise = 1; else; hescnoise = 0; end
         
@@ -135,7 +135,7 @@ switch lower(state)
     case {'add'} % Add previously evaluated function
 
         fval_orig = varargin{1};
-        x_orig = pdftrans(x,'inv',optimState.trinfo);    % Convert back to original space
+        x_orig = warpvars(x,'inv',optimState.trinfo);    % Convert back to original space
         % Heteroscedastic noise?
         if isfield(optimState,'S'); hescnoise = 1; else; hescnoise = 0; end
         if hescnoise; fsd = varargin{2}; else; fsd = []; end
@@ -191,7 +191,7 @@ optimState.Xmax = min(optimState.Xmax+1, size(optimState.X_orig,1));
 optimState.X_orig(optimState.Xn,:) = x_orig;
 optimState.X(optimState.Xn,:) = x;
 optimState.y_orig(optimState.Xn) = fval_orig;
-fval = fval_orig + pdftrans(x,'logp',optimState.trinfo);
+fval = fval_orig + warpvars(x,'logp',optimState.trinfo);
 optimState.y(optimState.Xn) = fval;
 if ~isempty(fsd); optimState.S(optimState.Xn) = fsd; end
 optimState.funevaltime(optimState.Xn) = t;

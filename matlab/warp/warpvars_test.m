@@ -1,4 +1,4 @@
-function pdftrans_test(nvars)
+function warpvars_test(nvars)
 
 if nargin < 1 || isempty(nvars); nvars = 1; end
 
@@ -16,7 +16,7 @@ for iType = [0,3,9,10]
             LB = -9; UB = 4; PLB = -8.99; PUB = 3.99;
     end
 
-    trinfo = pdftrans(nvars,LB,UB);
+    trinfo = warpvars(nvars,LB,UB);
     trinfo.type = iType*ones(1,nvars);
     trinfo.alpha = exp(2*rand(1,nvars));
     trinfo.beta = exp(2*rand(1,nvars));
@@ -24,7 +24,7 @@ for iType = [0,3,9,10]
     trinfo.delta = (PUB-PLB);
 
     x = linspace(PLB,PUB,101);
-    x2 = pdftrans(pdftrans(x,'dir',trinfo),'inv',trinfo);    
+    x2 = warpvars(warpvars(x,'dir',trinfo),'inv',trinfo);    
     
     fprintf('Maximum error for identity transform f^-1(f(x)): %.g.\n\n',max(abs(x - x2)));    
 
@@ -45,7 +45,7 @@ end
     
 % if nvars == 1
 %     x = linspace(LB+sqrt(eps),UB-sqrt(eps),101);
-%     x2 = pdftrans(pdftrans(x,'dir',trinfo),'inv',trinfo);
+%     x2 = warpvars(warpvars(x,'dir',trinfo),'inv',trinfo);
 %     max(abs(x - x2))
 % 
 %     x0 = rand(1,nvars).*(UB-LB)+LB;
@@ -59,14 +59,14 @@ end
 %     % trinfo.scale = exp(randn(1,Nvars));
 %     
 %     x = randn(N,nvars);    
-%     x2 = pdftrans(pdftrans(x,'dir',trinfo),'inv',trinfo);
+%     x2 = warpvars(warpvars(x,'dir',trinfo),'inv',trinfo);
 % 
 %     x - x2
 %     
 %     
 %     
 %     x0 = 0.1*rand(1,nvars).*(UB-LB)+LB;    
-%     x0t = pdftrans(x0,'dir',trinfo);
+%     x0t = warpvars(x0,'dir',trinfo);
 %     
 %     derivcheck(@(x) fun(x,trinfo),x0,1);
 %     derivcheck(@(x) invfun(x,trinfo),x0t,1);
@@ -84,22 +84,22 @@ function [y,dy] = fun(x,trinfo,logflag)
 
 if nargin < 3 || isempty(logflag); logflag = 0; end
 
-y = pdftrans(x,'dir',trinfo);
-% dy = pdftrans(y,'g',trinfo);
+y = warpvars(x,'dir',trinfo);
+% dy = warpvars(y,'g',trinfo);
 
 if logflag
-    dy = exp(-pdftrans(y,'logpdf',trinfo));
+    dy = exp(-warpvars(y,'logpdf',trinfo));
 else
-    dy = 1./pdftrans(y,'pdf',trinfo);
+    dy = 1./warpvars(y,'pdf',trinfo);
 end
 
 end
 
 function [y,dy] = invfun(x,trinfo)
 
-y = pdftrans(x,'inv',trinfo);
-dy = pdftrans(x,'r',trinfo);
-% dy = exp(-pdftrans(y,'logpdf',trinfo));
+y = warpvars(x,'inv',trinfo);
+dy = warpvars(x,'r',trinfo);
+% dy = exp(-warpvars(y,'logpdf',trinfo));
 
 end
 
@@ -112,11 +112,11 @@ theta = exp(theta);
 trinfo.alpha(1) = theta(1);
 trinfo.beta(1) = theta(2);
 
-y = pdftrans(x,'d',trinfo);
-dy = pdftrans(y,'f',trinfo); 
+y = warpvars(x,'d',trinfo);
+dy = warpvars(y,'f',trinfo); 
 
 dy = dy([1;nvars+1]) .* theta(:)';
-% dy = exp(-pdftrans(y,'logpdf',trinfo));
+% dy = exp(-warpvars(y,'logpdf',trinfo));
 
 end
 
@@ -129,10 +129,10 @@ theta = exp(theta);
 trinfo.alpha(1) = theta(1);
 trinfo.beta(1) = theta(2);
 
-y = pdftrans(x,'d',trinfo);
-dy = exp(-pdftrans(y,'logpdf',trinfo));
+y = warpvars(x,'d',trinfo);
+dy = exp(-warpvars(y,'logpdf',trinfo));
 
-ddy = pdftrans(y,'m',trinfo);
+ddy = warpvars(y,'m',trinfo);
 ddy = ddy([1;nvars+1]) .* theta(:)';
 
 end

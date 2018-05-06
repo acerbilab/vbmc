@@ -49,7 +49,7 @@ switch method
 end
 
 if origflag
-    Xs = pdftrans(Xs,'inv',optimState.trinfo);
+    Xs = warpvars(Xs,'inv',optimState.trinfo);
 end
 
 end

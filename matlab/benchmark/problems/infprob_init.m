@@ -76,17 +76,17 @@ probstruct.Verbose = evalbool(options.Display);
 
 % Center and rescale variables (potentially transform to log space)
 if evalbool(options.ScaleVariables)
-    probstruct.trinfo = pdftrans(probstruct.D,probstruct.LB,probstruct.UB,probstruct.PLB,probstruct.PUB);
+    probstruct.trinfo = warpvars(probstruct.D,probstruct.LB,probstruct.UB,probstruct.PLB,probstruct.PUB);
     if any(probstruct.trinfo.type > 0); error('Nonlinear transforms unsupported yet.'); end
-    probstruct.LB = pdftrans(probstruct.LB,'d',probstruct.trinfo);
-    probstruct.UB = pdftrans(probstruct.UB,'d',probstruct.trinfo);
-    probstruct.PLB = pdftrans(probstruct.PLB,'d',probstruct.trinfo);
-    probstruct.PUB = pdftrans(probstruct.PUB,'d',probstruct.trinfo);
+    probstruct.LB = warpvars(probstruct.LB,'d',probstruct.trinfo);
+    probstruct.UB = warpvars(probstruct.UB,'d',probstruct.trinfo);
+    probstruct.PLB = warpvars(probstruct.PLB,'d',probstruct.trinfo);
+    probstruct.PUB = warpvars(probstruct.PUB,'d',probstruct.trinfo);
     if all(isfinite(probstruct.Mode))
-        probstruct.Mode = pdftrans(probstruct.Mode,'d',probstruct.trinfo);
+        probstruct.Mode = warpvars(probstruct.Mode,'d',probstruct.trinfo);
     end
     if all(isfinite(probstruct.Mean))
-        probstruct.Mean = pdftrans(probstruct.Mean,'d',probstruct.trinfo);
+        probstruct.Mean = warpvars(probstruct.Mean,'d',probstruct.trinfo);
     end
     if all(isfinite(probstruct.Cov(:)))
         probstruct.Cov = diag(1./probstruct.trinfo.delta)*probstruct.Cov*diag(1./probstruct.trinfo.delta);        

@@ -34,6 +34,6 @@ else
 
     if origflag && ~isempty(vp.trinfo)
         % Convert generated points back to original space
-        X = pdftrans(X,'inv',vp.trinfo);
+        X = warpvars(X,'inv',vp.trinfo);
     end
 end

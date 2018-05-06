@@ -54,7 +54,7 @@ if isempty(gp)     % No GP yet, just use provided points or sample from plausibl
     optimState.Cache.X_orig(idx_remove,:) = [];
     optimState.Cache.y_orig(idx_remove) = [];
     
-    Xs = pdftrans(Xs,'d',optimState.trinfo);
+    Xs = warpvars(Xs,'d',optimState.trinfo);
     
     for is = 1:Ns
         timer_func = tic;
@@ -124,7 +124,7 @@ else                    % Adaptive uncertainty sampling
         yacq = y_orig(idx_cache_acq+1);
         idx_nn = ~isnan(yacq);
         if any(idx_nn)
-            yacq(idx_nn) = yacq(idx_nn) + pdftrans(Xacq(idx_nn,:),'logp',optimState.trinfo);
+            yacq(idx_nn) = yacq(idx_nn) + warpvars(Xacq(idx_nn,:),'logp',optimState.trinfo);
         end
         
         % Evaluate expensive acquisition function on chosen batch
@@ -185,7 +185,7 @@ x0 = optimState.Cache.X_orig;
 if ~isempty(x0)
     Ncache = ceil(NSsearch*cacheFrac);            
     idx_cache = randperm(size(x0,1),min(Ncache,size(x0,1)));
-    Xsearch = pdftrans(x0(idx_cache,:),'d',optimState.trinfo);        
+    Xsearch = warpvars(x0(idx_cache,:),'d',optimState.trinfo);        
 else
     Xsearch = []; idx_cache = [];
 end

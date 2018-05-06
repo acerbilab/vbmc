@@ -1,5 +1,5 @@
-function varargout = pdftrans(varargin)
-%PDFTRANS Convert constrained variables to unconstrained space for pdf.
+function varargout = warpvars(varargin)
+%WARPVARS Linear and nonlinear transformation of variables.
 %
 %  TRINFO = PDFTRANS(NVARS,LB,UB) returns the transformation structure 
 %  TRINFO for a problem with NVARS dimensions and lower/upper bounds
