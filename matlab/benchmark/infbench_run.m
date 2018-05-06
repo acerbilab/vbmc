@@ -120,26 +120,16 @@ for iRun = 1:length(idlist)
 
     % Run inference
     algofun = str2func(['infalgo_' algo]);
-    [history{iRun},post{iRun},algoptions] = ...
-        algofun(algo,algoset,probstruct);
-    
-    % Post-process returned points (remove extra points, evaluate noisy functions)
-    [x,fval,fse,t,extraTime] = postprocesspoints(x,fval,fse,t,probstruct);
-    timeOffset = timeOffset + extraTime;
-    
-    % Convert back to normal coordinates
-    if isfield(probstruct,'trinfo')
-        for i = 1:size(x,1); x(i,:) = transvars(x(i,:),'inv',probstruct.trinfo); end
-        if all(isfinite(history{iRun}.TrueMinX))
-            history{iRun}.TrueMinX = transvars(history{iRun}.TrueMinX,'inv',probstruct.trinfo);
-        end
-    end
+    [history{iRun},post,stats,algoptions] = algofun(algo,algoset,probstruct);
+            
+    [kl1,kl2] = mvnkl(post.Mean,post.Cov,probstruct.Mean,probstruct.Cov);
     
     history{iRun}.X0 = FirstPoint;
     history{iRun}.Algorithm = algo;
     history{iRun}.AlgoSetup = algoset;
     history{iRun}.Output.post = post;
-    history{iRun}.Output.stats = stats;    
+    history{iRun}.Output.stats = stats;
+    history{iRun}.GaussKL = kl1 + kl2;
     if isfield(history{iRun},'scratch'); scratch_flag = true; end
 end
 

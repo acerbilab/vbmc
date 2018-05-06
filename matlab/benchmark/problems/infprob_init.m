@@ -85,6 +85,12 @@ if evalbool(options.ScaleVariables)
     if all(isfinite(probstruct.Mode))
         probstruct.Mode = pdftrans(probstruct.Mode,'d',probstruct.trinfo);
     end
+    if all(isfinite(probstruct.Mean))
+        probstruct.Mean = pdftrans(probstruct.Mean,'d',probstruct.trinfo);
+    end
+    if all(isfinite(probstruct.Cov(:)))
+        probstruct.Cov = diag(1./probstruct.trinfo.delta)*probstruct.Cov*diag(1./probstruct.trinfo.delta);        
+    end
 end
 
 % if isfield(probstruct,'TrueMinFval') && isfinite(probstruct.TrueMinFval)

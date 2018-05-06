@@ -42,7 +42,7 @@ post.lZ = elbo;
 post.lZ_var = elbo_sd^2;
 
 % Compute posterior moments
-xx = vbmc_rnd(vp,1e6,1,1);
+xx = vbmc_rnd(1e6,vp,1,1);
 post.Mean = mean(xx);
 post.Cov = cov(xx);
 
