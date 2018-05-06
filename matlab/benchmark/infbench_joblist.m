@@ -9,8 +9,6 @@ parlist=combcell(probset,prob,subprob,noise,algo,algoset,idlist);
 for i=1:length(parlist)
  
 end
-    
-infbench_joblist('joblist-1.txt','run1','vbmc18',,{'2D','4D','6D','8D'},'[]',{'vbmc'},'base',{'1','2','3','4','5','6','7','8','9','10'});
 
 % Write to file
 fout=fopen(filename,'w+');
