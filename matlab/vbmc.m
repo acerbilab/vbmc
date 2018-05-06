@@ -90,6 +90,7 @@ defopts.MVNSearchFrac      = '0.25              % Fraction of search points from
 defopts.SearchSampleGP     = 'false             % Generate search candidates sampling from GP surrogate';
 defopts.AlwaysRefitVarPost = 'true              % Always fully refit variational posterior';
 defopts.VarParamsBack      = '0                 % Check variational posteriors back to these previous iterations';
+defopts.Plot               = 'off               % Show variational posterior triangle plots';
 
 %% If called with 'all', return all default options
 if strcmpi(fun,'all')
@@ -370,60 +371,13 @@ while ~isFinished_flag
          vp = vpoptimize(1,0,vp,gp,vp.K,X_hpd,y_hpd,optimState,stats,options);
     end
     
-    if 1
-        if D == 1
-            hold on;
-            Xs = linspace(min(optimState.X(1:optimState.Xmax,:)),max(optimState.X(1:optimState.Xmax,:)),3e3)';
-            p = zeros(size(Xs));
-            for k = 1:vp.K
-                p = p + normpdf(Xs,vp.mu(k),vp.sigma(k))/vp.K;
-            end
-            plot(Xs,log(p),'b--','LineWidth',2);
-            hold off;
-            axis([-5 5 -10 3]);
-            drawnow
-        elseif D == 2 && 0
-            hold on;
-            x1 = linspace(-5,5,101);
-            x2 = linspace(-5,5,101)';
-            xx = combvec(x1,x2')';
-            yy = vbmc_pdf(xx,vp);
-            subplot(2,2,3);
-            yy3 = gplite_pred(gp,xx);
-            yy3 = exp(yy3);
-            hold off;
-            surf(x1,x2,reshape(yy3,[numel(x1),numel(x2)]),'EdgeColor','none'); view(0,90)
-            axis([-5 5 -5 5]);
-            subplot(2,2,2);
-            yy2 = zeros(size(xx,1),1);
-            for ii = 1:size(xx,1); yy2(ii) = fun(xx(ii,:)); end
-            yy2 = exp(yy2);
-            surf(x1,x2,reshape(yy2,[numel(x1),numel(x2)]),'EdgeColor','none'); view(0,90); hold on;
-            subplot(2,2,1);
-            surf(x1,x2,reshape(yy,[numel(x1),numel(x2)]),'EdgeColor','none'); view(0,90); hold on;
-            scatter(vp.mu(1,:),vp.mu(2,:),'bo','MarkerFaceColor','b');
-            axis([-5 5 -5 5]);
-            hold off;
-            drawnow;
+    if options.Plot
+        xx = vbmc_rnd(1e5,vp,1,1);
+        try
+            cornerplot(xx,[],[],[]);
+        catch
             % pause
-        else
-            %xx_warp = vbmc_rnd(3e4,vp,0,1);
-            %cornerplot(xx_warp,[],[],[]);
-             
-            xx = vbmc_rnd(3e4,vp,1,1);
-            try
-                cornerplot(xx,[],[],[]);
-            catch
-                % pause
-            end
-%             vp.mu
-%             vp.sigma
-%             vp.lambda
-        end
-        
-        %vp
-        %vp.lambda        
-        
+        end        
     end    
     
     %mubar
