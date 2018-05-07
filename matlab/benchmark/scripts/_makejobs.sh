@@ -51,6 +51,12 @@ case "${1}" in
                 ;;
         6)      ALGOSET="{''}"
                 ;;
+        50)     ALGO="{'wsabi'}" 
+                ALGOSET="{''}"
+                ;;
+        51)     ALGO="{'wsabi'}"
+		ALGOSET="{'mm'}"
+                ;;
 
         101)    PROBSET="{'ccn17'}"
                 PROBS="{'visvest_joint'}"
