@@ -5,6 +5,16 @@ function probstruct = infprob_init(probset,prob,subprob,noise,id,options)
 problemfun = str2func(['infprob_' probset]);
 probstruct = problemfun(prob,subprob,noise,id,options);
 
+% Import fields from ProbInfo
+fields = {'D','LB','UB','PLB','PUB','Mean','Cov','Mode','lnZ'};
+for iField = 1:numel(fields)
+    if isfield(probstruct.ProbInfo,fields{iField})
+        probstruct.(fields{iField}) = probstruct.ProbInfo.(fields{iField});
+    else
+        probstruct.(fields{iField}) = [];
+    end
+end
+
 % Assign default values to problem struct
 defprob = infbench_defaults('problem',probstruct,options);
 for f = fieldnames(defprob)'
@@ -92,6 +102,10 @@ if evalbool(options.ScaleVariables)
         probstruct.Cov = diag(1./probstruct.trinfo.delta)*probstruct.Cov*diag(1./probstruct.trinfo.delta);        
     end
 end
+
+% Store Gaussian prior mean and variance
+probstruct.PriorMean = 0.5*(probstruct.PLB+probstruct.PUB);
+probstruct.PriorVar = (0.5*(probstruct.PUB-probstruct.PLB)).^2;
 
 % if isfield(probstruct,'TrueMinFval') && isfinite(probstruct.TrueMinFval)
 %     display(['Known minimum function value: ' num2str(probstruct.TrueMinFval,'%.3f')]);

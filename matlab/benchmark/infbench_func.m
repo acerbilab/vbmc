@@ -117,7 +117,17 @@ else
     func = str2func(history.Func);
 end
 
+% If requested, compute log prior in benchmark space
+if isfield(probstruct,'AddLogPrior') && probstruct.AddLogPrior
+    lnp = -0.5*sum(log(2*pi*probstruct.PriorVar) + ...
+        (x - probstruct.PriorMean).^2./probstruct.PriorVar);
+    addJacobian = 0;    % Jacobian is already included here, prior is rescaled
+else
+    lnp = [];   addJacobian = 1;
+end
+
 if isfield(probstruct,'trinfo')
+    dy = warpvars(x,'logpdf',probstruct.trinfo);
     x = warpvars(x,'inv',probstruct.trinfo);
 end
 
@@ -136,12 +146,14 @@ try
     else
         tfun = tic; fval_orig = func(x); t = toc(tfun);
     end
-    if isfield(probstruct,'trinfo')
-        fval = fval_orig + warpvars(x,'logpdf',probstruct.trinfo);
+    if isfield(probstruct,'trinfo') && addJacobian
+        fval = fval_orig + dy;
     else
         fval = fval_orig;
     end
-    
+    if ~isempty(lnp)    % Add log prior if needed
+        fval = fval + lnp;
+    end
 catch except
     warning(['Error in benchmark function ''' history.Func '''.' ...
         ' Message: ''' except.message '''']);
@@ -155,7 +167,8 @@ end
 
 % Value for NaN result
 if ~isfinite(fval) && ...
-        ~isempty(probstruct.NonAdmissibleFuncValue) && ~isnan(probstruct.NonAdmissibleFuncValue)
+        ~isempty(probstruct.NonAdmissibleFuncValue) && ...
+        ~isnan(probstruct.NonAdmissibleFuncValue)
     fval = probstruct.NonAdmissibleFuncValue;
 end
 
@@ -179,7 +192,9 @@ if ~debug
 
     % Add artificial noise (not in debug mode)
     sigma = history.NoiseSigma + history.NoiseIncrement*abs(fval);
-    fval = fval + randn()*sigma;     
+    if sigma > 0
+        fval = fval + randn()*sigma;
+    end
 end
 
 % x

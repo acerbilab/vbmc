@@ -57,6 +57,7 @@ switch lower(type)
         defaults.LocalDataFile = [];        % Local data file to be moved to each local folder
         defaults.VariableComputationTime = false;   % For most problems, computation time is (virtually) constant
         defaults.NonAdmissibleFuncValue = log(realmin);
+        defaults.AddLogPrior = false;
         
     case {'plot'}
         defaults.BestOutOf = 1;

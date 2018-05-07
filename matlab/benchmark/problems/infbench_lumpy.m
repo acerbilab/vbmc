@@ -2,7 +2,8 @@ function y = infbench_lumpy(x,infprob)
 %INFBENCH_LUMPY Inference benchmark log pdf -- lumpy density.
 
 if isempty(x)
-    if isempty(infprob) % Generate this document        
+    if isempty(infprob) % Generate this document
+        rng(0);        
         fprintf('switch D\n');
         for D = 1:20
             M = 12; % Number of lumpy components            
@@ -15,20 +16,9 @@ if isempty(x)
             w = -log(rand(M,1));    % Dirichlet distribution with alpha=1
             w = w / sum(w);
             
-            options.Display = 'off';
-            np = @(x) -pdf(x,w,Mu,Sigma);
-            xmin = zeros(M,D); fval = zeros(M,1);
-            for m = 1:M
-                [xmin(m,:),fval(m)] = fminunc(np,Mu(m,:),options);
-            end
-            [~,idx] = min(fval);
-            Mode = xmin(idx,:);
-            Mean = sum(bsxfun(@times,w(:),Mu),1);
-            Cov = zeros(D,D);
-            for m = 1:M
-                Cov = Cov + w(m)*squeeze(Sigma(m,:,:)) + w(m)*Mu(m,:)'*Mu(m,:);
-            end
-            
+            % Get stats of Gaussian mixture
+            [Mean,Cov,Mode] = gmmstats(w,Mu,Sigma);
+                        
             fprintf('\tcase %d\n',D);
             fprintf('\t\tM = %d;\n',M);            
             fprintf('\t\tw = %s;\n',mat2str(w));
@@ -226,6 +216,27 @@ if isempty(x)
         y.Mean = Mean;        % Distribution moments
         y.Cov = Cov;
         y.Mode = Mode;        % Mode of the pdf
+        
+        priorMean = 0.5*(y.PUB + y.PLB);
+        priorSigma2 = (0.5*(y.PUB - y.PLB)).^2;
+        priorCov = diag(priorSigma2);
+        y.Prior.Mean = priorMean;
+        y.Prior.Cov = priorCov;
+        
+        y.Post.w = zeros(size(w));
+        y.Post.Mu = zeros(size(Mu));
+        y.Post.Sigma = zeros(size(Sigma));
+        for m = 1:M
+            Sigma2_m = diag(squeeze(Sigma(m,:,:)))';
+            y.Post.Mu(m,:) = (Mu(m,:).*priorSigma2 + priorMean.*Sigma2_m) ./ (priorSigma2 + Sigma2_m);
+            y.Post.Sigma(m,:,:) = diag(priorSigma2.*Sigma2_m./(priorSigma2 + Sigma2_m));
+            y.Post.w(m) = mvnpdf(Mu(m,:),priorMean,diag(priorSigma2 + Sigma2_m)) * w(m);
+        end
+        
+        y.Post.lnZ = log(sum(y.Post.w));
+        y.Post.w = y.Post.w/sum(y.Post.w);
+        [y.Post.Mean,y.Post.Cov,y.Post.Mode] = gmmstats(y.Post.w,y.Post.Mu,y.Post.Sigma);
+                
     end    
 elseif nargout > 0
     y = log(max(pdf(x,infprob.w,infprob.Mu,infprob.Sigma),realmin));
@@ -241,6 +252,7 @@ end
 
 end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function y = pdf(x,w,Mu,Sigma)
 
 n = size(x,1);
@@ -250,4 +262,23 @@ for m = 1:M
     y = y + w(m)*mvnpdf(x,Mu(m,:),squeeze(Sigma(m,:,:)));
 end
 
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function [Mean,Cov,Mode] = gmmstats(w,Mu,Sigma)
+
+[M,D] = size(Mu);   % number of components and dims
+options.Display = 'off';
+np = @(x) -pdf(x,w,Mu,Sigma);
+xmin = zeros(M,D); fval = zeros(M,1);
+for m = 1:M
+    [xmin(m,:),fval(m)] = fminunc(np,Mu(m,:),options);
+end
+[~,idx] = min(fval);
+Mode = xmin(idx,:);
+Mean = sum(bsxfun(@times,w(:),Mu),1);
+Cov = zeros(D,D);
+for m = 1:M
+    Cov = Cov + w(m)*squeeze(Sigma(m,:,:)) + w(m)*Mu(m,:)'*Mu(m,:);
+end
 end

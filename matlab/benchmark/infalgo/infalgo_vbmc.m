@@ -6,12 +6,13 @@ algoptions = vbmc('all');                   % Get default settings
 algoptions.FunEvalsPerIter = 5;
 algoptions.AcqFcn = '@vbmc_acqskl';
 
-% Options from current problem
 algoptions.MinFunEvals = probstruct.MaxFunEvals;
 algoptions.MaxFunEvals = probstruct.MaxFunEvals;
 algoptions.MinIter = 0;     % No limits on iterations
 algoptions.MaxIter = Inf;
+algoptions.WarpNonlinear = 'off';   % No nonlinear warping for now
 
+% Options from current problem
 switch algoset
     case {0,'debug'}; algoset = 'debug'; algoptions.Debug = 1; algoptions.Plot = 'scatter';
     case {1,'base'}; algoset = 'base';           % Use defaults
@@ -40,6 +41,10 @@ LB = probstruct.LB;
 UB = probstruct.UB;
 x0 = probstruct.InitPoint;
 D = size(x0,2);
+
+% Add log prior to function evaluation 
+% (the current version of VBMC is agnostic of the prior)
+probstruct.AddLogPrior = true;
 
 algo_timer = tic;
 [vp,elbo,elbo_sd,exitflag,output,stats] = ...

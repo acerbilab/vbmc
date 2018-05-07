@@ -54,7 +54,7 @@ if isempty(x)
     ell = [ones(1,D-1),100];
     % ell = linspace(1,10,D);
     Cov = R'*diag(ell.^2)*R;
-
+    
     y.func = ['@(x,infprob) ' mfilename '(x,infprob)'];
     y.D = D;
     y.LB = -Inf(1,D);
@@ -65,6 +65,16 @@ if isempty(x)
     y.Mean = Mean;        % Distribution moments
     y.Cov = Cov;
     y.Mode = Mean;        % Mode of the pdf
+    
+    priorMean = 0.5*(y.PUB + y.PLB);
+    priorCov = diag((0.5*(y.PUB - y.PLB)).^2);
+    y.Prior.Mean = priorMean;
+    y.Prior.Cov = priorCov;
+    y.Post.lnZ = mvnlogpdf(y.Mean(:),priorMean(:),priorCov + y.Cov);
+    y.Post.Mean = (priorCov*((priorCov + y.Cov)\y.Mean(:)) + y.Cov*((priorCov + y.Cov)\priorMean(:)))';
+    y.Post.Cov = priorCov*((priorCov + y.Cov)\y.Cov);
+    y.Post.Mode = y.Post.Mean;
+    
     y.R = R;
     y.ell = ell;
     

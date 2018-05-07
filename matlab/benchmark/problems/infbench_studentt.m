@@ -5,7 +5,7 @@ if isempty(x)
     if isempty(infprob) % Generate this document        
         fprintf('switch D\n');
         for D = 1:20
-            Mu = 5*rand(1,D);
+            Mu = 20*rand(1,D)-10;
             Sigma = exp(randn(1,D));
             fprintf('\tcase %d\n',D);
             fprintf('\t\tMu = %s;\n',mat2str(Mu));
@@ -91,8 +91,8 @@ if isempty(x)
         y.D = D;
         y.LB = -Inf(1,D);
         y.UB = Inf(1,D);
-        y.PLB = Mean - 3*sqrt(diag(Cov))';
-        y.PUB = Mean + 3*sqrt(diag(Cov))';
+        y.PLB = -10 - 3*sqrt(diag(Cov))';
+        y.PUB = 10 + 3*sqrt(diag(Cov))';
         y.lnZ = 0;        % Log normalization factor
         y.Mu = Mu;
         y.Sigma = Sigma;
@@ -100,6 +100,40 @@ if isempty(x)
         y.Mean = Mean;        % Distribution moments
         y.Cov = Cov;
         y.Mode = Mode;        % Mode of the pdf
+        
+        priorMean = 0.5*(y.PUB + y.PLB);
+        priorSigma2 = (0.5*(y.PUB - y.PLB)).^2;
+        priorCov = diag(priorSigma2);
+        y.Prior.Mean = priorMean;
+        y.Prior.Cov = priorCov;
+        
+        % Compute each coordinate separately
+        y.Post.Mean = zeros(1,D);
+        PostSigma2 = zeros(1,D);
+        y.Post.Mode = zeros(1,D);
+        range = 5*(y.PUB-y.PLB);
+        Z = zeros(1,D);
+        for i = 1:D
+            % Compute normalization constant
+            fun = @(x_) tpdf((x_-Mu(i))/Sigma(i),Df(i))/Sigma(i) .* normpdf(x_,priorMean(i),sqrt(priorSigma2(i)));
+            Z(i) = integral(fun,y.PLB(i)-range(i),y.PUB(i)+range(i));
+            
+            % Compute mean
+            fun = @(x_) x_.*tpdf((x_-Mu(i))/Sigma(i),Df(i))/Sigma(i) .* normpdf(x_,priorMean(i),sqrt(priorSigma2(i)));
+            y.Post.Mean(i) = integral(fun,y.PLB(i)-range(i),y.PUB(i)+range(i))/Z(i);
+                        
+            % Compute variance
+            fun = @(x_) x_.^2.*tpdf((x_-Mu(i))/Sigma(i),Df(i))/Sigma(i) .* normpdf(x_,priorMean(i),sqrt(priorSigma2(i)));
+            PostSigma2(i) = integral(fun,-Inf,Inf)/Z(i)^2 - y.Post.Mean(i)^2;            
+            
+            % Compute mode
+            options.Display = 'off';
+            np = @(x_) -tpdf((x_-Mu(i))/Sigma(i),Df(i))/Sigma(i) .* normpdf(x_,priorMean(i),sqrt(priorSigma2(i)));
+            y.Post.Mode(i) = fminunc(np,y.Post.Mean(i),options);            
+        end
+                
+        y.Post.lnZ = sum(log(Z));
+        y.Post.Cov = diag(PostSigma2);        
     end    
 elseif nargout > 0
     %xprime = bsxfun(@power,abs(x),infprob.Power).*sign(x);
