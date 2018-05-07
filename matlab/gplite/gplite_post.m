@@ -10,7 +10,10 @@ function gp = gplite_post(hyp,X,y,meanfun,update1)
 %   a GPLITE structure, given a single new observation at XSTAR with observed
 %   value YSTAR.
 %
-%   See also GPLITE_MEANFUN.
+%   Note that the returned GP contains auxiliary structs for faster
+%   computations. To save memory, call GPLITE_CLEAN.
+%
+%   See also GPLITE_CLEAN, GPLITE_MEANFUN.
 
 if nargin < 5 || isempty(update1); update1 = false; end
 

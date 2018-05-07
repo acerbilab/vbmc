@@ -10,6 +10,13 @@ if nargin < 1   % No arguments return history log
         historyOut = rmfield(historyOut,'FuncTimeTemp');
     end
 
+    % Allocate vectors for the inference algorithms to store their output
+    Nticks = numel(historyOut.SaveTicks);
+    historyOut.Output.N = NaN(1,Nticks);
+    historyOut.Output.lZs = NaN(1,Nticks);
+    historyOut.Output.lZs_var = NaN(1,Nticks);
+    historyOut.Output.gsKL = NaN(1,Nticks);    
+    
     varargout = {historyOut};
     return;
 end
@@ -78,18 +85,18 @@ if isempty(history)     % First function call, initialize log
     
     % Optimization record
     if ~isfield(probstruct,'SaveTicks'); probstruct.SaveTicks = []; end
-    nmax = numel(probstruct.SaveTicks);
-    history.ElapsedTime = NaN(1,nmax);
-    history.FuncTime = NaN(1,nmax);
+    Nticks = numel(probstruct.SaveTicks);
+    history.ElapsedTime = NaN(1,Nticks);
+    history.FuncTime = NaN(1,Nticks);
     history.FuncTimeTemp = 0;   % Temporary variable to store function time
-    history.MinScores = NaN(1,nmax);
+    history.MaxScores = NaN(1,Nticks);
     history.BestX = NaN(1,history.D);
     if isfield(probstruct,'Thresholds')
         history.Thresholds = probstruct.Thresholds;
         history.ThresholdsHit = Inf(1, numel(history.Thresholds));
         history.ThresholdsHitPerIter = Inf(1, numel(history.Thresholds));
     end
-    history.MinScore = Inf;
+    history.MaxScore = -Inf;
     history.FunCalls = 0;
     history.StartIterFunCalls = 0;
     history.SaveTicks = probstruct.SaveTicks;
@@ -125,12 +132,14 @@ end
 % Check if need to pass probstruct
 try
     if strfind(probstruct.func,'probstruct_')
-        tfun = tic; fval = func(x,probstruct); t = toc(tfun);
+        tfun = tic; fval_orig = func(x,probstruct); t = toc(tfun);
     else
-        tfun = tic; fval = func(x); t = toc(tfun);
+        tfun = tic; fval_orig = func(x); t = toc(tfun);
     end
     if isfield(probstruct,'trinfo')
-        fval = fval + warpvars(x,'logpdf',probstruct.trinfo);
+        fval = fval_orig + warpvars(x,'logpdf',probstruct.trinfo);
+    else
+        fval = fval_orig;
     end
     
 catch except
@@ -138,7 +147,7 @@ catch except
         ' Message: ''' except.message '''']);
     rethrow(except);
     x
-    fval = NaN;
+    fval_orig = NaN; fval = NaN;
     t = 0;
     except.stack.file
     except.stack.line
@@ -154,8 +163,8 @@ if ~debug
     % Update records (not in debug mode)
     history.FunCalls = history.FunCalls + 1;
     history.FuncTimeTemp = history.FuncTimeTemp + t;
-    if fval < history.MinScore
-        history.MinScore = fval;
+    if fval_orig > history.MaxScore
+        history.MaxScore = fval_orig;
         history.BestX = x;
     end
     
@@ -165,7 +174,7 @@ if ~debug
         history.FuncTime(idx) = history.FuncTimeTemp;
         history.FuncTimeTemp = 0;
         history.ElapsedTime(idx) = toc(history.Clock) - history.TimeOffset;
-        history.MinScores(idx) = history.MinScore;
+        history.MaxScores(idx) = history.MaxScore;
     end
 
     % Add artificial noise (not in debug mode)

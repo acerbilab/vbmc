@@ -95,7 +95,6 @@ for iRun = 1:length(idlist)
     cd([options.RootDirectory filesep directoryname filesep subdirectoryname]);    
     
     probstruct.nIters = 0;
-    FunCallsPerIter = 0;
     FirstPoint = [];    % First starting point of the run
     
     % Loop until out of budget of function evaluations
@@ -120,16 +119,13 @@ for iRun = 1:length(idlist)
 
     % Run inference
     algofun = str2func(['infalgo_' algo]);
-    [history{iRun},post,stats,algoptions] = algofun(algo,algoset,probstruct);
-            
-    [kl1,kl2] = mvnkl(post.Mean,post.Cov,probstruct.Mean,probstruct.Cov);
+    probstruct.AlgoTimer = tic;
+    [history{iRun},post,algoptions] = algofun(algo,algoset,probstruct);
     
     history{iRun}.X0 = FirstPoint;
     history{iRun}.Algorithm = algo;
     history{iRun}.AlgoSetup = algoset;
     history{iRun}.Output.post = post;
-    history{iRun}.Output.stats = stats;
-    history{iRun}.GaussKL = kl1 + kl2;
     if isfield(history{iRun},'scratch'); scratch_flag = true; end
 end
 

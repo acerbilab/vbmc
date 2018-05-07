@@ -25,6 +25,11 @@ end
 Ncov = gp.Ncov;
 Nmean = gp.Nmean;
 
+% Stripped-down representation
+if ~isfield(gp.post(1),'alpha')
+    
+end
+
 % Loop over hyperparameter samples
 for s = 1:Ns
     hyp = gp.post(s).hyp;

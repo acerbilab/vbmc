@@ -395,9 +395,11 @@ while ~isFinished_flag
     
     % Compare variational posterior's moments with ground truth
     if ~isempty(options.TrueMean) && ~isempty(options.TrueCov)
-        [mubar,Sigma] = vbmc_moments(vp);
+        [mubar,Sigma] = vbmc_moments(vp,1,1e6);
         [kl(1),kl(2)] = mvnkl(mubar,Sigma,options.TrueMean,options.TrueCov);
-        0.5*sum(kl)
+        sKL_true = 0.5*sum(kl);
+    else
+        sKL_true = [];
     end
 
     % t_fits(iter) = toc(timer_fits);    
@@ -408,7 +410,7 @@ while ~isFinished_flag
     % timer
     
     % Record all useful stats
-    stats = savestats(stats,optimState,vp,elbo,elbo_sd,varss,sKL,gp,Ns_gp,timer,options.Diagnostics);
+    stats = savestats(stats,optimState,vp,elbo,elbo_sd,varss,sKL,sKL_true,gp,Ns_gp,timer,options.Diagnostics);
     
     %----------------------------------------------------------------------
     %% Check termination conditions    
@@ -466,7 +468,7 @@ end
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function stats = savestats(stats,optimState,vp,elbo,elbo_sd,varss,sKL,gp,Ns_gp,timer,debugflag)
+function stats = savestats(stats,optimState,vp,elbo,elbo_sd,varss,sKL,sKL_true,gp,Ns_gp,timer,debugflag)
 
 iter = optimState.iter;
 stats.iter(iter) = iter;
@@ -477,13 +479,16 @@ stats.vpK(iter) = vp.K;
 stats.elbo(iter) = elbo;
 stats.elboSD(iter) = elbo_sd;
 stats.sKL(iter) = sKL;
+if ~isempty(sKL_true)
+    stats.sKL_true = sKL_true;
+end
 stats.gpSampleVar(iter) = varss;
 stats.gpNsamples(iter) = Ns_gp;
 stats.timer(iter) = timer;
 
 if debugflag
     stats.vp(iter) = vp;
-    stats.gp(iter) = gp;
+    stats.gp(iter) = gplite_clean(gp);
 end
 
 end

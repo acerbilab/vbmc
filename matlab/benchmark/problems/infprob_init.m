@@ -54,10 +54,10 @@ probstruct.MaxFunEvals = probstruct.MaxFunEvals*options.MaxFunEvalMultiplier;
 probstruct.TotalMaxFunEvals = probstruct.MaxFunEvals;
 probstruct.Verbose = evalbool(options.Display);
 
-% if isempty(probstruct.SaveTicks)
-%     probstruct.SaveTicks = [10:10:200, 250:50:2000, 2100:100:probstruct.TotalMaxFunEvals];
-%     probstruct.SaveTicks(probstruct.SaveTicks > probstruct.TotalMaxFunEvals) = [];
-% end
+if isempty(probstruct.SaveTicks)
+     probstruct.SaveTicks = [5:5:500, 510:10:1000, 1020:20:probstruct.TotalMaxFunEvals];
+     probstruct.SaveTicks(probstruct.SaveTicks > probstruct.TotalMaxFunEvals) = [];
+end
 
 % Load minimum from file
 % filename = ['mindata_' probstruct.ProbSet '_' probstruct.Prob '.mat'];
