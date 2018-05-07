@@ -120,10 +120,15 @@ end
 % If requested, compute log prior in benchmark space
 if isfield(probstruct,'AddLogPrior') && probstruct.AddLogPrior
     lnp = -0.5*sum(log(2*pi*probstruct.PriorVar) + ...
-        (x - probstruct.PriorMean).^2./probstruct.PriorVar);
-    addJacobian = 0;    % Jacobian is already included here, prior is rescaled
+        (x - probstruct.PriorMean).^2./probstruct.PriorVar);    
 else
-    lnp = [];   addJacobian = 1;
+    lnp = [];
+end
+
+if isfield(probstruct,'PriorMean') && ~isempty(probstruct.PriorMean)
+    addJacobian = 0;    % Jacobian is already included in the rescaled prior
+else
+    addJacobian = 1;
 end
 
 if isfield(probstruct,'trinfo')

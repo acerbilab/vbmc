@@ -4,7 +4,7 @@ function y = infbench_cigar(x,infprob)
 if isempty(x)
     D = infprob(1);         % Call with the number of dimensions
 
-    Mean = linspace(-10,10,D);
+    Mean = linspace(-1,1,D);
         
     switch D
         case 1
@@ -59,8 +59,8 @@ if isempty(x)
     y.D = D;
     y.LB = -Inf(1,D);
     y.UB = Inf(1,D);
-    y.PLB = -5*sqrt(diag(Cov))' - max(abs(Mean));
-    y.PUB = 5*sqrt(diag(Cov))' + max(abs(Mean));
+    y.PLB = -2*sqrt(diag(Cov))' - max(abs(Mean));
+    y.PUB = 2*sqrt(diag(Cov))' + max(abs(Mean));
     y.lnZ = 0;        % Log normalization factor
     y.Mean = Mean;        % Distribution moments
     y.Cov = Cov;

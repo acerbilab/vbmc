@@ -5,7 +5,7 @@ if isempty(x)
     if isempty(infprob) % Generate this document        
         fprintf('switch D\n');
         for D = 1:20
-            Mu = 20*rand(1,D)-10;
+            Mu = 2*rand(1,D)-1;
             Sigma = exp(randn(1,D));
             fprintf('\tcase %d\n',D);
             fprintf('\t\tMu = %s;\n',mat2str(Mu));
@@ -83,7 +83,7 @@ if isempty(x)
         end        
         
         y.func = ['@(x,infprob) ' mfilename '(x,infprob)'];
-        Df = (1:D)*0.5+2;        
+        Df = (1:D)*0.5+2;
         Mean = Mu;
         Cov = diag(Df./(Df-2).*Sigma.^2);
         Mode = Mu;
@@ -91,8 +91,8 @@ if isempty(x)
         y.D = D;
         y.LB = -Inf(1,D);
         y.UB = Inf(1,D);
-        y.PLB = -10 - 3*sqrt(diag(Cov))';
-        y.PUB = 10 + 3*sqrt(diag(Cov))';
+        y.PLB = -1 - 2*sqrt(diag(Cov))';
+        y.PUB = 1 + 2*sqrt(diag(Cov))';
         y.lnZ = 0;        % Log normalization factor
         y.Mu = Mu;
         y.Sigma = Sigma;

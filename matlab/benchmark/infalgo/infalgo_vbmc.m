@@ -83,7 +83,7 @@ Ns_moments = 1e6;
 xx = vbmc_rnd(Ns_moments,vp,1,1);
 Mean = mean(xx,1);
 Cov = cov(xx);
-[kl1,kl2] = mvnkl(Mean,Cov,probstruct.Mean,probstruct.Cov);
+[kl1,kl2] = mvnkl(Mean,Cov,probstruct.Post.Mean,probstruct.Post.Cov);
 gsKL = 0.5*(kl1 + kl2);
 
 end

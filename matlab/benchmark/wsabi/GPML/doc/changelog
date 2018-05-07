@@ -1,0 +1,14 @@
+ GAUSSIAN PROCESS REGRESSION AND CLASSIFICATION Toolbox version 3.4
+    for GNU Octave 3.2.x and Matlab 7.x 
+
+Copyright (c) by Carl Edward Rasmussen and Hannes Nickisch, 2014-03-20.
+
+Changes and small incremental bug fixes applied since last release.
+- bugfix in infVB marginal likelihood for likLogistic with nonzero mean function as reported by James Lloyd
+- removed the combination likErf/infVB as it yields a bad posterior approximation and lacks theoretical justification
+- Matlab and Octave compilation for L-BFGS-B v2.4 and the more recent L-BFGS-B v3.0 as contrubuted by Jose Vallet
+- bugfix due to Bjørn Sand Jensen noticing that cov_deriv_sq_dist.m was missing in the distribution
+- bugfix due to Joris Mooij in gp.m where the wrong mode for post.L was chosen when using infFITC and post.L being a diagonal matrix
+- updated use of logphi in lik/likErf
+- bugfix in util/solve_chol.c due to Todd Small where a typing issue occured on OS X
+- bugfix in lik/likBeta.m due to Dali Wei

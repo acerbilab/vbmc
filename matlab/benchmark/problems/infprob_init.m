@@ -101,6 +101,12 @@ if evalbool(options.ScaleVariables)
     if all(isfinite(probstruct.Cov(:)))
         probstruct.Cov = diag(1./probstruct.trinfo.delta)*probstruct.Cov*diag(1./probstruct.trinfo.delta);        
     end
+    if isfield(probstruct.ProbInfo,'Post')
+        probstruct.Post = probstruct.ProbInfo.Post;
+        probstruct.Post.Mean = warpvars(probstruct.ProbInfo.Post.Mean,'d',probstruct.trinfo);        
+        probstruct.Post.Mode = warpvars(probstruct.ProbInfo.Post.Mode,'d',probstruct.trinfo);        
+        probstruct.Post.Cov = diag(1./probstruct.trinfo.delta)*probstruct.ProbInfo.Post.Cov*diag(1./probstruct.trinfo.delta);
+    end
 end
 
 % Store Gaussian prior mean and variance
