@@ -93,7 +93,7 @@ gp.X = X;
 gp.y = y;
 gp.meanfun = 4; % Negative quadratic mean fcn
 
-Ns_moments = 10;
+Ns_moments = 2e4;
 xx = gplite_sample(gp,Ns_moments);
 Mean = mean(xx,1);
 Cov = cov(xx);
