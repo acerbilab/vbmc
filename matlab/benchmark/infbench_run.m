@@ -126,6 +126,8 @@ for iRun = 1:length(idlist)
     history{iRun}.Algorithm = algo;
     history{iRun}.AlgoSetup = algoset;
     history{iRun}.Output.post = post;
+    history{iRun}.lnZ_true = probstruct.lnZ;
+    history{iRun}.lnZpost_true = probstruct.Post.lnZ;    
     if isfield(history{iRun},'scratch'); scratch_flag = true; end
 end
 

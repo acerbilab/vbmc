@@ -30,16 +30,16 @@ if nargin < 3; hprior = []; end
 [Nhyp,Ns] = size(hyp);      % Hyperparameters and samples
 compute_grad = nargout > 1; % Compute gradient if required
 
-if all(Nhyp ~= [D+3,3*D+3])
+Ncov = gp.Ncov;
+Nmean = gp.Nmean;
+
+if Nhyp ~= (Ncov+Nmean+1)
     error('gplite_nlZ:dimmismatch','Number of hyperparameters mismatched with dimension of training inputs.');
 end
 if compute_grad && Ns > 1
     error('gplite_nlZ:NoSampling', ...
         'Computation of the log marginal likelihood is available only for one-sample hyperparameter inputs.');
 end
-
-Ncov = gp.Ncov;
-Nmean = gp.Nmean;
 
 % Extract GP hyperparameters from HYP
 ell = exp(hyp(1:D));

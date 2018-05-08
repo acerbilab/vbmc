@@ -15,9 +15,7 @@ Nopts = [];
 if isfield(options,'Nopts'); Nopts = options.Nopts; end
 if isempty(Nopts); Nopts = 3; end   % Number of hyperparameter optimization runs
 
-
 [N,D] = size(X);            % Number of training points and dimension
-[Nhyp,N0] = size(hyp0);      % Hyperparameters and samples
 
 ToL = 1e-6;
 Ninit = 2^12;    % Initial design size for hyperparameter optimization
@@ -49,6 +47,21 @@ else
     input_warping = 0;
 end
 
+if input_warping
+    X_prior = warpvars(X,'dir',warp.trinfo);
+    y_prior = y + warpvars(X_prior,'logpdf',warp.trinfo);
+else
+    X_prior = X;
+    y_prior = y;
+end
+
+Ncov = D+1;     % Number of covariance function hyperparameters
+
+% Get mean function hyperparameter info
+[Nmean,meaninfo] = gplite_meanfun([],X_prior,meanfun,y_prior);
+
+if isempty(hyp0); hyp0 = zeros(Ncov+Nmean+1,1); end
+[Nhyp,N0] = size(hyp0);      % Hyperparameters
 
 LB = [];
 UB = [];
@@ -71,22 +84,11 @@ if numel(hprior.mu) < Nhyp; hprior.mu = [hprior.mu(:); NaN(Nhyp-numel(hprior.mu)
 if numel(hprior.sigma) < Nhyp; hprior.sigma = [hprior.sigma(:); NaN(Nhyp-numel(hprior.sigma),1)]; end
 if numel(hprior.df) < Nhyp; hprior.df = [hprior.df(:); NaN(Nhyp-numel(hprior.df),1)]; end
 
-if input_warping
-    X_prior = warpvars(X,'dir',warp.trinfo);
-    y_prior = y + warpvars(X_prior,'logpdf',warp.trinfo);
-else
-    X_prior = X;
-    y_prior = y;
-end
 
 % Default hyperparameter lower and upper bounds, if not specified
 width = max(X_prior) - min(X_prior);
 height = max(y_prior)-min(y_prior);
 
-Ncov = D+1;     % Number of covariance function hyperparameters
-
-% Get mean function hyperparameter info
-[Nmean,meaninfo] = gplite_meanfun([],X_prior,meanfun,y_prior);
 
 % Read hyperparameter bounds, if specified; otherwise set defaults
 LB_ell = LB(1:D);   

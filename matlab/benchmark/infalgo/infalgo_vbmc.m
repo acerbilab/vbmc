@@ -65,8 +65,8 @@ history.Output.stats = stats;
 % Store computation results
 history.Output.X = output.X_orig(1:output.N,:);
 history.Output.y = output.y(1:output.N);
-post.lZ = elbo;
-post.lZ_var = elbo_sd^2;
+post.lnZ = elbo;
+post.lnZ_var = elbo_sd^2;
 [post.gsKL,post.Mean,post.Cov] = compute_gsKL(vp,probstruct);
 
 % Return estimate, SD of the estimate, and gauss-sKL with true moments
@@ -76,8 +76,8 @@ for iIter = 1:Nticks
     if isempty(idx); continue; end
     
     history.Output.N(iIter) = history.SaveTicks(iIter);
-    history.Output.lZs(iIter) = stats.elbo(idx);
-    history.Output.lZs_var(iIter) = stats.elboSD(idx)^2;
+    history.Output.lnZs(iIter) = stats.elbo(idx);
+    history.Output.lnZs_var(iIter) = stats.elboSD(idx)^2;
     history.Output.gsKL(iIter) = compute_gsKL(stats.vp(idx),probstruct);
 end
 

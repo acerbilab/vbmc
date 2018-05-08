@@ -13,8 +13,8 @@ if nargin < 1   % No arguments return history log
     % Allocate vectors for the inference algorithms to store their output
     Nticks = numel(historyOut.SaveTicks);
     historyOut.Output.N = NaN(1,Nticks);
-    historyOut.Output.lZs = NaN(1,Nticks);
-    historyOut.Output.lZs_var = NaN(1,Nticks);
+    historyOut.Output.lnZs = NaN(1,Nticks);
+    historyOut.Output.lnZs_var = NaN(1,Nticks);
     historyOut.Output.gsKL = NaN(1,Nticks);    
     
     varargout = {historyOut};

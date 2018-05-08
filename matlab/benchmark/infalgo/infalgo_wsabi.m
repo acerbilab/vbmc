@@ -64,9 +64,12 @@ history.Output.stats.tt = tt;
 history.Output.stats.hyp = hyp;
 
 % Store computation results
-post.lZ = mu(end);
-post.lZ_var = vvar(end);
+post.lnZ = mu(end);
+post.lnZ_var = vvar(end);
 post.gsKL = NaN;
+X_train = history.Output.X;
+y_train = history.Output.y;
+[post.gsKL,post.Mean,post.Cov] = compute_gsKL(X_train,y_train,probstruct);
 
 % Return estimate, SD of the estimate, and gauss-sKL with true moments
 Nticks = numel(history.SaveTicks);
@@ -75,20 +78,27 @@ for iIter = 1:Nticks
     idx = history.SaveTicks(iIter);
     if idx > Nmax; break; end
     
-    history.Output.N(iIter) = history.SaveTicks(iIter);
-    history.Output.lZs(iIter) = mu(idx);
-    history.Output.lZs_var(iIter) = vvar(idx);
-    history.Output.gsKL(iIter) = NaN;
+    N = history.SaveTicks(iIter);
+    history.Output.N(iIter) = N;
+    history.Output.lnZs(iIter) = mu(idx);
+    history.Output.lnZs_var(iIter) = vvar(idx);
+    X_train = history.Output.X(1:N,:);
+    y_train = history.Output.y(1:N);    
+    history.Output.gsKL(iIter) = compute_gsKL(X_train,y_train,probstruct);
 end
 
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [gsKL,Mean,Cov] = compute_gsKL(vp,probstruct)
+function [gsKL,Mean,Cov] = compute_gsKL(X,y,probstruct)
 %COMPUTE_GSKL Compute Gaussianized symmetric KL divergence with ground truth.
-    
-Ns_moments = 1e6;
-xx = vbmc_rnd(Ns_moments,vp,1,1);
+
+gp.X = X;
+gp.y = y;
+gp.meanfun = 4; % Negative quadratic mean fcn
+
+Ns_moments = 5e3;
+xx = vbmc_gpsample(gp,Ns_moments,[],[],0);
 Mean = mean(xx,1);
 Cov = cov(xx);
 [kl1,kl2] = mvnkl(Mean,Cov,probstruct.Mean,probstruct.Cov);
