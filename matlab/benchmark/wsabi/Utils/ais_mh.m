@@ -70,6 +70,9 @@ cur_pt = mvnrnd( prior.mean, prior.covariance );
 cur_ll = loglik_fn(cur_pt);
 times(1) = tmpT - cputime;
 
+stats.all_samples.locations(1, :) = cur_pt;
+stats.all_samples.logliks(1) = cur_ll;
+
 num_accepts = 1;
 for t = 2:length(temps)
     tmpT = cputime; 
@@ -93,8 +96,8 @@ for t = 2:length(temps)
     % Record locations.
     sample_locs(t - 1, :) = cur_pt;
     logliks(t - 1) = cur_ll;
-    stats.all_samples.locations(t - 1, :) = proposal;
-    stats.all_samples.logliks(t - 1) = proposal_ll;
+    stats.all_samples.locations(t, :) = proposal;
+    stats.all_samples.logliks(t) = proposal_ll;
     times(t) = cputime - tmpT;
 end
 

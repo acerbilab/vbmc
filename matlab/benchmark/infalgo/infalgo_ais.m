@@ -1,4 +1,4 @@
-function [history,post,algoptions] = infalgo_bmc(algo,algoset,probstruct)
+function [history,post,algoptions] = infalgo_ais(algo,algoset,probstruct)
 
 algoptions.MaxFunEvals = probstruct.MaxFunEvals;
 
@@ -16,71 +16,61 @@ LB = probstruct.LB;
 UB = probstruct.UB;
 x0 = probstruct.InitPoint;
 D = size(x0,2);
-
-diam = probstruct.PUB - probstruct.PLB;
-
-kernelCov = diag(diam/10);     % Input length scales for GP likelihood model
-lambda = 1;                     % Ouput length scale for GP likelihood model
-
-% Do not add log prior to function evaluation, already passed to BMC 
-probstruct.AddLogPrior = false;
-
-algo_timer = tic;
-
-% Initialize Bayesian Monte Carlo with samples from prior
-SaveTicks = probstruct.SaveTicks(probstruct.SaveTicks <= algoptions.MaxFunEvals);
-
-Nmax = max(SaveTicks);
-Niter = numel(SaveTicks);
-
 priorMean = probstruct.PriorMean;
 priorVar = probstruct.PriorVar;
 
-% Generate random samples from prior
-X = [x0(1,:); ...
-        bsxfun(@plus, ...
-        bsxfun(@times,randn(Nmax-1,D),sqrt(priorVar)),...
-        priorMean)];
+diam = probstruct.PUB - probstruct.PLB;
 
-% Compute log likelihoods at points
-y = zeros(Nmax,1);
-for i = 1:Nmax
-    y(i) = infbench_func(X(i,:),probstruct);
-end
+% Do not add log prior to function evaluation, already part of AIS 
+probstruct.AddLogPrior = false;
 
+prior.mean = priorMean;
+prior.covariance = diag(priorVar);
+
+N = probstruct.SaveTicks;
+Niter = numel(probstruct.SaveTicks);
+tot_num_samples = probstruct.SaveTicks;
+
+aistimes = zeros(1,Niter);
+X = []; y = [];
 mu = zeros(1,Niter);
-ln_var = zeros(1,Niter);
+vvar = zeros(1,Niter);
 for i = 1:Niter
-    X_train = X(1:SaveTicks(i),:);
-    [mu(i), ln_var(i), kernelCov, lambda] = bq([], ...
-        priorMean, diag(priorVar), kernelCov, lambda, [], ...
-        X_train, y(1:SaveTicks(i)));
+    if i == Niter; algo_timer = tic; end
+    opt.num_samples = ceil(tot_num_samples(i)) - 1;
+    [mean_lnZ_tmp, var_lnZ_tmp, ~, ~, aistimes_tmp, stats] = ...
+        ais_mh(@(x_) infbench_func(x_,probstruct), prior, opt);
+    mu(i) = mean_lnZ_tmp(end);
+    vvar(i) = var_lnZ_tmp(end);
+    aistimes(i) = sum(aistimes_tmp);
+    X_tmp{i} = stats.all_samples.locations;
+    y_tmp{i} = stats.all_samples.logliks;
 end
-TotalTime = toc(algo_timer);
 
-vvar = max(real(exp(ln_var)),0);
+TotalTime = toc(algo_timer);
 
 history = infbench_func(); % Retrieve history
 % history.scratch.output = output;
 history.TotalTime = TotalTime;
-history.Output.X = X;
-history.Output.y = y;
+history.Output.X = X_tmp{end};
+history.Output.y = y_tmp{end};
+history.Output.tt = aistimes;
+history.Output.stats = stats;
 
 % Store computation results
 post.lnZ = mu(end);
 post.lnZ_var = vvar(end);
-X_train = history.Output.X;
-y_train = history.Output.y;
+[X_train,idx] = unique(history.Output.X,'rows');
+y_train = history.Output.y(idx);
 [post.gsKL,post.Mean,post.Cov] = compute_gsKL(X_train,y_train,probstruct);
 
 % Return estimate, SD of the estimate, and gauss-sKL with true moments
-N = history.SaveTicks(1:Niter);
 history.Output.N = N;
 history.Output.lnZs = mu;
 history.Output.lnZs_var = vvar;
 for iIter = 1:Niter
-    X_train = history.Output.X(1:N(iIter),:);
-    y_train = history.Output.y(1:N(iIter));
+    X_train = X_tmp{iIter};
+    y_train = y_tmp{iIter};
     history.Output.gsKL(iIter) = compute_gsKL(X_train,y_train,probstruct);
 end
 
