@@ -98,7 +98,7 @@ gp.y = y;
 gp.meanfun = 4; % Negative quadratic mean fcn
 
 Ns_moments = 2e4;
-xx = vbmc_gpsample(gp,Ns_moments,[],[],0);
+xx = gplite_sample(gp,Ns_moments);
 Mean = mean(xx,1);
 Cov = cov(xx);
 [kl1,kl2] = mvnkl(Mean,Cov,probstruct.Mean,probstruct.Cov);
