@@ -9,9 +9,13 @@ xx = samples;
 bb = priorMu;
 BB = priorVar;
 
-lHatD = zeros(length(xx(:,1)),1);
-for i = 1:length(xx(:,1));
-[lHatD(i)] = loglikhandle( xx(i,:) );
+if isa(loglikhandle,'function_handle')
+    lHatD = zeros(length(xx(:,1)),1);
+    for i = 1:length(xx(:,1))
+        [lHatD(i)] = loglikhandle( xx(i,:) );
+    end
+else
+    lHatD = loglikhandle(:);
 end
 
 % Rescale to max.
@@ -23,7 +27,7 @@ hyp(1) = log( lambda );
 hyp(2:end) = log( diag(kernelVar)' );
 
 hypLogLik = @(x) logLikGPDim( xx, lHatD, x );
-options = optimset('fminunc');
+options = optimoptions('fminunc');
 options.Display = 'none';
 options.GradObj = 'on';
 [hyp] = fminunc( hypLogLik, hyp, options );

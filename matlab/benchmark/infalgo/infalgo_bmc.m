@@ -1,31 +1,14 @@
-function [history,post,algoptions] = infalgo_wsabi(algo,algoset,probstruct)
-
-algoptions.Method = 'L';    % Default is WSABI-L
-algoptions.Alpha = 0.8;     % Fractional offset, as in paper.
+function [history,post,algoptions] = infalgo_bmc(algo,algoset,probstruct)
 
 algoptions.MaxFunEvals = probstruct.MaxFunEvals;
 
 % Options from current problem
 switch algoset
     case {0,'debug'}; algoset = 'debug'; algoptions.Debug = 1; algoptions.Plot = 'scatter';
-    case {1,'base'}; algoset = 'base';           % Use defaults
-    case {2,'mm'}; algoset = 'mm'; algoptions.Method = 'M';
-        
+    case {1,'base'}; algoset = 'base';           % Use defaults        
     otherwise
         error(['Unknown algorithm setting ''' algoset ''' for algorithm ''' algo '''.']);
 end
-
-method = upper(algoptions.Method(1));
-
-% % Increase base noise with noisy functions
-% if ~isempty(probstruct.Noise) || probstruct.IntrinsicNoisy
-%     algoptions.UncertaintyHandling = 'on';
-%     NoiseEstimate = probstruct.NoiseEstimate;
-%     if isempty(NoiseEstimate); NoiseEstimate = 1; end    
-%     algoptions.NoiseSize = NoiseEstimate(1);
-% else
-%     algoptions.UncertaintyHandling = 'off';
-% end
 
 PLB = probstruct.PLB;
 PUB = probstruct.PUB;
@@ -39,18 +22,39 @@ diam = probstruct.PUB - probstruct.PLB;
 kernelCov = diag(diam/10);     % Input length scales for GP likelihood model
 lambda = 1;                     % Ouput length scale for GP likelihood model
 
-range = [PLB - 3*diam; PUB + 3*diam];
-
-% Do not add log prior to function evaluation, already passed to WSABI 
+% Do not add log prior to function evaluation, already passed to BMC 
 probstruct.AddLogPrior = false;
 
-printing = 1;
-
 algo_timer = tic;
-[mu, ln_var, tt, X, y, hyp] = ...
-    wsabi(method,range,probstruct.PriorMean,diag(probstruct.PriorVar), ...
-        kernelCov,lambda,algoptions.Alpha,algoptions.MaxFunEvals+1,...
-        @(x) infbench_func(x,probstruct),printing,x0);
+
+% Initialize Bayesian Monte Carlo with samples from prior
+SaveTicks = probstruct.SaveTicks(probstruct.SaveTicks <= algoptions.MaxFunEvals);
+
+Nmax = max(SaveTicks);
+Niter = numel(SaveTicks);
+
+priorMean = probstruct.PriorMean;
+priorVar = probstruct.PriorVar;
+
+% Generate random samples from prior
+X = bsxfun(@plus, ...
+    bsxfun(@times,randn(Nmax,D),sqrt(priorVar)),...
+    priorMean);
+
+% Compute log likelihoods at points
+y = zeros(Nmax,1);
+for i = 1:Nmax
+    y(i) = infbench_func(X(i,:),probstruct);
+end
+
+mu = zeros(1,Niter);
+ln_var = zeros(1,Niter);
+for i = 1:Niter
+    X_train = X(1:SaveTicks(i),:);
+    [mu(i), ln_var(i), kernelCov, lambda] = bq([], ...
+        priorMean, diag(priorVar), kernelCov, lambda, [], ...
+        X_train, y(1:SaveTicks(i)));
+end
 TotalTime = toc(algo_timer);
 
 vvar = max(real(exp(ln_var)),0);
@@ -58,10 +62,8 @@ vvar = max(real(exp(ln_var)),0);
 history = infbench_func(); % Retrieve history
 % history.scratch.output = output;
 history.TotalTime = TotalTime;
-history.Output.X = X(end:-1:1,:);   % Order is inverted for some reason
-history.Output.y = y(end:-1:1);
-history.Output.stats.tt = tt;
-history.Output.stats.hyp = hyp;
+history.Output.X = X;
+history.Output.y = y;
 
 % Store computation results
 post.lnZ = mu(end);
@@ -71,18 +73,13 @@ y_train = history.Output.y;
 [post.gsKL,post.Mean,post.Cov] = compute_gsKL(X_train,y_train,probstruct);
 
 % Return estimate, SD of the estimate, and gauss-sKL with true moments
-Nticks = numel(history.SaveTicks);
-Nmax = numel(mu);
-for iIter = 1:Nticks
-    idx = history.SaveTicks(iIter);
-    if idx > Nmax; break; end
-    
-    N = history.SaveTicks(iIter);
-    history.Output.N(iIter) = N;
-    history.Output.lnZs(iIter) = mu(idx);
-    history.Output.lnZs_var(iIter) = vvar(idx);
-    X_train = history.Output.X(1:N,:);
-    y_train = history.Output.y(1:N);    
+N = history.SaveTicks(1:Niter);
+history.Output.N = N;
+history.Output.lnZs = mu;
+history.Output.lnZs_var = vvar;
+for iIter = 1:Niter
+    X_train = history.Output.X(1:N(iIter),:);
+    y_train = history.Output.y(1:N(iIter));
     history.Output.gsKL(iIter) = compute_gsKL(X_train,y_train,probstruct);
 end
 
