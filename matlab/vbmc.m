@@ -463,6 +463,10 @@ while ~isFinished_flag
     end    
     
 end
+
+if nargout > 3
+    output = optimState;
+end
     
 end
 

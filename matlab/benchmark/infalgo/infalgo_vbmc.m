@@ -51,12 +51,20 @@ algo_timer = tic;
     vbmc(@(x) infbench_func(x,probstruct),x0,LB,UB,PLB,PUB,algoptions);
 TotalTime = toc(algo_timer);
 
+% Remove training data from GPs, too bulky (can be reconstructed)
+for i = 1:numel(stats.gp)
+    stats.gp(i).X = [];
+    stats.gp(i).y = [];
+end
+
 history = infbench_func(); % Retrieve history
 history.scratch.output = output;
 history.TotalTime = TotalTime;
 history.Output.stats = stats;
 
 % Store computation results
+history.Output.X = output.X_orig(1:output.N,:);
+history.Output.y = output.y(1:output.N);
 post.lZ = elbo;
 post.lZ_var = elbo_sd^2;
 [post.gsKL,post.Mean,post.Cov] = compute_gsKL(vp,probstruct);

@@ -1,25 +1,33 @@
-function [ log_mu, log_Var, clktime, xxIter, hyp ] = wsabiL( ...
-            range,          ... 1) 2 x D matrix, lower bnd top row.
-            priorMu,        ... 2) Gaussian prior mean, D x 1.
-            priorVar,       ... 3) Gaussian prior covariance, D x D.
-            kernelVar,      ... 4) Initial input length scales, D x D.
-            lambda,         ... 5) Initial output length scale.
-            alpha,          ... 6) Alpha offset fraction, as in paper.
-            numSamples,     ... 7) Number of BBQ samples to run.
-            loglikhandle,   ... 8) Handle to log-likelihood function. 
-            printing,       ... 9) If true, print intermediate output.
-            x0)             ... 10) (optional) Use as starting point.
+function [ log_mu, log_Var, clktime, xxIter, loglIter, hyp ] = wsabi( ...
+            method,         ... 1) 'L' or 'M' wsabi method
+            range,          ... 2) 2 x D matrix, lower bnd top row.
+            priorMu,        ... 3) Gaussian prior mean, D x 1.
+            priorVar,       ... 4) Gaussian prior covariance, D x D.
+            kernelVar,      ... 5) Initial input length scales, D x D.
+            lambda,         ... 6) Initial output length scale.
+            alpha,          ... 7) Alpha offset fraction, as in paper.
+            numSamples,     ... 8) Number of BBQ samples to run.
+            loglikhandle,   ... 9) Handle to log-likelihood function. 
+            printing,       ... 10) If true, print intermediate output.
+            x0)             ... 11) (optional) Use as starting point.
         
 % Output structures:
 % log_mu:   log of the integral posterior mean.
 % log_var:  log of the integral posterior variance.
 % clktime:  vector of times per iteration, may want to cumulative sum.
 % xxIter:   numSamples x D array of sample locations used to build model.
+% loglIter: numSamples x 1 vector of log likelihood fcn evaluations.
 % hyp:      integral hyperparameters.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-if nargin < 10; x0 = []; end
+if nargin < 11; x0 = []; end
+
+method = upper(method(1));
+if method ~= 'L' && method ~= 'M'
+    error('wsabi:UnknownMethod', ...
+        'Allowed values for METHOD are (L)inearized and (M)oment-matching.');
+end
 
 % Relabel prior mean and covariance for brevity of code.
 bb          = priorMu;
@@ -95,6 +103,7 @@ currNumSamples = 1;
 if printing
     fprintf('Iter:   ');
 end
+
 
 for t = 1:numSamples - 1
     if printing
@@ -208,17 +217,32 @@ for t = 1:numSamples - 1
     
     dist4           = pdist2_squared_fast(xxIterScaled2,xxIterScaled2);
     
+    if method == 'M'
+        % Sigma^2 term:
+        sig2t = - ... 
+                lambda^4 * (1 / prod(4*pi^2*((VV.*VV + 2*VV.*BB)))^0.5) * ...
+                 exp(-0.5 * (pdist2(xx2sqFin,-xx2sqFin) + dist4)) .* invKxx;
+    else
+        sig2t = 0;
+    end
+    
     YY              = lambda^4 * ... 
                     (1 / prod(4*pi^2*((VV.*VV + 2*VV.*BB)))^0.5) * ...
                     exp(-0.5 * (pdist2(xx2sqFin,-xx2sqFin) + dist4)) .* ...
-                    postProd;
+                    postProd + sig2t;
     
     % Mean of the integral at iteration 't', before scaling back up:
-    mu(t) = (aa + 0.5*sum(YY(:)));
+    mu(t) = aa + 0.5*sum(YY(:));
+    if method == 'M'
+        mu(t) = mu(t) + 0.5*lambda.^2 * (1/(prod(2*pi*VV)^0.5));
+    end
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     % Variance of the integral, before scaling back up:
+    
+    %---------------- Tmp Vars to calculate first term -------------------%
+        
     GG_coeff = lambda^6 * 1/prod(16*pi^4*(VV.*VV + 2*VV.*BB).*VV.*BB.* ...
                (((VV.*VV + 2*VV.*BB)./BB) + ...
                ((VV.*VV + 2*VV.*BB)./VV) + VV + BB))^0.5 * ...
@@ -262,6 +286,92 @@ for t = 1:numSamples - 1
     
     Var(t)  = (sum(sum(GG)) - sum(YY2,2)'*(invKxx * sum(YY2,2)));
     
+    if method == 'M'
+        %---------------- Tmp Vars to calculate second term ------------------%
+
+        tmp_2_mainvar = (BB.*(VV.*VV + 2*VV.*BB) + (((VV.*VV)./BB) + 2*VV) +...
+                        (((VV.*VV+2*VV.*BB).*(VV.*VV+2*VV.*BB))./(VV)) + ...
+                        VV.*(VV.*VV + 2*VV.*BB));
+        tmp_2_coeff   = lambda^8 * 1/prod(8*pi^3*(VV.*VV+2*VV.*BB))^0.5 * ...
+                        prod((VV+2*BB).*(VV.*VV./BB+2*VV))^0.5 * ...
+                        1/prod(tmp_2_mainvar)^0.5;
+
+        ScaledVar2_0       = ((VV)./(VV.*VV+2*VV.*BB));
+        xxIterScaledVar2_0 = xxIter .* repmat(sqrt(ScaledVar2_0),currNumSamples,1);
+        bbScaledVar2_0     = bb .* sqrt(ScaledVar2_0);
+        distVar2_0         = pdist2_squared_fast(xxIterScaledVar2_0, bbScaledVar2_0);     
+
+        ScaledVar2_1       = ((VV.*VV + 2*VV.*BB)./(tmp_2_mainvar));
+        xxIterScaledVar2_1 = xxIter .* repmat(sqrt(ScaledVar2_1),currNumSamples,1);
+        bbScaledVar2_1     = bb .* sqrt(ScaledVar2_1);
+        distVar2_1         = pdist2_squared_fast(xxIterScaledVar2_1, bbScaledVar2_1);
+
+        ScaledVar2_2       = ((VV.*VV + 2*VV.*BB).*(VV.*VV + 2*VV.*BB))./(tmp_2_mainvar.*(VV.*BB));
+        xxIterScaledVar2_2 = xxIter .* repmat(sqrt(ScaledVar2_2),currNumSamples,1);
+        bbScaledVar2_2     = bb .* sqrt(ScaledVar2_2);
+        distVar2_2         = pdist2_squared_fast(xxIterScaledVar2_2, bbScaledVar2_2);
+
+        ScaledVar2_3       = ScaledVar2_1;
+        xxIterScaledVar2_3 = xxIter .* repmat(sqrt(ScaledVar2_3),currNumSamples,1);
+        bbScaledVar2_3     = bb .* sqrt(ScaledVar2_3);
+        distVar2_3         = pdist2_squared_fast(xxIterScaledVar2_3, bbScaledVar2_3);
+
+        ScaledVar2_4       = ((VV.*BB)./(tmp_2_mainvar));
+        xxIterScaledVar2_4 = xxIter .* repmat(sqrt(ScaledVar2_4),currNumSamples,1);
+        bbScaledVar2_4     = bb .* sqrt(ScaledVar2_4);
+        distVar2_4         = pdist2_squared_fast(xxIterScaledVar2_4, bbScaledVar2_4);
+
+        distVar2lh         = distVar2_1 + distVar2_2;
+        distVar2rh         = distVar2_0 + distVar2_3 + distVar2_4;
+        distVar2           = pdist2(distVar2lh,-distVar2rh);  
+
+        %---------------- Tmp Vars to calculate third term -------------------%
+
+        tmp_3_mainvar      = VV.*VV + 2*VV.*BB;
+        tmp_3_coeff        = lambda^12 * 1/prod(4*pi^2*tmp_3_mainvar);
+
+        ScaledVar3_0       = (VV./((VV.*VV+2*VV.*BB)));
+        xxIterScaledVar3_0 = xxIter .* repmat(sqrt(ScaledVar3_0),currNumSamples,1);
+        bbScaledVar3_0     = bb .* sqrt(ScaledVar3_0);
+        distVar3_0         = pdist2_squared_fast(xxIterScaledVar3_0, bbScaledVar3_0);    
+
+        ScaledVar3_1       = (VV./(VV.*VV+2*VV.*BB));
+        xxIterScaledVar3_1 = xxIter .* repmat(sqrt(ScaledVar3_1),currNumSamples,1);
+        bbScaledVar3_1     = bb .* sqrt(ScaledVar3_1);
+        distVar3_1         = pdist2_squared_fast(xxIterScaledVar3_1, bbScaledVar3_1);
+
+        ScaledVar3_2       = (BB./(VV.*VV+2*VV.*BB));
+        xxIterScaledVar3_2 = xxIter .* repmat(sqrt(ScaledVar3_2),currNumSamples,1);
+        distVar3_2         = pdist2_squared_fast(xxIterScaledVar3_2, xxIterScaledVar3_2);
+
+        ScaledVar3_3       = (BB./(VV.*VV+2*VV.*BB));
+        xxIterScaledVar3_3 = xxIter .* repmat(sqrt(ScaledVar3_3),currNumSamples,1);
+        distVar3_3         = pdist2_squared_fast(xxIterScaledVar3_3, xxIterScaledVar3_3);
+
+        ScaledVar3_4       = (VV./(VV.*VV+2*VV.*BB));
+        xxIterScaledVar3_4 = xxIter .* repmat(sqrt(ScaledVar3_4),currNumSamples,1);
+        bbScaledVar3_4     = bb .* sqrt(ScaledVar3_4);
+        distVar3_4         = pdist2_squared_fast(xxIterScaledVar3_4, bbScaledVar3_4);
+
+        ScaledVar3_5       = (VV./(VV.*VV+2*VV.*BB));
+        xxIterScaledVar3_5 = xxIter .* repmat(sqrt(ScaledVar3_5),currNumSamples,1);
+        bbScaledVar3_5     = bb .* sqrt(ScaledVar3_5);
+        distVar3_5         = pdist2_squared_fast(xxIterScaledVar3_5, bbScaledVar3_5);
+
+        %----------------- Combine terms to get total var --------------------%
+
+        tmp_1 = lambda.^4/prod(8*pi^2*VV.*(0.5*(VV+2*BB)+BB))^0.5;
+
+        tmp_2 = invKxx .* (tmp_2_coeff * exp(-0.5*distVar2));
+
+        tmp_3 = tmp_3_coeff * exp(-0.5*distVar3_0)' * ...
+                (invKxx.*exp(-0.5*distVar3_2))* exp(-0.5*distVar3_1) * ...
+                exp(-0.5*distVar3_4)'*(invKxx.*exp(-0.5*distVar3_3)) * ...
+                exp(-0.5*distVar3_5);
+
+        Var(t) = Var(t) + 0.5*(tmp_1 - 2*sum(tmp_2(:)) + sum(tmp_3(:)));  
+    end
+    
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Actively select next sample point:
  
@@ -272,13 +382,18 @@ for t = 1:numSamples - 1
     end
     
     % If using local optimiser (fast):
-    %EV = @(x) expectedVarL( transp(x), lambda, VV, ... 
+    % if method == 'L'
+    %   EV = @(x) expectedVarL( transp(x), lambda, VV, ... 
     %      lHatD, xxIter, invKxx, jitterNoise, bb, BB ); %Utility function
+    % else
+    %   EV = @(x) expectedVarM( transp(x), lambda, VV, ... 
+    %      lHatD, xxIter, invKxx, jitterNoise, bb, BB ); %Utility function
+    %end
     %newX = fmincon( EV,  strtSamp,[],[],[],[], ...
     %                range(1,:),range(2,:),[],options2 );
     
     % If using global optimiser (cmaes):
-    newX = cmaes_modded( 'expectedVarL', strtSamp', [],opts, lambda, VV, ...
+    newX = cmaes_modded( ['expectedVar' method], strtSamp', [],opts, lambda, VV, ...
                   lHatD, xxIter, invKxx, jitterNoise, bb, BB);
     newX = newX';
     
@@ -293,7 +408,6 @@ end
 fprintf('\n done. \n');
 log_mu  = log(mu) + logscaling;
 log_Var = log(Var) + 2*logscaling;
-
+loglIter = loglHatD_0_tmp(numSamples-currNumSamples+2:end,:);
 
 end
-

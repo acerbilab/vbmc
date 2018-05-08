@@ -15,11 +15,7 @@ switch algoset
         error(['Unknown algorithm setting ''' algoset ''' for algorithm ''' algo '''.']);
 end
 
-switch upper(algoptions.Method(1))
-    case 'L'; wsabi_fun = @wsabiL;
-    case 'M'; wsabi_fun = @wsabiM;
-    otherwise; error('Unknown METHOD for WSABI inference algorithm.');
-end
+method = upper(algoptions.Method(1));
 
 % % Increase base noise with noisy functions
 % if ~isempty(probstruct.Noise) || probstruct.IntrinsicNoisy
@@ -51,23 +47,26 @@ probstruct.AddLogPrior = false;
 printing = 1;
 
 algo_timer = tic;
-[mu, ln_var, tt, X, hyp] = ...
-    wsabi_fun(range,probstruct.PriorMean,diag(probstruct.PriorVar), ...
+[mu, ln_var, tt, X, y, hyp] = ...
+    wsabi(method,range,probstruct.PriorMean,diag(probstruct.PriorVar), ...
         kernelCov,lambda,algoptions.Alpha,algoptions.MaxFunEvals+1,...
         @(x) infbench_func(x,probstruct),printing,x0);
 TotalTime = toc(algo_timer);
 
+vvar = max(real(exp(ln_var)),0);
+
 history = infbench_func(); % Retrieve history
 % history.scratch.output = output;
 history.TotalTime = TotalTime;
-history.Output.stats.X = X;
+history.Output.X = X(end:-1:1,:);   % Order is inverted for some reason
+history.Output.y = y(end:-1:1);
 history.Output.stats.tt = tt;
 history.Output.stats.hyp = hyp;
 
 % Store computation results
 post.lZ = mu(end);
-post.lZ_var = exp(ln_var(end));
-% [post.gsKL,post.Mean,post.Cov] = compute_gsKL(vp,probstruct);
+post.lZ_var = vvar(end);
+post.gsKL = NaN;
 
 % Return estimate, SD of the estimate, and gauss-sKL with true moments
 Nticks = numel(history.SaveTicks);
@@ -78,8 +77,8 @@ for iIter = 1:Nticks
     
     history.Output.N(iIter) = history.SaveTicks(iIter);
     history.Output.lZs(iIter) = mu(idx);
-    history.Output.lZs_var(iIter) = exp(ln_var(idx));
-    % history.Output.gsKL(iIter) = compute_gsKL(stats.vp(idx),probstruct);
+    history.Output.lZs_var(iIter) = vvar(idx);
+    history.Output.gsKL(iIter) = NaN;
 end
 
 end
