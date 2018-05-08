@@ -56,6 +56,10 @@ case "${1}" in
         51)     ALGOS="{'wsabi'}"
 		ALGOSET="{'mm'}"
                 ;;
+	60)     ALGOS="{'bmc'}"
+                ;;
+        70)     ALGOS="{'smc'}"
+                ;;
 
         101)    PROBSET="{'ccn17'}"
                 PROBS="{'visvest_joint'}"
