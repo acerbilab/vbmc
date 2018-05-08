@@ -31,7 +31,7 @@ DIMS="{'2D','4D','6D','8D'}"
 NOISE="'[]'"
 ALGOS="{'vbmc'}"
 ALGOSET="'base'"
-IDS="{'1','2','3','4','5','6','7','8','9','10'}"
+IDS="{'1:2','3:4','5:6','7:8','9:10','11:12','13:14','15:16','17:18','19:20'}"
 
 case "${1}" in
 	0)      PROBS="{'lumpy'}"
@@ -50,6 +50,11 @@ case "${1}" in
         5)      ALGOSET="{'betatiny'}"
                 ;;
         6)      ALGOSET="{''}"
+                ;;
+        50)     ALGOS="{'wsabi'}" 
+                ;;
+        51)     ALGOS="{'wsabi'}"
+		ALGOSET="{'mm'}"
                 ;;
 
         101)    PROBSET="{'ccn17'}"
