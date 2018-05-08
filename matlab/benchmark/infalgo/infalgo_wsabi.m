@@ -97,7 +97,7 @@ gp.X = X;
 gp.y = y;
 gp.meanfun = 4; % Negative quadratic mean fcn
 
-Ns_moments = 5e3;
+Ns_moments = 2e4;
 xx = vbmc_gpsample(gp,Ns_moments,[],[],0);
 Mean = mean(xx,1);
 Cov = cov(xx);
