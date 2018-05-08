@@ -60,6 +60,8 @@ case "${1}" in
                 ;;
         70)     ALGOS="{'smc'}"
                 ;;
+        80)     ALGOS="{'ais'}"
+                ;;
 
         101)    PROBSET="{'ccn17'}"
                 PROBS="{'visvest_joint'}"
