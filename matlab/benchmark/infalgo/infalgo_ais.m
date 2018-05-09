@@ -53,51 +53,13 @@ end
 
 TotalTime = toc(algo_timer);
 
-history = infbench_func(); % Retrieve history
-% history.scratch.output = output;
-history.TotalTime = TotalTime;
-history.Output.X = X_tmp{end};
-history.Output.y = y_tmp{end};
+[history,post] = ...
+    StoreAlgoResults(probstruct,[],Niter,X_tmp{end},y_tmp{end},mu,vvar,X_tmp,y_tmp,TotalTime);
+
 history.Output.tt = aistimes;
 history.Output.stats = stats;
 
-% Store computation results
-post.lnZ = mu(end);
-post.lnZ_var = vvar(end);
-[X_train,idx] = unique(history.Output.X,'rows');
-y_train = history.Output.y(idx);
-[post.gsKL,post.Mean,post.Cov,post.Mode] = computeStats(X_train,y_train,probstruct);
-
-% Return estimate, SD of the estimate, and gauss-sKL with true moments
-history.Output.N = N;
-history.Output.lnZs = mu;
-history.Output.lnZs_var = vvar;
-for iIter = 1:Niter
-    X_train = X_tmp{iIter};
-    y_train = y_tmp{iIter};
-    [gsKL,~,~,Mode] = computeStats(X_train,y_train,probstruct);
-    history.Output.gsKL(iIter) = gsKL;
-    history.Output.Mode(iIter,:) = Mode;
-end
-
-end
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [gsKL,Mean,Cov,Mode] = computeStats(X,y,probstruct)
-%COMPUTE_STATS Compute additional statistics.
-    
-% Compute Gaussianized symmetric KL-divergence with ground truth
-gp.X = X;
-gp.y = y;
-gp.meanfun = 4; % Negative quadratic mean fcn
-
-Ns_moments = 2e4;
-xx = gplite_sample(gp,Ns_moments);
-Mean = mean(xx,1);
-Cov = cov(xx);
-[kl1,kl2] = mvnkl(Mean,Cov,probstruct.Mean,probstruct.Cov);
-gsKL = 0.5*(kl1 + kl2);
-
-Mode = gplite_fmin(gp,[],1);    % Max flag - finds maximum
+% [X_train,idx] = unique(history.Output.X,'rows');
+% y_train = history.Output.y(idx);
 
 end
