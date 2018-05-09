@@ -115,6 +115,9 @@ optimState.StopSampling = 0;
 % Fully recompute variational posterior
 optimState.RecomputeVarPost = true;
 
+% Start with warm-up?
+optimState.Warmup = options.Warmup;
+
 % List of points at the end of each iteration
 optimState.iterList.u = [];
 optimState.iterList.fval = [];

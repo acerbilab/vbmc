@@ -91,6 +91,9 @@ defopts.SearchSampleGP     = 'false             % Generate search candidates sam
 defopts.AlwaysRefitVarPost = 'true              % Always fully refit variational posterior';
 defopts.VarParamsBack      = '0                 % Check variational posteriors back to these previous iterations';
 defopts.Plot               = 'off               % Show variational posterior triangle plots';
+defopts.Warmup             = 'on                % Perform warm-up stage';
+defopts.StopWarmupThresh   = '1                 % Stop warm-up when increase in ELBO is confidently below threshold';
+defopts.WarmupKeepThreshold = '10*nvars         % Max log-likelihood difference for points kept after warmup';
 
 %% If called with 'all', return all default options
 if strcmpi(fun,'all')
@@ -157,7 +160,7 @@ if ischar(fun); fun = str2func(fun); end
 [options,cmaes_opts] = setupoptions(D,defopts,options);
 
 % Setup and transform variables
-K = getK(options.FunEvalStart,options.Kfun);
+K = getK(struct('Neff',options.FunEvalStart,'Warmup',options.Warmup),options);
 [vp,optimState] = ...
     setupvars(x0,LB,UB,PLB,PUB,K,optimState,options,prnt);
 
@@ -207,6 +210,8 @@ while ~isFinished_flag
     action = '';
     optimState.redoRotoscaling = false;    
     
+    if iter == 1 && optimState.Warmup; action = 'start warm-up'; end
+    
     %% Actively sample new points into the training set
     t = tic;
     optimState.trinfo = vp.trinfo;
@@ -214,24 +219,26 @@ while ~isFinished_flag
     [optimState,t_adapt(iter),t_func(iter)] = ...
         adaptive_sampling(optimState,new_funevals,funwrapper,vp,vp_old,gp,options);
     optimState.N = optimState.Xmax;  % Number of training inputs
+    optimState.Neff = sum(optimState.X_flag(1:optimState.Xmax));
     timer.activeSampling = toc(t);
         
-    % Warping iteration?
+    % Rotoscaling iteration?
     t = tic;
-    isWarping = (optimState.N - optimState.LastWarping) >= options.WarpEpoch ...
+    isRotoscaling = (optimState.N - optimState.LastWarping) >= options.WarpEpoch ...
         && (options.MaxFunEvals - optimState.N) >= options.WarpEpoch ...
         && optimState.N >= options.WarpMinFun;
-    if isWarping
+    if isRotoscaling
         optimState.LastWarping = optimState.N;
         optimState.WarpingCount = optimState.WarpingCount + 1;
         if isempty(action); action = 'rotoscale'; else; action = [action ', rotoscale']; end
     end
     
-    % Nonlinear warping iteration?
+    % Nonlinear warping iteration? (only after burn-in)
     isNonlinearWarping = (optimState.N - optimState.LastNonlinearWarping) >= options.WarpNonlinearEpoch ...
         && (options.MaxFunEvals - optimState.N) >= options.WarpNonlinearEpoch ...
         && optimState.N >= options.WarpNonlinearMinFun ...
-        && options.WarpNonlinear;
+        && options.WarpNonlinear ...
+        && ~optimState.Warmup;
     if isNonlinearWarping
         optimState.LastNonlinearWarping = optimState.N;
         optimState.WarpingNonlinearCount = optimState.WarpingNonlinearCount + 1;
@@ -245,7 +252,7 @@ while ~isFinished_flag
     end
 
     %%  Rotate and rescale variables
-    if options.WarpRotoScaling && isWarping
+    if options.WarpRotoScaling && isRotoscaling
         [vp,optimState,hyp] = ...
             warp_rotoscaling(vp,optimState,hyp,gp,cmaes_opts,options);
     end
@@ -276,6 +283,12 @@ while ~isFinished_flag
         % Number of samples
         Ns_gp = round(options.NSgpMax/sqrt(optimState.N));
         
+        % Maximum sample cutoff during warm-up
+        if optimState.Warmup
+            MaxWarmupGPSamples = ceil(options.NSgpMax/10);
+            Ns_gp = min(Ns_gp,MaxWarmupGPSamples);
+        end
+        
         % Stop sampling after reaching max number of training points
         if optimState.N >= options.StopGPSampling
             optimState.StopSampling = optimState.N;
@@ -292,7 +305,7 @@ while ~isFinished_flag
         end
         
         if optimState.StopSampling > 0
-            if isempty(action); action = 'gp2opt'; else; action = [action ', gp2opt']; end
+            if isempty(action); action = 'stop GP sampling'; else; action = [action ', stop GP sampling']; end
         end
     end
     if optimState.StopSampling > 0
@@ -306,28 +319,9 @@ while ~isFinished_flag
     gptrain_options.Nopts = 3;
     
     [gp,hyp] = gplite_train(hyp,Ns_gp, ...
-        optimState.X(1:optimState.Xmax,:),optimState.y(1:optimState.Xmax), ...
+        optimState.X(optimState.X_flag,:),optimState.y(optimState.X_flag), ...
         optimState.gpMeanfun,hypprior,[],gptrain_options);
-    
-    if 1
-        if D == 1
-            Xs = linspace(min(optimState.X(1:optimState.Xmax,:)),max(optimState.X(1:optimState.Xmax,:)),3e3)';    
-            [ymu,ys2,fmu,fs2] = gplite_pred(gp,Xs);
-            ymu = mean(ymu,2); ys2 = mean(ys2,2);
-            plot(Xs,ymu,'k-','LineWidth',1); hold on;
-            plot(Xs,ymu+sqrt(ys2),'k:','LineWidth',1);
-            plot(Xs,ymu-sqrt(ys2),'k:','LineWidth',1);
-            scatter(optimState.X(1:optimState.Xmax,:),optimState.y(1:optimState.Xmax),'ro');  hold off;
-            axis([-5 5 -10 3]);        
-            drawnow
-        elseif D == 2 && 0
-            subplot(2,2,4);
-            scatter(optimState.X(1:optimState.Xmax,1),optimState.X(1:optimState.Xmax,2),'k.'); hold on;
-            axis([-5 5 -5 5]);        
-            drawnow;
-        end
-    end
-    
+        
     % Sample from GP
     if ~isempty(gp) && 0
         Xgp = vbmc_gpsample(gp,1e3,optimState,1);
@@ -336,9 +330,9 @@ while ~isFinished_flag
     
     timer.gpTrain = toc(t);
         
-    %% Optimize variational parameters   
-    t = tic;
-    Knew = getK(optimState.N,options.Kfun);
+    %% Optimize variational parameters
+    t = tic;        
+    Knew = getK(optimState,options);
 
     if optimState.RecomputeVarPost || options.AlwaysRefitVarPost
         Nslowopts = options.ElboStarts; % Full optimizations
@@ -365,7 +359,7 @@ while ~isFinished_flag
         gptrain_options.Nopts = 1;
 
         [gp,hyp] = gplite_train(hyp,Ns_gp, ...
-            optimState.X(1:optimState.Xmax,:),optimState.y(1:optimState.Xmax), ...
+            optimState.X(optimState.X_flag,:),optimState.y(optimState.X_flag), ...
             optimState.gpMeanfun,hypprior,[],gptrain_options);
         
          vp = vpoptimize(1,0,vp,gp,vp.K,X_hpd,y_hpd,optimState,stats,options);
@@ -401,6 +395,26 @@ while ~isFinished_flag
     else
         sKL_true = [];
     end
+    
+    % Check if we are still warming-up (95% confidence)
+    if optimState.Warmup && iter > 1
+        elbo_old = stats.elbo(iter-1);
+        elboSD_old = stats.elboSD(iter-1);
+        increaseUCB = elbo - elbo_old + 1.6449*sqrt(elbo_sd^2 + elboSD_old^2);
+        if increaseUCB < options.StopWarmupThresh
+            optimState.Warmup = false;
+            if isempty(action); action = 'end warm-up'; else; action = [action ', end warm-up']; end
+            
+            % Remove warm-up points from training set unless close to max
+            ymax = max(optimState.y_orig(1:optimState.Xmax));
+            idx_keep = (ymax - optimState.y_orig) < options.WarmupKeepThreshold;
+            optimState.X_flag = idx_keep & optimState.X_flag;
+            
+            % Start nonlinear warping
+            optimState.LastNonlinearWarping = optimState.N;
+        end
+    end
+    
 
     % t_fits(iter) = toc(timer_fits);    
     % dt = (t_adapt(iter)+t_fits(iter))/new_funevals;
@@ -431,7 +445,7 @@ while ~isFinished_flag
 
     % Reached stable variational posterior with stable ELBO and low uncertainty
     [idx_stable,dN,dN_last] = getStableIter(stats,optimState,options);
-    if ~isempty(idx_stable)
+    if ~isempty(idx_stable) && ~optimState.Warmup
         sKL_list = stats.sKL;
         elbo_list = stats.elbo;
         err2 = sum((elbo_list(idx_stable:iter) - mean(elbo_list(idx_stable:iter))).^2);
@@ -477,6 +491,7 @@ function stats = savestats(stats,optimState,vp,elbo,elbo_sd,varss,sKL,sKL_true,g
 iter = optimState.iter;
 stats.iter(iter) = iter;
 stats.N(iter) = optimState.N;
+stats.Neff(iter) = optimState.Neff;
 stats.funccount(iter) = optimState.funccount;
 stats.cachecount(iter) = optimState.cachecount;
 stats.vpK(iter) = vp.K;
@@ -498,16 +513,23 @@ end
 end
         
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function K = getK(N,Kfun)
+function K = getK(optimState,options)
 %GETK Get number of variational components.
 
-if isnumeric(Kfun)
-    K = Kfun;
-elseif isa(Kfun,'function_handle')
-    K = Kfun(N);
+Neff = optimState.Neff;
+Kfun = options.Kfun;
+
+if optimState.Warmup
+    K = 2;
+else
+    if isnumeric(Kfun)
+        K = Kfun;
+    elseif isa(Kfun,'function_handle')
+        K = Kfun(Neff);
+    end
+    K = min(Neff,max(1,round(K)));
 end
-K = min(N,max(1,round(K)));
-    
+
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

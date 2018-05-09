@@ -121,14 +121,26 @@ probstruct.PriorVar = (0.5*(probstruct.PUB-probstruct.PLB)).^2;
 probstruct.InitPoint = [];
 probstruct.StartFromMode = options.StartFromMode;
 if probstruct.StartFromMode
-    if any(isnan(probstruct.Mode))
-        warning('Cannot start from mode, vector contains NaNs. Setting a random starting point.');
+    if isfield(probstruct,'Post') ...
+            && isfield(probstruct.Post,'Mode') ...
+            && ~isempty(probstruct.Post.Mode) ...
+            && all(isfinite(probstruct.Post.Mode))
+        Mode = probstruct.Post.Mode;
     else
-        probstruct.InitPoint = probstruct.Mode;
+        Mode = probstruct.Mode;
     end
-end    
+    if ~all(isfinite(Mode)) || isempty(Mode)
+        warning('Mode not provided or invalid. Starting from prior or from random starting point.');
+    else
+        probstruct.InitPoint = Mode;
+    end
+end
 if isempty(probstruct.InitPoint)
-    probstruct.InitPoint = rand(1,probstruct.D).*(probstruct.PUB-probstruct.PLB) + probstruct.PLB;
+    if ~isempty(probstruct.PriorMean) && all(isfinite(probstruct.PriorMean))
+        probstruct.InitPoint = probstruct.PriorMean;
+    else
+        probstruct.InitPoint = rand(1,probstruct.D).*(probstruct.PUB-probstruct.PLB) + probstruct.PLB;
+    end
 end
 
 % Compute evaluation time and function noise

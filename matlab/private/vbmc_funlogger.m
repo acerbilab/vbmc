@@ -49,6 +49,7 @@ switch lower(state)
             if hescnoise; optimState.S = NaN(nmax,1); end
             optimState.Xn = 0;                    % Last filled entry
             optimState.Xmax = 0;                  % Maximum entry index
+            optimState.X_flag = false(nmax,1);
 
         else % Receiving previous evaluations (e.g. from previous run)
             
@@ -163,11 +164,13 @@ switch lower(state)
         if optimState.Xmax < size(optimState.X,1)
             optimState.X_orig = optimState.X_orig(1:optimState.Xmax,:);
             optimState.y_orig = optimState.y_orig(1:optimState.Xmax);
+            optimState.X_flag = optimState.X_flag(1:optimState.Xmax);
             if hescnoise; optimState.S = optimState.S(1:optimState.Xmax); end
             optimState.funevaltime = optimState.funevaltime(1:optimState.Xmax);
         else
             optimState.X_orig = circshift(optimState.X_orig,-optimState.Xn);
             optimState.y_orig = circshift(optimState.y_orig,-optimState.Xn);
+            optimState.X_flag = circshift(optimState.X_flag,-optimState.Xn);
             if hescnoise; optimState.S = circshift(optimState.S,-optimState.Xn); end
             optimState.funevaltime = circshift(optimState.funevaltime,-optimState.Xn);        
         end
@@ -194,6 +197,7 @@ optimState.y_orig(optimState.Xn) = fval_orig;
 fval = fval_orig + warpvars(x,'logp',optimState.trinfo);
 optimState.y(optimState.Xn) = fval;
 if ~isempty(fsd); optimState.S(optimState.Xn) = fsd; end
+optimState.X_flag(optimState.Xn) = true;
 optimState.funevaltime(optimState.Xn) = t;
 
 end

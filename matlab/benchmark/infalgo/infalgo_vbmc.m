@@ -62,12 +62,12 @@ history.scratch.output = output;
 history.TotalTime = TotalTime;
 history.Output.stats = stats;
 
-% Store computation results
-history.Output.X = output.X_orig(1:output.N,:);
-history.Output.y = output.y(1:output.N);
+% Store computation results (ignore points discarded after warmup)
+history.Output.X = output.X_orig(output.X_flag,:);
+history.Output.y = output.y_orig(output.X_flag);
 post.lnZ = elbo;
 post.lnZ_var = elbo_sd^2;
-[post.gsKL,post.Mean,post.Cov] = compute_gsKL(vp,probstruct);
+[post.gsKL,post.Mean,post.Cov,post.Mode] = computeStats(vp,probstruct);
 
 % Return estimate, SD of the estimate, and gauss-sKL with true moments
 Nticks = numel(history.SaveTicks);
@@ -78,20 +78,26 @@ for iIter = 1:Nticks
     history.Output.N(iIter) = history.SaveTicks(iIter);
     history.Output.lnZs(iIter) = stats.elbo(idx);
     history.Output.lnZs_var(iIter) = stats.elboSD(idx)^2;
-    history.Output.gsKL(iIter) = compute_gsKL(stats.vp(idx),probstruct);
+    [gsKL,~,~,Mode] = computeStats(stats.vp(idx),probstruct);
+    history.Output.gsKL(iIter) = gsKL;
+    history.Output.Mode(iIter,:) = Mode;    
 end
 
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [gsKL,Mean,Cov] = compute_gsKL(vp,probstruct)
-%COMPUTE_GSKL Compute Gaussianized symmetric KL divergence with ground truth.
+function [gsKL,Mean,Cov,Mode] = computeStats(vp,probstruct)
+%COMPUTE_STATS Compute additional statistics.
     
+% Compute Gaussianized symmetric KL-divergence with ground truth
 Ns_moments = 1e6;
 xx = vbmc_rnd(Ns_moments,vp,1,1);
 Mean = mean(xx,1);
 Cov = cov(xx);
 [kl1,kl2] = mvnkl(Mean,Cov,probstruct.Post.Mean,probstruct.Post.Cov);
 gsKL = 0.5*(kl1 + kl2);
+
+% Compute mode
+Mode = vbmc_mode(vp,1);
 
 end

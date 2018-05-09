@@ -173,7 +173,7 @@ for iFig = 1:nfigs
                     end
                 else
                     fprintf('Collecting files: %s@%s@%s\n', benchlist{dimrows}, benchlist{dimcols}, benchlist{dimlayers});
-                    [history,algo,algoset,flags,probstruct] = collectHistoryFiles(benchlist);
+                    [history,algo,algoset,flags] = collectHistoryFiles(benchlist);
                     data.(fieldname).history = history;
                     data.(fieldname).algo = algo;
                     data.(fieldname).algoset = algoset;
@@ -188,7 +188,6 @@ for iFig = 1:nfigs
                 
                 if isempty(history); continue; end
         
-                lnZ_true = probstruct.Post.lnZ;                
                 
                 x = []; lnZs = []; D = []; FunCallsPerIter = [];
                 AverageOverhead = zeros(1,numel(history));
@@ -207,9 +206,11 @@ for iFig = 1:nfigs
 
                     % Get valid time ticks
                     idx_valid = history{i}.SaveTicks <= history{i}.TotalMaxFunEvals;                        
-                    lZs_new = history{i}.Output.lZs(idx_valid);                        
-                    lZs_var_new = history{i}.Output.lZs_var(idx_valid);                        
+                    lZs_new = history{i}.Output.lnZs(idx_valid);                        
+                    lZs_var_new = history{i}.Output.lnZs_var(idx_valid);                        
 
+                    lnZ_true = history{i}.lnZpost_true;                
+                    
                     lnZs = [lnZs; lZs_new];
                     
                     Errs = [Errs; abs(lZs_new - lnZ_true)];

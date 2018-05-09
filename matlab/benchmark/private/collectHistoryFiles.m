@@ -66,8 +66,9 @@ for iFile = 1:length(filesearch)
 end
 
 % Also return associated probstruct
-clear infbench_func;
-probstruct = infprob_init(prob,subprob,type,[],1,[]);
-
+if nargout > 4
+    clear infbench_func;
+    probstruct = infprob_init(prob,subprob,type,[],1,[]);
+end
 
 end

@@ -60,6 +60,10 @@ history = infbench_func(); % Retrieve history
 history.TotalTime = TotalTime;
 history.Output.X = X(end:-1:1,:);   % Order is inverted for some reason
 history.Output.y = y(end:-1:1);
+if ~probstruct.AddLogPrior      % y stores log posteriors, so add prior now
+    lnp = infbench_lnprior(history.Output.X,probstruct);
+    history.Output.y = history.Output.y + lnp;
+end
 history.Output.stats.tt = tt;
 history.Output.stats.hyp = hyp;
 
@@ -68,7 +72,7 @@ post.lnZ = mu(end);
 post.lnZ_var = vvar(end);
 X_train = history.Output.X;
 y_train = history.Output.y;
-[post.gsKL,post.Mean,post.Cov] = compute_gsKL(X_train,y_train,probstruct);
+[post.gsKL,post.Mean,post.Cov,post.Mode] = computeStats(X_train,y_train,probstruct);
 
 % Return estimate, SD of the estimate, and gauss-sKL with true moments
 Nticks = numel(history.SaveTicks);
@@ -82,16 +86,20 @@ for iIter = 1:Nticks
     history.Output.lnZs(iIter) = mu(idx);
     history.Output.lnZs_var(iIter) = vvar(idx);
     X_train = history.Output.X(1:N,:);
-    y_train = history.Output.y(1:N);    
-    history.Output.gsKL(iIter) = compute_gsKL(X_train,y_train,probstruct);
+    y_train = history.Output.y(1:N);
+    [gsKL,~,~,Mode] = computeStats(X_train,y_train,probstruct);
+    history.Output.gsKL(iIter) = gsKL;
+    history.Output.Mode(iIter,:) = Mode;
+
 end
 
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [gsKL,Mean,Cov] = compute_gsKL(X,y,probstruct)
-%COMPUTE_GSKL Compute Gaussianized symmetric KL divergence with ground truth.
-
+function [gsKL,Mean,Cov,Mode] = computeStats(X,y,probstruct)
+%COMPUTE_STATS Compute additional statistics.
+    
+% Compute Gaussianized symmetric KL-divergence with ground truth
 gp.X = X;
 gp.y = y;
 gp.meanfun = 4; % Negative quadratic mean fcn
@@ -102,5 +110,7 @@ Mean = mean(xx,1);
 Cov = cov(xx);
 [kl1,kl2] = mvnkl(Mean,Cov,probstruct.Mean,probstruct.Cov);
 gsKL = 0.5*(kl1 + kl2);
+
+Mode = gplite_fmin(gp,[],1);    % Max flag - finds maximum
 
 end

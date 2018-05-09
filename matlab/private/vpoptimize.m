@@ -91,7 +91,9 @@ for iBack = 1:MaxBack
     vp0_fine(idx_prev) = vp_back;
     % Note that TRINFO might have changed, recompute it if needed       
     vp0_fine(idx_prev).trinfo = vp.trinfo;
-    vp0_fine(idx_prev) = recompute_vp_and_hyp(vp0_fine(idx_prev),vp_back,optimState,[],options,0,[],[],optimState.X(1:optimState.Xmax,:),optimState.y(1:optimState.Xmax),[Inf,Inf]);
+    vp0_fine(idx_prev) = recompute_vp_and_hyp( ...
+        vp0_fine(idx_prev),vp_back,optimState,[],options,0,[],[],...
+        optimState.X(optimState.X_flag,:),optimState.y(optimState.X_flag),[Inf,Inf]);
     [theta_prev,vp0_fine(idx_prev)] = get_theta(vp0_fine(idx_prev),[],[],vp.optimize_lambda);
     elbostats = eval_fullelcbo(idx_prev,theta_prev,vp0_fine(idx_prev),gp,elbostats,elcbo_beta,options);
 end

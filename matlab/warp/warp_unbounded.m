@@ -6,7 +6,7 @@ vp_old = vp;
 mu_old = vp.trinfo.mu;
 delta_old = vp.trinfo.delta;
 
-X_orig = optimState.X_orig(1:optimState.Xmax,:);
+X_orig = optimState.X_orig(optimState.X_flag,:);
 mu_new = median(X_orig);
 
 width_bnd = optimState.PUB - optimState.PLB; % Width of plausible bounds

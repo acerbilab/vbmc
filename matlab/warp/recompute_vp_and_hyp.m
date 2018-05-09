@@ -31,15 +31,15 @@ end
 
 % Transform variables
 if isempty(X) || isempty(y) || warpGPflag
-    X_orig = optimState.X_orig(1:optimState.Xmax,:);
-    y_orig = optimState.y_orig(1:optimState.Xmax);
+    X_orig = optimState.X_orig(optimState.X_flag,:);
+    y_orig = optimState.y_orig(optimState.X_flag);
     X = warpvars(X_orig,'dir',trinfo);
     dy = warpvars(X,'logp',trinfo);
     y = y_orig + dy;
 end
 if nargout > 1
-    optimState.X(1:optimState.Xmax,:) = X;
-    optimState.y(1:optimState.Xmax) = y;
+    optimState.X(optimState.X_flag,:) = X;
+    optimState.y(optimState.X_flag) = y;
 end
 
 mu_old = vp_old.mu;

@@ -35,8 +35,8 @@ end
 %         hyp_warpt = fmincon(@(hyp) warpgaussfit(hyp,xx,vp.trinfo),hyp_warp(Nhyp+1:end,1),[],[],[],[],LB_warp,UB_warp);
 
 gptrain_options.Nopts = 3;  % Warping is expensive, only one restart
-X_orig = optimState.X_orig(1:optimState.Xmax,:);
-y_orig = optimState.y_orig(1:optimState.Xmax);
+X_orig = optimState.X_orig(optimState.X_flag,:);
+y_orig = optimState.y_orig(optimState.X_flag);
 [gp,hyp_warp] = ...
     gplite_train(hyp_warp,0,X_orig,y_orig,optimState.gpMeanfun,hypprior_warp,warp,gptrain_options);
 % warp = gp.warp;

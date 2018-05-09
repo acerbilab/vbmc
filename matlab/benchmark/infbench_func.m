@@ -15,7 +15,8 @@ if nargin < 1   % No arguments return history log
     historyOut.Output.N = NaN(1,Nticks);
     historyOut.Output.lnZs = NaN(1,Nticks);
     historyOut.Output.lnZs_var = NaN(1,Nticks);
-    historyOut.Output.gsKL = NaN(1,Nticks);    
+    historyOut.Output.gsKL = NaN(1,Nticks);
+    historyOut.Output.Mode = NaN(Nticks,history.D);
     
     varargout = {historyOut};
     return;
@@ -119,8 +120,7 @@ end
 
 % If requested, compute log prior in benchmark space
 if isfield(probstruct,'AddLogPrior') && probstruct.AddLogPrior
-    lnp = -0.5*sum(log(2*pi*probstruct.PriorVar) + ...
-        (x - probstruct.PriorMean).^2./probstruct.PriorVar);    
+    lnp = infbench_lnprior(x,probstruct);
 else
     lnp = [];
 end

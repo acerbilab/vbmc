@@ -1,8 +1,8 @@
 function [hypprior,X_hpd,y_hpd,Nhyp,hyp0,meanfun] = vbmc_gphyp(optimState,meanfun,warpflag,options)
 %VBMC_GPHYP Define bounds and priors over GP hyperparameters.
 
-X_orig = optimState.X_orig(1:optimState.Xmax,:);
-y_orig = optimState.y_orig(1:optimState.Xmax);
+X_orig = optimState.X_orig(optimState.X_flag,:);
+y_orig = optimState.y_orig(optimState.X_flag);
 
 [N,D] = size(X_orig);
 X = warpvars(X_orig,'d',optimState.trinfo);

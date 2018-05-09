@@ -16,7 +16,7 @@ switch lower(type)
         defaults.ScaleVariables = 'on';  % Center and rescale variables
         defaults.TolFun = 1e-6;          % Required tolerance on function
         defaults.TolX = 1e-6;            % Tolerance on X distance
-        defaults.StartFromMode = 1;      % Start from guessed min X?
+        defaults.StartFromMode = 0;      % Start from (posterior) mode?
         defaults.MaxFunEvalMultiplier = 1;      % Increase # func evals
         defaults.StopSuccessfulRuns = 1; % Stop runs when successful
         defaults.SpeedTests = 10;        % Iterations of speed tests
