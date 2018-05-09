@@ -18,6 +18,7 @@ switch algoset
     case {1,'base'}; algoset = 'base';           % Use defaults
     case {2,'acqkl'}; algoset = 'acqkl'; algoptions.AcqFcn = '@vbmc_acqkl';
     case {3,'acqvar'}; algoset = 'acqvar'; algoptions.AcqFcn = '@vbmc_acqvar';
+    case {4,'acqgev'}; algoset = 'acqgev'; algoptions.Nacq = 1; algoptions.SearchAcqFcn = '@vbmc_acqGEV';
     case {11,'betazero'}; algoset = 'betazero'; algoptions.ELCBOWeight = 0;
     case {12,'betatiny'}; algoset = 'betatiny'; algoptions.ELCBOWeight = 0.1;
         
