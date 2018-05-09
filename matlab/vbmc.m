@@ -94,6 +94,7 @@ defopts.Plot               = 'off               % Show variational posterior tri
 defopts.Warmup             = 'on                % Perform warm-up stage';
 defopts.StopWarmupThresh   = '1                 % Stop warm-up when increase in ELBO is confidently below threshold';
 defopts.WarmupKeepThreshold = '10*nvars         % Max log-likelihood difference for points kept after warmup';
+defopts.SearchCMAES        = 'no                % Use CMA-ES for search';
 
 %% If called with 'all', return all default options
 if strcmpi(fun,'all')
@@ -217,7 +218,7 @@ while ~isFinished_flag
     optimState.trinfo = vp.trinfo;
     if iter == 1; new_funevals = options.FunEvalStart; else; new_funevals = options.FunEvalsPerIter; end
     [optimState,t_adapt(iter),t_func(iter)] = ...
-        adaptive_sampling(optimState,new_funevals,funwrapper,vp,vp_old,gp,options);
+        adaptive_sampling(optimState,new_funevals,funwrapper,vp,vp_old,gp,options,cmaes_opts);
     optimState.N = optimState.Xmax;  % Number of training inputs
     optimState.Neff = sum(optimState.X_flag(1:optimState.Xmax));
     timer.activeSampling = toc(t);

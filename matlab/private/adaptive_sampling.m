@@ -1,5 +1,5 @@
 function [optimState,t_adapt,t_func] = ...
-    adaptive_sampling(optimState,Ns,funwrapper,vp,vp_old,gp,options)
+    adaptive_sampling(optimState,Ns,funwrapper,vp,vp_old,gp,options,cmaes_opts)
 %ADAPTIVE_SAMPLING Choose sampled points iteratively based on acquisition function.
 
 NSsearch = options.NSsearch;    % Number of points for fast acquisition fcn
@@ -97,13 +97,14 @@ else                    % Adaptive uncertainty sampling
         % [size(Xacq,1),size(Xacq2,1)]
         
         % Additional search with CMA-ES
-%         if cmaes_search && Nacq > size(Xacq,1)
-%             insigma = max(vp.sigma)*vp.lambda;
-%             xsearch_cmaes = cmaes_modded('vbmc_negGEV',Xacq(1,:)',insigma,cmaes_opts,vp,gp,2,1);
-%             Xacq = [Xacq;xsearch_cmaes'];
-%             idx_cache = [idx_cache(:); 0];
-%             % Double check if the cache indexing is correct
-%         end
+        if options.SearchCMAES
+            insigma = max(vp.sigma)*vp.lambda;
+            xsearch_cmaes = cmaes_modded('vbmc_acqGEV',Xacq(1,:)',insigma,cmaes_opts,vp,gp,1,1);
+            Xacq(1,:) = xsearch_cmaes';
+            idx_cache_acq(1) = 0;
+            % idx_cache = [idx_cache(:); 0];
+            % Double check if the cache indexing is correct
+        end
 
         if Nacq > size(Xacq,1)
             % Fill in with random search
