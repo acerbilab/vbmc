@@ -35,6 +35,7 @@ defopts.NoiseSize               = '[]           % Base observation noise magnitu
 defopts.Fvals                   = '[]           % Evaluated fcn values at X0';
 defopts.OptimToolbox            = '[]           % Use Optimization Toolbox (if empty, determine at runtime)';
 defopts.Diagnostics             = 'on           % Run in diagnostics mode, get additional info';
+defopts.ProposalFcn             = '[]           % Weighted proposal fcn for uncertainty search';
 
 %% If called with no arguments or with 'defaults', return default options
 if nargout <= 1 && (nargin == 0 || (nargin == 1 && ischar(fun) && strcmpi(fun,'defaults')))
@@ -80,6 +81,7 @@ defopts.TolSD              = '0.1               % Tolerance on ELBO uncertainty 
 defopts.TolsKL             = '0.01*sqrt(nvars)  % Stopping threshold on change of variational posterior per training point';
 defopts.TolStableIters     = '5                 % Number of stable iterations for checking stopping criteria';
 defopts.TolStableFunEvals  = '5*nvars           % Number of stable fcn evals for checking stopping criteria';
+defopts.TolStableWarmup    = '3                 % Number of stable iterations for stopping warmup';
 defopts.KLgauss            = 'yes               % Use Gaussian approximation for symmetrized KL-divergence b\w iters';
 defopts.TrueMean           = '[]                % True mean of the target density (for debugging)';
 defopts.TrueCov            = '[]                % True covariance of the target density (for debugging)';
@@ -227,7 +229,8 @@ while ~isFinished_flag
     t = tic;
     isRotoscaling = (optimState.N - optimState.LastWarping) >= options.WarpEpoch ...
         && (options.MaxFunEvals - optimState.N) >= options.WarpEpoch ...
-        && optimState.N >= options.WarpMinFun;
+        && optimState.N >= options.WarpMinFun ...
+        && ~optimState.Warmup;
     if isRotoscaling
         optimState.LastWarping = optimState.N;
         optimState.WarpingCount = optimState.WarpingCount + 1;
@@ -403,6 +406,11 @@ while ~isFinished_flag
         elboSD_old = stats.elboSD(iter-1);
         increaseUCB = elbo - elbo_old + 1.6449*sqrt(elbo_sd^2 + elboSD_old^2);
         if increaseUCB < options.StopWarmupThresh
+            optimState.WarmupStableIter = optimState.WarmupStableIter + 1;
+        else
+            optimState.WarmupStableIter = 0;
+        end        
+        if optimState.WarmupStableIter >= options.TolStableWarmup            
             optimState.Warmup = false;
             if isempty(action); action = 'end warm-up'; else; action = [action ', end warm-up']; end
             
@@ -411,7 +419,8 @@ while ~isFinished_flag
             idx_keep = (ymax - optimState.y_orig) < options.WarmupKeepThreshold;
             optimState.X_flag = idx_keep & optimState.X_flag;
             
-            % Start nonlinear warping
+            % Start warping
+            optimState.LastWarping = optimState.N;
             optimState.LastNonlinearWarping = optimState.N;
         end
     end
@@ -446,7 +455,7 @@ while ~isFinished_flag
 
     % Reached stable variational posterior with stable ELBO and low uncertainty
     [idx_stable,dN,dN_last] = getStableIter(stats,optimState,options);
-    if ~isempty(idx_stable) && ~optimState.Warmup
+    if ~isempty(idx_stable)
         sKL_list = stats.sKL;
         elbo_list = stats.elbo;
         err2 = sum((elbo_list(idx_stable:iter) - mean(elbo_list(idx_stable:iter))).^2);
@@ -464,6 +473,8 @@ while ~isFinished_flag
     else
         qindex = Inf;
     end
+    
+    optimState.R = qindex;
     
     % Prevent early termination
     if optimState.N < options.MinFunEvals || optimState.iter < options.MinIter

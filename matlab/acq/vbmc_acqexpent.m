@@ -1,9 +1,9 @@
-function acq = vbmc_acqexpent(Xs,vp,gp,Nacq,transpose_flag)
+function acq = vbmc_acqexpent(Xs,vp,gp,optimState,Nacq,transpose_flag)
 %VBMC_ACQEXPENT Exponentiated entropy acquisition function.
 
 % Xs is in *transformed* coordinates
 
-if nargin < 5 || isempty(transpose_flag); transpose_flag = false; end
+if nargin < 6 || isempty(transpose_flag); transpose_flag = false; end
 
 % Transposed input (useful for CMAES)
 if transpose_flag; Xs = Xs'; end

@@ -20,6 +20,7 @@ switch algoset
     case {3,'acqvar'}; algoset = 'acqvar'; algoptions.AcqFcn = '@vbmc_acqvar';
     case {4,'acqgev'}; algoset = 'acqgev'; algoptions.Nacq = 1; algoptions.SearchAcqFcn = '@vbmc_acqGEV';
     case {5,'acqcmaes'}; algoset = 'acqcmaes'; algoptions.Nacq = 1; algoptions.SearchAcqFcn = '@vbmc_acqGEV'; algoptions.SearchCMAES = 1;
+    case {6,'acqprop'}; algoset = 'acqprop'; algoptions.Nacq = 1; algoptions.SearchAcqFcn = '@vbmc_acqprop'; algoptions.SearchCMAES = 1;
     case {11,'betazero'}; algoset = 'betazero'; algoptions.ELCBOWeight = 0;
     case {12,'betatiny'}; algoset = 'betatiny'; algoptions.ELCBOWeight = 0.1;
         

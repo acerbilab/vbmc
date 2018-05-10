@@ -84,7 +84,7 @@ else                    % Adaptive uncertainty sampling
         SearchAcqFcn = options.SearchAcqFcn;        
         acq_fast = [];
         for iAcqFast = 1:numel(SearchAcqFcn)
-            acq_fast = [acq_fast,SearchAcqFcn{iAcqFast}(Xsearch,vp,gp,Nacq,0)];
+            acq_fast = [acq_fast,SearchAcqFcn{iAcqFast}(Xsearch,vp,gp,optimState,Nacq,0)];
         end
         % acq_fast = vbmc_fastacq(Xsearch,vp,vp_old,gp,G,vardiagG,acqfast_flags,0);
         [~,idx] = min(acq_fast);
@@ -99,11 +99,15 @@ else                    % Adaptive uncertainty sampling
         % Additional search with CMA-ES
         if options.SearchCMAES
             insigma = max(vp.sigma)*vp.lambda;
-            xsearch_cmaes = cmaes_modded('vbmc_acqGEV',Xacq(1,:)',insigma,cmaes_opts,vp,gp,1,1);
-            Xacq(1,:) = xsearch_cmaes';
-            idx_cache_acq(1) = 0;
-            % idx_cache = [idx_cache(:); 0];
-            % Double check if the cache indexing is correct
+            %xsearch_cmaes = cmaes_modded('vbmc_acqGEV',Xacq(1,:)',insigma,cmaes_opts,vp,gp,optimState,1,1);
+            [xsearch_cmaes,fval_cmaes] = cmaes_modded('vbmc_acqprop',Xacq(1,:)',insigma,cmaes_opts,vp,gp,optimState,1,1);
+            fval_old = vbmc_acqprop(Xacq(1,:),vp,gp,optimState,1);
+            if fval_cmaes < fval_old            
+                Xacq(1,:) = xsearch_cmaes';
+                idx_cache_acq(1) = 0;
+                % idx_cache = [idx_cache(:); 0];
+                % Double check if the cache indexing is correct
+            end
         end
 
         if Nacq > size(Xacq,1)

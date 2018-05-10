@@ -118,6 +118,19 @@ optimState.RecomputeVarPost = true;
 % Start with warm-up?
 optimState.Warmup = options.Warmup;
 
+% Number of stable iteration of small increment
+optimState.WarmupStableIter = 0;
+
+% Proposal function for search
+if isempty(options.ProposalFcn)
+    optimState.ProposalFcn = @(x) vbmc_proposal(x,optimState.PLB,optimState.PUB);
+else
+    optimState.ProposalFcn = options.ProposalFcn;
+end
+
+% Quality of the variational posterior
+optimState.R = Inf;
+
 % List of points at the end of each iteration
 optimState.iterList.u = [];
 optimState.iterList.fval = [];
