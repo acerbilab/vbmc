@@ -12,6 +12,9 @@ algoptions.MinIter = 0;     % No limits on iterations
 algoptions.MaxIter = Inf;
 algoptions.WarpNonlinear = 'off';   % No nonlinear warping for now
 
+% Use prior as proposal function
+algoptions.ProposalFcn = @(X_) exp(infbench_lnprior(X_,probstruct));
+
 % Options from current problem
 switch algoset
     case {0,'debug'}; algoset = 'debug'; algoptions.Debug = 1; algoptions.Plot = 'scatter';
