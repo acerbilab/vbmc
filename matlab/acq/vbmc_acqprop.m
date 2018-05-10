@@ -19,7 +19,11 @@ yp = optimState.ProposalFcn(Xs_orig) ./ warpvars(Xs,'pdf',vp.trinfo);
 yp = max(yp,realmin);
 
 % Compute proposal vs. variational posterior weight
-w = min(max(log(optimState.R)/log(1e5),0),0.999);
+z = log(optimState.R)/log(20);
+w = max(0, 2./(1 + exp(-z)) - 1);
+% w = min(max(log(optimState.R)/log(1e3),0),0.999);
+
+
 
 % GP mean and variance for each hyperparameter sample
 [~,~,fmu,fs2] = gplite_pred(gp,Xs,[],1);

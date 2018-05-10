@@ -458,11 +458,29 @@ while ~isFinished_flag
     if ~isempty(idx_stable)
         sKL_list = stats.sKL;
         elbo_list = stats.elbo;
+        
+        % Compute weighting function
+        w1 = zeros(1,numel(idx_stable:iter));
+        w1(end) = 1;
+        w2 = exp(-(stats.N(iter) - stats.N(idx_stable:iter))/10);
+        w2 = w2 / sum(w2);
+        w = 0.5*w1 + 0.5*w2;
+
         err2 = sum((elbo_list(idx_stable:iter) - mean(elbo_list(idx_stable:iter))).^2);
-        qindex(1) = sqrt(err2 / (options.TolSD^2*dN));
-        qindex(2) = stats.elboSD(iter) / options.TolSD;
-        qindex(3) = sum(sKL_list(idx_stable:iter)) / (options.TolsKL*dN);
-        qindex(4) = sKL_list(iter) / (options.TolsKL*dN_last);        
+
+        wmean = sum(w.*elbo_list(idx_stable:iter));
+        wvar = sum(w.*(elbo_list(idx_stable:iter) - wmean).^2) / (1 - sum(w.^2));
+        
+        qindex(1) = sqrt(wvar / (options.TolSD^2*dN));
+        qindex(2) = sum(w .* stats.elboSD(idx_stable:iter).^2) / options.TolSD^2;
+        qindex(3) = sum(w .* sKL_list(idx_stable:iter)) / (options.TolsKL*dN);
+        
+%        qindex
+        
+%         qindex(1) = sqrt(err2 / (options.TolSD^2*dN));
+%         qindex(2) = stats.elboSD(iter) / options.TolSD;
+%         qindex(3) = sum(sKL_list(idx_stable:iter)) / (options.TolsKL*dN);
+%         qindex(4) = sKL_list(iter) / (options.TolsKL*dN_last);        
         if all(qindex < 1)
             isFinished_flag = true;
             exitflag = 0;
@@ -578,11 +596,14 @@ iter = optimState.iter;
 idx_stable = [];
 dN = [];    dN_last = [];
 
+if optimState.iter < 3; return; end
+
 if ~isempty(stats)
     iter_list = stats.iter;
     N_list = stats.N;
     idx_stable = find(N_list <= optimState.N - options.TolStableFunEvals & ...
         iter_list <= iter - options.TolStableIters,1,'last');
+    idx_stable = 1;
     if ~isempty(idx_stable)
         dN = optimState.N - N_list(idx_stable);
         dN_last = N_list(end) - N_list(end-1);
