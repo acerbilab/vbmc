@@ -49,7 +49,11 @@ case "${1}" in
                 ;;
         5)      ALGOSET="{'betatiny'}"
                 ;;
-        6)      ALGOSET="{''}"
+        6)      ALGOSET="{'acqgev'}"
+                ;;
+	7)	ALGOSET="{'acqcmaes'}"
+		;;
+        8)      ALGOSET="{'acqprop'}"
                 ;;
         50)     ALGOS="{'wsabi'}" 
                 ;;
