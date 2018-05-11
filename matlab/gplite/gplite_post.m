@@ -18,7 +18,12 @@ function gp = gplite_post(hyp,X,y,meanfun,update1)
 if nargin < 5 || isempty(update1); update1 = false; end
 
 gp = [];
-if isstruct(hyp); gp = hyp; end
+if isstruct(hyp)
+    gp = hyp;
+    if nargin < 2; X = gp.X; end
+    if nargin < 3; y = gp.y; end
+    if nargin < 4; meanfun = gp.meanfun; end
+end
 
 if update1
     if size(X,1) > 1

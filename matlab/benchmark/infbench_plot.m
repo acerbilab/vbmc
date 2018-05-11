@@ -39,6 +39,7 @@ defopts.Nsamp = 5e3;            % Samples for ERT computation
 defopts.TwoRows = 0;
 defopts.EnhanceLine = 'first';   % Enhance one plotted line
 defopts.FunEvalsPerD = 500;
+defopts.PlotType = 'nlZ';
 
 % Plotting options
 defopts.YlimMax = 1e2;
@@ -189,7 +190,7 @@ for iFig = 1:nfigs
                 if isempty(history); continue; end
         
                 
-                x = []; lnZs = []; D = []; FunCallsPerIter = [];
+                x = []; lnZs = []; gsKLs = []; D = []; FunCallsPerIter = [];
                 AverageOverhead = zeros(1,numel(history));
                 FractionOverhead = [];
                 Errs = []; Zscores = [];
@@ -208,10 +209,12 @@ for iFig = 1:nfigs
                     idx_valid = history{i}.SaveTicks <= history{i}.TotalMaxFunEvals;                        
                     lZs_new = history{i}.Output.lnZs(idx_valid);                        
                     lZs_var_new = history{i}.Output.lnZs_var(idx_valid);                        
+                    gsKLs_new = history{i}.Output.gsKL(idx_valid);                        
 
                     lnZ_true = history{i}.lnZpost_true;                
                     
                     lnZs = [lnZs; lZs_new];
+                    gsKLs = [gsKLs; gsKLs_new];
                     
                     Errs = [Errs; abs(lZs_new - lnZ_true)];
                     Zscores = [Zscores; (lZs_new - lnZ_true)./ sqrt(lZs_var_new)];
@@ -273,7 +276,12 @@ for iFig = 1:nfigs
                         lnZs = Errs;
                     end
                     
-                    [xx,yy,yyerr] = plotIterations(x,lnZs,iLayer,varargin{dimlayers},options);
+                    switch lower(options.PlotType)
+                        case 'lnz'
+                            [xx,yy,yyerr] = plotIterations(x,lnZs,iLayer,varargin{dimlayers},options);
+                        case 'gskl'
+                            [xx,yy,yyerr] = plotIterations(x,gsKLs,iLayer,varargin{dimlayers},options);
+                    end
                     
                     % Save summary information
                     benchdatanew.(field1).(field2).(field3).xx = xx;

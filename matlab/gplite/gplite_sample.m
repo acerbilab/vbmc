@@ -25,6 +25,11 @@ if ~isfield(gp,'post') || isempty(gp.post)
         [],Ns_gp,gp.X,gp.y,gp.meanfun,[],[],options);
 end
 
+% Recompute posterior auxiliary info if needed
+if ~isfield(gp.post(1),'alpha') || isempty(gp.post(1).alpha)
+    gp = gplite_post(gp);
+end
+    
 logpfun = @(x) gplite_pred(gp,x);
 
 switch method

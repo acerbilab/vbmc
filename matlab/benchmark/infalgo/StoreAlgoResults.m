@@ -52,7 +52,7 @@ Ns_moments = 2e4;
 xx = gplite_sample(gp,Ns_moments);
 Mean = mean(xx,1);
 Cov = cov(xx);
-[kl1,kl2] = mvnkl(Mean,Cov,probstruct.Mean,probstruct.Cov);
+[kl1,kl2] = mvnkl(Mean,Cov,probstruct.Post.Mean,probstruct.Post.Cov);
 gsKL = 0.5*(kl1 + kl2);
 
 Mode = gplite_fmin(gp,[],1);    % Max flag - finds maximum

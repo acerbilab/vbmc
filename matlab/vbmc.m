@@ -67,7 +67,7 @@ defopts.WarpRotoScaling    = 'on                % Rotate and scale input';
 %defopts.WarpCovReg         = '@(N) 25/N         % Regularization weight towards diagonal covariance matrix for N training inputs';
 defopts.WarpCovReg         = '0                 % Regularization weight towards diagonal covariance matrix for N training inputs';
 defopts.WarpNonlinear      = 'on                % Nonlinear input warping';
-defopts.WarpEpoch          = '20                % Recalculate warpings after this number of fcn evals';
+defopts.WarpEpoch          = '25                % Recalculate warpings after this number of fcn evals';
 defopts.WarpMinFun         = '10 + 2*D          % Minimum training points before starting warping';
 defopts.WarpNonlinearEpoch = '100               % Recalculate nonlinear warpings after this number of fcn evals';
 defopts.WarpNonlinearMinFun = '20 + 5*D         % Minimum training points before starting nonlinear warping';
@@ -97,6 +97,7 @@ defopts.Warmup             = 'on                % Perform warm-up stage';
 defopts.StopWarmupThresh   = '1                 % Stop warm-up when increase in ELBO is confidently below threshold';
 defopts.WarmupKeepThreshold = '10*nvars         % Max log-likelihood difference for points kept after warmup';
 defopts.SearchCMAES        = 'no                % Use CMA-ES for search';
+defopts.MomentsRunWeight   = '0.95              % Weight of previous trials (per trial) for running avg of variational posterior moments';
 
 %% If called with 'all', return all default options
 if strcmpi(fun,'all')
@@ -219,24 +220,16 @@ while ~isFinished_flag
     t = tic;
     optimState.trinfo = vp.trinfo;
     if iter == 1; new_funevals = options.FunEvalStart; else; new_funevals = options.FunEvalsPerIter; end
-    [optimState,t_adapt(iter),t_func(iter)] = ...
-        adaptive_sampling(optimState,new_funevals,funwrapper,vp,vp_old,gp,options,cmaes_opts);
+    if optimState.SkipAdaptiveSampling
+        optimState.SkipAdaptiveSampling = false;
+    else
+        [optimState,t_adapt(iter),t_func(iter)] = ...
+            adaptive_sampling(optimState,new_funevals,funwrapper,vp,vp_old,gp,options,cmaes_opts);
+    end
     optimState.N = optimState.Xmax;  % Number of training inputs
     optimState.Neff = sum(optimState.X_flag(1:optimState.Xmax));
     timer.activeSampling = toc(t);
-        
-    % Rotoscaling iteration?
-    t = tic;
-    isRotoscaling = (optimState.N - optimState.LastWarping) >= options.WarpEpoch ...
-        && (options.MaxFunEvals - optimState.N) >= options.WarpEpoch ...
-        && optimState.N >= options.WarpMinFun ...
-        && ~optimState.Warmup;
-    if isRotoscaling
-        optimState.LastWarping = optimState.N;
-        optimState.WarpingCount = optimState.WarpingCount + 1;
-        if isempty(action); action = 'rotoscale'; else; action = [action ', rotoscale']; end
-    end
-    
+            
     % Nonlinear warping iteration? (only after burn-in)
     isNonlinearWarping = (optimState.N - optimState.LastNonlinearWarping) >= options.WarpNonlinearEpoch ...
         && (options.MaxFunEvals - optimState.N) >= options.WarpNonlinearEpoch ...
@@ -249,16 +242,31 @@ while ~isFinished_flag
         if isempty(action); action = 'warp'; else; action = [action ', warp']; end
     end
     
+    % Rotoscaling iteration? (only after burn-in)
+    t = tic;
+    isRotoscaling = (optimState.N - optimState.LastWarping) >= options.WarpEpoch ...
+        && (optimState.N - optimState.LastNonlinearWarping) >= options.WarpEpoch ...
+        && (options.MaxFunEvals - optimState.N) >= options.WarpEpoch ...
+        && optimState.N >= options.WarpMinFun ...
+        && ~optimState.Warmup;
+    if isRotoscaling
+        optimState.LastWarping = optimState.N;
+        optimState.WarpingCount = optimState.WarpingCount + 1;
+        if isempty(action); action = 'rotoscale'; else; action = [action ', rotoscale']; end
+    end
+    
     %% Update stretching of unbounded variables
     if any(isinf(LB) & isinf(UB)) && (isNonlinearWarping || iter == 1)
         [vp,optimState,hyp] = ...
             warp_unbounded(vp,optimState,hyp,gp,cmaes_opts,options);
+        optimState = ResetRunAvg(optimState);
     end
 
     %%  Rotate and rescale variables
     if options.WarpRotoScaling && isRotoscaling
         [vp,optimState,hyp] = ...
             warp_rotoscaling(vp,optimState,hyp,gp,cmaes_opts,options);
+        optimState = ResetRunAvg(optimState);
     end
     
     %% Learn nonlinear warping via GP
@@ -266,6 +274,7 @@ while ~isFinished_flag
         [vp,optimState,hyp,hyp_warp] = ...
             warp_nonlinear(vp,optimState,hyp,hyp_warp,cmaes_opts,options);
         optimState.redoRotoscaling = true;
+        optimState = ResetRunAvg(optimState);
     end
     
 %     if optimState.DoRotoscaling && isWarping
@@ -297,17 +306,7 @@ while ~isFinished_flag
         if optimState.N >= options.StopGPSampling
             optimState.StopSampling = optimState.N;
         end
-        
-        % Stop sampling after sample variance stays below Tol for a while
-        [idx_stable,dN,dN_last] = getStableIter(stats,optimState,options);
-        if ~isempty(idx_stable) && idx_stable > 1
-            varss_list = stats.gpSampleVar;
-            if sum(varss_list(idx_stable-1:iter-1)) < options.TolGPVar*dN && ...
-                    varss_list(end) < options.TolGPVar*dN_last
-                optimState.StopSampling = optimState.N;
-            end
-        end
-        
+                
         if optimState.StopSampling > 0
             if isempty(action); action = 'stop GP sampling'; else; action = [action ', stop GP sampling']; end
         end
@@ -393,13 +392,29 @@ while ~isFinished_flag
     
     % Compare variational posterior's moments with ground truth
     if ~isempty(options.TrueMean) && ~isempty(options.TrueCov)
-        [mubar,Sigma] = vbmc_moments(vp,1,1e6);
-        [kl(1),kl(2)] = mvnkl(mubar,Sigma,options.TrueMean,options.TrueCov);
-        sKL_true = 0.5*sum(kl);
+        [mubar_orig,Sigma_orig] = vbmc_moments(vp,1,1e6);
+        [kl(1),kl(2)] = mvnkl(mubar_orig,Sigma_orig,options.TrueMean,options.TrueCov);
+        sKL_true = 0.5*sum(kl)
     else
         sKL_true = [];
     end
     
+    % Record moments in transformed space
+    [mubar,Sigma] = vbmc_moments(vp,0);
+    if isempty(optimState.RunMean) || isempty(optimState.RunCov)
+        optimState.RunMean = mubar;
+        optimState.RunCov = Sigma;        
+        optimState.LastRunAvg = optimState.N;
+        % optimState.RunCorrection = 1;
+    else
+        Nnew = optimState.N - optimState.LastRunAvg;
+        wRun = options.MomentsRunWeight^Nnew;
+        optimState.RunMean = wRun*optimState.RunMean + (1-wRun)*mubar;        
+        optimState.RunCov = wRun*optimState.RunCov + (1-wRun)*Sigma;
+        optimState.LastRunAvg = optimState.N;
+        % optimState.RunT = optimState.RunT + 1;
+    end
+        
     % Check if we are still warming-up (95% confidence)
     if optimState.Warmup && iter > 1
         elbo_old = stats.elbo(iter-1);
@@ -422,6 +437,9 @@ while ~isFinished_flag
             % Start warping
             optimState.LastWarping = optimState.N;
             optimState.LastNonlinearWarping = optimState.N;
+            
+            % Skip adaptive sampling for next iteration
+            optimState.SkipAdaptiveSampling = true;
         end
     end
     
@@ -454,26 +472,19 @@ while ~isFinished_flag
     end
 
     % Reached stable variational posterior with stable ELBO and low uncertainty
-    [idx_stable,dN,dN_last] = getStableIter(stats,optimState,options);
+    [idx_stable,dN,dN_last,w] = getStableIter(stats,optimState,options);
     if ~isempty(idx_stable)
         sKL_list = stats.sKL;
         elbo_list = stats.elbo;
         
-        % Compute weighting function
-        w1 = zeros(1,numel(idx_stable:iter));
-        w1(end) = 1;
-        w2 = exp(-(stats.N(iter) - stats.N(idx_stable:iter))/10);
-        w2 = w2 / sum(w2);
-        w = 0.5*w1 + 0.5*w2;
-
         err2 = sum((elbo_list(idx_stable:iter) - mean(elbo_list(idx_stable:iter))).^2);
 
         wmean = sum(w.*elbo_list(idx_stable:iter));
         wvar = sum(w.*(elbo_list(idx_stable:iter) - wmean).^2) / (1 - sum(w.^2));
         
-        qindex(1) = sqrt(wvar / (options.TolSD^2*dN));
+        qindex(1) = sqrt(wvar / (options.TolSD^2));
         qindex(2) = sum(w .* stats.elboSD(idx_stable:iter).^2) / options.TolSD^2;
-        qindex(3) = sum(w .* sKL_list(idx_stable:iter)) / (options.TolsKL*dN);
+        qindex(3) = sum(w .* sKL_list(idx_stable:iter)) / options.TolsKL;
         
 %        qindex
         
@@ -488,6 +499,17 @@ while ~isFinished_flag
         end
         qindex = mean(qindex);
         stats.qindex(iter) = qindex;
+        
+        % Stop sampling after sample variance has stabilized below ToL
+        if ~isempty(idx_stable) && optimState.StopSampling == 0
+            varss_list = stats.gpSampleVar;
+            if sum(w.*varss_list(idx_stable:iter)) < options.TolGPVar
+                optimState.StopSampling = optimState.N;
+                if isempty(action); action = 'stop GP sampling'; else; action = [action ', stop GP sampling']; end
+            end
+        end
+        
+        
     else
         qindex = Inf;
     end
@@ -589,12 +611,12 @@ end
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [idx_stable,dN,dN_last] = getStableIter(stats,optimState,options)
+function [idx_stable,dN,dN_last,w] = getStableIter(stats,optimState,options)
 %GETSTABLEITER Find index of starting stable iteration.
 
 iter = optimState.iter;
 idx_stable = [];
-dN = [];    dN_last = [];
+dN = [];    dN_last = [];   w = [];
 
 if optimState.iter < 3; return; end
 
@@ -608,6 +630,25 @@ if ~isempty(stats)
         dN = optimState.N - N_list(idx_stable);
         dN_last = N_list(end) - N_list(end-1);
     end
+    
+    % Compute weighting function
+    Nw = numel(idx_stable:iter);    
+    w1 = zeros(1,Nw);
+    w1(end) = 1;
+    w2 = exp(-(stats.N(end) - stats.N(end-Nw+1:end))/10);
+    w2 = w2 / sum(w2);
+    w = 0.5*w1 + 0.5*w2;
+    
 end
+
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function optimState = ResetRunAvg(optimState)
+%RESETRUNAVG Reset running averages of moments after warping.
+
+optimState.RunMean = [];
+optimState.RunCov = [];        
+optimState.LastRunAvg = NaN;
 
 end

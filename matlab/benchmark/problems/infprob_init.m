@@ -31,6 +31,9 @@ for f = fieldnames(defopts)'
     end
 end
 
+% Check if in debug mode
+probstruct.Debug = options.Debug;
+
 % Simulated noise
 probstruct.NoiseIncrement = 0;  % Default noise is homoskedastic
 if isempty(probstruct.NoiseSigma)

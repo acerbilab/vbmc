@@ -84,6 +84,7 @@ if isempty(x)
         
         y.func = ['@(x,infprob) ' mfilename '(x,infprob)'];
         Df = (1:D)*0.5+2;
+        
         Mean = Mu;
         Cov = diag(Df./(Df-2).*Sigma.^2);
         Mode = Mu;
@@ -124,7 +125,7 @@ if isempty(x)
                         
             % Compute variance
             fun = @(x_) x_.^2.*tpdf((x_-Mu(i))/Sigma(i),Df(i))/Sigma(i) .* normpdf(x_,priorMean(i),sqrt(priorSigma2(i)));
-            PostSigma2(i) = integral(fun,-Inf,Inf)/Z(i)^2 - y.Post.Mean(i)^2;            
+            PostSigma2(i) = integral(fun,-Inf,Inf)/Z(i) - y.Post.Mean(i)^2;            
             
             % Compute mode
             options.Display = 'off';
@@ -134,7 +135,7 @@ if isempty(x)
                 
         y.Post.lnZ = sum(log(Z));
         y.Post.Cov = diag(PostSigma2);        
-    end    
+    end
 elseif nargout > 0
     %xprime = bsxfun(@power,abs(x),infprob.Power).*sign(x);
     %logJ = bsxfun(@plus,log(infprob.Power),bsxfun(@times,infprob.Power-1,log(abs(x))));

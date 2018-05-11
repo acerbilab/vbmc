@@ -10,6 +10,9 @@ if ~isempty(vp.trinfo.scale); scale_old = vp.trinfo.scale; else; scale_old = one
 % Get covariance matrix in transformed space
 [~,vp_Sigma_mom] = vbmc_moments(vp,0);
 
+% Get running avg of covariance matrix
+vp_Sigma_run = optimState.RunCov;
+
 % Alternative way of getting covariance - maximize GP and compute Hessian
 if ~isempty(gp)
 %     Thin = 1;
@@ -26,7 +29,7 @@ if ~isempty(gp)
 %     [vp_Sigma,vp_Sigma_smpl,vp_Sigma_mom]
 end
 
-vp_Sigma = vp_Sigma_mom;
+if ~isempty(vp_Sigma_run); vp_Sigma = vp_Sigma_run; else; vp_Sigma = vp_Sigma_mom; end
 
 % Reverse rotation and scaling
 vp_Sigma = R_mat_old*(diag(scale_old)*vp_Sigma*diag(scale_old))*R_mat_old';

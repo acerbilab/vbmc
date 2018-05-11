@@ -131,6 +131,14 @@ end
 % Quality of the variational posterior
 optimState.R = Inf;
 
+% Start with adaptive sampling
+optimState.SkipAdaptiveSampling = false;
+
+% Running mean and covariance of variational posterior in transformed space
+optimState.RunMean = [];
+optimState.RunCov = [];
+optimState.LastRunAvg = NaN; % Last time running average was updated
+
 % List of points at the end of each iteration
 optimState.iterList.u = [];
 optimState.iterList.fval = [];

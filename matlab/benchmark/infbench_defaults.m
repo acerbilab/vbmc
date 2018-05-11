@@ -21,6 +21,7 @@ switch lower(type)
         defaults.StopSuccessfulRuns = 1; % Stop runs when successful
         defaults.SpeedTests = 10;        % Iterations of speed tests
         defaults.ForceFiniteBounds = 0;  % By default do not force finite bounds
+        defaults.Debug = 0;              % Debug mode
     
         defaults.LineStyle = {'-','-','-','-','-.','-.','-.','-.','-.','-.','-.','-','-.','-','-','-','-','-'};
         % defaults.LineStyle = {'-','-.','-','-','-','-','-','-','-','-'};

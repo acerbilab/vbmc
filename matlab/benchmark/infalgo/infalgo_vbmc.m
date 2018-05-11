@@ -12,6 +12,11 @@ algoptions.MinIter = 0;     % No limits on iterations
 algoptions.MaxIter = Inf;
 algoptions.WarpNonlinear = 'off';   % No nonlinear warping for now
 
+if probstruct.Debug
+    algoptions.TrueMean = probstruct.Post.Mean;
+    algoptions.TrueCov = probstruct.Post.Cov;
+end
+
 % Use prior as proposal function
 algoptions.ProposalFcn = @(X_) exp(infbench_lnprior(X_,probstruct));
 

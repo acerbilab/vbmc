@@ -21,6 +21,10 @@ yp = max(yp,realmin);
 % Compute proposal vs. variational posterior weight
 z = log(optimState.R)/log(20);
 w = max(0, 2./(1 + exp(-z)) - 1);
+
+if ~optimState.Warmup
+    w = 0;
+end
 % w = min(max(log(optimState.R)/log(1e3),0),0.999);
 
 
