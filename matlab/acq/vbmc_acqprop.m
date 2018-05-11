@@ -15,7 +15,7 @@ p = max(vbmc_pdf(Xs,vp,0),realmin);
 
 % Search proposal function
 Xs_orig = warpvars(Xs,'inv',vp.trinfo);
-yp = optimState.ProposalFcn(Xs_orig) ./ warpvars(Xs,'pdf',vp.trinfo);
+yp = optimState.ProposalFcn(Xs_orig) .* warpvars(Xs,'pdf',vp.trinfo);
 yp = max(yp,realmin);
 
 % Compute proposal vs. variational posterior weight
