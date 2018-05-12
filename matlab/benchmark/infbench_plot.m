@@ -207,8 +207,8 @@ for iFig = 1:nfigs
 
                     % Get valid time ticks
                     idx_valid = history{i}.SaveTicks <= history{i}.TotalMaxFunEvals;                        
-                    lZs_new = history{i}.Output.lnZs(idx_valid);                        
-                    lZs_var_new = history{i}.Output.lnZs_var(idx_valid);                        
+                    lZs_new = history{i}.Output.lnZs(idx_valid);    lZs_new = lZs_new(:)';                   
+                    lZs_var_new = history{i}.Output.lnZs_var(idx_valid);    lZs_var_new = lZs_var_new(:)';                 
                     gsKLs_new = history{i}.Output.gsKL(idx_valid);                        
 
                     lnZ_true = history{i}.lnZpost_true;                

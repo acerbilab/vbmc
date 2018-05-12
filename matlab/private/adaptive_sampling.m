@@ -100,7 +100,7 @@ else                    % Adaptive uncertainty sampling
         if options.SearchCMAES
             insigma = max(vp.sigma)*vp.lambda;
             %xsearch_cmaes = cmaes_modded('vbmc_acqGEV',Xacq(1,:)',insigma,cmaes_opts,vp,gp,optimState,1,1);
-            [xsearch_cmaes,fval_cmaes] = cmaes_modded('vbmc_acqprop',Xacq(1,:)',insigma,cmaes_opts,vp,gp,optimState,1,1);
+            [xsearch_cmaes,fval_cmaes] = cmaes_modded(func2str(SearchAcqFcn{1}),Xacq(1,:)',insigma,cmaes_opts,vp,gp,optimState,1,1);
             fval_old = vbmc_acqprop(Xacq(1,:),vp,gp,optimState,1);
             if fval_cmaes < fval_old            
                 Xacq(1,:) = xsearch_cmaes';

@@ -19,9 +19,9 @@ y_train = history.Output.y;
 
 % Return estimate, SD of the estimate, and gauss-sKL with true moments
 N = history.SaveTicks(1:Niter);
-history.Output.N = N;
-history.Output.lnZs = mu;
-history.Output.lnZs_var = vvar;
+history.Output.N = N(:)';
+history.Output.lnZs = mu(:)';
+history.Output.lnZs_var = vvar(:)';
 
 for iIter = 1:Niter
     if isempty(Xiter) || isempty(yiter)
