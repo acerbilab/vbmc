@@ -31,7 +31,7 @@ if isempty(x)
             
             % First, check optimum            
             trinfo = infprob.Data.trinfo;
-            opts = optimoptions('fminunc','Display','off','MaxFunEvals',10);
+            opts = optimoptions('fminunc','Display','off','MaxFunEvals',700);
             
             x0 = xmin(infprob.idxParams);
             x0 = warpvars(x0,'d',trinfo);   % Convert to unconstrained coordinates            
