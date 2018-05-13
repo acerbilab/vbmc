@@ -220,6 +220,9 @@ while ~isFinished_flag
     t = tic;
     optimState.trinfo = vp.trinfo;
     if iter == 1; new_funevals = options.FunEvalStart; else; new_funevals = options.FunEvalsPerIter; end
+    if optimState.Xmax > 0
+        optimState.ymax = max(optimState.y(optimState.X_flag));
+    end
     if optimState.SkipAdaptiveSampling
         optimState.SkipAdaptiveSampling = false;
     else
@@ -432,7 +435,12 @@ while ~isFinished_flag
             
             % Remove warm-up points from training set unless close to max
             ymax = max(optimState.y_orig(1:optimState.Xmax));
+            NkeepMin = 4*D; 
             idx_keep = (ymax - optimState.y_orig) < options.WarmupKeepThreshold;
+            if sum(idx_keep) < NkeepMin
+                [~,ord] = sort(optimState.y_orig,'descend');
+                idx_keep(ord(1:min(NkeepMin,optimState.Xmax))) = true;
+            end
             optimState.X_flag = idx_keep & optimState.X_flag;
             
             % Start warping

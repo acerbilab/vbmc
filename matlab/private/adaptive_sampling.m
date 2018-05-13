@@ -98,8 +98,9 @@ else                    % Adaptive uncertainty sampling
         
         % Additional search with CMA-ES
         if options.SearchCMAES
-            insigma = max(vp.sigma)*vp.lambda;
             %xsearch_cmaes = cmaes_modded('vbmc_acqGEV',Xacq(1,:)',insigma,cmaes_opts,vp,gp,optimState,1,1);
+            % insigma = max(vp.sigma)*vp.lambda;
+            [~,Sigma] = vbmc_moments(vp,0); insigma = sqrt(diag(Sigma));
             [xsearch_cmaes,fval_cmaes] = cmaes_modded(func2str(SearchAcqFcn{1}),Xacq(1,:)',insigma,cmaes_opts,vp,gp,optimState,1,1);
             fval_old = vbmc_acqprop(Xacq(1,:),vp,gp,optimState,1);
             if fval_cmaes < fval_old            

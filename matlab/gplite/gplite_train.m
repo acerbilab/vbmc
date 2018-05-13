@@ -226,6 +226,14 @@ end
 % Recompute GP with finalized hyperparameters
 gp = gp_objfun(hyp,gp,[],1);
 
+% Check GP posteriors
+% for s = 1:numel(gp.post)
+%     if ~all(isfinite(gp.post(s).L(:)))
+%         pause
+%     end
+% end
+
+
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -31,9 +31,12 @@ switch algoset
     case {6,'acqprop'}; algoset = 'acqprop'; algoptions.Nacq = 1; algoptions.SearchAcqFcn = '@vbmc_acqprop'; algoptions.SearchCMAES = 1;
     case {7,'acqprop2'}; algoset = 'acqprop2'; algoptions.Nacq = 1; algoptions.SearchAcqFcn = '@vbmc_acqprop2'; algoptions.SearchCMAES = 1;
     case {8,'acqpropnorot'}; algoset = 'acqpropnorot'; algoptions.Nacq = 1; algoptions.SearchAcqFcn = '@vbmc_acqprop'; algoptions.SearchCMAES = 1; algoptions.WarpRotoScaling = 0;
-    case {8,'acqpropfewrot'}; algoset = 'acqpropfewrot'; algoptions.Nacq = 1; algoptions.SearchAcqFcn = '@vbmc_acqprop'; algoptions.SearchCMAES = 1; algoptions.WarpEpoch = '20 + 10*nvars';
+    case {9,'acqpropfewrot'}; algoset = 'acqpropfewrot'; algoptions.Nacq = 1; algoptions.SearchAcqFcn = '@vbmc_acqprop'; algoptions.SearchCMAES = 1; algoptions.WarpEpoch = '20 + 10*nvars';
+    case {10,'acqprop2norot'}; algoset = 'acqprop2norot'; algoptions.Nacq = 1; algoptions.SearchAcqFcn = '@vbmc_acqprop2'; algoptions.SearchCMAES = 1; algoptions.WarpRotoScaling = 0;
     case {11,'betazero'}; algoset = 'betazero'; algoptions.ELCBOWeight = 0;
     case {12,'betatiny'}; algoset = 'betatiny'; algoptions.ELCBOWeight = 0.1;
+    case {13,'norot'}; algoset = 'norot'; algoptions.WarpRotoScaling = 0;
+    case {14,'acqfnorot'}; algoset = 'acqfnorot'; algoptions.Nacq = 1; algoptions.SearchAcqFcn = '@vbmc_acqf'; algoptions.SearchCMAES = 1; algoptions.WarpRotoScaling = 0;
         
     otherwise
         error(['Unknown algorithm setting ''' algoset ''' for algorithm ''' algo '''.']);
