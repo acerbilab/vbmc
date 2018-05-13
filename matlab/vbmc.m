@@ -67,7 +67,7 @@ defopts.WarpRotoScaling    = 'on                % Rotate and scale input';
 %defopts.WarpCovReg         = '@(N) 25/N         % Regularization weight towards diagonal covariance matrix for N training inputs';
 defopts.WarpCovReg         = '0                 % Regularization weight towards diagonal covariance matrix for N training inputs';
 defopts.WarpNonlinear      = 'on                % Nonlinear input warping';
-defopts.WarpEpoch          = '25                % Recalculate warpings after this number of fcn evals';
+defopts.WarpEpoch          = '20 + 10*D         % Recalculate warpings after this number of fcn evals';
 defopts.WarpMinFun         = '10 + 2*D          % Minimum training points before starting warping';
 defopts.WarpNonlinearEpoch = '100               % Recalculate nonlinear warpings after this number of fcn evals';
 defopts.WarpNonlinearMinFun = '20 + 5*D         % Minimum training points before starting nonlinear warping';
@@ -97,7 +97,7 @@ defopts.Warmup             = 'on                % Perform warm-up stage';
 defopts.StopWarmupThresh   = '1                 % Stop warm-up when increase in ELBO is confidently below threshold';
 defopts.WarmupKeepThreshold = '10*nvars         % Max log-likelihood difference for points kept after warmup';
 defopts.SearchCMAES        = 'no                % Use CMA-ES for search';
-defopts.MomentsRunWeight   = '0.95              % Weight of previous trials (per trial) for running avg of variational posterior moments';
+defopts.MomentsRunWeight   = '0.9               % Weight of previous trials (per trial) for running avg of variational posterior moments';
 
 %% If called with 'all', return all default options
 if strcmpi(fun,'all')

@@ -25,9 +25,9 @@ if isempty(gp)     % No GP yet, just use provided points or sample from plausibl
             PLB = min(min(x0,[],1),optimState.PLB);
             PUB = max(max(x0,[],1),optimState.PUB);
             
-            Xrnd = bsxfun(@plus,bsxfun(@times,rand(Ns-N0,D)-0.5,width),x0(1,:));
-            Xrnd = bsxfun(@min,bsxfun(@max,Xrnd,PLB),PUB);
-            % Xrnd = bsxfun(@plus,bsxfun(@times,rand(Ns-N0,D),optimState.PUB-optimState.PLB),optimState.PLB);
+            %Xrnd = bsxfun(@plus,bsxfun(@times,rand(Ns-N0,D)-0.5,width),x0(1,:));
+            %Xrnd = bsxfun(@min,bsxfun(@max,Xrnd,PLB),PUB);
+            Xrnd = bsxfun(@plus,bsxfun(@times,rand(Ns-N0,D),optimState.PUB-optimState.PLB),optimState.PLB);
             Xs = [Xs; Xrnd];
             ys = [ys; NaN(Ns-N0,1)];
         end

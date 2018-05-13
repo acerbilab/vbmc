@@ -38,6 +38,7 @@ switch algoset
     case {13,'norot'}; algoset = 'norot'; algoptions.WarpRotoScaling = 0;
     case {14,'acqfnorot'}; algoset = 'acqfnorot'; algoptions.Nacq = 1; algoptions.SearchAcqFcn = '@vbmc_acqf'; algoptions.SearchCMAES = 1; algoptions.WarpRotoScaling = 0;
     case {15,'acqpropfnorot'}; algoset = 'acqpropfnorot'; algoptions.Nacq = 1; algoptions.SearchAcqFcn = '@vbmc_acqpropf'; algoptions.SearchCMAES = 1; algoptions.WarpRotoScaling = 0;
+    case {16,'acqpropf'}; algoset = 'acqpropf'; algoptions.Nacq = 1; algoptions.SearchAcqFcn = '@vbmc_acqpropf'; algoptions.SearchCMAES = 1;
         
     otherwise
         error(['Unknown algorithm setting ''' algoset ''' for algorithm ''' algo '''.']);
