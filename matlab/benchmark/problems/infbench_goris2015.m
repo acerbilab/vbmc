@@ -1,7 +1,8 @@
-function y = infbench_goris2015(x,infprob,id)
+function y = infbench_goris2015(x,infprob,id,nrun)
 %INFBENCH_GORIS2015 Inference benchmark log pdf -- neuronal model from Goris et al. (2015).
 
 if nargin < 3; id = []; end
+if nargin < 4; nrun = []; end
 
 if isempty(x)
     if isempty(infprob) % Generate this document        
@@ -60,10 +61,14 @@ if isempty(x)
                 fprintf('\t\t\t\tname = ''%s'';\n\t\t\t\txmin = %s;\n\t\t\t\tfval = %s;\n',name,mat2str(xmin),mat2str(fval));
                 fprintf('\t\t\t\txmin_post = %s;\n\t\t\t\tfval_post = %s;\n',mat2str(xmin_post),mat2str(fval_post));
                 
-            else
+            elseif id > 0 && n == nrun
+                
                 rng(id);
                 widths = 0.5*(infprob.PUB - infprob.PLB);
                 logpfun = @(x) infbench_goris2015(x,infprob);
+
+                W = 2*(infprob.D+1);    % Number of walkers
+                Ns = W*2;             % Number of samples
                 
                 sampleopts.Burnin = Ns;
                 sampleopts.Thin = 1;
@@ -72,17 +77,15 @@ if isempty(x)
                 sampleopts.VarTransform = false;
                 sampleopts.InversionSample = false;
                 sampleopts.FitGMM = false;
+                sampleopts.TolX = 1e-5;
                 % sampleopts.TransitionOperators = {'transSliceSampleRD'};
 
-                W = 2*(infprob.D+1);
-                Ns = W*100;
-                n = 7;
                 x0 = xmin(infprob.idxParams);
                 x0 = warpvars(x0,'d',trinfo);   % Convert to unconstrained coordinates
-                Xs = eissample_lite(logpfun,x0,Ns,W,widths,infprob.LB,infprob.UB,sampleopts);
+                [Xs,lls,exitflag,output] = eissample_lite(logpfun,x0,Ns,W,widths,infprob.LB,infprob.UB,sampleopts);
                 
-                
-                break;
+                filename = ['goris2015_mcmc_n' num2str(n) '_id' num2str(id) '.mat'];
+                save(filename,'Xs','lls','exitflag','output');                
             end
             
         end
