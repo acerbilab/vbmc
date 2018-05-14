@@ -190,9 +190,9 @@ else
 end
 
 if optimState.Cache.active
-    displayFormat = ' %5.0f     %5.0f  /%5.0f   %12.3g  %12.3g  %12.3g     %4.0f %10.3g       %s\n';
+    displayFormat = ' %5.0f     %5.0f  /%5.0f   %12.2f  %12.2f  %12.2f     %4.0f %10.3g       %s\n';
 else
-    displayFormat = ' %5.0f       %5.0f    %12.3g  %12.3g  %12.3g     %4.0f %10.3g     %s\n';
+    displayFormat = ' %5.0f       %5.0f    %12.2f  %12.2f  %12.2f     %4.0f %10.3g     %s\n';
 end
 if prnt > 2
     if optimState.Cache.active
@@ -418,7 +418,10 @@ while ~isFinished_flag
     sKL = max(0,0.5*sum(vbmc_kldiv(vp,vp_old,Nkl,options.KLgauss,1)));
     
     % Compare variational posterior's moments with ground truth
-    if ~isempty(options.TrueMean) && ~isempty(options.TrueCov)
+    if ~isempty(options.TrueMean) && ~isempty(options.TrueCov) ...
+        && all(isfinite(options.TrueMean(:))) ...
+        && all(isfinite(options.TrueCov(:)))
+    
         [mubar_orig,Sigma_orig] = vbmc_moments(vp,1,1e6);
         [kl(1),kl(2)] = mvnkl(mubar_orig,Sigma_orig,options.TrueMean,options.TrueCov);
         sKL_true = 0.5*sum(kl)

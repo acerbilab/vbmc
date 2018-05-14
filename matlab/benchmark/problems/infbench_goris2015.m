@@ -1,8 +1,7 @@
-function y = infbench_goris2015(x,infprob,id,nrun)
+function y = infbench_goris2015(x,infprob,mcmc_params)
 %INFBENCH_GORIS2015 Inference benchmark log pdf -- neuronal model from Goris et al. (2015).
 
-if nargin < 3; id = []; end
-if nargin < 4; nrun = []; end
+if nargin < 3; mcmc_params = []; end
 
 if isempty(x)
     if isempty(infprob) % Generate this document        
@@ -31,7 +30,7 @@ if isempty(x)
             end                
             
             infprob = infbench_goris2015([],n);
-            if isempty(id); id = 0; end
+            if isempty(mcmc_params); id = 0; else; id = mcmc_params(1); end
             
             trinfo = infprob.Data.trinfo;
             
@@ -61,14 +60,21 @@ if isempty(x)
                 fprintf('\t\t\t\tname = ''%s'';\n\t\t\t\txmin = %s;\n\t\t\t\tfval = %s;\n',name,mat2str(xmin),mat2str(fval));
                 fprintf('\t\t\t\txmin_post = %s;\n\t\t\t\tfval_post = %s;\n',mat2str(xmin_post),mat2str(fval_post));
                 
-            elseif id > 0 && n == nrun
+            elseif id > 0 && n == mcmc_params(2)
                 
                 rng(id);
                 widths = 0.5*(infprob.PUB - infprob.PLB);
                 logpfun = @(x) infbench_goris2015(x,infprob);
-
+                
+                % Number of samples
+                if numel(mcmc_params) > 2
+                    W_mult = mcmc_params(3);
+                else
+                    W_mult = 200;
+                end
+                
                 W = 2*(infprob.D+1);    % Number of walkers
-                Ns = W*2;             % Number of samples
+                Ns = W*W_mult;             % Number of samples
                 
                 sampleopts.Burnin = Ns;
                 sampleopts.Thin = 1;
@@ -210,13 +216,13 @@ if isempty(x)
         xmin_post = warpvars(xmin_post(idx_params),'d',trinfo);
         fval_post = fval_post + warpvars(xmin_post,'logp',trinfo);
                 
-        y.Post.Mean = zeros(1,D);
+        y.Post.Mean = NaN(1,D);
         y.Post.Mode = xmin_post;          % Mode of the posterior
         y.Post.ModeFval = fval_post;        
         
         % range = 5*(y.PUB-y.PLB);
         y.Post.lnZ = NaN;
-        y.Post.Cov = eye(D);        
+        y.Post.Cov = NaN(D,D);
         
         % Save data and coordinate transformation struct
         y.Data = data;
