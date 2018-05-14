@@ -9,6 +9,7 @@ JOBSCRIPT="${BASEDIR}/scripts/myjob.sh"
 RUN=${1}
 INPUTFILE="${SCRATCH}/${PROJECT}/joblist-${1}.txt"
 MAXID=$(sed -n $= ${INPUTFILE})
+
 RUNTIME=12:00:00
 MAXRT=NaN
 VERBOSE=0
