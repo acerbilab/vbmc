@@ -67,7 +67,7 @@ defopts.WarpRotoScaling    = 'on                % Rotate and scale input';
 %defopts.WarpCovReg         = '@(N) 25/N         % Regularization weight towards diagonal covariance matrix for N training inputs';
 defopts.WarpCovReg         = '0                 % Regularization weight towards diagonal covariance matrix for N training inputs';
 defopts.WarpNonlinear      = 'on                % Nonlinear input warping';
-defopts.WarpEpoch          = '25                % Recalculate warpings after this number of fcn evals';
+defopts.WarpEpoch          = '20 + 10*D         % Recalculate warpings after this number of fcn evals';
 defopts.WarpMinFun         = '10 + 2*D          % Minimum training points before starting warping';
 defopts.WarpNonlinearEpoch = '100               % Recalculate nonlinear warpings after this number of fcn evals';
 defopts.WarpNonlinearMinFun = '20 + 5*D         % Minimum training points before starting nonlinear warping';
@@ -97,7 +97,7 @@ defopts.Warmup             = 'on                % Perform warm-up stage';
 defopts.StopWarmupThresh   = '1                 % Stop warm-up when increase in ELBO is confidently below threshold';
 defopts.WarmupKeepThreshold = '10*nvars         % Max log-likelihood difference for points kept after warmup';
 defopts.SearchCMAES        = 'no                % Use CMA-ES for search';
-defopts.MomentsRunWeight   = '0.95              % Weight of previous trials (per trial) for running avg of variational posterior moments';
+defopts.MomentsRunWeight   = '0.9               % Weight of previous trials (per trial) for running avg of variational posterior moments';
 
 %% If called with 'all', return all default options
 if strcmpi(fun,'all')
@@ -220,6 +220,9 @@ while ~isFinished_flag
     t = tic;
     optimState.trinfo = vp.trinfo;
     if iter == 1; new_funevals = options.FunEvalStart; else; new_funevals = options.FunEvalsPerIter; end
+    if optimState.Xmax > 0
+        optimState.ymax = max(optimState.y(optimState.X_flag));
+    end
     if optimState.SkipAdaptiveSampling
         optimState.SkipAdaptiveSampling = false;
     else
@@ -257,7 +260,8 @@ while ~isFinished_flag
     end
     
     %% Update stretching of unbounded variables
-    if any(isinf(LB) & isinf(UB)) && (isNonlinearWarping || iter == 1)
+    if any(isinf(LB) & isinf(UB)) && ...
+            options.WarpNonlinear && (isNonlinearWarping || iter == 1)
         [vp,optimState,hyp] = ...
             warp_unbounded(vp,optimState,hyp,gp,cmaes_opts,options);
         optimState = ResetRunAvg(optimState);
@@ -281,7 +285,7 @@ while ~isFinished_flag
 %     if optimState.DoRotoscaling && isWarping
 %         [~,X_hpd,y_hpd] = ...
 %             vbmc_gphyp(optimState,optimState.gpMeanfun,0,options);            
-%         vp = vpoptimize(1,0,vp,gp,vp.K,X_hpd,y_hpd,optimState,stats,options);
+%         vp = vpoptimize(Nfastopts,1,0,vp,gp,vp.K,X_hpd,y_hpd,optimState,stats,options);
 %         [vp,optimState,hyp] = ...
 %             warp_rotoscaling(vp,optimState,hyp,gp,cmaes_opts,options);
 %         optimState.DoRotoscaling = false;
@@ -320,7 +324,13 @@ while ~isFinished_flag
     [hypprior,X_hpd,y_hpd,~,hyp0,optimState.gpMeanfun] = ...
         vbmc_gphyp(optimState,optimState.gpMeanfun,0,options);
     if isempty(hyp); hyp = hyp0; end % Initial GP hyperparameters
-    gptrain_options.Nopts = 3;
+    gptrain_options.Thin = 5;    
+    if optimState.RecomputeVarPost
+        gptrain_options.Burnin = gptrain_options.Thin*Ns_gp;
+    else
+        gptrain_options.Burnin = gptrain_options.Thin*3;
+    end
+    if Ns_gp > 0; gptrain_options.Nopts = 1; else; gptrain_options.Nopts = 2; end
     
     [gp,hyp] = gplite_train(hyp,Ns_gp, ...
         optimState.X(optimState.X_flag,:),optimState.y(optimState.X_flag), ...
@@ -339,17 +349,19 @@ while ~isFinished_flag
     Knew = getK(optimState,options);
 
     if optimState.RecomputeVarPost || options.AlwaysRefitVarPost
+        Nfastopts = options.NSelbo * vp.K;
         Nslowopts = options.ElboStarts; % Full optimizations
         useEntropyApprox = true;
         optimState.RecomputeVarPost = false;
     else
         % Only incremental change
+        Nfastopts = ceil(options.NSelbo * vp.K / 10);
         Nslowopts = 1;
-        useEntropyApprox = true;
+        useEntropyApprox = false;
     end
     
     [vp,elbo,elbo_sd,varss] = ...
-        vpoptimize(Nslowopts,useEntropyApprox,vp,gp,Knew,X_hpd,y_hpd,optimState,stats,options);
+        vpoptimize(Nfastopts,Nslowopts,useEntropyApprox,vp,gp,Knew,X_hpd,y_hpd,optimState,stats,options);
         
     
     %%  Redo rotoscaling at the end
@@ -366,7 +378,7 @@ while ~isFinished_flag
             optimState.X(optimState.X_flag,:),optimState.y(optimState.X_flag), ...
             optimState.gpMeanfun,hypprior,[],gptrain_options);
         
-         vp = vpoptimize(1,0,vp,gp,vp.K,X_hpd,y_hpd,optimState,stats,options);
+         vp = vpoptimize(Nfastopts,1,0,vp,gp,vp.K,X_hpd,y_hpd,optimState,stats,options);
     end
     
     if options.Plot
@@ -432,7 +444,12 @@ while ~isFinished_flag
             
             % Remove warm-up points from training set unless close to max
             ymax = max(optimState.y_orig(1:optimState.Xmax));
+            NkeepMin = 4*D; 
             idx_keep = (ymax - optimState.y_orig) < options.WarmupKeepThreshold;
+            if sum(idx_keep) < NkeepMin
+                [~,ord] = sort(optimState.y_orig,'descend');
+                idx_keep(ord(1:min(NkeepMin,optimState.Xmax))) = true;
+            end
             optimState.X_flag = idx_keep & optimState.X_flag;
             
             % Start warping
@@ -441,6 +458,9 @@ while ~isFinished_flag
             
             % Skip adaptive sampling for next iteration
             optimState.SkipAdaptiveSampling = true;
+            
+            % Fully recompute variational posterior
+            optimState.RecomputeVarPost = true;
         end
     end
     
@@ -502,7 +522,7 @@ while ~isFinished_flag
         stats.qindex(iter) = qindex;
         
         % Stop sampling after sample variance has stabilized below ToL
-        if ~isempty(idx_stable) && optimState.StopSampling == 0
+        if ~isempty(idx_stable) && optimState.StopSampling == 0 && ~optimState.Warmup
             varss_list = stats.gpSampleVar;
             if sum(w.*varss_list(idx_stable:iter)) < options.TolGPVar
                 optimState.StopSampling = optimState.N;

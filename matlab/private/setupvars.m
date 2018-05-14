@@ -95,6 +95,9 @@ optimState.trinfo = vp.trinfo;
 
 %% Initialize OPTIMSTATE variables
 
+% Maximum value
+optimState.ymax = 0;
+
 % Does the starting cache contain function values?
 optimState.Cache.active = any(isfinite(optimState.Cache.y_orig));
 

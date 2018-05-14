@@ -15,10 +15,22 @@ Nopts = [];
 if isfield(options,'Nopts'); Nopts = options.Nopts; end
 if isempty(Nopts); Nopts = 3; end   % Number of hyperparameter optimization runs
 
+Ninit = [];
+if isfield(options,'Ninit'); Ninit = options.Ninit; end
+if isempty(Ninit); Ninit = 2^10; end   % Initial design size for hyperparameter optimization
+
+Thin = [];
+if isfield(options,'Thin'); Thin = options.Thin; end
+if isempty(Thin); Thin = 5; end   % Thinning for hyperparameter sampling
+
+Burnin = [];
+if isfield(options,'Burnin'); Burnin = options.Burnin; end
+if isempty(Burnin); Burnin = Thin*Ns; end   % Initial design size for hyperparameter optimization
+
+
 [N,D] = size(X);            % Number of training points and dimension
 
 ToL = 1e-6;
-Ninit = 2^12;    % Initial design size for hyperparameter optimization
 nf_def = 7;     % Default degrees of freedom for Student's t prior
 
 % Set up warped GP
@@ -207,8 +219,8 @@ end
 
 %% Sample from best hyperparameter vector using slice sampling
 if Ns > 0
-    sampleopts.Burnin = 10*Ns;
-    sampleopts.Thin = 10;
+    sampleopts.Thin = Thin;
+    sampleopts.Burnin = Burnin;
     sampleopts.Display = 'off';
     sampleopts.Diagnostics = false;
     widths = std(output_fill.X,[],1);
@@ -225,6 +237,14 @@ end
 
 % Recompute GP with finalized hyperparameters
 gp = gp_objfun(hyp,gp,[],1);
+
+% Check GP posteriors
+% for s = 1:numel(gp.post)
+%     if ~all(isfinite(gp.post(s).L(:)))
+%         pause
+%     end
+% end
+
 
 end
 

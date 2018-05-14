@@ -131,7 +131,7 @@ for s = 1:Ns
                 invKzk = -L*z_k';                
             end                
             J_kk = sf2*nf_kk - z_k*invKzk;
-            varF(s) = varF(s) + J_kk/K^2;
+            varF(s) = varF(s) + max(0,J_kk)/K^2;    % Correct for numerical error
             
             if compute_vargrad
 
@@ -170,7 +170,7 @@ for s = 1:Ns
                      + z_k*(L*z_j');                    
                 end
 
-                varF(s) = varF(s) + J_jk/K^2;            
+                varF(s) = varF(s) + max(0,J_jk)/K^2;            
             end
             
         end        
