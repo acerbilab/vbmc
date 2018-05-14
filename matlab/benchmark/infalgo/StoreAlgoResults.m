@@ -31,7 +31,9 @@ for iIter = 1:Niter
         X_train = Xiter{iIter};
         y_train = yiter{iIter};
     end
-    [gsKL,~,~,Mode] = computeStats(X_train,y_train,probstruct);
+    [gsKL,Mean,Cov,Mode] = computeStats(X_train,y_train,probstruct);
+    history.Output.Mean(iIter,:) = Mean;
+    history.Output.Cov(iIter,:) = Cov;    
     history.Output.gsKL(iIter) = gsKL;
     history.Output.Mode(iIter,:) = Mode;    
 end
