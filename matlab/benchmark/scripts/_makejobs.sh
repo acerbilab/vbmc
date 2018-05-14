@@ -96,6 +96,17 @@ case "${1}" in
                 DIMS="{'S7','S8','S9','S10','S11','S12'}"
                 IDS="{'1','2','3'}"
                 ;;
+        102)    PROBS="{'goris2015'}"
+                ALGOS="{'wsabi','wsabi@mm','bmc','smc','ais'}"
+                DIMS="{'S7','S8'}"
+                IDS=$IDS
+                ;;
+        103)    PROBS="{'goris2015'}"
+                ALGOS="{'vbmc@adaptive'}"
+                DIMS="{'S7','S8'}"
+                IDS="{'1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16','17','18','19',20'}"
+                ;;
+
 esac
 
 echo "Job items: ${PROBSET},${PROBS},${DIMS},${NOISE},${ALGOS},${ALGOSET},${IDS}"
