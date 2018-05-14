@@ -100,7 +100,9 @@ for iIter = 1:Nticks
     history.Output.N(iIter) = history.SaveTicks(iIter);
     history.Output.lnZs(iIter) = stats.elbo(idx);
     history.Output.lnZs_var(iIter) = stats.elboSD(idx)^2;
-    [gsKL,~,~,Mode] = computeStats(stats.vp(idx),probstruct);
+    [gsKL,Mean,Cov,Mode] = computeStats(stats.vp(idx),probstruct);
+    history.Output.Mean(iIter,:) = Mean;
+    history.Output.Cov(iIter,:,:) = Cov;
     history.Output.gsKL(iIter) = gsKL;
     history.Output.Mode(iIter,:) = Mode;    
 end

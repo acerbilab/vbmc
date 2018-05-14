@@ -5,7 +5,15 @@ problist = {'lumpy','cigar','studentt','goris2015'};
 
 % Initialize problem structure
 if ischar(subprob); D = extractnum(subprob); else; D = subprob; end
-probstruct = initprob(prob,problist,'vbmc18',[num2str(D) 'D'],id,D);
+
+switch prob
+    case 'goris2015'
+        subprobString = ['S' num2str(D)];     
+    otherwise
+        subprobString = [num2str(D) 'D'];
+end
+
+probstruct = initprob(prob,problist,'vbmc18',subprobString,id,D);
 % [~,probstruct.Title] = prob;
 probstruct.Title = probstruct.Prob;
 probstruct.func = ['@(x_,probstruct_) infbench_' probstruct.Prob '(x_(:)'',probstruct_.ProbInfo)'];
