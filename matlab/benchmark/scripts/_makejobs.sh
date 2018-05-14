@@ -27,7 +27,7 @@ VBMC18="{'lumpy','studentt','cigar'}"
 # Default job list
 PROBSET="'vbmc18'"
 PROBS=${VBMC18}
-DIMS="{'2D','4D','6D','8D'}"
+DIMS="{'2D','4D','6D','8D','10D'}"
 NOISE="'[]'"
 ALGOS="{'vbmc'}"
 ALGOSET="'base'"
@@ -76,7 +76,9 @@ case "${1}" in
        15)     ALGOSET="{'acqpropfbz'}"
                 IDS="{'1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16','17','18','19',20'}"
                 ;;
-
+       16)     ALGOSET="{'adaptive'}"
+                IDS="{'1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16','17','18','19',20'}"
+                ;;
 	50)     ALGOS="{'wsabi'}" 
                 ;;
         51)     ALGOS="{'wsabi'}"

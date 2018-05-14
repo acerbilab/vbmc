@@ -62,6 +62,8 @@ defopts.StopGPSampling     = '200 + 10*nvars    % Stop GP hyperparameter samplin
 defopts.TolGPVar           = '1e-4              % Stop GP hyperparameter sampling if sample variance is below this threshold per fcn';
 defopts.QuadraticMean      = 'yes               % Use GP with quadratic mean function (otherwise constant)';
 defopts.Kfun               = '@sqrt             % Variational components as a function of training points';
+defopts.KfunMax            = '@(K) K.^(0.75)    % Max variational components as a function of training points';
+defopts.AdaptiveK          = 'no                % Adaptive number of variational components';
 defopts.HPDFrac            = '0.5               % High Posterior Density region (fraction of training inputs)';
 defopts.WarpRotoScaling    = 'on                % Rotate and scale input';
 %defopts.WarpCovReg         = '@(N) 25/N         % Regularization weight towards diagonal covariance matrix for N training inputs';
@@ -205,7 +207,7 @@ end
 %% Variational optimization loop
 iter = 0;
 isFinished_flag = false;
-exitflag = 0;   output = [];    stats = [];
+exitflag = 0;   output = [];    stats = [];     sKL = Inf;
 
 while ~isFinished_flag    
     iter = iter + 1;
@@ -345,8 +347,20 @@ while ~isFinished_flag
     timer.gpTrain = toc(t);
         
     %% Optimize variational parameters
-    t = tic;        
-    Knew = getK(optimState,options);
+    t = tic;
+    
+    % Adaptive increase of number of components
+    if options.AdaptiveK
+        [Kmin,Kmax] = getK(optimState,options);        
+        Knew = optimState.vpK;
+        Knew = max(Knew,Kmin);
+        if sKL < options.TolsKL*options.FunEvalsPerIter
+            Knew = optimState.vpK + 1;
+        end
+        Knew = min(Knew,Kmax);
+    else
+        Knew = getK(optimState,options);
+    end
 
     if optimState.RecomputeVarPost || options.AlwaysRefitVarPost
         Nfastopts = options.NSelbo * vp.K;
@@ -362,7 +376,7 @@ while ~isFinished_flag
     
     [vp,elbo,elbo_sd,varss] = ...
         vpoptimize(Nfastopts,Nslowopts,useEntropyApprox,vp,gp,Knew,X_hpd,y_hpd,optimState,stats,options);
-        
+    optimState.vpK = vp.K;
     
     %%  Redo rotoscaling at the end
     if options.WarpRotoScaling && optimState.redoRotoscaling
@@ -586,21 +600,30 @@ end
 end
         
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function K = getK(optimState,options)
+function [Kmin,Kmax] = getK(optimState,options)
 %GETK Get number of variational components.
 
 Neff = optimState.Neff;
 Kfun = options.Kfun;
+Kfun_max = options.KfunMax;
 
 if optimState.Warmup
-    K = 2;
+    Kmin = 2;
+    Kmax = 2;
 else
     if isnumeric(Kfun)
-        K = Kfun;
+        Kmin = Kfun;
     elseif isa(Kfun,'function_handle')
-        K = Kfun(Neff);
+        Kmin = Kfun(Neff);
     end
-    K = min(Neff,max(1,round(K)));
+    if isnumeric(Kfun_max)
+        Kmax = Kfun_max;
+    elseif isa(Kfun_max,'function_handle')
+        Kmax = Kfun_max(Neff);
+    end
+    
+    Kmin = min(Neff,max(1,round(Kmin)));
+    Kmax = max(Kmin,min(Neff,max(1,round(Kmax))));
 end
 
 end

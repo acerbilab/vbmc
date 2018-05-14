@@ -142,6 +142,9 @@ optimState.RunMean = [];
 optimState.RunCov = [];
 optimState.LastRunAvg = NaN; % Last time running average was updated
 
+% Current number of components for variational posterior
+optimState.vpK = K;
+
 % List of points at the end of each iteration
 optimState.iterList.u = [];
 optimState.iterList.fval = [];
