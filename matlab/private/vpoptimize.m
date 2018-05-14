@@ -1,10 +1,11 @@
-function [vp,elbo,elbo_sd,varss] = vpoptimize(Nslowopts,useEntropyApprox,vp,gp,K,Xstar,ystar,optimState,stats,options)
+function [vp,elbo,elbo_sd,varss] = vpoptimize(Nfastopts,Nslowopts,useEntropyApprox,vp,gp,K,Xstar,ystar,optimState,stats,options)
 %VPOPTIMIZE Optimize variational posterior.
 
 % Get bounds for variational parameters optimization    
 [vp.LB_theta,vp.UB_theta] = vbmc_vpbnd(vp,Xstar,K,options);
 
-Nfastopts = options.NSelbo * K; % Number of initial starting points    
+if isempty(Nfastopts); Nfastopts = options.NSelbo * K; end  % Number of initial starting points
+if isempty(Nslowopts); Nslowopts = 1; end
 nelcbo_fill = zeros(Nfastopts,1);
 
 % Check variational posteriors from previous iterations

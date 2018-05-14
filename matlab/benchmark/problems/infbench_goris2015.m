@@ -1,5 +1,7 @@
-function y = infbench_goris2015(x,infprob)
+function y = infbench_goris2015(x,infprob,id)
 %INFBENCH_GORIS2015 Inference benchmark log pdf -- neuronal model from Goris et al. (2015).
+
+if nargin < 3; id = []; end
 
 if isempty(x)
     if isempty(infprob) % Generate this document        
@@ -28,31 +30,60 @@ if isempty(x)
             end                
             
             infprob = infbench_goris2015([],n);
+            if isempty(id); id = 0; end
             
-            % First, check optimum            
             trinfo = infprob.Data.trinfo;
-            opts = optimoptions('fminunc','Display','off','MaxFunEvals',700);
             
-            x0 = xmin(infprob.idxParams);
-            x0 = warpvars(x0,'d',trinfo);   % Convert to unconstrained coordinates            
-            [xnew,fvalnew] = fminunc(@(x) -infbench_goris2015(x,infprob), x0, opts);
+            if id == 0
             
-            fvalnew = -fvalnew;
-            xmin(infprob.idxParams) = warpvars(xnew,'inv',trinfo);
-            fval = fvalnew + warpvars(xnew,'logp',trinfo);
-                        
-            x0 = xmin(infprob.idxParams);
-            x0 = warpvars(x0,'d',trinfo);   % Convert to unconstrained coordinates            
-            [xnew,fvalnew] = fminunc(@(x) nlogpost(x,infprob), x0, opts);
-            
-            fvalnew = -fvalnew;
-            xmin_post = xmin;
-            xmin_post(infprob.idxParams) = warpvars(xnew,'inv',trinfo);
-            fval_post = fvalnew + warpvars(xnew,'logp',trinfo);
+                % First, check optimum            
+                opts = optimoptions('fminunc','Display','off','MaxFunEvals',700);
 
-            fprintf('\t\t\tcase %d\n',n);
-            fprintf('\t\t\t\tname = ''%s'';\n\t\t\t\txmin = %s;\n\t\t\t\tfval = %s;\n',name,mat2str(xmin),mat2str(fval));
-            fprintf('\t\t\t\txmin_post = %s;\n\t\t\t\tfval_post = %s;\n',mat2str(xmin_post),mat2str(fval_post));
+                x0 = xmin(infprob.idxParams);
+                x0 = warpvars(x0,'d',trinfo);   % Convert to unconstrained coordinates            
+                [xnew,fvalnew] = fminunc(@(x) -infbench_goris2015(x,infprob), x0, opts);
+
+                fvalnew = -fvalnew;
+                xmin(infprob.idxParams) = warpvars(xnew,'inv',trinfo);
+                fval = fvalnew + warpvars(xnew,'logp',trinfo);
+
+                x0 = xmin(infprob.idxParams);
+                x0 = warpvars(x0,'d',trinfo);   % Convert to unconstrained coordinates            
+                [xnew,fvalnew] = fminunc(@(x) nlogpost(x,infprob), x0, opts);
+
+                fvalnew = -fvalnew;
+                xmin_post = xmin;
+                xmin_post(infprob.idxParams) = warpvars(xnew,'inv',trinfo);
+                fval_post = fvalnew + warpvars(xnew,'logp',trinfo);
+
+                fprintf('\t\t\tcase %d\n',n);
+                fprintf('\t\t\t\tname = ''%s'';\n\t\t\t\txmin = %s;\n\t\t\t\tfval = %s;\n',name,mat2str(xmin),mat2str(fval));
+                fprintf('\t\t\t\txmin_post = %s;\n\t\t\t\tfval_post = %s;\n',mat2str(xmin_post),mat2str(fval_post));
+                
+            else
+                rng(id);
+                widths = 0.5*(infprob.PUB - infprob.PLB);
+                logpfun = @(x) infbench_goris2015(x,infprob);
+                
+                sampleopts.Burnin = Ns;
+                sampleopts.Thin = 1;
+                sampleopts.Display = 'iter';
+                sampleopts.Diagnostics = false;
+                sampleopts.VarTransform = false;
+                sampleopts.InversionSample = false;
+                sampleopts.FitGMM = false;
+                % sampleopts.TransitionOperators = {'transSliceSampleRD'};
+
+                W = 2*(infprob.D+1);
+                Ns = W*100;
+                n = 7;
+                x0 = xmin(infprob.idxParams);
+                x0 = warpvars(x0,'d',trinfo);   % Convert to unconstrained coordinates
+                Xs = eissample_lite(logpfun,x0,Ns,W,widths,infprob.LB,infprob.UB,sampleopts);
+                
+                
+                break;
+            end
             
         end
            

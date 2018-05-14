@@ -75,7 +75,9 @@ else                    % Adaptive uncertainty sampling
     for is = 1:Ns
 
         % Compute expected log joint and its variance (only diagonal terms)
-        [G,~,vardiagG] = gplogjoint(vp,gp,[0 0 0],1,[],2);
+        if Nacq > 1
+            [G,~,vardiagG] = gplogjoint(vp,gp,[0 0 0],1,[],2);
+        end
 
         % Create search set from cache and randomly generated
         [Xsearch,idx_cache] = getSearchPoints(NSsearch,Ns,optimState,gp,vp,options);
@@ -101,8 +103,11 @@ else                    % Adaptive uncertainty sampling
             %xsearch_cmaes = cmaes_modded('vbmc_acqGEV',Xacq(1,:)',insigma,cmaes_opts,vp,gp,optimState,1,1);
             % insigma = max(vp.sigma)*vp.lambda;
             [~,Sigma] = vbmc_moments(vp,0); insigma = sqrt(diag(Sigma));
+            % cmaes_opts.PopSize = 16 + 3*vp.D;   % Large population size
+            % cmaes_opts.DispModulo = Inf;
+            fval_old = SearchAcqFcn{1}(Xacq(1,:),vp,gp,optimState,1);
+            cmaes_opts.TolFun = max(1e-12,abs(fval_old*1e-3));
             [xsearch_cmaes,fval_cmaes] = cmaes_modded(func2str(SearchAcqFcn{1}),Xacq(1,:)',insigma,cmaes_opts,vp,gp,optimState,1,1);
-            fval_old = vbmc_acqprop(Xacq(1,:),vp,gp,optimState,1);
             if fval_cmaes < fval_old            
                 Xacq(1,:) = xsearch_cmaes';
                 idx_cache_acq(1) = 0;

@@ -260,7 +260,8 @@ while ~isFinished_flag
     end
     
     %% Update stretching of unbounded variables
-    if any(isinf(LB) & isinf(UB)) && (isNonlinearWarping || iter == 1)
+    if any(isinf(LB) & isinf(UB)) && ...
+            options.WarpNonlinear && (isNonlinearWarping || iter == 1)
         [vp,optimState,hyp] = ...
             warp_unbounded(vp,optimState,hyp,gp,cmaes_opts,options);
         optimState = ResetRunAvg(optimState);
@@ -284,7 +285,7 @@ while ~isFinished_flag
 %     if optimState.DoRotoscaling && isWarping
 %         [~,X_hpd,y_hpd] = ...
 %             vbmc_gphyp(optimState,optimState.gpMeanfun,0,options);            
-%         vp = vpoptimize(1,0,vp,gp,vp.K,X_hpd,y_hpd,optimState,stats,options);
+%         vp = vpoptimize(Nfastopts,1,0,vp,gp,vp.K,X_hpd,y_hpd,optimState,stats,options);
 %         [vp,optimState,hyp] = ...
 %             warp_rotoscaling(vp,optimState,hyp,gp,cmaes_opts,options);
 %         optimState.DoRotoscaling = false;
@@ -323,7 +324,13 @@ while ~isFinished_flag
     [hypprior,X_hpd,y_hpd,~,hyp0,optimState.gpMeanfun] = ...
         vbmc_gphyp(optimState,optimState.gpMeanfun,0,options);
     if isempty(hyp); hyp = hyp0; end % Initial GP hyperparameters
-    gptrain_options.Nopts = 3;
+    gptrain_options.Thin = 5;    
+    if optimState.RecomputeVarPost
+        gptrain_options.Burnin = gptrain_options.Thin*Ns_gp;
+    else
+        gptrain_options.Burnin = gptrain_options.Thin*3;
+    end
+    if Ns_gp > 0; gptrain_options.Nopts = 1; else; gptrain_options.Nopts = 2; end
     
     [gp,hyp] = gplite_train(hyp,Ns_gp, ...
         optimState.X(optimState.X_flag,:),optimState.y(optimState.X_flag), ...
@@ -342,17 +349,19 @@ while ~isFinished_flag
     Knew = getK(optimState,options);
 
     if optimState.RecomputeVarPost || options.AlwaysRefitVarPost
+        Nfastopts = options.NSelbo * vp.K;
         Nslowopts = options.ElboStarts; % Full optimizations
         useEntropyApprox = true;
         optimState.RecomputeVarPost = false;
     else
         % Only incremental change
+        Nfastopts = ceil(options.NSelbo * vp.K / 10);
         Nslowopts = 1;
-        useEntropyApprox = true;
+        useEntropyApprox = false;
     end
     
     [vp,elbo,elbo_sd,varss] = ...
-        vpoptimize(Nslowopts,useEntropyApprox,vp,gp,Knew,X_hpd,y_hpd,optimState,stats,options);
+        vpoptimize(Nfastopts,Nslowopts,useEntropyApprox,vp,gp,Knew,X_hpd,y_hpd,optimState,stats,options);
         
     
     %%  Redo rotoscaling at the end
@@ -369,7 +378,7 @@ while ~isFinished_flag
             optimState.X(optimState.X_flag,:),optimState.y(optimState.X_flag), ...
             optimState.gpMeanfun,hypprior,[],gptrain_options);
         
-         vp = vpoptimize(1,0,vp,gp,vp.K,X_hpd,y_hpd,optimState,stats,options);
+         vp = vpoptimize(Nfastopts,1,0,vp,gp,vp.K,X_hpd,y_hpd,optimState,stats,options);
     end
     
     if options.Plot
@@ -449,6 +458,9 @@ while ~isFinished_flag
             
             % Skip adaptive sampling for next iteration
             optimState.SkipAdaptiveSampling = true;
+            
+            % Fully recompute variational posterior
+            optimState.RecomputeVarPost = true;
         end
     end
     
@@ -510,7 +522,7 @@ while ~isFinished_flag
         stats.qindex(iter) = qindex;
         
         % Stop sampling after sample variance has stabilized below ToL
-        if ~isempty(idx_stable) && optimState.StopSampling == 0
+        if ~isempty(idx_stable) && optimState.StopSampling == 0 && ~optimState.Warmup
             varss_list = stats.gpSampleVar;
             if sum(w.*varss_list(idx_stable:iter)) < options.TolGPVar
                 optimState.StopSampling = optimState.N;
