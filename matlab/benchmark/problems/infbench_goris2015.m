@@ -88,8 +88,8 @@ if isempty(x)
 
                 x0 = xmin(infprob.idxParams);
                 x0 = warpvars(x0,'d',trinfo);   % Convert to unconstrained coordinates
-                LB = infprob.PLB - 2*widths;
-                UB = infprob.PUB + 2*widths;
+                LB = infprob.PLB - 10*widths;
+                UB = infprob.PUB + 10*widths;
                 
                 [Xs,lls,exitflag,output] = eissample_lite(logpfun,x0,Ns,W,widths,LB,UB,sampleopts);
                 
