@@ -63,6 +63,7 @@ defopts.TolGPVar           = '1e-4              % Stop GP hyperparameter samplin
 defopts.QuadraticMean      = 'yes               % Use GP with quadratic mean function (otherwise constant)';
 defopts.Kfun               = '@sqrt             % Variational components as a function of training points';
 defopts.KfunMax            = '@(K) 2*sqrt(K)    % Max variational components as a function of training points';
+defopts.Kwarmup            = '2                 % Variational components during warmup';
 defopts.AdaptiveK          = 'no                % Adaptive number of variational components';
 defopts.HPDFrac            = '0.5               % High Posterior Density region (fraction of training inputs)';
 defopts.WarpRotoScaling    = 'off               % Rotate and scale input';
@@ -611,8 +612,8 @@ Kfun = options.Kfun;
 Kfun_max = options.KfunMax;
 
 if optimState.Warmup
-    Kmin = 2;
-    Kmax = 2;
+    Kmin = options.Kwarmup;
+    Kmax = options.Kwarmup;
 else
     if isnumeric(Kfun)
         Kmin = Kfun;

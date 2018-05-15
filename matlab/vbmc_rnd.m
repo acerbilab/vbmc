@@ -16,20 +16,31 @@ else
     sigma(1,:) = vp.sigma;
     lambda_t(1,:) = vp.lambda(:)';
 
-    if permflag
-        I = randperm(ceil(N/K)*K)';
-        I = mod(I,K)+1;
+    if vp.K > 1        
+        if permflag
+            I = randperm(ceil(N/K)*K)';
+            I = mod(I,K)+1;
+        else
+            I = randi(K,[N,1]);
+        end
+        
+        if ~isfinite(df) || df == 0
+            % Sample from variational posterior
+            X = mu_t(I(1:N),:) + bsxfun(@times, lambda_t, bsxfun(@times,randn(N,D),sigma(I(1:N))'));
+        else
+            % Sample from heavy-tailed variant of variational posterior
+            t = df/2./sqrt(gamrnd(df/2,df/2,[N,1]));
+            X = mu_t(I(1:N),:) + bsxfun(@times, lambda_t, bsxfun(@times,bsxfun(@times,t,randn(N,D)),sigma(I(1:N))'));
+        end
     else
-        I = randi(K,[N,1]);
-    end
-
-    if ~isfinite(df) || df == 0
-        % Sample from variational posterior
-        X = mu_t(I(1:N),:) + bsxfun(@times, lambda_t, bsxfun(@times,randn(N,D),sigma(I(1:N))'));
-    else
-        % Sample from heavy-tailed variant of variational posterior
-        t = df/2./sqrt(gamrnd(df/2,df/2,[N,1]));
-        X = mu_t(I(1:N),:) + bsxfun(@times, lambda_t, bsxfun(@times,bsxfun(@times,t,randn(N,D)),sigma(I(1:N))'));
+        if ~isfinite(df) || df == 0
+            % Sample from variational posterior
+            X = mu_t + bsxfun(@times, lambda_t, randn(N,D)*sigma);
+        else
+            % Sample from heavy-tailed variant of variational posterior
+            t = df/2./sqrt(gamrnd(df/2,df/2,[N,1]));
+            X = mu_t + bsxfun(@times, lambda_t, sigma*bsxfun(@times,t,randn(N,D)));
+        end
     end
 
     if origflag && ~isempty(vp.trinfo)
