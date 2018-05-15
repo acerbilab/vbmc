@@ -32,6 +32,7 @@ NOISE="'[]'"
 ALGOS="{'vbmc'}"
 ALGOSET="'base'"
 IDS="{'1:2','3:4','5:6','7:8','9:10','11:12','13:14','15:16','17:18','19:20'}"
+IDS_SINGLE="{'1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16','17','18','19','20'}"
 
 case "${1}" in
 	0)      PROBS="{'lumpy'}"
@@ -102,7 +103,7 @@ case "${1}" in
         102)    PROBS="{'goris2015'}"
                 ALGOS="{'wsabi','wsabi@mm','bmc','smc','ais'}"
                 DIMS="{'S7','S8'}"
-                IDS=$IDS
+                IDS=$IDS_SINGLE
                 ;;
         103)    PROBS="{'goris2015'}"
                 ALGOS="{'vbmc@adaptive'}"
