@@ -127,6 +127,7 @@ if isempty(x)
         
         xmin = NaN(1,12);       fval = Inf;
         xmin_post = NaN(1,12);  fval_post = Inf;
+        Mean_laplace = NaN(1,7);    Cov_laplace = NaN(7,7); lnZ_laplace = NaN;
         
         switch n
             case {1,2,3,4,5,6}; name = ['fake0', int2str(n)];
