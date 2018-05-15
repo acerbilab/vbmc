@@ -64,7 +64,7 @@ if isempty(x)
                 
                 rng(id);
                 widths = 0.5*(infprob.PUB - infprob.PLB);
-                logpfun = @(x) infbench_goris2015(x,infprob);
+                logpfun = @(x) -nlogpost(x,infprob);
                 
                 % Number of samples
                 if numel(mcmc_params) > 2
@@ -88,7 +88,10 @@ if isempty(x)
 
                 x0 = xmin(infprob.idxParams);
                 x0 = warpvars(x0,'d',trinfo);   % Convert to unconstrained coordinates
-                [Xs,lls,exitflag,output] = eissample_lite(logpfun,x0,Ns,W,widths,infprob.LB,infprob.UB,sampleopts);
+                LB = infprob.PLB - 2*widths;
+                UB = infprob.PUB + 2*widths;
+                
+                [Xs,lls,exitflag,output] = eissample_lite(logpfun,x0,Ns,W,widths,LB,UB,sampleopts);
                 
                 filename = ['goris2015_mcmc_n' num2str(n) '_id' num2str(id) '.mat'];
                 save(filename,'Xs','lls','exitflag','output');                
