@@ -113,7 +113,11 @@ optimState.WarpingNonlinearCount = 0;
 optimState.redoRotoscaling = false;
 
 % When GP hyperparameter sampling is switched with optimization
-optimState.StopSampling = 0;
+if options.NSgpMax > 0
+    optimState.StopSampling = 0;
+else
+    optimState.StopSampling = Inf;    
+end
 
 % Fully recompute variational posterior
 optimState.RecomputeVarPost = true;
