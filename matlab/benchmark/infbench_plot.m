@@ -276,6 +276,8 @@ for iFig = 1:nfigs
                         lnZs = Errs;
                     end
                     
+                    
+                    
                     switch lower(options.PlotType)
                         case 'lnz'
                             [xx,yy,yyerr] = plotIterations(x,lnZs,iLayer,varargin{dimlayers},options);
@@ -360,6 +362,9 @@ function [xx,yy,yyerr] = plotIterations(x,y,iLayer,arglayer,options)
     xx = median(x,1);
     switch lower(options.Method)
         case 'ir'
+            idx_bad = all(~isfinite(y),2);
+            y(idx_bad,:) = [];
+            
             yy = median(y,1);
             yyerr = abs(bsxfun(@minus,[quantile(y,0.75,1);quantile(y,0.25,1)],yy));
     end
