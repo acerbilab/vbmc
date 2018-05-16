@@ -157,8 +157,8 @@ else
                                sqrt(1 + K / sn2_eff - new_L_column' * new_L_column)];
         else            % low-noise parameterization
             alpha_update = -L * Ks_mat;
-            v = -alpha_update / vstar;
-            gp(1).post(s).L = [L + v * alpha_update', -v; -v', -1 / vstar];
+            v = -alpha_update / vstar(:,s);
+            gp(1).post(s).L = [L + v * alpha_update', -v; -v', -1 / vstar(:,s)];
         end
         
         gp(1).post(s).sW = [gp(1).post(s).sW; gp(1).post(s).sW(1)];

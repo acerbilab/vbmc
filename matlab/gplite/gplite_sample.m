@@ -1,8 +1,9 @@
-function [Xs,gp] = gplite_sample(gp,Ns,x0,method)
+function [Xs,gp] = gplite_sample(gp,Ns,x0,method,logprior)
 %GPLITE_SAMPLE Draw random samples from log pdf represented by GP.
 
 if nargin < 3; x0 = []; end
 if nargin < 4 || isempty(method); method = 'parallel'; end
+if nargin < 5 || isempty(logprior); logprior = []; end
 
 MaxBnd = 10;
 D = size(gp.X,2);
@@ -30,7 +31,11 @@ if ~isfield(gp.post(1),'alpha') || isempty(gp.post(1).alpha)
     gp = gplite_post(gp);
 end
     
-logpfun = @(x) gplite_pred(gp,x);
+if isempty(logprior)
+    logpfun = @(x) gplite_pred(gp,x);
+else
+    logpfun = @(x) gplite_pred(gp,x) + logprior(x);    
+end
 
 switch method
     case {'slicesample','slicesamplebnd'}
@@ -64,7 +69,12 @@ switch method
             hpd_frac = 0.25;
             N = numel(gp.y);
             N_hpd = min(N,max(W,round(hpd_frac*N)));
-            [~,ord] = sort(gp.y,'descend');
+            if isempty(logprior)
+                [~,ord] = sort(gp.y,'descend');
+            else
+                dy = logprior(gp.X);
+                [~,ord] = sort(gp.y + dy,'descend');                
+            end
             X_hpd = gp.X(ord(1:N_hpd),:);
             x0 = X_hpd(randperm(N_hpd,min(W,N_hpd)),:);
         end
