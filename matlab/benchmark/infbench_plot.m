@@ -376,7 +376,7 @@ function [xx,yy,yyerr] = plotIterations(x,y,iLayer,arglayer,options)
         
     enhance = enhanceline(numel(arglayer),options);    
     if any(iLayer == enhance); lw = 4; else; lw = 2; end
-    if plotErrorBar && 0
+    if plotErrorBar
         h = shadedErrorBar(xx,yy,yyerr,{linstyle{iLayer},'LineWidth',lw},1); hold on;
     else
         h = plot(xx,yy,linstyle{iLayer},'Color', lincol(iLayer,:), 'LineWidth',lw); hold on;
