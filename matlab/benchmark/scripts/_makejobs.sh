@@ -90,7 +90,16 @@ case "${1}" in
                 IDS="{'1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16','17','18','19','20'}"
                 ;;
        20)     ALGOSET="{'basekone'}"
-                IDS="{'1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16','17','18','19','20'}"
+               IDS=$IDS_SINGLE
+                ;;
+       21)     	ALGOSET="{'acqproponly'}"
+               	IDS=$IDS_SINGLE
+		;;
+       22)      ALGOSET="{'acquconly'}"
+                IDS=$IDS_SINGLE
+                ;;
+       23)      ALGOSET="{'acqvuconly'}"
+                IDS=$IDS_SINGLE
                 ;;
 	50)     ALGOS="{'wsabi'}" 
                 ;;
