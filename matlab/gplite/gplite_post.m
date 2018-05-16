@@ -87,7 +87,7 @@ if ~update1
         K_mat = sf2 * nf * exp(-K_mat/2);
 
         if sn2 < 1e-6   % Different representation depending on noise size
-            while 1     % Cholesky decomposition until it works
+            for iter = 1:10     % Cholesky decomposition until it works
                 [L,p] = chol(K_mat+sn2*sn2_mult*eye(N));
                 if p > 0; sn2_mult = sn2_mult*10; else; break; end
             end
@@ -96,7 +96,7 @@ if ~update1
             Lchol = 0;         % Tiny noise representation
         else
             
-            while 1
+            for iter = 1:10
                 [L,p] = chol(K_mat/(sn2*sn2_mult)+eye(N));
                 if p > 0; sn2_mult = sn2_mult*10; else; break; end
             end
