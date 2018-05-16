@@ -60,8 +60,10 @@ post.lnZ_var = stats(end).lnZ_var;
 
 % Return estimate, SD of the estimate, and gauss-sKL with true moments
 Nticks = numel(history.SaveTicks);
+N = zeros(1,numel(stats));
+for i = 1:numel(stats); N(i) = stats(i).N; end
 for iIter = 1:Nticks
-    idx = find(stats.N == history.SaveTicks(iIter),1);
+    idx = find(N == history.SaveTicks(iIter),1);
     if isempty(idx); continue; end
     
     history.Output.N(iIter) = history.SaveTicks(iIter);
@@ -74,6 +76,11 @@ for iIter = 1:Nticks
     history.Output.Mode(iIter,:) = Mode;    
 end
 
+% Remove vbmodel from stats
+for i = 1:numel(history.Output.stats)
+    history.Output.stats(i).vbmodel = [];
+end
+
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -83,16 +90,16 @@ function [gsKL,Mean,Cov,Mode] = computeStats(stats,probstruct)
 vbmodel = stats.vbmodel;
 
 % Compute Gaussianized symmetric KL-divergence with ground truth
-Ns_moments = 1e5;
+Ns_moments = 1e6;   Nb = 20;
 xx = [];
-for i = 1:10; xx = [xx; vbgmmrnd(vbmodel,Ns_moments/10)']; end
+for i = 1:Nb; xx = [xx; vbgmmrnd(vbmodel,Ns_moments/Nb)']; end
 Mean = mean(xx,1);
 Cov = cov(xx);
 [kl1,kl2] = mvnkl(Mean,Cov,probstruct.Post.Mean,probstruct.Post.Cov);
 gsKL = 0.5*(kl1 + kl2);
 
 % Compute mode
-opts = optimoptions('fminunc','GradObj','off','Display','iter');
+opts = optimoptions('fminunc','GradObj','off','Display','off');
 Mode = fminunc(@(x) -vbgmmpdf(vbmodel,x')',stats.mode,opts);
 
 end

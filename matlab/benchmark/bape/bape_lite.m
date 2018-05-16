@@ -1,15 +1,19 @@
 function [vbmodel,exitflag,output] = bape_lite(fun,x0,PLB,PUB,options)
 %BAPE_LITE Light implementation of BAPE.
 
+% Add variational Gaussian mixture model toolbox to path
+mypath = fileparts(mfilename('fullpath'));
+addpath([mypath filesep 'vbgmm']);
+
 exitflag = 0;   % To be used in the future
 
 MaxFunEvals = options.MaxFunEvals;
 
 Ninit = 20;
 Nstep = 10;
-Ns = 1e3;       % Number of samples per iteration
+Ns = 2e4;       % Number of samples per iteration
 NsMax_gp = 0;   % Max GP hyperparameter samples (0 = optimize)
-Nsearch = 2^12; % Starting search points for acquisition fcn
+Nsearch = 2^13; % Starting search points for acquisition fcn
 acqfun = @acqbape;
 
 % Variational Bayesian Gaussian mixture options
@@ -146,19 +150,21 @@ end
 
 %--------------------------------------------------------------------------
 function [lnZ,lnZ_var] = estimate_lnZ(X,y,vbmodel)
+%ESTIMATE_LNZ Rough approximation of normalization constant
 
-hpd_frac = 0.2;     % Top 20%
+hpd_frac = 0.2;     % Top 20% HPD
 N = size(X,1);
 
-p = vbgmmpdf(vbmodel,X')';
-[~,ord] = sort(p,'descend');
+lp = log(vbgmmpdf(vbmodel,X')');
+
+% Take HPD points according to both fcn samples and model
+[~,ord] = sort(lp + y,'descend');
 
 idx_hpd = ord(1:ceil(N*hpd_frac));
-
-p_hpd = p(idx_hpd);
+lp_hpd = lp(idx_hpd);
 y_hpd = y(idx_hpd);
 
-delta = log(y_hpd) - log(p_hpd);
+delta = -(lp_hpd - y_hpd);
 
 lnZ = mean(delta);
 lnZ_var = var(delta)/numel(delta);
