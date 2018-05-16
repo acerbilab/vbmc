@@ -11,7 +11,7 @@ MaxFunEvals = options.MaxFunEvals;
 
 Ninit = 20;
 Nstep = 10;
-Ns = 2e4;       % Number of samples per iteration
+Ns = 1e4;       % Number of samples per iteration
 NsMax_gp = 0;   % Max GP hyperparameter samples (0 = optimize)
 Nsearch = 2^13; % Starting search points for acquisition fcn
 acqfun = @acqbape;
