@@ -156,6 +156,12 @@ case "${1}" in
                 DIMS="{'S7','S8'}"
                 IDS=$IDS_SINGLE
                 ;;
+        120)    PROBS="{'goris2015'}"
+                ALGOS="{'bape'}"
+                DIMS="{'S7','S8'}"
+                IDS=$IDS_SINGLE
+                ;;
+
 
 esac
 
