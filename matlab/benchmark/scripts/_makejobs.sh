@@ -95,10 +95,10 @@ case "${1}" in
        21)     	ALGOSET="{'acqproponly'}"
                	IDS=$IDS_SINGLE
 		;;
-       22)      ALGOSET="{'acquconly'}"
+       22)      ALGOSET="{'acqusonly'}"
                 IDS=$IDS_SINGLE
                 ;;
-       23)      ALGOSET="{'acqvuconly'}"
+       23)      ALGOSET="{'acqvusonly'}"
                 IDS=$IDS_SINGLE
                 ;;
 	50)     ALGOS="{'wsabi'}" 
