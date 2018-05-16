@@ -112,6 +112,9 @@ case "${1}" in
                 ;;
         80)     ALGOS="{'ais'}"
                 ;;
+	90)	ALGOS="{'bape'}"
+		IDS=$IDS_SINGLE
+		;;
 
         101)    PROBS="{'goris2015'}"
 		ALGOS="{'laplace'}"
