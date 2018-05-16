@@ -85,9 +85,9 @@ while 1
     fprintf(' Refit vbGMM...\n');
     vbmodel = vbgmmfit(Xs',[],[],vbopts);
 
-    Xrnd = vbgmmrnd(vbmodel,1e5)';
-    Mean = mean(Xrnd,1);
-    Cov = cov(Xrnd);
+    %Xrnd = vbgmmrnd(vbmodel,1e5)';
+    %Mean = mean(Xrnd,1);
+    %Cov = cov(Xrnd);
     
     % Estimate normalization constant in HPD region
     [lnZ,lnZ_var] = estimate_lnZ(X,y,vbmodel);

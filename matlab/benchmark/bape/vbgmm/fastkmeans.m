@@ -105,8 +105,6 @@ switch lower(options.Preprocessing)
         X = bsxfun(@minus,X,mu);
         sigma = std(X,[],1);
         X = bsxfun(@rdivide,X,sigma);        
-        mean(X)
-        cov(X)
     case 'none'
         % Do nothing        
     case 'whiten'
