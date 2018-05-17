@@ -156,6 +156,21 @@ case "${1}" in
                 DIMS="{'S7','S8'}"
                 IDS=$IDS_SINGLE
                 ;;
+        109)    PROBS="{'goris2015'}"
+                ALGOS="{'vbmc@acqproponly'}"
+                DIMS="{'S7','S8'}"
+                IDS=$IDS_SINGLE
+                ;;
+        110)    PROBS="{'goris2015'}"
+                ALGOS="{'vbmc@acqusonly'}"
+                DIMS="{'S7','S8'}"
+                IDS=$IDS_SINGLE
+                ;;
+        111)    PROBS="{'goris2015'}"
+                ALGOS="{'vbmc@acqvusonly'}"
+                DIMS="{'S7','S8'}"
+                IDS=$IDS_SINGLE
+                ;;
         120)    PROBS="{'goris2015'}"
                 ALGOS="{'bape'}"
                 DIMS="{'S7','S8'}"
