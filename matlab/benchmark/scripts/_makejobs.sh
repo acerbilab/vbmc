@@ -115,6 +115,9 @@ case "${1}" in
 	90)	ALGOS="{'bape'}"
 		IDS=$IDS_SINGLE
 		;;
+       	91)     ALGOS="{'bape@long'}"
+                IDS=$IDS_SINGLE
+                ;;
 
         101)    PROBS="{'goris2015'}"
 		ALGOS="{'laplace'}"
@@ -173,6 +176,11 @@ case "${1}" in
                 ;;
         120)    PROBS="{'goris2015'}"
                 ALGOS="{'bape'}"
+                DIMS="{'S7','S8'}"
+                IDS=$IDS_SINGLE
+                ;;
+        121)    PROBS="{'goris2015'}"
+                ALGOS="{'bape@long'}"
                 DIMS="{'S7','S8'}"
                 IDS=$IDS_SINGLE
                 ;;
