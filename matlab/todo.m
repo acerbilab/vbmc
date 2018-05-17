@@ -1,1 +1,1 @@
-% Rerun SMC, the prior was missing from the posterior (although same as BMC)
+% For rebuttal, possibly rerun BAPE with DRAM and 20k samples

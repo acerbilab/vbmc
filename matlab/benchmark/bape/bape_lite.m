@@ -6,13 +6,33 @@ mypath = fileparts(mfilename('fullpath'));
 addpath([mypath filesep 'vbgmm']);
 
 exitflag = 0;   % To be used in the future
+D = size(x0,2);
 
-MaxFunEvals = options.MaxFunEvals;
+%% Algorithm options
+
+% Number of samples per iteration
+MaxFunEvals = D*100;
+if isfield(options,'MaxFunEvals') 
+    MaxFunEvals = options.MaxFunEvals;
+end
+% Number of samples per iteration
+Ns = 2e4;
+if isfield(options,'Nsamples') && ~isempty(options.Nsamples)
+    Ns = options.Nsamples;
+end
+% Max GP hyperparameter samples (0 = optimize)
+NsMax_gp = 0;
+if isfield(options,'GPsamples') && ~isempty(options.GPsamples)
+    NsMax_gp = options.GPsamples;
+end
+% Training set size for switching to GP hyperparameter optimization
+StopGPSampling = 200 + 10*D;
+if isfield(options,'StopGPSampling') && ~isempty(options.StopGPSampling)
+    StopGPSampling = options.StopGPSampling;
+end
 
 Ninit = 20;
 Nstep = 10;
-Ns = 1e4;       % Number of samples per iteration
-NsMax_gp = 0;   % Max GP hyperparameter samples (0 = optimize)
 Nsearch = 2^13; % Starting search points for acquisition fcn
 acqfun = @acqbape;
 
@@ -24,7 +44,6 @@ vbopts.Nstarts     = 2;            % Number of runs
 vbopts.TolResponsibility = 0.5;    % Remove components with less than this total responsibility
 vbopts.ClusterInit = 'kmeans';     % Initialization of VB (methods are 'rand' and 'kmeans')
 
-D = size(x0,2);
 
 % GPLITE model options
 gpopts.Nopts = 1;       % Number of hyperparameter optimization runs
@@ -68,11 +87,24 @@ while 1
     
     % Build GP approximation
     fprintf(' Building GP approximation...');
-    Ns_gp = round(NsMax_gp / sqrt(N));
+    Ns_gp = min(round(NsMax_gp/10),round(NsMax_gp / sqrt(N)));
+    if N >= StopGPSampling; Ns_gp = 0; end
     py = vbgmmpdf(vbmodel,X');   % Evaluate approximation at X    
-    y_gp = y - log(py(:));         % Log difference    
-    [gp,hyp] = gplite_train(hyp,Ns_gp,X,y_gp,gp_meanfun,[],[],gpopts);
-
+    y_gp = y - log(py(:));         % Log difference
+    
+    % Set priors over GP hyperparameters
+    hypprior = [];
+    Nhyp = D+2;
+    hypprior.mu = NaN(1,Nhyp);
+    hypprior.sigma = NaN(1,Nhyp);
+    hypprior.df = 3*ones(1,Nhyp);    % Broad Student's t prior
+    hypprior.mu(1:D) = log(std(X));
+    hypprior.sigma(1:D) = max(2,log(max(X)-min(X)) - log(std(X)));
+    hypprior.mu(D+2) = log(1e-2);
+    hypprior.sigma(D+2) = 0.5;
+        
+    % Train GP
+    [gp,hyp] = gplite_train(hyp,Ns_gp,X,y_gp,gp_meanfun,hypprior,[],gpopts);
     
     % Sample from GP
     fprintf(' Sampling from GP...');

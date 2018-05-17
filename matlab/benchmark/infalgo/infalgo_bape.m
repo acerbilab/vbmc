@@ -3,6 +3,8 @@ function [history,post,algoptions] = infalgo_bape(algo,algoset,probstruct)
 
 algoptions.MaxFunEvals = probstruct.MaxFunEvals;
 algoptions.MaxIter = Inf;
+algoptions.Nsamples = 5e3;      % Number of samples per iteration
+algoptions.GPsamples = 80;
 
 if probstruct.Debug
     algoptions.TrueMean = probstruct.Post.Mean;

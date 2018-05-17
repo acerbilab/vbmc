@@ -27,11 +27,13 @@ Burnin = [];
 if isfield(options,'Burnin'); Burnin = options.Burnin; end
 if isempty(Burnin); Burnin = Thin*Ns; end   % Initial design size for hyperparameter optimization
 
+DfBase = [];
+if isfield(options,'DfBase'); DfBase = options.DfBase; end
+if isempty(DfBase); DfBase = 7; end   % Default degrees of freedom for Student's t prior
 
 [N,D] = size(X);            % Number of training points and dimension
 
 ToL = 1e-6;
-nf_def = 7;     % Default degrees of freedom for Student's t prior
 
 % Set up warped GP
 if ~isempty(warp)
@@ -90,7 +92,7 @@ if ~isfield(hprior,'sigma') || isempty(hprior.sigma)
     hprior.sigma = NaN(Nhyp,1);
 end
 if ~isfield(hprior,'df') || isempty(hprior.df)
-    hprior.df = nf_def*ones(Nhyp,1);
+    hprior.df = DfBase*ones(Nhyp,1);
 end
 if numel(hprior.mu) < Nhyp; hprior.mu = [hprior.mu(:); NaN(Nhyp-numel(hprior.mu),1)]; end
 if numel(hprior.sigma) < Nhyp; hprior.sigma = [hprior.sigma(:); NaN(Nhyp-numel(hprior.sigma),1)]; end

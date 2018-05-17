@@ -367,6 +367,10 @@ function [xx,yy,yyerr] = plotIterations(x,y,iLayer,arglayer,options)
             
             yy = median(y,1);
             yyerr = abs(bsxfun(@minus,[quantile(y,0.75,1);quantile(y,0.25,1)],yy));
+            idx = isfinite(yy);
+            xx = xx(idx);
+            yy = yy(idx);
+            yyerr = yyerr(idx);
     end
 
     plotErrorBar = options.ErrorBar;
