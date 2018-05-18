@@ -126,11 +126,17 @@ else
 
     history = infbench_func(); % Retrieve history
     
+    % Start warmup
+    
     % Store all points (no warmup pruning)
     X = output.X_orig(1:output.Xmax,:);
     y = output.y_orig(1:output.Xmax);
     Niter = find(size(X,1) == history.SaveTicks,1);
     N = history.SaveTicks(1:Niter);
+    
+    % Find when warm-up ends
+    idx = find(stats.vpK > 2,1);
+    if isempty(idx); endWarmupN = Inf; else; endWarmupN = stats.N(idx); end
     
     mu = zeros(1,Niter);
     ln_var = zeros(1,Niter);
@@ -141,17 +147,26 @@ else
     lambda = 1;                     % Ouput length scale for GP likelihood model
     alpha = 0.8;
     
-    for iIter = 1:Niter
+    for iIter = 1:Niter        
         X_train = X(1:N(iIter),:);
+        y_train = y(1:N(iIter));
+        % Prune trials after warmup
+        if N(iIter) >= endWarmupN
+            idx_keep = output.X_flag(1:N(iIter));
+            X_train = X_train(idx_keep,:);
+            y_train = y_train(idx_keep);
+        end
+        X_iter{iIter} = X_train;
+        y_iter{iIter} = y_train;
         lnp = infbench_lnprior(X_train,probstruct);
-        y_train = y(1:N(iIter)) - lnp;  % Remove log prior for WSABI
+        y_train = y_train - lnp;  % Remove log prior for WSABI
         [mu(iIter),ln_var(iIter)] = ...
             wsabi_oneshot('L',probstruct.PriorMean,diag(probstruct.PriorVar),kernelCov,lambda,alpha,X_train,y_train);
-    end    
+    end
     vvar = max(real(exp(ln_var)),0);
     
     [history,post] = ...
-        StoreAlgoResults(probstruct,[],[],X,y,mu,vvar,[],[],TotalTime);
+        StoreAlgoResults(probstruct,[],Niter,X_iter{Niter},y_iter{Niter},mu,vvar,X_iter,y_iter,TotalTime);
     history.scratch.output = output;
     history.Output.stats = stats;    
     

@@ -9,7 +9,7 @@ plots = {'lnZ','gsKL'};
 algos = {'vbmc@acqproponly','vbmc@acqusonly','wsabi','wsabi@mm','bmc','smc','ais'};
 algos = {'vbmc@acqproponly','vbmc@acqusonly','vbmc@acqpropnoprune','vbmc@acqusnoprune','wsabi','wsabi@mm','bmc','smc','ais'};
 % dims = {'2D','4D','6D','8D','10D'};
-algos = {'vbmc@acqproponly','wsabi','bape@long'};
+algos = {'vbmc@acqproponly','vbmc@acqpropnoprune','wsabi','vbmc@acqpropcontrol'};
 dims = {'S8','S7'};
 noise = [];
 

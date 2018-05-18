@@ -110,8 +110,8 @@ switch lower(type)
                     case 'acqproponly'; defaults.color = [0 0 0]/255; defaults.marker = ''; defaults.linewidth = 4; defaults.linestyle = '-'; defaults.name = 'vbmc (prop)';
                     case 'acqusonly'; defaults.color = [0 100 140]/255; defaults.marker = '*'; defaults.linewidth = 2; defaults.linestyle = '-'; defaults.name = 'vbmc (us)';
                     case {'base'}; defaults.color = [0 100 140]/255; defaults.marker = '*'; defaults.linewidth = 2; defaults.linestyle = '-.';
-                    case 'sqexp'; defaults.color = [0 100 140]/255; defaults.marker = 'o'; defaults.linewidth = 2; defaults.linestyle = '-';
-                    case 'lcbnearest'; defaults.color = [0 0 0]/255; defaults.marker = ''; defaults.linewidth = 4; defaults.linestyle = '-.';
+                    case 'acqpropnoprune'; defaults.color = [0 100 140]/255; defaults.marker = 'o'; defaults.linewidth = 2; defaults.linestyle = '-';
+                    case 'acqpropcontrol'; defaults.color = [0 0 0]/255; defaults.marker = ''; defaults.linewidth = 4; defaults.linestyle = '-.';
                     case 'acqlcb_m5'; defaults.color = [0 0 0]/255; defaults.marker = '^'; defaults.linewidth = 2; defaults.linestyle = ':';
                     case 'acqpi'; defaults.color = [120 100 0]/255; defaults.marker = 's'; defaults.linewidth = 2; defaults.linestyle = '-.';
                     case 'acqpi_m5'; defaults.color = [120 100 0]/255; defaults.marker = '>'; defaults.linewidth = 2; defaults.linestyle = ':';
