@@ -2,6 +2,8 @@ function [history,post,algoptions] = infalgo_vbmc(algo,algoset,probstruct)
 
 algoptions = vbmc('all');                   % Get default settings
 
+ControlRunFlag = false;     % Do NOT run in control mode
+
 % VBMC old defaults -- some of these may have changed
 algoptions.FunEvalsPerIter = 5;
 algoptions.AcqFcn = '@vbmc_acqskl';
@@ -51,6 +53,7 @@ switch algoset
     case {26,'acqvusonly'}; algoset = 'acqvusonly'; algoptions.Nacq = 1; algoptions.SearchAcqFcn = '@vbmc_acqvus'; algoptions.SearchCMAES = 1; algoptions.WarpRotoScaling = 0; algoptions.ELCBOWeight = 0; algoptions.AlwaysRefitVarPost = 0; algoptions.NSsearch = 2^13; algoptions.AdaptiveK = 1; algoptions.KfunMax = '@(K) 2*sqrt(K)';
     case {27,'acqpropnoprune'}; algoset = 'acqpropnoprune'; algoptions.Nacq = 1; algoptions.SearchAcqFcn = '@vbmc_acqprop'; algoptions.SearchCMAES = 1; algoptions.WarpRotoScaling = 0; algoptions.ELCBOWeight = 0; algoptions.AlwaysRefitVarPost = 0; algoptions.NSsearch = 2^13; algoptions.AdaptiveK = 1; algoptions.KfunMax = '@(K) 2*sqrt(K)'; algoptions.WarmupKeepThreshold = Inf;
     case {28,'acqusnoprune'}; algoset = 'acqusnoprune'; algoptions.Nacq = 1; algoptions.SearchAcqFcn = '@vbmc_acqus'; algoptions.SearchCMAES = 1; algoptions.WarpRotoScaling = 0; algoptions.ELCBOWeight = 0; algoptions.AlwaysRefitVarPost = 0; algoptions.NSsearch = 2^13; algoptions.AdaptiveK = 1; algoptions.KfunMax = '@(K) 2*sqrt(K)'; algoptions.WarmupKeepThreshold = Inf;
+    case {100,'acqpropcontrol'}; algoset = 'acqproponly'; algoptions.Nacq = 1; algoptions.SearchAcqFcn = '@vbmc_acqprop'; algoptions.SearchCMAES = 1; algoptions.WarpRotoScaling = 0; algoptions.ELCBOWeight = 0; algoptions.AlwaysRefitVarPost = 0; algoptions.NSsearch = 2^13; algoptions.AdaptiveK = 1; algoptions.KfunMax = '@(K) 2*sqrt(K)'; ControlRunFlag = true;
         
     otherwise
         error(['Unknown algorithm setting ''' algoset ''' for algorithm ''' algo '''.']);
@@ -88,34 +91,71 @@ for i = 1:numel(stats.gp)
     stats.gp(i).y = [];
 end
 
-history = infbench_func(); % Retrieve history
-history.scratch.output = output;
-history.TotalTime = TotalTime;
-history.Output.stats = stats;
-
-% Store computation results (ignore points discarded after warmup)
-history.Output.X = output.X_orig(output.X_flag,:);
-history.Output.y = output.y_orig(output.X_flag);
-post.lnZ = elbo;
-post.lnZ_var = elbo_sd^2;
-[post.gsKL,post.Mean,post.Cov,post.Mode] = computeStats(vp,probstruct);
-
-% Return estimate, SD of the estimate, and gauss-sKL with true moments
-Nticks = numel(history.SaveTicks);
-for iIter = 1:Nticks
-    idx = find(stats.N == history.SaveTicks(iIter),1);
-    if isempty(idx); continue; end
+if ~ControlRunFlag
     
-    history.Output.N(iIter) = history.SaveTicks(iIter);
-    history.Output.lnZs(iIter) = stats.elbo(idx);
-    history.Output.lnZs_var(iIter) = stats.elboSD(idx)^2;
-    [gsKL,Mean,Cov,Mode] = computeStats(stats.vp(idx),probstruct);
-    history.Output.Mean(iIter,:) = Mean;
-    history.Output.Cov(iIter,:,:) = Cov;
-    history.Output.gsKL(iIter) = gsKL;
-    history.Output.Mode(iIter,:) = Mode;    
-end
+    history = infbench_func(); % Retrieve history
+    history.scratch.output = output;
+    history.TotalTime = TotalTime;
+    history.Output.stats = stats;
+    
+    % Store computation results (ignore points discarded after warmup)
+    history.Output.X = output.X_orig(output.X_flag,:);
+    history.Output.y = output.y_orig(output.X_flag);
+    post.lnZ = elbo;
+    post.lnZ_var = elbo_sd^2;
+    [post.gsKL,post.Mean,post.Cov,post.Mode] = computeStats(vp,probstruct);
 
+    % Return estimate, SD of the estimate, and gauss-sKL with true moments
+    Nticks = numel(history.SaveTicks);
+    for iIter = 1:Nticks
+        idx = find(stats.N == history.SaveTicks(iIter),1);
+        if isempty(idx); continue; end
+
+        history.Output.N(iIter) = history.SaveTicks(iIter);
+        history.Output.lnZs(iIter) = stats.elbo(idx);
+        history.Output.lnZs_var(iIter) = stats.elboSD(idx)^2;
+        [gsKL,Mean,Cov,Mode] = computeStats(stats.vp(idx),probstruct);
+        history.Output.Mean(iIter,:) = Mean;
+        history.Output.Cov(iIter,:,:) = Cov;
+        history.Output.gsKL(iIter) = gsKL;
+        history.Output.Mode(iIter,:) = Mode;    
+    end
+else
+    % Control condition -- run VBMC as normal but compute marginal likelihood
+    % and posterior via other methods
+
+    history = infbench_func(); % Retrieve history
+    
+    % Store all points (no warmup pruning)
+    X = output.X_orig(1:output.Xmax,:);
+    y = output.y_orig(1:output.Xmax);
+    Niter = find(size(X,1) == history.SaveTicks,1);
+    N = history.SaveTicks(1:Niter);
+    
+    mu = zeros(1,Niter);
+    ln_var = zeros(1,Niter);
+
+    % Parameters for WSABI
+    diam = probstruct.PUB - probstruct.PLB;
+    kernelCov = diag(diam/10);     % Input length scales for GP likelihood model
+    lambda = 1;                     % Ouput length scale for GP likelihood model
+    alpha = 0.8;
+    
+    for iIter = 1:Niter
+        X_train = X(1:N(iIter),:);
+        lnp = infbench_lnprior(X_train,probstruct);
+        y_train = y(1:N(iIter)) - lnp;  % Remove log prior for WSABI
+        [mu(iIter),ln_var(iIter)] = ...
+            wsabi_oneshot('L',probstruct.PriorMean,diag(probstruct.PriorVar),kernelCov,lambda,alpha,X_train,y_train);
+    end    
+    vvar = max(real(exp(ln_var)),0);
+    
+    [history,post] = ...
+        StoreAlgoResults(probstruct,[],[],X,y,mu,vvar,[],[],TotalTime);
+    history.scratch.output = output;
+    history.Output.stats = stats;    
+    
+end
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

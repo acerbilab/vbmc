@@ -19,6 +19,8 @@ switch algoset
     case {0,'debug'}; algoset = 'debug'; algoptions.Debug = 1; algoptions.Plot = 'scatter';
     case {1,'base'}; algoset = 'base';           % Use defaults
     case {2,'long'}; algoset = 'long'; algoptions.Nsamples = 1e4;
+    case {3,'prop'}; algoset = 'prop'; algoptions.AcqFun = @acqbapeprop;
+    case {4,'acqg'}; algoset = 'acqg'; algoptions.AcqFun = @acqbapeg;
         
     otherwise
         error(['Unknown algorithm setting ''' algoset ''' for algorithm ''' algo '''.']);

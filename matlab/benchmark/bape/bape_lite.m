@@ -30,11 +30,15 @@ StopGPSampling = 200 + 10*D;
 if isfield(options,'StopGPSampling') && ~isempty(options.StopGPSampling)
     StopGPSampling = options.StopGPSampling;
 end
+% BAPE acquisition function
+acqfun = @acqbape;
+if isfield(options,'AcqFun') && ~isempty(options.AcqFun)
+    acqfun = options.AcqFun;
+end
 
 Ninit = 20;
 Nstep = 10;
 Nsearch = 2^13; % Starting search points for acquisition fcn
-acqfun = @acqbape;
 
 % Variational Bayesian Gaussian mixture options
 vbopts.Display     = 'off';     % Display
@@ -78,6 +82,11 @@ vbmodel = vbgmmfit(Xs',1,[],vbopts);
 
 % Initial hyperparameter vector
 hyp = [log(width(:));log(std(y));log(1e-3)];
+
+% Set proposal fcn based on PLB and PUB
+if ~isfield(options,'ProposalFcn') || isempty(options.ProposalFcn)
+    options.ProposalFcn = @(x) bape_proposal(x,PLB,PUB);
+end
 
 iter = 1;
 
@@ -147,17 +156,17 @@ while 1
     for i = 1:Nstep
         fprintf(' %d..',i);
         % Random uniform search
-        [xnew,fval] = fminfill(@(x) acqfun(x,vbmodel,gp),[],[],[],PLB,PUB,[],struct('FunEvals',floor(Nsearch/2)));
+        [xnew,fval] = fminfill(@(x) acqfun(x,vbmodel,gp,options),[],[],[],PLB,PUB,[],struct('FunEvals',floor(Nsearch/2)));
         
         % Random search sample from vbGMM
         xrnd = vbgmmrnd(vbmodel,ceil(Nsearch/2))';
-        frnd = acqfun(xrnd,vbmodel,gp);
+        frnd = acqfun(xrnd,vbmodel,gp,options);
         [frnd_min,idx] = min(frnd);        
         if frnd_min < fval; xnew = xrnd(idx,:); fval = frnd_min; end
 
         % Optimize from best point with CMA-ES
         insigma = width(:)/sqrt(3);
-        [xnew_cmaes,fval_cmaes] = cmaes_modded(func2str(acqfun),xnew',insigma,cmaes_opts,vbmodel,gp,1);
+        [xnew_cmaes,fval_cmaes] = cmaes_modded(func2str(acqfun),xnew',insigma,cmaes_opts,vbmodel,gp,options,1);
         if fval_cmaes < fval; xnew = xnew_cmaes'; end
         
         % Add point

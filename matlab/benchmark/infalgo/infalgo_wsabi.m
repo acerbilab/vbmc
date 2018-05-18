@@ -36,7 +36,7 @@ D = size(x0,2);
 
 diam = probstruct.PUB - probstruct.PLB;
 
-kernelCov = diag(diam/10);     % Input length scales for GP likelihood model
+kernelCov = diag(diam.^2/10);   % Input length scales for GP likelihood model
 lambda = 1;                     % Ouput length scale for GP likelihood model
 
 range = [PLB - 3*diam; PUB + 3*diam];

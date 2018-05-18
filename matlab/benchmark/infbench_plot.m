@@ -457,8 +457,8 @@ function [xlims,ylims] = panelIterations(iRow,iCol,nrows,ncols,dimrows,dimcols,x
                     ylims = [NumZero,YlimMax];
                     %ytick = [0.001,0.01,0.1,1,10,100,1e3,1e4,1e5];
                     %yticklabel = {'0.001','0.01','0.1','1','10','10^2','10^3','10^4','10^5'};
-                    ytick = [0.0001,0.01,1,100,1e4,1e6];
-                    yticklabel = {'10^{-4}','10^{-2}','1','10^{2}','10^4','10^6'};
+                    ytick = [0.0001,0.01,1,100,1e4,1e6,1e8];
+                    yticklabel = {'10^{-4}','10^{-2}','1','10^{2}','10^4','10^6','10^8'};
                 end
                 liney = lnZ_true*[1 1];                
             end

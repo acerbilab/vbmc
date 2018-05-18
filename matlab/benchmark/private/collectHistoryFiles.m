@@ -37,13 +37,14 @@ end
 
 filesearch = dir([basedir filesep subdir filesep basefilename]);
 
+history = [];
 if isempty(filesearch)
+    algo = []; algoset = [];
     warning(['No files found for ''' [basedir filesep subdir filesep basefilename] ''' in path.']);
     return;
 end
 
 % Read history from each file
-history = [];
 for iFile = 1:length(filesearch)
     filename = [basedir filesep subdir filesep filesearch(iFile).name];
     try
