@@ -107,6 +107,10 @@ case "${1}" in
        25)      ALGOSET="{'acqusnoprune'}"
                 IDS=$IDS_SINGLE
                 ;;
+       26)      ALGOSET="{'acqpropcontrol'}"
+                IDS=$IDS_SINGLE
+                ;;
+
 	50)     ALGOS="{'wsabi'}" 
                 ;;
         51)     ALGOS="{'wsabi'}"
@@ -187,6 +191,11 @@ case "${1}" in
                 ;;
         113)    PROBS="{'goris2015'}"
                 ALGOS="{'vbmc@acqusnoprune'}"
+                DIMS="{'S7','S8'}"
+                IDS=$IDS_SINGLE
+                ;;
+        114)    PROBS="{'goris2015'}"
+                ALGOS="{'vbmc@acqpropcontrol'}"
                 DIMS="{'S7','S8'}"
                 IDS=$IDS_SINGLE
                 ;;
