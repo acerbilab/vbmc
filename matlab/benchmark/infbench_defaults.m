@@ -107,18 +107,17 @@ switch lower(type)
         switch algo
             case 'vbmc'
                 switch algoset
-                    case 'acqproponly'; defaults.color = [0 0 0]/255; defaults.marker = ''; defaults.linewidth = 4; defaults.linestyle = '-'; defaults.name = 'vbmc (prop)';
-                    case 'acqusonly'; defaults.color = [0 100 140]/255; defaults.marker = '*'; defaults.linewidth = 2; defaults.linestyle = '-'; defaults.name = 'vbmc (us)';
+                    case 'acqproponly'; defaults.color = [0 0 0]/255; defaults.marker = ''; defaults.linewidth = 3; defaults.linestyle = '-'; defaults.name = 'vbmc-P';
+                    case 'acqusonly'; defaults.color = [180 0 80]/255; defaults.marker = '*'; defaults.linewidth = 3; defaults.linestyle = '-'; defaults.name = 'vbmc-U';
                     case {'base'}; defaults.color = [0 100 140]/255; defaults.marker = '*'; defaults.linewidth = 2; defaults.linestyle = '-.';
                     case 'acqpropnoprune'; defaults.color = [0 100 140]/255; defaults.marker = 'o'; defaults.linewidth = 2; defaults.linestyle = '-';
-                    case 'acqpropcontrol'; defaults.color = [0 0 0]/255; defaults.marker = ''; defaults.linewidth = 4; defaults.linestyle = '-.';
+                    case 'acqpropcontrol'; defaults.color = [120 100 0]/255; defaults.marker = ''; defaults.linewidth = 3; defaults.linestyle = '-'; defaults.name = 'vbmc-control';
                     case 'acqlcb_m5'; defaults.color = [0 0 0]/255; defaults.marker = '^'; defaults.linewidth = 2; defaults.linestyle = ':';
                     case 'acqpi'; defaults.color = [120 100 0]/255; defaults.marker = 's'; defaults.linewidth = 2; defaults.linestyle = '-.';
                     case 'acqpi_m5'; defaults.color = [120 100 0]/255; defaults.marker = '>'; defaults.linewidth = 2; defaults.linestyle = ':';
                     case {'acqlcb_overhead','lcbnearest_overhead'}; defaults.color = 150*[1 1 1]/255; defaults.marker = ''; defaults.linewidth = 4; defaults.linestyle = '-.';
                     case 'acqpi_se'; defaults.color = [120 100 0]/255; defaults.marker = '*'; defaults.linewidth = 2; defaults.linestyle = '-';
                     case 'acqlcb_se'; defaults.color = [0 0 0]/255; defaults.marker = 'd'; defaults.linewidth = 2; defaults.linestyle = '-';
-                    case 'onesearch'; defaults.color = [180 0 80]/255; defaults.marker = 's'; defaults.linewidth = 2; defaults.linestyle = '-';
                     case 'searchwcm'; defaults.color = [180 0 80]/255; defaults.marker = 'o'; defaults.linewidth = 2; defaults.linestyle = '-.';
                     case 'searchell'; defaults.color = [180 0 80]/255; defaults.marker = '+'; defaults.linewidth = 2; defaults.linestyle = '-.';
                     case 'noscaling'; defaults.color = [180 0 80]/255; defaults.marker = '^'; defaults.linewidth = 2; defaults.linestyle = '-';
@@ -180,12 +179,13 @@ switch lower(type)
                 defaults.linewidth = 2;
                 defaults.linestyle = line_deterministic;
 
-%             case 'patternsearch'
-%                 defaults.color = [128 177 211]/255;
-%                 defaults.linewidth = 2;
-%                 defaults.linestyle = line_deterministic;
-%                 defaults.marker = '+';
-%                 
+            case 'bape'
+%                defaults.color = [128 177 211]/255;
+                 defaults.color = [60 220 200]/255;
+                defaults.linewidth = 2;
+                defaults.linestyle = line_deterministic;
+                defaults.marker = '+';
+                
 %             case 'mcs'
 %                 defaults.color = [253 180 98]/255;
 %                 defaults.linewidth = 2;

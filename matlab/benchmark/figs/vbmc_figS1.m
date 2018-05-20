@@ -1,4 +1,4 @@
-% FIGURE 2 for VBMC paper. Plot benchmark on Goris et al. (2015).
+% FIGURE S1 for VBMC paper. Plot benchmark on Goris et al. (2015).
 
 options.BestOutOf = 1;
 options.NumZero = 1e-2;
@@ -6,10 +6,9 @@ options.Method = 'IR';
 options.ErrorBar = 1;
 plots = {'lnZ','gsKL'};
 
-algos = {'vbmc@acqproponly','vbmc@acqusonly','vbmc@acqpropcontrol','wsabi','wsabi@mm','bmc','smc','ais'};
 %algos = {'vbmc@acqproponly','vbmc@acqpropnoprune','wsabi','vbmc@acqpropcontrol'};
 % algos = {'vbmc@acqproponly','wsabi'};
-algos = {'vbmc@acqproponly','vbmc@acqusonly','wsabi','wsabi@mm','bmc','bape','smc','ais'};
+algos = {'vbmc@acqproponly','vbmc@acqpropcontrol','wsabi'};
 dims = {'S8','S7'};
 noise = [];
 

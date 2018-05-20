@@ -281,15 +281,16 @@ for iFig = 1:nfigs
                     
                     switch lower(options.PlotType)
                         case 'lnz'
-                            [xx,yy,yyerr] = plotIterations(x,lnZs,iLayer,varargin{dimlayers},options);
+                            [xx,yy,yyerr_up,yyerr_down] = plotIterations(x,lnZs,iLayer,varargin{dimlayers},options);
                         case 'gskl'
-                            [xx,yy,yyerr] = plotIterations(x,gsKLs,iLayer,varargin{dimlayers},options);
+                            [xx,yy,yyerr_up,yyerr_down] = plotIterations(x,gsKLs,iLayer,varargin{dimlayers},options);
                     end
                     
                     % Save summary information
                     benchdatanew.(field1).(field2).(field3).xx = xx;
                     benchdatanew.(field1).(field2).(field3).yy = yy;
-                    benchdatanew.(field1).(field2).(field3).yerr = yyerr;
+                    benchdatanew.(field1).(field2).(field3).yerr_up = yyerr_up;
+                    benchdatanew.(field1).(field2).(field3).yerr_down = yyerr_down;
                     benchdatanew.(field1).(field2).(field3).MaxFunEvals = ...
                         history{1}.TotalMaxFunEvals;
                     
@@ -363,7 +364,7 @@ benchdata.options = options;
 % save(options.FileName,'benchdata','data');
 
 %--------------------------------------------------------------------------
-function [xx,yy,yyerr] = plotIterations(x,y,iLayer,arglayer,options)
+function [xx,yy,yyerr_up,yyerr_down] = plotIterations(x,y,iLayer,arglayer,options)
 %PLOTITERATIONS Plot time series of IR or FS
         
     defaults = infbench_defaults('options');
@@ -383,11 +384,15 @@ function [xx,yy,yyerr] = plotIterations(x,y,iLayer,arglayer,options)
             y(idx_bad,:) = [];
             
             yy = median(y,1);
-            yyerr = abs(bsxfun(@minus,[quantile(y,0.75,1);quantile(y,0.25,1)],yy));
+            %yyerr = abs(bsxfun(@minus,[quantile(y,0.75,1);quantile(y,0.25,1)],yy));
+            yyerr_up = quantile(y,0.75,1);
+            yyerr_down = quantile(y,0.25,1);
             idx = isfinite(yy);
             xx = xx(idx);
             yy = yy(idx);
-            yyerr = yyerr(idx);
+            % yyerr = yyerr(idx);
+            yyerr_up = yyerr_up(idx);
+            yyerr_down = yyerr_down(idx);
     end
 
     plotErrorBar = options.ErrorBar;
@@ -398,7 +403,15 @@ function [xx,yy,yyerr] = plotIterations(x,y,iLayer,arglayer,options)
     enhance = enhanceline(numel(arglayer),options);    
     if any(iLayer == enhance); lw = linewidth*2; else; lw = linewidth; end
     if plotErrorBar
-        h = shadedErrorBar(xx,yy,yyerr,{linstyle,'LineWidth',lw},1); hold on;
+        % h = shadedErrorBar(xx,yy,yyerr,{linstyle,'LineWidth',lw},1); hold on;
+        
+        xxerr = [xx, fliplr(xx)];
+        yyerr = [yyerr_down, fliplr(yyerr_up)];
+        fill(xxerr, yyerr,lincol,'FaceAlpha',0.5,'LineStyle','none'); hold on;
+        
+        h = plot(xx,yy,[linstyle,linemarker],'Color', lincol, 'LineWidth',lw); hold on;
+        %plot(xx,yyerr_up,linstyle,'Color', lincol, 'LineWidth',1); hold on;
+        %plot(xx,yyerr_down,linstyle,'Color', lincol, 'LineWidth',1); hold on;
     else
         h = plot(xx,yy,[linstyle,linemarker],'Color', lincol, 'LineWidth',lw); hold on;
     end
@@ -413,7 +426,7 @@ function [xlims,ylims] = panelIterations(iRow,iCol,nrows,ncols,dimrows,dimcols,x
         case 'lnz'
             ystring = 'Median LML error';
         case 'gskl'
-            ystring = 'Median s-KL';
+            ystring = 'Median gsKL';
     end
 
     string = [];

@@ -3,7 +3,7 @@
 options.BestOutOf = 1;
 options.NumZero = 1e-4;
 options.Method = 'IR';
-options.ErrorBar = 0;
+options.ErrorBar = 1;
 plots = {'lnZ','gsKL'};
 
 algos = {'vbmc@acqproponly','vbmc@acqusonly','wsabi','wsabi@mm','bape','bmc','smc','ais'};
