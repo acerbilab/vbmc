@@ -29,6 +29,13 @@ else
     end
 end
 
+% Number of samples per component for MC approximation of the entropy
+if isa(options.NSent,'function_handle')
+    NSentK = ceil(options.NSent(K)/K);
+else
+    NSentK = ceil(options.NSent/K);
+end
+
 % Confidence weight
 elcbo_beta = options.ELCBOWeight; % * sqrt(vp.D) / sqrt(optimState.N);
    
@@ -42,7 +49,7 @@ end
 for iOpt = 1:Nfastopts
     [theta0,vp0_vec(iOpt)] = ...
         get_theta(vp0_vec(iOpt),vp.LB_theta,vp.UB_theta,vp.optimize_lambda);        
-    [nelbo_tmp,~,~,~,varF_tmp] = vbmc_negelcbo(theta0,0,vp0_vec(iOpt),gp,options.NSent,0,compute_var);
+    [nelbo_tmp,~,~,~,varF_tmp] = vbmc_negelcbo(theta0,0,vp0_vec(iOpt),gp,NSentK,0,compute_var);
     nelcbo_fill(iOpt) = nelbo_tmp + elcbo_beta*sqrt(varF_tmp);
 end
 
@@ -70,7 +77,7 @@ for iOpt = 1:Nslowopts
     if vp.optimize_lambda; theta0 = [theta0; log(vp0.lambda(:))]; end
     theta0 = min(vp.UB_theta',max(vp.LB_theta', theta0));
 
-    vbtrainmc_fun = @(theta_) vbmc_negelcbo(theta_,elcbo_beta,vp0,gp,options.NSent,1,compute_var);
+    vbtrainmc_fun = @(theta_) vbmc_negelcbo(theta_,elcbo_beta,vp0,gp,NSentK,1,compute_var);
 
     % First, fast optimization via entropy approximation
     if useEntropyApprox
@@ -134,6 +141,14 @@ end
 function elbostats = eval_fullelcbo(idx,theta,vp,gp,elbostats,beta,options)
 %EVAL_FULLELCBO Evaluate full expected lower confidence bound.
 
+% Number of samples per component for MC approximation of the entropy
+K = vp.K;
+if isa(options.NSentFine,'function_handle')
+    NSentFineK = ceil(options.NSentFine(K)/K);
+else
+    NSentFineK = ceil(options.NSentFine/K);
+end
+
 if nargin == 2
     D = theta;
     elbostats.nelbo = Inf(1,idx);
@@ -146,7 +161,7 @@ if nargin == 2
 else
     theta = theta(:)';    
     [nelbo,~,G,H,varF,~,varss] = ...
-        vbmc_negelcbo(theta,0,vp,gp,options.NSentFine,0,1);
+        vbmc_negelcbo(theta,0,vp,gp,NSentFineK,0,1);
     nelcbo = nelbo + beta*sqrt(varF);
 
     elbostats.nelbo(idx) = nelbo;
