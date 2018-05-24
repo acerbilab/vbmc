@@ -41,8 +41,10 @@ case "${1}" in
 		IDS="{'1','2'}"
 		;;
 	1)	ALGOSET="{'base'}"
+		IDS=${IDS_SINGLE}
 		;;
 	2)      ALGOSET="{'cheapgp'}"
+		IDS=${IDS_SINGLE}
 		;;
         3)      ALGOSET="{'acqvar'}"
                 ;;
@@ -140,12 +142,12 @@ case "${1}" in
                 IDS=$IDS_SINGLE
                 ;;
         103)    PROBS="{'goris2015'}"
-                ALGOS="{'vbmc@adaptive'}"
+                ALGOS="{'vbmc@base'}"
                 DIMS="{'S7','S8'}"
                 IDS="{'1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16','17','18','19','20'}"
                 ;;
         104)    PROBS="{'goris2015'}"
-                ALGOS="{'vbmc@adaptiveless'}"
+                ALGOS="{'vbmc@cheapgp'}"
                 DIMS="{'S7','S8'}"
                 IDS="{'1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16','17','18','19','20'}"
                 ;;
