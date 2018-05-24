@@ -11,14 +11,32 @@ nelcbo_fill = zeros(Nfastopts,1);
 % Check variational posteriors from previous iterations
 MaxBack = min(optimState.iter-1,options.VarParamsBack);
 
-elbostats = eval_fullelcbo(Nslowopts*3+MaxBack,numel(vp.LB_theta));
+elbostats = eval_fullelcbo(Nslowopts*2+MaxBack,numel(vp.LB_theta));
 
 % Generate random initial starting point for variational parameters
-[vp0_vec,vp0_type] = vbinitrnd(Nfastopts,vp,K,Xstar,ystar);
+if 0
+    [vp0_vec,vp0_type] = vbinitrnd(Nfastopts,vp,K,Xstar,ystar);
+else    
+    switch Nslowopts
+        case 1
+            [vp0_vec,vp0_type] = vbinit(1,Nfastopts,vp,K,Xstar,ystar);
+        otherwise
+            [vp0_vec1,vp0_type1] = vbinit(1,ceil(Nfastopts/3),vp,K,Xstar,ystar);
+            [vp0_vec2,vp0_type2] = vbinit(2,ceil(Nfastopts/3),vp,K,Xstar,ystar);
+            [vp0_vec3,vp0_type3] = vbinit(3,Nfastopts-2*ceil(Nfastopts/3),vp,K,Xstar,ystar);
+            vp0_vec = [vp0_vec1,vp0_vec2,vp0_vec3];
+            vp0_type = [vp0_type1;vp0_type2;vp0_type3];
+    end
+end
 
-compute_var = 2;    % Use diagonal-only approximation
 % Confidence weight
 elcbo_beta = options.ELCBOWeight; % * sqrt(vp.D) / sqrt(optimState.N);
+   
+if elcbo_beta ~= 0
+    compute_var = 2;    % Use diagonal-only approximation
+else
+    compute_var = 0;    % No beta, skip variance
+end
 
 % Quickly estimate ELCBO at each candidate variational posterior
 for iOpt = 1:Nfastopts
@@ -34,9 +52,8 @@ vp0_vec = vp0_vec(vp0_ord);
 vp0_type = vp0_type(vp0_ord);
 
 for iOpt = 1:Nslowopts
-    iOpt_start = iOpt*3-2;
-    iOpt_mid = iOpt*3-1;
-    iOpt_end = iOpt*3;
+    iOpt_mid = iOpt*2-1;
+    iOpt_end = iOpt*2;
 
     switch Nslowopts
         case 1; idx = 1;
@@ -65,7 +82,7 @@ for iOpt = 1:Nslowopts
     else
         thetaopt = theta0(:)';
     end
-
+        
     % Second, refine with unbiased stochastic entropy approximation
     [thetaopt,~,theta_lst,fval_lst] = ...
         fminadam(vbtrainmc_fun,thetaopt,vp.LB_theta,vp.UB_theta,options.TolFunAdam);
@@ -74,11 +91,12 @@ for iOpt = 1:Nslowopts
     % [idx_mid,numel(fval_lst)]
 
     % Recompute ELCBO at start, mid and endpoint with full variance and more precision
-    elbostats = eval_fullelcbo(iOpt_start,theta0,vp0,gp,elbostats,elcbo_beta,options);        
     elbostats = eval_fullelcbo(iOpt_mid,theta_lst(idx_mid,:),vp0,gp,elbostats,elcbo_beta,options);
     elbostats = eval_fullelcbo(iOpt_end,thetaopt,vp0,gp,elbostats,elcbo_beta,options);
-
-    vp0_fine(iOpt_start) = vp0;
+    % toc
+    
+    elbostats
+    
     vp0_fine(iOpt_mid) = vp0;
     vp0_fine(iOpt_end) = vp0;   % Parameters get assigned later
 
@@ -87,7 +105,7 @@ end
 
 % Finally, add variational parameters from previous iterations
 for iBack = 1:MaxBack
-    idx_prev = Nslowopts*3+iBack;
+    idx_prev = Nslowopts*2+iBack;
     vp_back = stats.vp(iter-iBack);
     vp0_fine(idx_prev) = vp_back;
     % Note that TRINFO might have changed, recompute it if needed       

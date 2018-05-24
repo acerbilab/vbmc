@@ -50,9 +50,9 @@ end
 defopts.FunEvalStart       = 'max(D,10)         % Number of initial objective fcn evals';
 defopts.FunEvalsPerIter    = '5                 % Number of objective fcn evals per iteration';
 defopts.AcqFcn             = '@vbmc_acqskl       % Expensive acquisition fcn';
-defopts.SearchAcqFcn       = '@vbmc_acqpropf    % Fast search acquisition fcn(s)';
+defopts.SearchAcqFcn       = '@vbmc_acqprop     % Fast search acquisition fcn(s)';
 defopts.Nacq               = '1                 % Expensive acquisition fcn evals per new point';
-defopts.NSsearch           = '2^13              % Samples for fast acquisition fcn eval per new point';
+defopts.NSsearch           = '2^12              % Samples for fast acquisition fcn eval per new point';
 defopts.NSent              = '100               % Samples per component for fast Monte Carlo approx. of the entropy';
 defopts.NSentFine          = '2^15              % Samples per component for refined Monte Carlo approx. of the entropy';
 defopts.NSelbo             = '50                % Samples per component for fast approx. of ELBO';
@@ -64,7 +64,7 @@ defopts.QuadraticMean      = 'yes               % Use GP with quadratic mean fun
 defopts.Kfun               = '@sqrt             % Variational components as a function of training points';
 defopts.KfunMax            = '@(N) 2*sqrt(N)    % Max variational components as a function of training points';
 defopts.Kwarmup            = '2                 % Variational components during warmup';
-defopts.AdaptiveK          = 'no                % Adaptive number of variational components';
+defopts.AdaptiveK          = 'on                % Adaptive number of variational components';
 defopts.HPDFrac            = '0.5               % High Posterior Density region (fraction of training inputs)';
 defopts.WarpRotoScaling    = 'off               % Rotate and scale input';
 %defopts.WarpCovReg         = '@(N) 25/N         % Regularization weight towards diagonal covariance matrix for N training inputs';
@@ -101,6 +101,7 @@ defopts.StopWarmupThresh   = '1                 % Stop warm-up when increase in 
 defopts.WarmupKeepThreshold = '10*nvars         % Max log-likelihood difference for points kept after warmup';
 defopts.SearchCMAES        = 'on                % Use CMA-ES for search';
 defopts.MomentsRunWeight   = '0.9               % Weight of previous trials (per trial) for running avg of variational posterior moments';
+defopts.CheapGPRetrain     = 'off               % Cheap retraining of GP hyperparameters';
 
 %% If called with 'all', return all default options
 if strcmpi(fun,'all')
@@ -330,10 +331,18 @@ while ~isFinished_flag
     gptrain_options.Thin = 5;    
     if optimState.RecomputeVarPost
         gptrain_options.Burnin = gptrain_options.Thin*Ns_gp;
+        gptrain_options.Ninit = 2^10;
+        if Ns_gp > 0; gptrain_options.Nopts = 1; else; gptrain_options.Nopts = 2; end
     else
         gptrain_options.Burnin = gptrain_options.Thin*3;
+        if options.CheapGPRetrain
+            gptrain_options.Ninit = 0;
+            if Ns_gp > 0; gptrain_options.Nopts = 0; else; gptrain_options.Nopts = 1; end            
+        else
+            gptrain_options.Ninit = 2^10;
+            if Ns_gp > 0; gptrain_options.Nopts = 1; else; gptrain_options.Nopts = 2; end
+        end
     end
-    if Ns_gp > 0; gptrain_options.Nopts = 1; else; gptrain_options.Nopts = 2; end
     
     [gp,hyp] = gplite_train(hyp,Ns_gp, ...
         optimState.X(optimState.X_flag,:),optimState.y(optimState.X_flag), ...

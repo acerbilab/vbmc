@@ -196,8 +196,18 @@ gpoptimize_fun = @(hyp_) gp_objfun(hyp_(:),gp,hprior,0,0);
 gpsample_fun = @(hyp_) gp_objfun(hyp_(:),gp,hprior,0,1);
 
 % First evaluate GP log posterior on an informed space-filling design
-optfill.FunEvals = Ninit;
-[~,~,~,output_fill] = fminfill(gpoptimize_fun,hyp0',LB,UB,PLB,PUB,hprior,optfill);
+if Ninit > 0
+    optfill.FunEvals = Ninit;
+    [~,~,~,output_fill] = fminfill(gpoptimize_fun,hyp0',LB,UB,PLB,PUB,hprior,optfill);
+    hyp(:,:) = output_fill.X(1:Nopts,:)';
+    widths = std(output_fill.X,[],1);
+else
+    nll = Inf(1,size(hyp0,2));
+    for i = 1:size(hyp0,2); nll(i) = gpoptimize_fun(hyp0(:,i)); end
+    [nll,ord] = sort(nll,'ascend');
+    hyp = hyp0(:,ord);
+    widths = PUB - PLB;
+end
 
 % if input_warping
 %     derivcheck(gpoptimize_fun,hyp0(:,1),1);
@@ -205,7 +215,6 @@ optfill.FunEvals = Ninit;
 
 %tic
 % Perform optimization from most promising NOPTS hyperparameter vectors
-hyp(:,:) = output_fill.X(1:Nopts,:)';
 for iTrain = 1:Nopts
     try
         hyp(:,iTrain) = min(UB'-eps(UB'),max(LB'+eps(LB'),hyp(:,iTrain)));
@@ -225,7 +234,6 @@ if Ns > 0
     sampleopts.Burnin = Burnin;
     sampleopts.Display = 'off';
     sampleopts.Diagnostics = false;
-    widths = std(output_fill.X,[],1);
     [samples,fvals,exitflag,output] = ...
         slicesamplebnd(gpsample_fun,hyp(:,idx)',Ns,widths,LB,UB,sampleopts);
     hyp = samples';

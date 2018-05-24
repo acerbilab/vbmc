@@ -75,7 +75,7 @@ for iter = 1:MaxIter
 end
 
 % close all; figure(1); plot(1:iter,f);
-%iter
+% iter
 %[dx,slope,slope_err]
 % [x'; mean(xtab,2)']
 % pause

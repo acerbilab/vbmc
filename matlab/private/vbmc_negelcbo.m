@@ -61,7 +61,7 @@ if compute_var
     varH = 0;   % For the moment use zero variance for entropy
     varF = varG + varH;
 else
-    varF = [];
+    varF = 0;
 end
 
 % Negative ELCBO
