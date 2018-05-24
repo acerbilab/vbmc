@@ -42,7 +42,7 @@ case "${1}" in
 		;;
 	1)	ALGOSET="{'base'}"
 		;;
-	2)      ALGOSET="{'acqkl'}"
+	2)      ALGOSET="{'cheapgp'}"
 		;;
         3)      ALGOSET="{'acqvar'}"
                 ;;
