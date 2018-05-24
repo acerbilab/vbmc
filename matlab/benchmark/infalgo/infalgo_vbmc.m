@@ -56,6 +56,7 @@ switch algoset
     case {100,'acqpropcontrol'}; algoset = 'acqpropcontrol'; algoptions.Nacq = 1; algoptions.SearchAcqFcn = '@vbmc_acqprop'; algoptions.SearchCMAES = 1; algoptions.WarpRotoScaling = 0; algoptions.ELCBOWeight = 0; algoptions.AlwaysRefitVarPost = 0; algoptions.NSsearch = 2^13; algoptions.AdaptiveK = 1; algoptions.KfunMax = '@(K) 2*sqrt(K)'; ControlRunFlag = true;
     case {201,'cheapgp'}; algoset = 'cheapgp'; algoptions.CheapGPRetrain = 1;
     case {202,'cheapgpentsqrtk'}; algoset = 'cheapgpentsqrtk'; algoptions.CheapGPRetrain = 1; algoptions.NSent = @(K) 100*sqrt(K);
+    case {203,'cheapgpentsqrtk2'}; algoset = 'cheapgpentsqrtk2'; algoptions.CheapGPRetrain = 1; algoptions.NSent = @(K) 100*sqrt(K); algoptions.NSentFine = @(K) 2^15*sqrt(K);
     
     otherwise
         error(['Unknown algorithm setting ''' algoset ''' for algorithm ''' algo '''.']);

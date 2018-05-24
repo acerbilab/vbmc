@@ -141,14 +141,6 @@ end
 function elbostats = eval_fullelcbo(idx,theta,vp,gp,elbostats,beta,options)
 %EVAL_FULLELCBO Evaluate full expected lower confidence bound.
 
-% Number of samples per component for MC approximation of the entropy
-K = vp.K;
-if isa(options.NSentFine,'function_handle')
-    NSentFineK = ceil(options.NSentFine(K)/K);
-else
-    NSentFineK = ceil(options.NSentFine/K);
-end
-
 if nargin == 2
     D = theta;
     elbostats.nelbo = Inf(1,idx);
@@ -159,7 +151,16 @@ if nargin == 2
     elbostats.nelcbo = Inf(1,idx);
     elbostats.theta = NaN(idx,D);
 else
-    theta = theta(:)';    
+    
+    % Number of samples per component for MC approximation of the entropy
+    K = vp.K;
+    if isa(options.NSentFine,'function_handle')
+        NSentFineK = ceil(options.NSentFine(K)/K);
+    else
+        NSentFineK = ceil(options.NSentFine/K);
+    end
+        
+    theta = theta(:)';
     [nelbo,~,G,H,varF,~,varss] = ...
         vbmc_negelcbo(theta,0,vp,gp,NSentFineK,0,1);
     nelcbo = nelbo + beta*sqrt(varF);
