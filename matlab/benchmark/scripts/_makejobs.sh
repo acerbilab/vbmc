@@ -167,7 +167,7 @@ case "${1}" in
                 IDS=$IDS_FIFTY
                 ;;
         107)    PROBS="{'goris2015'}"
-                ALGOS="{'vbmc@basenogp'}"
+                ALGOS="{'vbmc@morelbomid'}"
                 DIMS="{'S7','S8'}"
                 IDS=$IDS_FIFTY
                 ;;
