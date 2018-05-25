@@ -64,7 +64,7 @@ defopts.QuadraticMean      = 'yes               % Use GP with quadratic mean fun
 defopts.Kfun               = '@sqrt             % Variational components as a function of training points';
 defopts.KfunMax            = '@(N) 2*sqrt(N)    % Max variational components as a function of training points';
 defopts.Kwarmup            = '2                 % Variational components during warmup';
-defopts.AdaptiveK          = 'on                % Adaptive number of variational components';
+defopts.AdaptiveK          = '1                 % Added variational components for stable solution';
 defopts.HPDFrac            = '0.5               % High Posterior Density region (fraction of training inputs)';
 defopts.WarpRotoScaling    = 'off               % Rotate and scale input';
 %defopts.WarpCovReg         = '@(N) 25/N         % Regularization weight towards diagonal covariance matrix for N training inputs';
@@ -82,7 +82,7 @@ defopts.CacheFrac          = '0.5               % Fraction of search points from
 defopts.TolFunAdam         = '0.001             % Stopping threshold for Adam optimizer';
 defopts.TolSD              = '0.1               % Tolerance on ELBO uncertainty for stopping (iff variational posterior is stable)';
 defopts.TolsKL             = '0.01*sqrt(nvars)  % Stopping threshold on change of variational posterior per training point';
-defopts.TolStableIters     = '5                 % Number of stable iterations for checking stopping criteria';
+defopts.TolStableIters     = '10                % Number of stable iterations for checking stopping criteria';
 defopts.TolStableFunEvals  = '5*nvars           % Number of stable fcn evals for checking stopping criteria';
 defopts.TolStableWarmup    = '3                 % Number of stable iterations for stopping warmup';
 defopts.KLgauss            = 'yes               % Use Gaussian approximation for symmetrized KL-divergence b\w iters';
@@ -363,17 +363,18 @@ while ~isFinished_flag
     t = tic;
     
     % Adaptive increase of number of components
-    if options.AdaptiveK
-        [Kmin,Kmax] = getK(optimState,options);        
-        Knew = optimState.vpK;
-        Knew = max(Knew,Kmin);
-        if sKL < options.TolsKL*options.FunEvalsPerIter
-            Knew = optimState.vpK + 1;
-        end
-        Knew = min(Knew,Kmax);
+    if isa(options.AdaptiveK,'function_handle')
+        Kbonus = options.AdaptiveK(optimState.vpK);
     else
-        Knew = getK(optimState,options);
+        Kbonus = round(double(options.AdaptiveK));
+    end     
+    [Kmin,Kmax] = getK(optimState,options);
+    Knew = optimState.vpK;
+    Knew = max(Knew,Kmin);
+    if sKL < options.TolsKL*options.FunEvalsPerIter
+        Knew = optimState.vpK + Kbonus;
     end
+    Knew = min(Knew,Kmax);
 
     if optimState.RecomputeVarPost || options.AlwaysRefitVarPost
         Nfastopts = options.NSelbo * vp.K;
@@ -533,9 +534,9 @@ while ~isFinished_flag
         wmean = sum(w.*elbo_list(idx_stable:iter));
         wvar = sum(w.*(elbo_list(idx_stable:iter) - wmean).^2) / (1 - sum(w.^2));
 
-        qindex(1) = abs(elbo_list(iter) - elbo_list(iter-1))/options.TolSD;
-        qindex(2) = stats.elboSD(iter) / options.TolSD;
-        qindex(3) = sKL_list(iter) / options.TolsKL;
+        qindex_vec(1) = abs(elbo_list(iter) - elbo_list(iter-1))/options.TolSD;
+        qindex_vec(2) = stats.elboSD(iter) / options.TolSD;
+        qindex_vec(3) = sKL_list(iter) / options.TolsKL;
 %         qindex(1) = sqrt(wvar / (options.TolSD^2));
 %         qindex(2) = sum(w .* stats.elboSD(idx_stable:iter).^2) / options.TolSD^2;
 %         qindex(3) = sum(w .* sKL_list(idx_stable:iter)) / options.TolsKL;
@@ -546,12 +547,6 @@ while ~isFinished_flag
 %         qindex(2) = stats.elboSD(iter) / options.TolSD;
 %         qindex(3) = sum(sKL_list(idx_stable:iter)) / (options.TolsKL*dN);
 %         qindex(4) = sKL_list(iter) / (options.TolsKL*dN_last);        
-        if all(qindex < 1)
-            isFinished_flag = true;
-            exitflag = 0;
-                % msg = 'Optimization terminated: reached maximum number of iterations OPTIONS.MaxIter.';
-        end
-        qindex = mean(qindex);
         
         % Stop sampling after sample variance has stabilized below ToL
         if ~isempty(idx_stable) && optimState.StopSampling == 0 && ~optimState.Warmup
@@ -562,16 +557,27 @@ while ~isFinished_flag
             end
         end
         
-        
     else
-        qindex = Inf;
+        qindex_vec = Inf(1,3);
     end
-    
+
+    % Store reliability index
+    qindex = mean(qindex_vec);    
     stats.qindex(iter) = qindex;
     optimState.R = qindex;
     
+    % Check stability termination condition
+    if iter >= options.TolStableIters && ... 
+            all(qindex_vec < 1) && ...
+            all(stats.qindex(iter-options.TolStableIters+1:iter) < 1)
+        isFinished_flag = true;
+        exitflag = 0;
+            % msg = 'Optimization terminated: reached maximum number of iterations OPTIONS.MaxIter.';
+    end
+    
     % Prevent early termination
-    if optimState.N < options.MinFunEvals || optimState.iter < options.MinIter
+    if optimState.N < options.MinFunEvals || ...
+            optimState.iter < options.MinIter
         isFinished_flag = false;
     end
     
