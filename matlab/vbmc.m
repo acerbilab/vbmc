@@ -52,7 +52,7 @@ defopts.FunEvalsPerIter    = '5                 % Number of objective fcn evals 
 defopts.AcqFcn             = '@vbmc_acqskl       % Expensive acquisition fcn';
 defopts.SearchAcqFcn       = '@vbmc_acqprop     % Fast search acquisition fcn(s)';
 defopts.Nacq               = '1                 % Expensive acquisition fcn evals per new point';
-defopts.NSsearch           = '2^12              % Samples for fast acquisition fcn eval per new point';
+defopts.NSsearch           = '2^13              % Samples for fast acquisition fcn eval per new point';
 defopts.NSent              = '@(K) 100*K        % Total samples for fast Monte Carlo approx. of the entropy';
 defopts.NSentFine          = '@(K) 2^15*K       % Total samples for refined Monte Carlo approx. of the entropy';
 defopts.NSelbo             = '50                % Samples per component for fast approx. of ELBO';
@@ -70,7 +70,7 @@ defopts.WarpRotoScaling    = 'off               % Rotate and scale input';
 %defopts.WarpCovReg         = '@(N) 25/N         % Regularization weight towards diagonal covariance matrix for N training inputs';
 defopts.WarpCovReg         = '0                 % Regularization weight towards diagonal covariance matrix for N training inputs';
 defopts.WarpNonlinear      = 'off               % Nonlinear input warping';
-defopts.WarpEpoch          = '20 + 10*D         % Recalculate warpings after this number of fcn evals';
+defopts.WarpEpoch          = '100               % Recalculate warpings after this number of fcn evals';
 defopts.WarpMinFun         = '10 + 2*D          % Minimum training points before starting warping';
 defopts.WarpNonlinearEpoch = '100               % Recalculate nonlinear warpings after this number of fcn evals';
 defopts.WarpNonlinearMinFun = '20 + 5*D         % Minimum training points before starting nonlinear warping';
@@ -101,7 +101,10 @@ defopts.StopWarmupThresh   = '1                 % Stop warm-up when increase in 
 defopts.WarmupKeepThreshold = '10*nvars         % Max log-likelihood difference for points kept after warmup';
 defopts.SearchCMAES        = 'on                % Use CMA-ES for search';
 defopts.MomentsRunWeight   = '0.9               % Weight of previous trials (per trial) for running avg of variational posterior moments';
-defopts.CheapGPRetrain     = 'off               % Cheap retraining of GP hyperparameters';
+defopts.CheapGPRetrain     = 'off               % Cheap retraining of GP hyperparameters (unused)';
+defopts.GPRetrainThreshold = '0                 % Lower threshold on reliability index for full retraining of GP hyperparameters';
+defopts.ELCBOmidpoint      = 'on                % Compute full ELCBO at best midpoint';
+
 
 %% If called with 'all', return all default options
 if strcmpi(fun,'all')
@@ -335,7 +338,7 @@ while ~isFinished_flag
         if Ns_gp > 0; gptrain_options.Nopts = 1; else; gptrain_options.Nopts = 2; end
     else
         gptrain_options.Burnin = gptrain_options.Thin*3;
-        if options.CheapGPRetrain
+        if iter > 1 && stats.qindex(iter-1) < options.GPRetrainThreshold
             gptrain_options.Ninit = 0;
             if Ns_gp > 0; gptrain_options.Nopts = 0; else; gptrain_options.Nopts = 1; end            
         else
@@ -379,7 +382,7 @@ while ~isFinished_flag
         optimState.RecomputeVarPost = false;
     else
         % Only incremental change
-        Nfastopts = ceil(options.NSelbo * vp.K / 10);
+        Nfastopts = ceil(options.NSelbo * vp.K / 10);   % Double-check this
         Nslowopts = 1;
         useEntropyApprox = false;
     end
@@ -529,10 +532,13 @@ while ~isFinished_flag
 
         wmean = sum(w.*elbo_list(idx_stable:iter));
         wvar = sum(w.*(elbo_list(idx_stable:iter) - wmean).^2) / (1 - sum(w.^2));
-        
-        qindex(1) = sqrt(wvar / (options.TolSD^2));
-        qindex(2) = sum(w .* stats.elboSD(idx_stable:iter).^2) / options.TolSD^2;
-        qindex(3) = sum(w .* sKL_list(idx_stable:iter)) / options.TolsKL;
+
+        qindex(1) = abs(elbo_list(iter) - elbo_list(iter-1))/options.TolSD;
+        qindex(2) = stats.elboSD(iter) / options.TolSD;
+        qindex(3) = sKL_list(iter) / options.TolsKL;
+%         qindex(1) = sqrt(wvar / (options.TolSD^2));
+%         qindex(2) = sum(w .* stats.elboSD(idx_stable:iter).^2) / options.TolSD^2;
+%         qindex(3) = sum(w .* sKL_list(idx_stable:iter)) / options.TolsKL;
         
 %        qindex
         
@@ -546,7 +552,6 @@ while ~isFinished_flag
                 % msg = 'Optimization terminated: reached maximum number of iterations OPTIONS.MaxIter.';
         end
         qindex = mean(qindex);
-        stats.qindex(iter) = qindex;
         
         % Stop sampling after sample variance has stabilized below ToL
         if ~isempty(idx_stable) && optimState.StopSampling == 0 && ~optimState.Warmup
@@ -562,6 +567,7 @@ while ~isFinished_flag
         qindex = Inf;
     end
     
+    stats.qindex(iter) = qindex;
     optimState.R = qindex;
     
     % Prevent early termination

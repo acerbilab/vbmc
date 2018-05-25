@@ -57,7 +57,11 @@ switch algoset
     case {201,'cheapgp'}; algoset = 'cheapgp'; algoptions.CheapGPRetrain = 1;
     case {202,'cheapgpentsqrtk'}; algoset = 'cheapgpentsqrtk'; algoptions.CheapGPRetrain = 1; algoptions.NSent = @(K) 100*sqrt(K);
     case {203,'cheapgpentsqrtk2'}; algoset = 'cheapgpentsqrtk2'; algoptions.CheapGPRetrain = 1; algoptions.NSent = @(K) 100*sqrt(K); algoptions.NSentFine = @(K) 2^15*sqrt(K);
+    case {204,'cheapgpentsqrtknomid'}; algoset = 'cheapgpentsqrtknomid'; algoptions.CheapGPRetrain = 1; algoptions.NSent = @(K) 100*sqrt(K); algoptions.ELCBOmidpoint = 0;
+    case {205,'gpthreshmid'}; algoset = 'gpthreshmid'; algoptions.GPRetrainThreshold = 3; algoptions.ELCBOmidpoint = 0;
     
+        
+        
     otherwise
         error(['Unknown algorithm setting ''' algoset ''' for algorithm ''' algo '''.']);
 end

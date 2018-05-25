@@ -93,12 +93,15 @@ for iOpt = 1:Nslowopts
     % Second, refine with unbiased stochastic entropy approximation
     [thetaopt,~,theta_lst,fval_lst] = ...
         fminadam(vbtrainmc_fun,thetaopt,vp.LB_theta,vp.UB_theta,options.TolFunAdam);
-
-    [~,idx_mid] = min(fval_lst);
-    % [idx_mid,numel(fval_lst)]
-
-    % Recompute ELCBO at start, mid and endpoint with full variance and more precision
-    elbostats = eval_fullelcbo(iOpt_mid,theta_lst(idx_mid,:),vp0,gp,elbostats,elcbo_beta,options);
+    
+    if options.ELCBOmidpoint
+        % Recompute ELCBO at best midpoint with full variance and more precision
+        [~,idx_mid] = min(fval_lst);
+        elbostats = eval_fullelcbo(iOpt_mid,theta_lst(idx_mid,:),vp0,gp,elbostats,elcbo_beta,options);
+        % [idx_mid,numel(fval_lst)]
+    end
+    
+	% Recompute ELCBO at endpoint with full variance and more precision
     elbostats = eval_fullelcbo(iOpt_end,thetaopt,vp0,gp,elbostats,elcbo_beta,options);
     % toc
     
