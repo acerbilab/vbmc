@@ -56,6 +56,7 @@ defopts.NSsearch           = '2^13              % Samples for fast acquisition f
 defopts.NSent              = '@(K) 100*K        % Total samples for fast Monte Carlo approx. of the entropy';
 defopts.NSentFine          = '@(K) 2^15*K       % Total samples for refined Monte Carlo approx. of the entropy';
 defopts.NSelbo             = '50                % Samples per component for fast approx. of ELBO';
+defopts.NSelboIncr         = '0.1               % Multiplier to samples for fast approx. of ELBO for incremental iterations';
 defopts.ElboStarts         = '2                 % Starting points to refine optimization of the ELBO';
 defopts.NSgpMax            = '80                % Max GP hyperparameter samples (decreases with training points)';
 defopts.StopGPSampling     = '200 + 10*nvars    % Stop GP hyperparameter sampling (start optimizing)';
@@ -383,7 +384,7 @@ while ~isFinished_flag
         optimState.RecomputeVarPost = false;
     else
         % Only incremental change
-        Nfastopts = ceil(options.NSelbo * vp.K / 10);   % Double-check this
+        Nfastopts = ceil(options.NSelbo * vp.K * options.NSelboIncr);
         Nslowopts = 1;
         useEntropyApprox = false;
     end
