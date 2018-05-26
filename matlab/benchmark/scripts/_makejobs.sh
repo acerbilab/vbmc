@@ -53,13 +53,14 @@ case "${1}" in
         4)      ALGOSET="{'gpthreshmid'}"
 		IDS=${IDS_SINGLE}
                 ;;
-        5)      ALGOSET="{'betatiny'}"
+        5)      ALGOSET="{'cheapgpmid'}"
                 IDS=${IDS_SINGLE}
 		;;
-        6)      ALGOSET="{'acqgev'}"
+        6)      ALGOSET="{'morelbomid'}"
                 IDS=${IDS_SINGLE}
 		;;
-	7)	ALGOSET="{'acqcmaes'}"
+	7)	ALGOSET="{'morelbomid'}"
+		IDS=${IDS_SINGLE}
 		;;
         8)      ALGOSET="{'acqprop'}"
                 ;;

@@ -46,10 +46,12 @@ else
 end
 
 % Quickly estimate ELCBO at each candidate variational posterior
+% NSentKFast = ceil(NSentK * 0.1);
+NSentKFast = NSentK;
 for iOpt = 1:Nfastopts
     [theta0,vp0_vec(iOpt)] = ...
         get_theta(vp0_vec(iOpt),vp.LB_theta,vp.UB_theta,vp.optimize_lambda);        
-    [nelbo_tmp,~,~,~,varF_tmp] = vbmc_negelcbo(theta0,0,vp0_vec(iOpt),gp,NSentK,0,compute_var);
+    [nelbo_tmp,~,~,~,varF_tmp] = vbmc_negelcbo(theta0,0,vp0_vec(iOpt),gp,NSentKFast,0,compute_var);
     nelcbo_fill(iOpt) = nelbo_tmp + elcbo_beta*sqrt(varF_tmp);
 end
 
