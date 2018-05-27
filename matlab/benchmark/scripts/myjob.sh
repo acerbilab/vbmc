@@ -12,9 +12,11 @@ else
 	export MATLAB_PREFDIR=$(mktemp -d $SLURM_JOBTMP/matlab-XXXXXX)
 fi
 export MATLABPATH=${MATLABPATH}:/${HOME}/${PROJECT}/matlab:${HOME}/MATLAB
-source ${HOME}/MATLAB/setpath.sh
+#source ${HOME}/MATLAB/setpath.sh
+export MATLABPATH="${MATLABPATH}:${HOME}/vbmc/matlab:${HOME}/vbmc/matlab/gplite:${HOME}/vbmc/matlab/benchmark:${HOME}/vbmc/matlab/utils"
 
-PROBLEMDIR="${HOME}/neurobench-problems"
+#PROBLEMFOLDER="'${HOME}/neurobench-problems'"
+PROBLEMFOLDER="[]"
 
 #Check if running as an array job
 if [[ ! -z "$PBS_ARRAYID" ]]; then
@@ -37,7 +39,7 @@ echo ${PARAMS} ${VERBOSE} ${USEPRIOR}
 cat<<EOF | matlab -nodisplay
 %addpath(genpath('${HOME}/MATLAB'));
 cd('${WORKDIR}');
-options=struct('RootDirectory','${WORKDIR}','Display',${VERBOSE},'MaxFunEvalMultiplier',${MAXFUNMULT},'ProblemDirectory','${PROBLEMDIR}');
+options=struct('RootDirectory','${WORKDIR}','Display',${VERBOSE},'MaxFunEvalMultiplier',${MAXFUNMULT},'ProblemDirectory',${PROBLEMFOLDER});
 ${PARAMS}
 infbench_run(${PARAMS},options);
 EOF
