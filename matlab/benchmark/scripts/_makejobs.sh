@@ -178,7 +178,7 @@ case "${1}" in
                 IDS=$IDS_FIFTY
                 ;;
         108)    PROBS="{'goris2015'}"
-                ALGOS="{'vbmc@basekone'}"
+                ALGOS="{'vbmc@cheapgpmid'}"
                 DIMS="{'S7','S8'}"
                 IDS=$IDS_FIFTY
                 ;;
@@ -209,6 +209,11 @@ case "${1}" in
                 ;;
         114)    PROBS="{'goris2015'}"
                 ALGOS="{'vbmc@acqpropcontrol'}"
+                DIMS="{'S7','S8'}"
+                IDS=$IDS_FIFTY
+                ;;
+        115)    PROBS="{'goris2015'}"
+                ALGOS="{'vbmc@cheapgpmidlessprune'}"
                 DIMS="{'S7','S8'}"
                 IDS=$IDS_FIFTY
                 ;;

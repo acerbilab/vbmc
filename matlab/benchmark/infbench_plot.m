@@ -41,6 +41,7 @@ defopts.EnhanceLine = 0;        % Enhance one plotted line
 defopts.FunEvalsPerD = 500;
 defopts.PlotType = 'nlZ';
 defopts.DisplayLegend = true;
+defopts.Quantiles = [0.25,0.75];    % Confidence intervals quantiles
 
 % Plotting options
 defopts.YlimMax = 1e5;
@@ -385,8 +386,8 @@ function [xx,yy,yyerr_up,yyerr_down] = plotIterations(x,y,iLayer,arglayer,option
             
             yy = median(y,1);
             %yyerr = abs(bsxfun(@minus,[quantile(y,0.75,1);quantile(y,0.25,1)],yy));
-            yyerr_up = quantile(y,0.75,1);
-            yyerr_down = quantile(y,0.25,1);
+            yyerr_up = quantile(y,options.Quantiles(2),1);
+            yyerr_down = quantile(y,options.Quantiles(1),1);
             idx = isfinite(yy);
             xx = xx(idx);
             yy = yy(idx);
