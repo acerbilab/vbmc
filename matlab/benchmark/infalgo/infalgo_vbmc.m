@@ -26,6 +26,7 @@ algoptions.ProposalFcn = @(X_) exp(infbench_lnprior(X_,probstruct));
 switch algoset
     case {0,'debug'}; algoset = 'debug'; algoptions.Debug = 1; algoptions.Plot = 'scatter';
     case {1,'base'}; algoset = 'base';           % Use defaults
+    case {10001,'baseluigi'}; algoset = 'baseluigi';           % Use defaults
     case {2,'acqkl'}; algoset = 'acqkl'; algoptions.AcqFcn = '@vbmc_acqkl';
     case {3,'acqvar'}; algoset = 'acqvar'; algoptions.AcqFcn = '@vbmc_acqvar';
     case {4,'acqgev'}; algoset = 'acqgev'; algoptions.Nacq = 1; algoptions.SearchAcqFcn = '@vbmc_acqGEV';

@@ -14,7 +14,8 @@ fi
 export MATLABPATH=${MATLABPATH}:/${HOME}/${PROJECT}/matlab:${HOME}/MATLAB
 source ${HOME}/MATLAB/setpath.sh
 
-PROBLEMDIR="${HOME}/neurobench-problems"
+#PROBLEMDIR="'${HOME}/neurobench-problems'"
+PROBLEMDIR="[]"
 
 #Check if running as an array job
 if [[ ! -z "$PBS_ARRAYID" ]]; then
@@ -37,7 +38,7 @@ echo ${PARAMS} ${VERBOSE} ${USEPRIOR}
 cat<<EOF | matlab -nodisplay
 %addpath(genpath('${HOME}/MATLAB'));
 cd('${WORKDIR}');
-options=struct('RootDirectory','${WORKDIR}','Display',${VERBOSE},'MaxFunEvalMultiplier',${MAXFUNMULT},'ProblemDirectory','${PROBLEMDIR}');
+options=struct('RootDirectory','${WORKDIR}','Display',${VERBOSE},'MaxFunEvalMultiplier',${MAXFUNMULT},'ProblemDirectory',${PROBLEMDIR});
 ${PARAMS}
 infbench_run(${PARAMS},options);
 EOF
