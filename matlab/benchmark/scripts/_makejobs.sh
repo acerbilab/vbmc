@@ -145,22 +145,27 @@ case "${1}" in
         102)    PROBS="{'goris2015'}"
                 ALGOS="{'wsabi','wsabi@mm','bmc','smc','ais'}"
                 DIMS="{'S7','S8'}"
-                IDS=$IDS_SINGLE
+                IDS=$IDS_FIFTY
                 ;;
         103)    PROBS="{'goris2015'}"
                 ALGOS="{'vbmc@base'}"
                 DIMS="{'S7','S8'}"
-                IDS="{'1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16','17','18','19','20'}"
+                IDS=$IDS_FIFTY
+                ;;
+        103L)   PROBS="{'goris2015'}"
+                ALGOS="{'vbmc@baseluigi'}"
+                DIMS="{'S7','S8'}"
+                IDS=$IDS_FIFTY
                 ;;
         104)    PROBS="{'goris2015'}"
                 ALGOS="{'vbmc@cheapgp'}"
                 DIMS="{'S7','S8'}"
-                IDS="{'1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16','17','18','19','20'}"
+                IDS=$IDS_FIFTY
                 ;;
         105)    PROBS="{'goris2015'}"
                 ALGOS="{'vbmc@cheapgpentsqrtk'}"
                 DIMS="{'S7','S8'}"
-                IDS=$IDS_SINGLE
+                IDS=$IDS_FIFTY
                 ;;
         106)    PROBS="{'goris2015'}"
                 ALGOS="{'vbmc@gpthreshmid'}"
