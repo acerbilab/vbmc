@@ -159,9 +159,9 @@ case "${1}" in
                 IDS=$IDS_FIFTY
                 ;;
         104)    PROBS="{'goris2015'}"
-                ALGOS="{'vbmc@cheapgp'}"
+                ALGOS="{'vbmc@gpthresh'}"
                 DIMS="{'S7','S8'}"
-                IDS=$IDS_FIFTY
+                IDS=$IDS_CENTO
                 ;;
         105)    PROBS="{'goris2015'}"
                 ALGOS="{'vbmc@cheapgpentsqrtk'}"
