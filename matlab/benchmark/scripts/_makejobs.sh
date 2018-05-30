@@ -51,7 +51,7 @@ case "${1}" in
         3)      ALGOSET="{'cheapgpentsqrtk'}"
 		IDS=${IDS_SINGLE}
                 ;;
-        4)      ALGOSET="{'gpthreshmid'}"
+        4)      ALGOSET="{'gpthresh'}"
 		IDS=${IDS_SINGLE}
                 ;;
         5)      ALGOSET="{'cheapgpmid'}"
@@ -160,6 +160,11 @@ case "${1}" in
                 ;;
         104)    PROBS="{'goris2015'}"
                 ALGOS="{'vbmc@gpthresh'}"
+                DIMS="{'S7','S8'}"
+                IDS=$IDS_CENTO
+                ;;
+        104b)    PROBS="{'goris2015'}"
+                ALGOS="{'vbmc@gpthreshmid'}"
                 DIMS="{'S7','S8'}"
                 IDS=$IDS_CENTO
                 ;;
