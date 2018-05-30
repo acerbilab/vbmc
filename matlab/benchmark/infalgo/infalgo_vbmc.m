@@ -67,6 +67,7 @@ switch algoset
     case {210,'cheapgpmidlessprune'}; algoset = 'cheapgpmidlessprune'; algoptions.CheapGPRetrain = 1; algoptions.ELCBOmidpoint = 0; algoptions.GPRetrainThreshold = Inf; algoptions.WarmupKeepThreshold = '50*nvars';
     case {211,'gpthreshmidlessprune'}; algoset = 'gpthreshmid'; algoptions.GPRetrainThreshold = 10; algoptions.ELCBOmidpoint = 0; algoptions.WarmupKeepThreshold = '50*nvars';
     case {212,'gpthreshlessprune'}; algoset = 'gpthreshmid'; algoptions.GPRetrainThreshold = 10; algoptions.WarmupKeepThreshold = '50*nvars';
+    case {213,'lessprune'}; algoset = 'lessprune'; algoptions.WarmupKeepThreshold = '25*nvars';
                 
     otherwise
         error(['Unknown algorithm setting ''' algoset ''' for algorithm ''' algo '''.']);
