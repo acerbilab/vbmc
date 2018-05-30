@@ -42,6 +42,7 @@ defopts.FunEvalsPerD = 500;
 defopts.PlotType = 'nlZ';
 defopts.DisplayLegend = true;
 defopts.Quantiles = [0.25,0.75];    % Confidence intervals quantiles
+defopts.PlotAll = false;        % Plot all lines
 
 % Plotting options
 defopts.YlimMax = 1e5;
@@ -176,7 +177,7 @@ for iFig = 1:nfigs
                     end
                 else
                     fprintf('Collecting files: %s@%s@%s\n', benchlist{dimrows}, benchlist{dimcols}, benchlist{dimlayers});
-                    [history,algo,algoset,flags] = collectHistoryFiles(benchlist);
+                    [history,algo,algoset,flags,Nfiles] = collectHistoryFiles(benchlist);
                     data.(fieldname).history = history;
                     data.(fieldname).algo = algo;
                     data.(fieldname).algoset = algoset;
@@ -259,8 +260,9 @@ for iFig = 1:nfigs
                 field3 = ['f3_' algo '_' algoset];
                 
                 itersPerRun = cellfun(@length,FunCallsPerIter);
+                fprintf('Loaded files: %d. History runs collected: %d.\n', Nfiles, numel(history));
                 display(['Average # of algorithm starts per run: ' num2str(mean(itersPerRun)) ' ± ' num2str(std(itersPerRun)) '.']);                
-                display(['Average overhead per function call: ' num2str(mean(AverageOverhead),'%.3f') ' ± ' num2str(std(AverageOverhead),'%.3f') '.']);                
+                display(['Average overhead per function call: ' num2str(mean(AverageOverhead),'%.3f') ' ± ' num2str(std(AverageOverhead),'%.3f') '.']);
                 
 %                 if any(AverageOverhead < 0)
 %                     pause
@@ -368,6 +370,8 @@ benchdata.options = options;
 function [xx,yy,yyerr_up,yyerr_down] = plotIterations(x,y,iLayer,arglayer,options)
 %PLOTITERATIONS Plot time series of IR or FS
         
+    yyerr_up = []; yyerr_down = [];
+
     defaults = infbench_defaults('options');
     linstyle = defaults.LineStyle;
     lincol = defaults.LineColor;
@@ -384,16 +388,29 @@ function [xx,yy,yyerr_up,yyerr_down] = plotIterations(x,y,iLayer,arglayer,option
             idx_bad = all(~isfinite(y),2);
             y(idx_bad,:) = [];
             
-            yy = median(y,1);
-            %yyerr = abs(bsxfun(@minus,[quantile(y,0.75,1);quantile(y,0.25,1)],yy));
-            yyerr_up = quantile(y,options.Quantiles(2),1);
-            yyerr_down = quantile(y,options.Quantiles(1),1);
-            idx = isfinite(yy);
-            xx = xx(idx);
-            yy = yy(idx);
-            % yyerr = yyerr(idx);
-            yyerr_up = yyerr_up(idx);
-            yyerr_down = yyerr_down(idx);
+            if options.PlotAll
+                qq = 0.05:0.05:0.95;
+                for i = 1:numel(qq); yy(i,:) = quantile(y,qq(i)); end
+            else
+                yy = median(y,1);
+
+                yy_boot = bootstrp(1e4,@median,y);
+                yyerr_up = quantile(yy_boot,0.95,1);
+                yyerr_down = quantile(yy_boot,0.05,1);
+
+                %yyerr_up = quantile(y,options.Quantiles(2),1);
+                %yyerr_down = quantile(y,options.Quantiles(1),1);
+
+                %yy = exp(mean(log(y),1));
+                %yyerr_up = exp(log(yy) + std(log(y)));
+                %yyerr_down = exp(log(yy) - std(log(y)));
+
+                idx = isfinite(yy);
+                xx = xx(idx);
+                yy = yy(idx);
+                yyerr_up = yyerr_up(idx);
+                yyerr_down = yyerr_down(idx);
+            end
     end
 
     plotErrorBar = options.ErrorBar;
@@ -402,19 +419,27 @@ function [xx,yy,yyerr_up,yyerr_down] = plotIterations(x,y,iLayer,arglayer,option
     end
         
     enhance = enhanceline(numel(arglayer),options);    
-    if any(iLayer == enhance); lw = linewidth*2; else; lw = linewidth; end
-    if plotErrorBar
-        % h = shadedErrorBar(xx,yy,yyerr,{linstyle,'LineWidth',lw},1); hold on;
-        
-        xxerr = [xx, fliplr(xx)];
-        yyerr = [yyerr_down, fliplr(yyerr_up)];
-        fill(xxerr, yyerr,lincol,'FaceAlpha',0.5,'LineStyle','none'); hold on;
-        
-        h = plot(xx,yy,[linstyle,linemarker],'Color', lincol, 'LineWidth',lw); hold on;
-        %plot(xx,yyerr_up,linstyle,'Color', lincol, 'LineWidth',1); hold on;
-        %plot(xx,yyerr_down,linstyle,'Color', lincol, 'LineWidth',1); hold on;
+
+    if options.PlotAll
+        lw = 0.5;
+        for i = 1:size(yy,1)
+            h = plot(xx,yy(i,:),[linstyle,linemarker],'Color', [lincol,0.5], 'LineWidth',lw); hold on;
+        end
     else
-        h = plot(xx,yy,[linstyle,linemarker],'Color', lincol, 'LineWidth',lw); hold on;
+        if any(iLayer == enhance); lw = linewidth*2; else; lw = linewidth; end    
+        if plotErrorBar
+            % h = shadedErrorBar(xx,yy,yyerr,{linstyle,'LineWidth',lw},1); hold on;
+
+            xxerr = [xx, fliplr(xx)];
+            yyerr = [yyerr_down, fliplr(yyerr_up)];
+            fill(xxerr, yyerr,lincol,'FaceAlpha',0.5,'LineStyle','none'); hold on;
+
+            h = plot(xx,yy,[linstyle,linemarker],'Color', lincol, 'LineWidth',lw); hold on;
+            %plot(xx,yyerr_up,linstyle,'Color', lincol, 'LineWidth',1); hold on;
+            %plot(xx,yyerr_down,linstyle,'Color', lincol, 'LineWidth',1); hold on;
+        else
+            h = plot(xx,yy,[linstyle,linemarker],'Color', lincol, 'LineWidth',lw); hold on;
+        end
     end
 
 %--------------------------------------------------------------------------

@@ -1,4 +1,4 @@
-function [history,algo,algoset,flags,probstruct] = collectHistoryFiles(benchlist)
+function [history,algo,algoset,flags,Nreadfiles,probstruct] = collectHistoryFiles(benchlist)
 
 flags = 0;  % Overhead flag
 
@@ -36,6 +36,8 @@ else
 end
 
 filesearch = dir([basedir filesep subdir filesep basefilename]);
+Nfiles = numel(filesearch);
+Nreadfiles = 0;
 
 history = [];
 if isempty(filesearch)
@@ -45,7 +47,7 @@ if isempty(filesearch)
 end
 
 % Read history from each file
-for iFile = 1:length(filesearch)
+for iFile = 1:Nfiles
     filename = [basedir filesep subdir filesep filesearch(iFile).name];
     try
         temp = load(filename);
@@ -53,7 +55,8 @@ for iFile = 1:length(filesearch)
         temp = [];
         warning(['Error loading file ' filename '.']);
     end
-    if ~isfield(temp,'history'); continue; end    
+    if ~isfield(temp,'history'); continue; end
+    Nreadfiles = Nreadfiles + 1;
     if isfield(temp,'speedtest')
         t = temp.speedtest.start(:,1:4) + temp.speedtest.end(:,1:4);
         speedtest = sum(t(:));
@@ -67,7 +70,7 @@ for iFile = 1:length(filesearch)
 end
 
 % Also return associated probstruct
-if nargout > 4
+if nargout > 5
     clear infbench_func;
     probstruct = infprob_init(prob,subprob,type,[],1,[]);
 end

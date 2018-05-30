@@ -121,6 +121,8 @@ switch lower(type)
                     case 'gpthreshmid'; defaults.color = [180 0 80]/255; defaults.marker = 'o'; defaults.linewidth = 2; defaults.linestyle = '-.';
                     case 'searchell'; defaults.color = [180 0 80]/255; defaults.marker = '+'; defaults.linewidth = 2; defaults.linestyle = '-.';
                     case 'cheapgpmidlessprune'; defaults.color = [180 0 80]/255; defaults.marker = '^'; defaults.linewidth = 2; defaults.linestyle = '-';
+                    case 'acqproponlypaul'; defaults.color = [250 0 80]/255; defaults.marker = '+'; defaults.linewidth = 2; defaults.linestyle = '-';
+                    case 'acqproponlyluigi'; defaults.color = [0 80 250]/255; defaults.marker = '+'; defaults.linewidth = 2; defaults.linestyle = '-.';
                 end
             
             
