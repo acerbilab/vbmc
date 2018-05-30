@@ -102,9 +102,8 @@ defopts.StopWarmupThresh   = '1                 % Stop warm-up when increase in 
 defopts.WarmupKeepThreshold = '10*nvars         % Max log-likelihood difference for points kept after warmup';
 defopts.SearchCMAES        = 'on                % Use CMA-ES for search';
 defopts.MomentsRunWeight   = '0.9               % Weight of previous trials (per trial) for running avg of variational posterior moments';
-defopts.CheapGPRetrain     = 'off               % Cheap retraining of GP hyperparameters (unused)';
-defopts.GPRetrainThreshold = '0                 % Lower threshold on reliability index for full retraining of GP hyperparameters';
-defopts.ELCBOmidpoint      = 'on                % Compute full ELCBO at best midpoint';
+defopts.GPRetrainThreshold = '0                 % Upper threshold on reliability index for full retraining of GP hyperparameters';
+defopts.ELCBOmidpoint      = 'on                % Compute full ELCBO also at best midpoint';
 
 
 %% If called with 'all', return all default options

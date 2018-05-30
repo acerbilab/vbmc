@@ -43,6 +43,7 @@ defopts.PlotType = 'nlZ';
 defopts.DisplayLegend = true;
 defopts.Quantiles = [0.25,0.75];    % Confidence intervals quantiles
 defopts.PlotAll = false;        % Plot all lines
+defopts.BootStrap = 1e3;        % # samples for bootstrap
 
 % Plotting options
 defopts.YlimMax = 1e5;
@@ -394,16 +395,14 @@ function [xx,yy,yyerr_up,yyerr_down] = plotIterations(x,y,iLayer,arglayer,option
             else
                 yy = median(y,1);
 
-                yy_boot = bootstrp(1e4,@median,y);
-                yyerr_up = quantile(yy_boot,0.95,1);
-                yyerr_down = quantile(yy_boot,0.05,1);
-
-                %yyerr_up = quantile(y,options.Quantiles(2),1);
-                %yyerr_down = quantile(y,options.Quantiles(1),1);
-
-                %yy = exp(mean(log(y),1));
-                %yyerr_up = exp(log(yy) + std(log(y)));
-                %yyerr_down = exp(log(yy) - std(log(y)));
+                if options.BootStrap > 0
+                    yy_boot = bootstrp(options.BootStrap,@median,y);
+                    yyerr_up = quantile(yy_boot,0.95,1);
+                    yyerr_down = quantile(yy_boot,0.05,1);
+                else
+                    yyerr_up = quantile(y,options.Quantiles(2),1);
+                    yyerr_down = quantile(y,options.Quantiles(1),1);
+                end
 
                 idx = isfinite(yy);
                 xx = xx(idx);
