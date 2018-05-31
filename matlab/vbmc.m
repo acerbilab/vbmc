@@ -60,6 +60,7 @@ defopts.NSelboIncr         = '0.1               % Multiplier to samples for fast
 defopts.ElboStarts         = '2                 % Starting points to refine optimization of the ELBO';
 defopts.NSgpMax            = '80                % Max GP hyperparameter samples (decreases with training points)';
 defopts.StopGPSampling     = '200 + 10*nvars    % Stop GP hyperparameter sampling (start optimizing)';
+defopts.GPSampleThin       = '5                 % Thinning for GP hyperparameter sampling';
 defopts.TolGPVar           = '1e-4              % Stop GP hyperparameter sampling if sample variance is below this threshold per fcn';
 defopts.QuadraticMean      = 'yes               % Use GP with quadratic mean function (otherwise constant)';
 defopts.Kfun               = '@sqrt             % Variational components as a function of training points';
@@ -76,6 +77,7 @@ defopts.WarpMinFun         = '10 + 2*D          % Minimum training points before
 defopts.WarpNonlinearEpoch = '100               % Recalculate nonlinear warpings after this number of fcn evals';
 defopts.WarpNonlinearMinFun = '20 + 5*D         % Minimum training points before starting nonlinear warping';
 defopts.ELCBOWeight        = '0                 % Uncertainty weight during ELCBO optimization';
+defopts.ELCBOImproWeight   = '3                 % Uncertainty weight on ELCBO for computing lower bound improvement';
 defopts.TolLength          = '1e-6              % Minimum fractional length scale';
 defopts.NoiseObj           = 'off               % Objective fcn returns noise estimate as 2nd argument (unsupported)';
 defopts.CacheSize          = '1e4               % Size of cache for storing fcn evaluations';
@@ -83,9 +85,10 @@ defopts.CacheFrac          = '0.5               % Fraction of search points from
 defopts.TolFunAdam         = '0.001             % Stopping threshold for Adam optimizer';
 defopts.TolSD              = '0.1               % Tolerance on ELBO uncertainty for stopping (iff variational posterior is stable)';
 defopts.TolsKL             = '0.01*sqrt(nvars)  % Stopping threshold on change of variational posterior per training point';
-defopts.TolStableIters     = '10                % Number of stable iterations for checking stopping criteria';
+defopts.TolStableIters     = '5                 % Number of stable iterations for checking stopping criteria';
 defopts.TolStableFunEvals  = '5*nvars           % Number of stable fcn evals for checking stopping criteria';
 defopts.TolStableWarmup    = '3                 % Number of stable iterations for stopping warmup';
+defopts.TolImprovement     = '0.01              % Required ELCBO improvement per fcn eval before termination';
 defopts.KLgauss            = 'yes               % Use Gaussian approximation for symmetrized KL-divergence b\w iters';
 defopts.TrueMean           = '[]                % True mean of the target density (for debugging)';
 defopts.TrueCov            = '[]                % True covariance of the target density (for debugging)';
@@ -104,7 +107,7 @@ defopts.SearchCMAES        = 'on                % Use CMA-ES for search';
 defopts.MomentsRunWeight   = '0.9               % Weight of previous trials (per trial) for running avg of variational posterior moments';
 defopts.GPRetrainThreshold = '0                 % Upper threshold on reliability index for full retraining of GP hyperparameters';
 defopts.ELCBOmidpoint      = 'on                % Compute full ELCBO also at best midpoint';
-
+defopts.GPSampleWidths     = '0                 % Multiplier to widths from previous posterior for GP sampling (0 = do not use previous widths)';
 
 %% If called with 'all', return all default options
 if strcmpi(fun,'all')
@@ -213,6 +216,8 @@ end
 iter = 0;
 isFinished_flag = false;
 exitflag = 0;   output = [];    stats = [];     sKL = Inf;
+
+optimState.hypwidths = [];
 
 while ~isFinished_flag    
     iter = iter + 1;
@@ -331,7 +336,20 @@ while ~isFinished_flag
     [hypprior,X_hpd,y_hpd,~,hyp0,optimState.gpMeanfun] = ...
         vbmc_gphyp(optimState,optimState.gpMeanfun,0,options);
     if isempty(hyp); hyp = hyp0; end % Initial GP hyperparameters
-    gptrain_options.Thin = 5;    
+    gptrain_options.Thin = options.GPSampleThin;
+    if options.GPSampleWidths > 0
+        gptrain_options.Widths = optimState.hypwidths*options.GPSampleWidths;
+    else
+        gptrain_options.Widths = [];
+    end    
+    gptrain_options.Sampler = 'slicesample';
+%     if isempty(optimState.hypwidths) || any(optimState.hypwidths < sqrt(eps))
+%         gptrain_options.Widths = optimState.hypwidths*3;        
+%         gptrain_options.Sampler = 'slicesample';
+%     else
+%         gptrain_options.Sampler = 'hmc';
+%         gptrain_options.Widths = optimState.hypwidths;        
+%     end    
     if optimState.RecomputeVarPost
         gptrain_options.Burnin = gptrain_options.Thin*Ns_gp;
         gptrain_options.Ninit = 2^10;
@@ -350,7 +368,9 @@ while ~isFinished_flag
     [gp,hyp] = gplite_train(hyp,Ns_gp, ...
         optimState.X(optimState.X_flag,:),optimState.y(optimState.X_flag), ...
         optimState.gpMeanfun,hypprior,[],gptrain_options);
-        
+    optimState.hypwidths = std(hyp,[],2)';
+    optimState.hypwidths
+    
     % Sample from GP
     if ~isempty(gp) && 0
         Xgp = vbmc_gpsample(gp,1e3,optimState,1);
@@ -364,7 +384,7 @@ while ~isFinished_flag
     
     % Adaptive increase of number of components
     if isa(options.AdaptiveK,'function_handle')
-        Kbonus = options.AdaptiveK(optimState.vpK);
+        Kbonus = round(options.AdaptiveK(optimState.vpK));
     else
         Kbonus = round(double(options.AdaptiveK));
     end     
@@ -492,6 +512,9 @@ while ~isFinished_flag
             
             % Fully recompute variational posterior
             optimState.RecomputeVarPost = true;
+            
+            % Recompute GP widths
+            optimState.hypwidths = [];
         end
     end
     
@@ -537,16 +560,6 @@ while ~isFinished_flag
         qindex_vec(1) = abs(elbo_list(iter) - elbo_list(iter-1))/options.TolSD;
         qindex_vec(2) = stats.elboSD(iter) / options.TolSD;
         qindex_vec(3) = sKL_list(iter) / options.TolsKL;
-%         qindex(1) = sqrt(wvar / (options.TolSD^2));
-%         qindex(2) = sum(w .* stats.elboSD(idx_stable:iter).^2) / options.TolSD^2;
-%         qindex(3) = sum(w .* sKL_list(idx_stable:iter)) / options.TolsKL;
-        
-%        qindex
-        
-%         qindex(1) = sqrt(err2 / (options.TolSD^2*dN));
-%         qindex(2) = stats.elboSD(iter) / options.TolSD;
-%         qindex(3) = sum(sKL_list(idx_stable:iter)) / (options.TolsKL*dN);
-%         qindex(4) = sKL_list(iter) / (options.TolsKL*dN_last);        
         
         % Stop sampling after sample variance has stabilized below ToL
         if ~isempty(idx_stable) && optimState.StopSampling == 0 && ~optimState.Warmup
@@ -557,21 +570,33 @@ while ~isFinished_flag
             end
         end
         
+        % Compute average ELCBO improvement in the past few iterations
+        idx0 = max(1,iter-options.TolStableIters+1);
+        xx = stats.N(idx0:iter);
+        yy = stats.elbo(idx0:iter) - options.ELCBOImproWeight*stats.elboSD(idx0:iter);
+        p = polyfit(xx,yy,1);
+        ELCBOimpro = p(1);
+
     else
         qindex_vec = Inf(1,3);
+        ELCBOimpro = NaN;
     end
 
     % Store reliability index
     qindex = mean(qindex_vec);    
     stats.qindex(iter) = qindex;
+    stats.elcbo_impro(iter) = ELCBOimpro;
     optimState.R = qindex;
     
     % Check stability termination condition
     if iter >= options.TolStableIters && ... 
             all(qindex_vec < 1) && ...
-            all(stats.qindex(iter-options.TolStableIters+1:iter) < 1)
+            all(stats.qindex(iter-options.TolStableIters+1:iter) < 1) && ...
+            ELCBOimpro < options.TolImprovement
         isFinished_flag = true;
         exitflag = 0;
+        if isempty(action); action = 'stable'; else; action = [action ', stable']; end
+        
             % msg = 'Optimization terminated: reached maximum number of iterations OPTIONS.MaxIter.';
     end
     

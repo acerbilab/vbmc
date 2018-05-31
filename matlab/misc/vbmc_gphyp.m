@@ -47,7 +47,7 @@ hypprior.sigma(1:D) = max(2,log(max(X_hpd)-min(X_hpd)) - log(std(X_hpd)));
 %hypprior.sigma(D+1) = 2;
 hypprior.mu(Ncov+1) = log(noisesize);
 hypprior.sigma(Ncov+1) = 0.5;
-if options.QuadraticMean
+if options.QuadraticMean    
     hypprior.mu(Ncov+2) = max(y_hpd);
     hypprior.sigma(Ncov+2) = max(y_hpd)-min(y_hpd);
 end

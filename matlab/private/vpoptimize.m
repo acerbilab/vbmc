@@ -107,8 +107,6 @@ for iOpt = 1:Nslowopts
     elbostats = eval_fullelcbo(iOpt_end,thetaopt,vp0,gp,elbostats,elcbo_beta,options);
     % toc
     
-    elbostats
-    
     vp0_fine(iOpt_mid) = vp0;
     vp0_fine(iOpt_end) = vp0;   % Parameters get assigned later
 
@@ -137,8 +135,8 @@ varss = elbostats.varss(idx);
 vp = vp0_fine(idx);
 vp = rescale_params(vp,elbostats.theta(idx,:));
 
-% idx
-% elbostats
+%     idx
+%     elbostats
 
 end
 

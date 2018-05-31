@@ -31,6 +31,15 @@ DfBase = [];
 if isfield(options,'DfBase'); DfBase = options.DfBase; end
 if isempty(DfBase); DfBase = 7; end   % Default degrees of freedom for Student's t prior
 
+Sampler = [];
+if isfield(options,'Sampler'); Sampler = options.Sampler; end
+if isempty(Sampler); Sampler = 'slicesample'; end   % Default MCMC sampler for hyperparameters
+
+Widths = [];
+if isfield(options,'Widths'); Widths = options.Widths; end
+if isempty(Widths); Widths = []; end   % Default widths (used only for HMC sampler)
+
+
 [N,D] = size(X);            % Number of training points and dimension
 
 ToL = 1e-6;
@@ -191,22 +200,21 @@ else
     gp = gplite_post(hyp0(:,1),X,y,meanfun);
 end
 
-% Define objective functions for optimization and sampling
+% Define objective functions for optimization
 gpoptimize_fun = @(hyp_) gp_objfun(hyp_(:),gp,hprior,0,0);
-gpsample_fun = @(hyp_) gp_objfun(hyp_(:),gp,hprior,0,1);
 
 % First evaluate GP log posterior on an informed space-filling design
 if Ninit > 0
     optfill.FunEvals = Ninit;
     [~,~,~,output_fill] = fminfill(gpoptimize_fun,hyp0',LB,UB,PLB,PUB,hprior,optfill);
     hyp(:,:) = output_fill.X(1:Nopts,:)';
-    widths = std(output_fill.X,[],1);
+    widths_default = std(output_fill.X,[],1);
 else
     nll = Inf(1,size(hyp0,2));
     for i = 1:size(hyp0,2); nll(i) = gpoptimize_fun(hyp0(:,i)); end
     [nll,ord] = sort(nll,'ascend');
     hyp = hyp0(:,ord);
-    widths = PUB - PLB;
+    widths_default = PUB - PLB;
 end
 
 % if input_warping
@@ -230,17 +238,43 @@ end
 
 %% Sample from best hyperparameter vector using slice sampling
 if Ns > 0
-    sampleopts.Thin = Thin;
-    sampleopts.Burnin = Burnin;
-    sampleopts.Display = 'off';
-    sampleopts.Diagnostics = false;
-    [samples,fvals,exitflag,output] = ...
-        slicesamplebnd(gpsample_fun,hyp(:,idx)',Ns,widths,LB,UB,sampleopts);
-    hyp = samples';
-    
+    switch lower(Sampler)
+        case 'slicesample'            
+            gpsample_fun = @(hyp_) gp_objfun(hyp_(:),gp,hprior,0,1);
+            sampleopts.Thin = Thin;
+            sampleopts.Burnin = Burnin;
+            sampleopts.Display = 'off';
+            sampleopts.Diagnostics = false;
+            if isempty(Widths); Widths = widths_default; end
+            
+            [samples,fvals,exitflag,output] = ...
+                slicesamplebnd(gpsample_fun,hyp(:,idx)',Ns,Widths,LB,UB,sampleopts);
+            hyp = samples';
+            
+        case 'hmc'            
+            gpsample_fun = @(hyp_) gp_objfun(hyp_(:),gp,hprior,0,0);
+            sampleopts.display = 0;
+            sampleopts.checkgrad = 0;
+            sampleopts.steps = 10;
+            sampleopts.nsamples = Ns*Thin;
+            sampleopts.stepadj = 0.01;
+            sampleopts.widths = [];
+            sampleopts.nomit = Burnin;
+            sampleopts.widths = Widths;
+            
+            [samples,fvals,diagn] = ...
+                hmc2(gpsample_fun,hyp(:,idx)',sampleopts,@(hyp) gpgrad_fun(hyp,gpsample_fun));            
+            hyp = samples(Thin:Thin:end,:)';
+            
+%           case 'nuts'            
 %     nuts_opt.M = Ns*sampleopts.Thin;
 %     nuts_opt.Madapt= 10*Ns;
 %     [hyp_nuts,fvals_nuts,diagn_nuts] = hmc_nuts(@gpsample_fun,hyp(:,idx)',nuts_opt);
+
+        otherwise
+            error('gplite_train:UnknownSampler', ...
+                'Unknown MCMC sampler for GP hyperparameters.');
+    end
 else
     hyp = hyp(:,idx);
 end
@@ -256,6 +290,12 @@ gp = gp_objfun(hyp,gp,[],1);
 % end
 
 
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function dnlZ = gpgrad_fun(hyp,gpsample_fun)
+    [~,dnlZ] = gpsample_fun(hyp);
+    dnlZ = dnlZ';
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -394,6 +434,10 @@ else
         if compute_grad; dnlZ = -dnlZ; end
     end
     
+%     if compute_grad
+%         dnlZ
+%     end
+        
 end
 
 end
