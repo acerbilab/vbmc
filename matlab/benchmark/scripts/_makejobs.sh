@@ -168,6 +168,11 @@ case "${1}" in
                 DIMS="{'S7','S8'}"
                 IDS=$IDS_CENTO
                 ;;
+        104c)    PROBS="{'goris2015'}"
+                ALGOS="{'vbmc@gpthreshwidths'}"
+                DIMS="{'S7','S8'}"
+                IDS=$IDS_CENTO
+                ;;
         105)    PROBS="{'goris2015'}"
                 ALGOS="{'vbmc@cheapgpentsqrtk'}"
                 DIMS="{'S7','S8'}"
