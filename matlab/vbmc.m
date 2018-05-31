@@ -369,7 +369,7 @@ while ~isFinished_flag
         optimState.X(optimState.X_flag,:),optimState.y(optimState.X_flag), ...
         optimState.gpMeanfun,hypprior,[],gptrain_options);
     optimState.hypwidths = std(hyp,[],2)';
-    optimState.hypwidths
+    % optimState.hypwidths
     
     % Sample from GP
     if ~isempty(gp) && 0
