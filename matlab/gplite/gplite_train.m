@@ -245,7 +245,12 @@ if Ns > 0
             sampleopts.Burnin = Burnin;
             sampleopts.Display = 'off';
             sampleopts.Diagnostics = false;
-            if isempty(Widths); Widths = widths_default; end
+            if isempty(Widths)
+                Widths = widths_default; 
+            else
+                Widths = min(Widths(:)',widths_default);
+                % [Widths; widths_default]
+            end
             
             [samples,fvals,exitflag,output] = ...
                 slicesamplebnd(gpsample_fun,hyp(:,idx)',Ns,Widths,LB,UB,sampleopts);

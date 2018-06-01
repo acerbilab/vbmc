@@ -107,7 +107,7 @@ defopts.SearchCMAES        = 'on                % Use CMA-ES for search';
 defopts.MomentsRunWeight   = '0.9               % Weight of previous trials (per trial) for running avg of variational posterior moments';
 defopts.GPRetrainThreshold = '0                 % Upper threshold on reliability index for full retraining of GP hyperparameters';
 defopts.ELCBOmidpoint      = 'on                % Compute full ELCBO also at best midpoint';
-defopts.GPSampleWidths     = '0                 % Multiplier to widths from previous posterior for GP sampling (0 = do not use previous widths)';
+defopts.GPSampleWidths     = 'Inf               % Multiplier to widths from previous posterior for GP sampling (Inf = do not use previous widths)';
 
 %% If called with 'all', return all default options
 if strcmpi(fun,'all')
@@ -218,6 +218,7 @@ isFinished_flag = false;
 exitflag = 0;   output = [];    stats = [];     sKL = Inf;
 
 optimState.hypwidths = [];
+qindex = Inf;
 
 while ~isFinished_flag    
     iter = iter + 1;
@@ -338,7 +339,9 @@ while ~isFinished_flag
     if isempty(hyp); hyp = hyp0; end % Initial GP hyperparameters
     gptrain_options.Thin = options.GPSampleThin;
     if options.GPSampleWidths > 0
-        gptrain_options.Widths = optimState.hypwidths*options.GPSampleWidths;
+        % gptrain_options.Widths = optimState.hypwidths*options.GPSampleWidths;
+        widthmult = max(options.GPSampleWidths,qindex);
+        gptrain_options.Widths = max(optimState.hypwidths,1e-3)*widthmult;
     else
         gptrain_options.Widths = [];
     end    
