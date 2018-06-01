@@ -108,6 +108,7 @@ defopts.MomentsRunWeight   = '0.9               % Weight of previous trials (per
 defopts.GPRetrainThreshold = '0                 % Upper threshold on reliability index for full retraining of GP hyperparameters';
 defopts.ELCBOmidpoint      = 'on                % Compute full ELCBO also at best midpoint';
 defopts.GPSampleWidths     = 'Inf               % Multiplier to widths from previous posterior for GP sampling (Inf = do not use previous widths)';
+defopts.HypRunWeight       = '0                 % Weight of previous trials (per trial) for running avg of GP hyperparameter covariance';
 
 %% If called with 'all', return all default options
 if strcmpi(fun,'all')
@@ -217,7 +218,6 @@ iter = 0;
 isFinished_flag = false;
 exitflag = 0;   output = [];    stats = [];     sKL = Inf;
 
-optimState.hypwidths = [];
 qindex = Inf;
 
 while ~isFinished_flag    
@@ -338,21 +338,16 @@ while ~isFinished_flag
         vbmc_gphyp(optimState,optimState.gpMeanfun,0,options);
     if isempty(hyp); hyp = hyp0; end % Initial GP hyperparameters
     gptrain_options.Thin = options.GPSampleThin;
-    if options.GPSampleWidths > 0
-        % gptrain_options.Widths = optimState.hypwidths*options.GPSampleWidths;
+    if options.GPSampleWidths > 0 && ~isempty(optimState.RunHypCov)
         widthmult = max(options.GPSampleWidths,qindex);
-        gptrain_options.Widths = max(optimState.hypwidths,1e-3)*widthmult;
+        hypwidths = sqrt(diag(optimState.RunHypCov));
+        gptrain_options.Widths = max(hypwidths,1e-3)*widthmult;
     else
         gptrain_options.Widths = [];
     end    
     gptrain_options.Sampler = 'slicesample';
-%     if isempty(optimState.hypwidths) || any(optimState.hypwidths < sqrt(eps))
-%         gptrain_options.Widths = optimState.hypwidths*3;        
-%         gptrain_options.Sampler = 'slicesample';
-%     else
 %         gptrain_options.Sampler = 'hmc';
-%         gptrain_options.Widths = optimState.hypwidths;        
-%     end    
+%         gptrain_options.Widths = hypwidths;        
     if optimState.RecomputeVarPost
         gptrain_options.Burnin = gptrain_options.Thin*Ns_gp;
         gptrain_options.Ninit = 2^10;
@@ -368,11 +363,25 @@ while ~isFinished_flag
         end
     end
     
+    % Fit hyperparameters
     [gp,hyp] = gplite_train(hyp,Ns_gp, ...
         optimState.X(optimState.X_flag,:),optimState.y(optimState.X_flag), ...
         optimState.gpMeanfun,hypprior,[],gptrain_options);
-    optimState.hypwidths = std(hyp,[],2)';
-    % optimState.hypwidths
+    
+    % Update running average of GP hyperparameter covariance (coarse)
+    if Ns_gp > 1
+        hypcov = cov(hyp');
+        if isempty(optimState.RunHypCov) || options.HypRunWeight == 0
+            optimState.RunHypCov = hypcov;
+        else
+            weight = options.HypRunWeight^options.FunEvalsPerIter;
+            optimState.RunHypCov = (1-weight)*hypcov + ...
+                weight*optimState.RunHypCov;
+        end
+        optimState.RunHypCov
+    else
+        optimState.RunHypCov = [];
+    end
     
     % Sample from GP
     if ~isempty(gp) && 0
@@ -516,8 +525,8 @@ while ~isFinished_flag
             % Fully recompute variational posterior
             optimState.RecomputeVarPost = true;
             
-            % Recompute GP widths
-            optimState.hypwidths = [];
+            % Reset GP hyperparameter covariance
+            optimState.RunHypCov = [];
         end
     end
     

@@ -146,6 +146,9 @@ optimState.RunMean = [];
 optimState.RunCov = [];
 optimState.LastRunAvg = NaN; % Last time running average was updated
 
+% Running covariance of GP hyperparameter posterior
+optimState.RunHypCov = [];
+
 % Current number of components for variational posterior
 optimState.vpK = K;
 
