@@ -71,6 +71,7 @@ switch algoset
     case {214,'gpthreshfastadapt'}; algoset = 'gpthreshfastadapt'; algoptions.GPRetrainThreshold = 1; algoptions.AdaptiveK = @(K) ceil(K/10); algoptions.KfunMax = '@(N) N';
     case {215,'gpthreshwidths'}; algoset = 'gpthreshwidths'; algoptions.GPRetrainThreshold = 1; algoptions.GPSampleWidths = 5;
     case {216,'gpthreshruncov'}; algoset = 'gpthreshruncov'; algoptions.GPRetrainThreshold = 1; algoptions.GPSampleWidths = 5; algoptions.HypRunWeight = 0.8;
+    case {217,'gpthreshruncovzero'}; algoset = 'gpthreshruncov'; algoptions.GPRetrainThreshold = 1; algoptions.GPSampleWidths = 5; algoptions.HypRunWeight = 0;
                 
     otherwise
         error(['Unknown algorithm setting ''' algoset ''' for algorithm ''' algo '''.']);
