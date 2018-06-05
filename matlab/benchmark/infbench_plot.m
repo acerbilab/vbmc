@@ -44,6 +44,8 @@ defopts.DisplayLegend = true;
 defopts.Quantiles = [0.25,0.75];    % Confidence intervals quantiles
 defopts.PlotAll = false;        % Plot all lines
 defopts.BootStrap = 1e3;        % # samples for bootstrap
+% defopts.BaseSpeedTest = 8.2496; % Laptop speed
+defopts.BaseSpeedTest = 13.7660; % Laptop speed
 
 % Plotting options
 defopts.YlimMax = 1e5;
@@ -230,20 +232,22 @@ for iFig = 1:nfigs
                         else
                             FunCallsPerIter{i} = NaN; 
                         end
+                        
+                        % Normalize to laptop speed
+                        speedfactor = options.BaseSpeedTest/history{i}.speedtest;                        
+                        
                         if isfield(history{i},'SaveTicks')
                             % Take only until it resets (one run)
                             last = find(isfinite(history{i}.ElapsedTime),1,'last');
                             last_first = find(diff(history{i}.ElapsedTime(1:last)) < 0,1);
                             if ~isempty(last_first); last = last_first; end
                             try
-                                AverageOverhead(i) = ...
+                                AverageOverhead(i) = speedfactor * ...
                                     (history{i}.ElapsedTime(last) - sum(history{i}.FuncTime(1:last)))/history{1}.SaveTicks(last);
                             catch
                                 pause
                             end
-                        end
-                        
-                        speedfactor = 8.2496/history{i}.speedtest;
+                        end                        
                         
                         TotalElapsedTime = TotalElapsedTime + history{i}.ElapsedTime(last)*speedfactor;
                         TotalFunctionTime = TotalFunctionTime + sum(history{i}.FuncTime(1:last))*speedfactor;

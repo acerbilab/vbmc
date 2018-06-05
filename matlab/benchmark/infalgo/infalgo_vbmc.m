@@ -72,6 +72,7 @@ switch algoset
     case {215,'gpthreshwidths'}; algoset = 'gpthreshwidths'; algoptions.GPRetrainThreshold = 1; algoptions.GPSampleWidths = 5;
     case {216,'gpthreshruncov'}; algoset = 'gpthreshruncov'; algoptions.GPRetrainThreshold = 1; algoptions.GPSampleWidths = 5; algoptions.HypRunWeight = 0.8;
     case {217,'gpthreshruncovzero'}; algoset = 'gpthreshruncov'; algoptions.GPRetrainThreshold = 1; algoptions.GPSampleWidths = 5; algoptions.HypRunWeight = 0;
+    case {218,'gpthreshwcov'}; algoset = 'gpthreshwcov'; algoptions.GPRetrainThreshold = 1; algoptions.GPSampleWidths = 5; algoptions.HypRunWeight = 0.9; algoptions.WeightedHypCov = 1;
                 
     otherwise
         error(['Unknown algorithm setting ''' algoset ''' for algorithm ''' algo '''.']);

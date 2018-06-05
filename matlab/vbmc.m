@@ -109,6 +109,7 @@ defopts.GPRetrainThreshold = '0                 % Upper threshold on reliability
 defopts.ELCBOmidpoint      = 'on                % Compute full ELCBO also at best midpoint';
 defopts.GPSampleWidths     = 'Inf               % Multiplier to widths from previous posterior for GP sampling (Inf = do not use previous widths)';
 defopts.HypRunWeight       = '0                 % Weight of previous trials (per trial) for running avg of GP hyperparameter covariance';
+defopts.WeightedHypCov     = 'off               % Use weighted hyperparameter posterior covariance';
 
 %% If called with 'all', return all default options
 if strcmpi(fun,'all')
@@ -338,9 +339,13 @@ while ~isFinished_flag
         vbmc_gphyp(optimState,optimState.gpMeanfun,0,options);
     if isempty(hyp); hyp = hyp0; end % Initial GP hyperparameters
     gptrain_options.Thin = options.GPSampleThin;
-    if options.GPSampleWidths > 0 && ~isempty(optimState.RunHypCov)
+    
+    % Get hyperparameter posterior covariance from previous iters
+    hypcov = GetHypCov(optimState,stats,options);    
+    
+    if options.GPSampleWidths > 0 && ~isempty(hypcov)
         widthmult = max(options.GPSampleWidths,qindex);
-        hypwidths = sqrt(diag(optimState.RunHypCov));
+        hypwidths = sqrt(diag(hypcov)');
         gptrain_options.Widths = max(hypwidths,1e-3)*widthmult;
     else
         gptrain_options.Widths = [];
@@ -539,7 +544,8 @@ while ~isFinished_flag
     % timer
     
     % Record all useful stats
-    stats = savestats(stats,optimState,vp,elbo,elbo_sd,varss,sKL,sKL_true,gp,Ns_gp,timer,options.Diagnostics);
+    stats = savestats(stats, ...
+        optimState,vp,elbo,elbo_sd,varss,sKL,sKL_true,gp,hyp,Ns_gp,timer,options.Diagnostics);
     
     %----------------------------------------------------------------------
     %% Check termination conditions    
@@ -571,7 +577,7 @@ while ~isFinished_flag
 
         qindex_vec(1) = abs(elbo_list(iter) - elbo_list(iter-1))/options.TolSD;
         qindex_vec(2) = stats.elboSD(iter) / options.TolSD;
-        qindex_vec(3) = sKL_list(iter) / options.TolsKL;
+        qindex_vec(3) = sKL_list(iter) / options.TolsKL;    % This should be fixed
         
         % Stop sampling after sample variance has stabilized below ToL
         if ~isempty(idx_stable) && optimState.StopSampling == 0 && ~optimState.Warmup
@@ -635,7 +641,7 @@ end
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function stats = savestats(stats,optimState,vp,elbo,elbo_sd,varss,sKL,sKL_true,gp,Ns_gp,timer,debugflag)
+function stats = savestats(stats,optimState,vp,elbo,elbo_sd,varss,sKL,sKL_true,gp,hyp,Ns_gp,timer,debugflag)
 
 iter = optimState.iter;
 stats.iter(iter) = iter;
@@ -652,6 +658,7 @@ if ~isempty(sKL_true)
 end
 stats.gpSampleVar(iter) = varss;
 stats.gpNsamples(iter) = Ns_gp;
+stats.gpHyp{iter} = hyp;
 stats.timer(iter) = timer;
 
 if debugflag
@@ -745,6 +752,48 @@ if ~isempty(stats)
     w2 = w2 / sum(w2);
     w = 0.5*w1 + 0.5*w2;
     
+end
+
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function hypcov = GetHypCov(optimState,stats,options)
+%GETHYPCOV Get hyperparameter posterior covariance
+
+if optimState.iter > 1
+    if options.WeightedHypCov
+        w_list = [];
+        hyp_list = [];
+        w = 1;
+        for i = 1:optimState.iter-1
+            hyp = stats.gpHyp{optimState.iter-i};
+            hyp_list = [hyp_list; hyp'];
+            if i > 1
+                % diff_mult = max(1,log(stats.qindex(optimState.iter-i+1)));                
+                diff_mult = max(1/options.FunEvalsPerIter, ...
+                    log(stats.sKL(optimState.iter-i+1) ./ (options.TolsKL*options.FunEvalsPerIter)));
+                w = w*(options.HypRunWeight^(options.FunEvalsPerIter*diff_mult));
+            end
+            w_list = [w_list; w*ones(size(hyp,2),1)];            
+        end
+        
+        w_list = w_list / sum(w_list);                  % Normalize weights
+        mustar = sum(bsxfun(@times,w_list,hyp_list),1); % Weighted mean
+
+        % Weighted covariance matrix
+        nhyp = size(hyp_list,2);        
+        hypcov = zeros(nhyp,nhyp);
+        for j = 1:size(hyp_list,1)
+            hypcov = hypcov + ...
+                w_list(j)*(hyp_list(j,:)-mustar)'*(hyp_list(j,:)-mustar);            
+        end
+        hypcov = hypcov/(1-sum(w_list.^2));
+        
+    else
+        hypcov = optimState.RunHypCov;
+    end
+else
+    hypcov = [];
 end
 
 end
