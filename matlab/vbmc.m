@@ -378,7 +378,7 @@ while ~isFinished_flag
             optimState.RunHypCov = (1-weight)*hypcov + ...
                 weight*optimState.RunHypCov;
         end
-        optimState.RunHypCov
+        % optimState.RunHypCov
     else
         optimState.RunHypCov = [];
     end
