@@ -63,6 +63,9 @@ case "${1}" in
         4e)     ALGOSET="{'gpthreshruncovzero'}"
                 IDS=${IDS_SINGLE}
                 ;;
+        4f)     ALGOSET="{'gpthreshwcov'}"
+                IDS=${IDS_SINGLE}
+                ;;
         5)      ALGOSET="{'cheapgpmid'}"
                 IDS=${IDS_SINGLE}
 		;;
@@ -189,6 +192,11 @@ case "${1}" in
                 ;;
         104e)   PROBS="{'goris2015'}"
                 ALGOS="{'vbmc@gpthreshruncovzero'}"
+                DIMS="{'S7','S8'}"
+                IDS=$IDS_CENTO
+                ;;
+        104f)   PROBS="{'goris2015'}"
+                ALGOS="{'vbmc@gpthreshwcov'}"
                 DIMS="{'S7','S8'}"
                 IDS=$IDS_CENTO
                 ;;
