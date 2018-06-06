@@ -93,9 +93,13 @@ end
 
 X = [x0;Xs];
 
-y = zeros(1,N);
+y = Inf(1,N);
 for iEval = 1:N
-    y(iEval) = fun(X(iEval,:));
+    try
+        y(iEval) = fun(X(iEval,:));
+    catch
+        % Something went wrong, try to continue
+    end
 end
 
 % Choose best starting points

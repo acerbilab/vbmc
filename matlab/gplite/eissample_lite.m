@@ -183,6 +183,7 @@ defopts.SaveFile    = '';           % Save sampling to file
 defopts.SaveTime    = 1e4;          % Save every this number of seconds
 defopts.VarTransform = true;        % Transform constrained variables
 
+
 %--------------------------------------------------------------------------
 % Internal defaults (average user should not modify these)
 
@@ -294,6 +295,14 @@ if ~isempty(options.LoadFile) && exist(options.LoadFile,'file')
 else
     %% Startup and initial checks
     
+    % Provided WIDTHS is a covariance matrix
+    if ~isempty(widths) && ~isvector(widths)
+        covmat = widths;
+        widths = sqrt(diag(covmat))';
+    else
+        covmat = [];
+    end    
+    
     % Transform constrained variables
     if options.VarTransform
         logPfuns_orig = logPfuns;
@@ -302,7 +311,8 @@ else
     end
     
     % Initialize algorithm variables
-    [sampleState,logPfuns,nocell] = sampleinit(logPfuns,nvars,N,LB,UB,widths,options);
+    [sampleState,logPfuns,nocell] = ...
+        sampleinit(logPfuns,nvars,N,LB,UB,widths,covmat,options);
 
     if m0 > K
         [sampleState.gmm,sampleState.vbmodel] = fitgmm(x0,1,options);
@@ -733,7 +743,7 @@ function fval = assignfval(fval,ftemp,iSample)
     end
 end
 %--------------------------------------------------------------------------
-function [sampleState,logPfuns,nocell] = sampleinit(logPfuns,nvars,N,LB,UB,widths,options)
+function [sampleState,logPfuns,nocell] = sampleinit(logPfuns,nvars,N,LB,UB,widths,covmat,options)
 %SAMPLEINIT Initialize parameters and options for sampling algorithm.
 
 if ~iscell(logPfuns); logPfuns = {logPfuns}; nocell = 1; else nocell = 0; end
@@ -757,6 +767,9 @@ if isempty(widths); widths = (UB - LB)/2; end
 widths(isinf(widths)) = 10;
 widths(LB == UB) = 1;   % WIDTHS is irrelevant when LB == UB, set to 1
 sampleState.widths = widths;
+
+[cholsigma,p] = chol(covmat);
+sampleState.cholsigma = cholsigma;
 
 sampleState.funccount = zeros(1,Nfuns);
 sampleState.thin = floor(options.Thin);
@@ -935,8 +948,10 @@ dd = 0;
 
 if ~isfield(sampleState,'gmm'); sampleState.gmm = []; end
 if ~isfield(sampleState,'vbmodel'); sampleState.vbmodel = []; end
+if ~isfield(sampleState,'cholsigma'); sampleState.cholsigma = []; end
 gmm = sampleState.gmm;
 vbmodel = sampleState.vbmodel;
+cholsigma = sampleState.cholsigma;
 
 if size(sampleState.others,1) >= 2
     % Parallel slice sampling
@@ -951,6 +966,11 @@ elseif ~isempty(vbmodel)
     wvec = (xr(:,2) - xr(:,1))'*options.SigmaFactor;
     wsize = 1;
 
+elseif ~isempty(cholsigma)
+    % Covariance random-direction slice sampling
+    wvec = (randn(1,D)*cholsigma)*options.SigmaFactor;
+    wsize = 1;
+    
 else
     % Random-direction slice sampling
     wvec = randn(1,D).*sampleState.widths;

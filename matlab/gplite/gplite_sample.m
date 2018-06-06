@@ -53,7 +53,7 @@ switch method
         Xs = slicesamplebnd(logpfun, ...
             x0,Ns,widths,LB,UB,sampleopts);
         
-    case 'parallel'        
+    case 'parallel'
         sampleopts.Burnin = ceil(Ns/5);
         sampleopts.Thin = 1;
         sampleopts.Display = 'off';

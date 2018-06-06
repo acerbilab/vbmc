@@ -110,6 +110,7 @@ defopts.ELCBOmidpoint      = 'on                % Compute full ELCBO also at bes
 defopts.GPSampleWidths     = 'Inf               % Multiplier to widths from previous posterior for GP sampling (Inf = do not use previous widths)';
 defopts.HypRunWeight       = '0                 % Weight of previous trials (per trial) for running avg of GP hyperparameter covariance';
 defopts.WeightedHypCov     = 'off               % Use weighted hyperparameter posterior covariance';
+defopts.GPHypSampler       = 'slicesample       % MCMC sampler for GP hyperparameters';
 
 %% If called with 'all', return all default options
 if strcmpi(fun,'all')
@@ -343,14 +344,49 @@ while ~isFinished_flag
     % Get hyperparameter posterior covariance from previous iters
     hypcov = GetHypCov(optimState,stats,options);    
     
-    if options.GPSampleWidths > 0 && ~isempty(hypcov)
-        widthmult = max(options.GPSampleWidths,qindex);
-        hypwidths = sqrt(diag(hypcov)');
-        gptrain_options.Widths = max(hypwidths,1e-3)*widthmult;
-    else
-        gptrain_options.Widths = [];
-    end    
-    gptrain_options.Sampler = 'slicesample';
+    switch lower(options.GPHypSampler)
+        case {'slicesample'}
+            gptrain_options.Sampler = 'slicesample';        
+            if options.GPSampleWidths > 0 && ~isempty(hypcov)
+                widthmult = max(options.GPSampleWidths,qindex);
+                hypwidths = sqrt(diag(hypcov)');
+                gptrain_options.Widths = max(hypwidths,1e-3)*widthmult;
+            else
+                gptrain_options.Widths = [];
+            end
+        case 'covsample'
+            if options.GPSampleWidths > 0 && ~isempty(hypcov)
+                widthmult = max(options.GPSampleWidths,qindex);
+                if all(isfinite(widthmult)) && all(widthmult < 10)
+                    gptrain_options.Widths = (hypcov + 1e-6*eye(size(hypcov,1)))*widthmult^2;
+                    gptrain_options.Sampler = 'covsample';
+                else
+                    hypwidths = sqrt(diag(hypcov)');
+                    gptrain_options.Widths = max(hypwidths,1e-3)*widthmult;                    
+                    gptrain_options.Sampler = 'slicesample';        
+                end
+            else
+                gptrain_options.Widths = [];
+                gptrain_options.Sampler = 'slicesample';        
+            end
+        case 'laplace'
+            gptrain_options.Widths = [];
+            if optimState.Neff < 30
+                gptrain_options.Sampler = 'slicesample';        
+                if options.GPSampleWidths > 0 && ~isempty(hypcov)
+                    widthmult = max(options.GPSampleWidths,qindex);
+                    hypwidths = sqrt(diag(hypcov)');
+                    gptrain_options.Widths = max(hypwidths,1e-3)*widthmult;
+                end
+            else
+                gptrain_options.Sampler = 'laplace';
+            end
+            
+        otherwise
+            error('vbmc:UnknownSampler', ...
+                'Unknown MCMC sampler for GP hyperparameters.');
+    end
+        
 %         gptrain_options.Sampler = 'hmc';
 %         gptrain_options.Widths = hypwidths;        
     if optimState.RecomputeVarPost
@@ -769,12 +805,12 @@ if optimState.iter > 1
             hyp = stats.gpHyp{optimState.iter-i};
             hyp_list = [hyp_list; hyp'];
             if i > 1
-                % diff_mult = max(1,log(stats.qindex(optimState.iter-i+1)));                
-                diff_mult = max(1/options.FunEvalsPerIter, ...
+                % diff_mult = max(1,log(stats.qindex(optimState.iter-i+1)));
+                diff_mult = max(1, ...
                     log(stats.sKL(optimState.iter-i+1) ./ (options.TolsKL*options.FunEvalsPerIter)));
                 w = w*(options.HypRunWeight^(options.FunEvalsPerIter*diff_mult));
             end
-            w_list = [w_list; w*ones(size(hyp,2),1)];            
+            w_list = [w_list; w*ones(size(hyp,2),1)];
         end
         
         w_list = w_list / sum(w_list);                  % Normalize weights

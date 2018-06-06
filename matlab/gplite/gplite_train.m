@@ -35,13 +35,14 @@ Sampler = [];
 if isfield(options,'Sampler'); Sampler = options.Sampler; end
 if isempty(Sampler); Sampler = 'slicesample'; end   % Default MCMC sampler for hyperparameters
 
+% If using Laplace sampler, always perform optimization
+if strcmpi(Sampler,'laplace'); Nopts = max(Nopts,1); end
+
 Widths = [];
 if isfield(options,'Widths'); Widths = options.Widths; end
 if isempty(Widths); Widths = []; end   % Default widths (used only for HMC sampler)
 
-
 [N,D] = size(X);            % Number of training points and dimension
-
 ToL = 1e-6;
 
 % Set up warped GP
@@ -177,7 +178,7 @@ if input_warping; gradobj = 'on'; else; gradobj = 'on'; end
 gptrain_options = optimoptions('fmincon','GradObj',gradobj,'Display','off');    
 
 %% Hyperparameter optimization
-if Ns > 0
+if Ns > 0 && ~strcmpi(Sampler,'laplace')
     gptrain_options.OptimalityTolerance = 0.1;  % Limited optimization
 else
     gptrain_options.OptimalityTolerance = 1e-6;        
@@ -198,6 +199,22 @@ if input_warping
     gp.X = X; gp.y = y;
 else
     gp = gplite_post(hyp0(:,1),X,y,meanfun);
+end
+
+forcepriors = strcmpi(Sampler,'laplace');
+if forcepriors
+    for i = 1:numel(hprior.mu)
+        if ~isfinite(hprior.mu(i)) || ~isfinite(hprior.sigma(i))
+            hprior.mu(i) = 0.5*(PLB(i) + PUB(i));
+            %hprior.sigma(i) = 0.5*(UB(i)-LB(i));
+            %if ~isfinite(hprior.sigma(i))
+                hprior.sigma(i) = PUB(i)-PLB(i);                
+            %end
+            hprior.df(i) = DfBase;
+        end
+        % Remove box constraints
+        LB(i) = -Inf;   UB(i) = Inf;
+    end
 end
 
 % Define objective functions for optimization
@@ -256,6 +273,22 @@ if Ns > 0
                 slicesamplebnd(gpsample_fun,hyp(:,idx)',Ns,Widths,LB,UB,sampleopts);
             hyp = samples';
             
+        case 'covsample'
+            gpsample_fun = @(hyp_) gp_objfun(hyp_(:),gp,hprior,0,1);            
+            sampleopts.Thin = Thin;
+            sampleopts.Burnin = Burnin;
+            sampleopts.Display = 'off';
+            sampleopts.Diagnostics = false;
+            sampleopts.VarTransform = false;
+            sampleopts.InversionSample = false;
+            sampleopts.FitGMM = false;
+            sampleopts.TolX = 1e-80;
+            W = 1;
+            
+            samples = ...
+                eissample_lite(gpsample_fun,hyp(:,idx)',Ns,W,Widths,LB,UB,sampleopts);
+            hyp = samples';            
+            
         case 'hmc'            
             gpsample_fun = @(hyp_) gp_objfun(hyp_(:),gp,hprior,0,0);
             sampleopts.display = 0;
@@ -270,6 +303,22 @@ if Ns > 0
             [samples,fvals,diagn] = ...
                 hmc2(gpsample_fun,hyp(:,idx)',sampleopts,@(hyp) gpgrad_fun(hyp,gpsample_fun));            
             hyp = samples(Thin:Thin:end,:)';
+            
+        case 'laplace'
+            hyp_mode = hyp(:,idx);
+            gpsample_fun = @(hyp_) gp_objfun(hyp_(:),gp,hprior,0,1);
+            Hess = grad2hess(gpsample_fun,hyp_mode');
+            Sigma = inv(-Hess);
+            diag(Sigma)'
+            [cholsigma,p] = chol(Sigma);
+            if p > 0
+                % Failed Cholesky decomposition, use only MAP
+                hyp = hyp_mode;
+                [hyp';LB;UB]
+            else
+                hyp = bsxfun(@plus,hyp_mode,cholsigma'*randn(Nhyp,Ns));
+            end
+            hyp = bsxfun(@min,bsxfun(@max,hyp,LB(:)),UB(:));
             
 %           case 'nuts'            
 %     nuts_opt.M = Ns*sampleopts.Thin;
