@@ -111,6 +111,7 @@ defopts.GPSampleWidths     = 'Inf               % Multiplier to widths from prev
 defopts.HypRunWeight       = '0                 % Weight of previous trials (per trial) for running avg of GP hyperparameter covariance';
 defopts.WeightedHypCov     = 'off               % Use weighted hyperparameter posterior covariance';
 defopts.GPHypSampler       = 'slicesample       % MCMC sampler for GP hyperparameters';
+defopts.CovSampleThresh    = '10                % Switch to covariance sampling below this threshold of stability index';
 
 %% If called with 'all', return all default options
 if strcmpi(fun,'all')
@@ -357,7 +358,7 @@ while ~isFinished_flag
         case 'covsample'
             if options.GPSampleWidths > 0 && ~isempty(hypcov)
                 widthmult = max(options.GPSampleWidths,qindex);
-                if all(isfinite(widthmult)) && all(widthmult < 10)
+                if all(isfinite(widthmult)) && all(widthmult < options.CovSampleThresh)
                     gptrain_options.Widths = (hypcov + 1e-6*eye(size(hypcov,1)))*widthmult^2;
                     gptrain_options.Sampler = 'covsample';
                 else
