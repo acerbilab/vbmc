@@ -966,16 +966,16 @@ elseif ~isempty(vbmodel)
     wvec = (xr(:,2) - xr(:,1))'*options.SigmaFactor;
     wsize = 1;
 
-elseif ~isempty(cholsigma)
-    % Covariance random-direction slice sampling
-    wvec = (randn(1,D)*cholsigma)*options.SigmaFactor;
-    wsize = 1;
-    
 else
     % Random-direction slice sampling
-    wvec = randn(1,D).*sampleState.widths;
-    wsize = norm(wvec);
-    wvec = wvec./wsize;        
+    wsize = 1;
+    uvec = randn(1,D);
+    uvec = uvec / norm(uvec);    
+    if ~isempty(cholsigma)
+        wvec = uvec*cholsigma;      % Covariance-based sampling
+    else
+        wvec = uvec.*sampleState.widths;        
+    end    
 end
         
 [x,logP,fval,exitflag,fc] = ...

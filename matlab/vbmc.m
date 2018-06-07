@@ -388,8 +388,6 @@ while ~isFinished_flag
                 'Unknown MCMC sampler for GP hyperparameters.');
     end
         
-%         gptrain_options.Sampler = 'hmc';
-%         gptrain_options.Widths = hypwidths;        
     if optimState.RecomputeVarPost
         gptrain_options.Burnin = gptrain_options.Thin*Ns_gp;
         gptrain_options.Ninit = 2^10;
@@ -404,6 +402,8 @@ while ~isFinished_flag
             if Ns_gp > 0; gptrain_options.Nopts = 1; else; gptrain_options.Nopts = 2; end
         end
     end
+    
+    %gptrain_options.Burnin = 1000;
     
     % Fit hyperparameters
     [gp,hyp] = gplite_train(hyp,Ns_gp, ...
