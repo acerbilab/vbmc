@@ -250,11 +250,12 @@ end
 %toc
 
 [~,idx] = min(nll); % Take best hyperparameter vector
+hyp_start = hyp(:,idx);
 
 %% Sample from best hyperparameter vector using slice sampling
 if Ns > 0
     switch lower(Sampler)
-        case 'slicesample'            
+        case 'slicesample'
             gpsample_fun = @(hyp_) gp_objfun(hyp_(:),gp,hprior,0,1);
             sampleopts.Thin = Thin;
             sampleopts.Burnin = Burnin;
@@ -268,7 +269,7 @@ if Ns > 0
             end
             
             [samples,fvals,exitflag,output] = ...
-                slicesamplebnd(gpsample_fun,hyp(:,idx)',Ns,Widths,LB,UB,sampleopts);
+                slicesamplebnd(gpsample_fun,hyp_start',Ns,Widths,LB,UB,sampleopts);
             hyp = samples';
             
         case 'covsample'
@@ -285,7 +286,7 @@ if Ns > 0
             W = 1;
             
             samples = ...
-                eissample_lite(gpsample_fun,hyp(:,idx)',Ns,W,Widths,LB,UB,sampleopts);
+                eissample_lite(gpsample_fun,hyp_start',Ns,W,Widths,LB,UB,sampleopts);
             hyp = samples';            
             
         case 'hmc'            
@@ -300,11 +301,11 @@ if Ns > 0
             sampleopts.widths = Widths;
             
             [samples,fvals,diagn] = ...
-                hmc2(gpsample_fun,hyp(:,idx)',sampleopts,@(hyp) gpgrad_fun(hyp,gpsample_fun));            
+                hmc2(gpsample_fun,hyp_start',sampleopts,@(hyp) gpgrad_fun(hyp,gpsample_fun));            
             hyp = samples(Thin:Thin:end,:)';
             
         case 'laplace'
-            hyp_mode = hyp(:,idx);
+            hyp_mode = hyp_start;
             gpsample_fun = @(hyp_) gp_objfun(hyp_(:),gp,hprior,0,1);
             Hess = grad2hess(gpsample_fun,hyp_mode');
             Sigma = inv(-Hess);
@@ -329,6 +330,38 @@ if Ns > 0
 %     nuts_opt.M = Ns*sampleopts.Thin;
 %     nuts_opt.Madapt= 10*Ns;
 %     [hyp_nuts,fvals_nuts,diagn_nuts] = hmc_nuts(@gpsample_fun,hyp(:,idx)',nuts_opt);
+
+        case 'splitsample'
+            sampleopts.Thin = Thin;
+            sampleopts.Burnin = Burnin;
+            sampleopts.Display = 'off';
+            sampleopts.Diagnostics = false;
+            if isempty(Widths)
+                Widths = widths_default; 
+            else
+                Widths = min(Widths(:)',widths_default);
+            end
+
+            gp1 = gplite_post(hyp_start,X(1:2:end,:),y(1:2:end,:),meanfun);
+            gp2 = gplite_post(hyp_start,X(2:2:end,:),y(2:2:end,:),meanfun);
+            
+            gpsample_fun1 = @(hyp_) gp_objfun(hyp_(:),gp1,hprior,0,1);
+            gpsample_fun2 = @(hyp_) gp_objfun(hyp_(:),gp2,hprior,0,1);
+            gpsample_fun = @(hyp_) gp_objfun(hyp_(:),gp,hprior,0,1);
+            
+            Ns = 100;
+            
+            tic
+            samples1 = slicesamplebnd(gpsample_fun1,hyp_start',Ns,Widths,LB,UB,sampleopts);
+            samples2 = slicesamplebnd(gpsample_fun2,hyp_start',Ns,Widths,LB,UB,sampleopts);
+            toc
+
+            tic
+            samples = slicesamplebnd(gpsample_fun,hyp_start',Ns,Widths,LB,UB,sampleopts);
+            toc
+            
+            hyp = samples';
+            
 
         otherwise
             error('gplite_train:UnknownSampler', ...
