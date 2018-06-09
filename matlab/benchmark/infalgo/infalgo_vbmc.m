@@ -78,8 +78,7 @@ switch algoset
     case {221,'gpthreshcovsamplezero'}; algoset = 'gpthreshcovsamplezero'; algoptions.GPRetrainThreshold = 1; algoptions.GPSampleWidths = 5; algoptions.HypRunWeight = 0; algoptions.WeightedHypCov = 1; algoptions.GPHypSampler = 'covsample'; algoptions.CovSampleThresh = 10;
     case {222,'gpthreshcovsample2'}; algoset = 'gpthreshcovsample2'; algoptions.GPRetrainThreshold = 1; algoptions.GPSampleWidths = 5; algoptions.HypRunWeight = 0.9; algoptions.WeightedHypCov = 1; algoptions.GPHypSampler = 'covsample'; algoptions.CovSampleThresh = 10;
     case {223,'gpthreshsplitsample'}; algoset = 'gpthreshsplitsample'; algoptions.GPRetrainThreshold = 1; algoptions.GPSampleWidths = 5; algoptions.HypRunWeight = 0.9; algoptions.WeightedHypCov = 1; algoptions.GPHypSampler = 'splitsample';
-                
-        
+    case {224,'gpthreshcovsample3'}; algoset = 'gpthreshcovsample3'; algoptions.GPRetrainThreshold = 1; algoptions.GPSampleWidths = 5; algoptions.HypRunWeight = 0.9; algoptions.WeightedHypCov = 1; algoptions.GPHypSampler = 'covsample'; algoptions.CovSampleThresh = 10;
         
     otherwise
         error(['Unknown algorithm setting ''' algoset ''' for algorithm ''' algo '''.']);

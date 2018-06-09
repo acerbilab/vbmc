@@ -1168,6 +1168,13 @@ end
 shrink = 0;
 exitflag = 0;
 
+% xx = linspace(0,1,101);
+% for i = 1:numel(xx); yy(i) = fun(x_l + xx(i)*wsize*wvec); end
+% yy = exp(yy-max(yy)); hold off;
+% plot(xx,yy,'k-','LineWidth',1); hold on;
+% plot(rr/wsize*[1 1],[0,max(yy)],'k--','LineWidth',1);
+% pause;
+
 while 1
     shrink = shrink + 1;
     tolr = tolx/wsize;
@@ -1221,6 +1228,8 @@ while 1
         end
     end
 end
+
+% shrink
 
 % Inversion sampling - transform back to pdf coordinates (if not collapsed)
 if inversion_sample && exitflag == 0

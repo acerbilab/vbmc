@@ -343,15 +343,22 @@ while ~isFinished_flag
     
     % Get GP training options
     gptrain_options = get_GPTrainOptions(Ns_gp,optimState,stats,options);    
+
+    % Thin by hand, get all samples
+    Thin = gptrain_options.Thin;
+    Ns_gp = Ns_gp*Thin;
+    gptrain_options.Thin = 1;
     
     % Fit hyperparameters
     [gp,hyp] = gplite_train(hyp,Ns_gp, ...
         optimState.X(optimState.X_flag,:),optimState.y(optimState.X_flag), ...
         optimState.gpMeanfun,hypprior,[],gptrain_options);
+    hyp_full = hyp; % Save all GP hyperparameters (before thinning)
+    if Ns_gp > 0; hyp = hyp(:,Thin:Thin:end); end
     
     % Update running average of GP hyperparameter covariance (coarse)
-    if Ns_gp > 1
-        hypcov = cov(hyp');
+    if size(hyp_full,2) > 1
+        hypcov = cov(hyp_full');
         if isempty(optimState.RunHypCov) || options.HypRunWeight == 0
             optimState.RunHypCov = hypcov;
         else
@@ -521,7 +528,7 @@ while ~isFinished_flag
     
     % Record all useful stats
     stats = savestats(stats, ...
-        optimState,vp,elbo,elbo_sd,varss,sKL,sKL_true,gp,hyp,Ns_gp,timer,options.Diagnostics);
+        optimState,vp,elbo,elbo_sd,varss,sKL,sKL_true,gp,hyp_full,Ns_gp,timer,options.Diagnostics);
     
     %----------------------------------------------------------------------
     %% Check termination conditions    
@@ -610,14 +617,22 @@ while ~isFinished_flag
 end
 
 if nargout > 3
-    output = optimState;
+    output = optimState;    
 end
-    
+
+if nargout > 4
+    % Remove full GP hyperparameter samples from stats unless diagnostic run
+    if ~options.Diagnostics
+        stats = rmfield(stats,'gpHypFull');
+    end
+end
+
+
 end
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function stats = savestats(stats,optimState,vp,elbo,elbo_sd,varss,sKL,sKL_true,gp,hyp,Ns_gp,timer,debugflag)
+function stats = savestats(stats,optimState,vp,elbo,elbo_sd,varss,sKL,sKL_true,gp,hyp_full,Ns_gp,timer,debugflag)
 
 iter = optimState.iter;
 stats.iter(iter) = iter;
@@ -634,7 +649,7 @@ if ~isempty(sKL_true)
 end
 stats.gpSampleVar(iter) = varss;
 stats.gpNsamples(iter) = Ns_gp;
-stats.gpHyp{iter} = hyp;
+stats.gpHypFull{iter} = hyp_full;
 stats.timer(iter) = timer;
 
 if debugflag

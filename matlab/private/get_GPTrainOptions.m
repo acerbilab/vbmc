@@ -32,7 +32,7 @@ switch lower(options.GPHypSampler)
     case 'covsample'
         if options.GPSampleWidths > 0 && ~isempty(hypcov)
             widthmult = max(options.GPSampleWidths,qindex);
-            if all(isfinite(widthmult)) && all(widthmult < options.CovSampleThresh)
+            if all(isfinite(widthmult)) && all(qindex < options.CovSampleThresh)
                 nhyp = size(hypcov,1);
                 gptrain_options.Widths = (hypcov + 1e-6*eye(nhyp))*widthmult^2;
                 gptrain_options.Sampler = 'covsample';
@@ -87,20 +87,24 @@ end
 function hypcov = GetHypCov(optimState,stats,options)
 %GETHYPCOV Get hyperparameter posterior covariance
 
+TolW = 1e-10;
+
 if optimState.iter > 1
     if options.WeightedHypCov
         w_list = [];
         hyp_list = [];
         w = 1;
         for i = 1:optimState.iter-1
-            hyp = stats.gpHyp{optimState.iter-i};
-            hyp_list = [hyp_list; hyp'];
             if i > 1
                 % diff_mult = max(1,log(stats.qindex(optimState.iter-i+1)));
                 diff_mult = max(1, ...
                     log(stats.sKL(optimState.iter-i+1) ./ (options.TolsKL*options.FunEvalsPerIter)));
                 w = w*(options.HypRunWeight^(options.FunEvalsPerIter*diff_mult));
             end
+            if w < TolW; break; end     % Weight is getting to small, break
+
+            hyp = stats.gpHypFull{optimState.iter-i};            
+            hyp_list = [hyp_list; hyp'];
             w_list = [w_list; w*ones(size(hyp,2),1)];
         end
         
