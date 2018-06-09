@@ -343,18 +343,12 @@ while ~isFinished_flag
     
     % Get GP training options
     gptrain_options = get_GPTrainOptions(Ns_gp,optimState,stats,options);    
-
-    % Thin by hand, get all samples
-    Thin = gptrain_options.Thin;
-    Ns_gp = Ns_gp*Thin;
-    gptrain_options.Thin = 1;
     
     % Fit hyperparameters
-    [gp,hyp] = gplite_train(hyp,Ns_gp, ...
+    [gp,hyp,gpoutput] = gplite_train(hyp,Ns_gp, ...
         optimState.X(optimState.X_flag,:),optimState.y(optimState.X_flag), ...
         optimState.gpMeanfun,hypprior,[],gptrain_options);
-    hyp_full = hyp; % Save all GP hyperparameters (before thinning)
-    if Ns_gp > 0; hyp = hyp(:,Thin:Thin:end); end
+    hyp_full = gpoutput.hyp_prethin; % Pre-thinning GP hyperparameters
     
     % Update running average of GP hyperparameter covariance (coarse)
     if size(hyp_full,2) > 1

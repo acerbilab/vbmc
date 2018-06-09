@@ -1,4 +1,4 @@
-function [gp,hyp] = gplite_train(hyp0,Ns,X,y,meanfun,hprior,warp,options)
+function [gp,hyp,output] = gplite_train(hyp0,Ns,X,y,meanfun,hprior,warp,options)
 %GPLITE_TRAIN Train lite Gaussian Process hyperparameters.
 
 % Fix functions
@@ -252,12 +252,17 @@ end
 [~,idx] = min(nll); % Take best hyperparameter vector
 hyp_start = hyp(:,idx);
 
+
+
 %% Sample from best hyperparameter vector using slice sampling
 if Ns > 0
+    
+    Ns_eff = Ns*Thin;   % Effective number of samples (thin after)
+    
     switch lower(Sampler)
         case 'slicesample'
             gpsample_fun = @(hyp_) gp_objfun(hyp_(:),gp,hprior,0,1);
-            sampleopts.Thin = Thin;
+            sampleopts.Thin = 1;
             sampleopts.Burnin = Burnin;
             sampleopts.Display = 'off';
             sampleopts.Diagnostics = false;
@@ -269,12 +274,12 @@ if Ns > 0
             end
             
             [samples,fvals,exitflag,output] = ...
-                slicesamplebnd(gpsample_fun,hyp_start',Ns,Widths,LB,UB,sampleopts);
-            hyp = samples';
+                slicesamplebnd(gpsample_fun,hyp_start',Ns_eff,Widths,LB,UB,sampleopts);
+            hyp_prethin = samples';
             
         case 'covsample'
             gpsample_fun = @(hyp_) gp_objfun(hyp_(:),gp,hprior,0,1);            
-            sampleopts.Thin = Thin;
+            sampleopts.Thin = 1;
             sampleopts.Burnin = Burnin;
             sampleopts.Display = 'off';
             sampleopts.Diagnostics = false;
@@ -286,15 +291,15 @@ if Ns > 0
             W = 1;
             
             samples = ...
-                eissample_lite(gpsample_fun,hyp_start',Ns,W,Widths,LB,UB,sampleopts);
-            hyp = samples';            
+                eissample_lite(gpsample_fun,hyp_start',Ns_eff,W,Widths,LB,UB,sampleopts);
+            hyp_prethin = samples';            
             
         case 'hmc'            
             gpsample_fun = @(hyp_) gp_objfun(hyp_(:),gp,hprior,0,0);
             sampleopts.display = 0;
             sampleopts.checkgrad = 0;
             sampleopts.steps = 10;
-            sampleopts.nsamples = Ns*Thin;
+            sampleopts.nsamples = Ns_eff;
             sampleopts.stepadj = 0.01;
             sampleopts.widths = [];
             sampleopts.nomit = Burnin;
@@ -302,7 +307,7 @@ if Ns > 0
             
             [samples,fvals,diagn] = ...
                 hmc2(gpsample_fun,hyp_start',sampleopts,@(hyp) gpgrad_fun(hyp,gpsample_fun));            
-            hyp = samples(Thin:Thin:end,:)';
+            hyp_prethin = samples';
             
         case 'laplace'
             hyp_mode = hyp_start;
@@ -316,63 +321,46 @@ if Ns > 0
                 hyp = hyp_mode;
                 [hyp';LB;UB]
             else
-                hyp = bsxfun(@plus,hyp_mode,cholsigma'*randn(Nhyp,Ns));
+                hyp = bsxfun(@plus,hyp_mode,cholsigma'*randn(Nhyp,Ns_eff));
                 for i = 1:Ns
                     y = gpsample_fun(hyp(i,:));
                     y2 = mvnlogpdf(hyp(i,:),hyp_mode,Sigma);
                     iw(i) = y/y2;
                 end
                 iw
-            end
-            hyp = bsxfun(@min,bsxfun(@max,hyp,LB(:)),UB(:));
+            end            
+            hyp_prethin = bsxfun(@min,bsxfun(@max,hyp,LB(:)),UB(:));
             
 %           case 'nuts'            
 %     nuts_opt.M = Ns*sampleopts.Thin;
 %     nuts_opt.Madapt= 10*Ns;
 %     [hyp_nuts,fvals_nuts,diagn_nuts] = hmc_nuts(@gpsample_fun,hyp(:,idx)',nuts_opt);
 
-        case 'splitsample'
-            sampleopts.Thin = Thin;
-            sampleopts.Burnin = Burnin;
-            sampleopts.Display = 'off';
-            sampleopts.Diagnostics = false;
-            if isempty(Widths)
-                Widths = widths_default; 
-            else
-                Widths = min(Widths(:)',widths_default);
-            end
-
-            gp1 = gplite_post(hyp_start,X(1:2:end,:),y(1:2:end,:),meanfun);
-            gp2 = gplite_post(hyp_start,X(2:2:end,:),y(2:2:end,:),meanfun);
-            
-            gpsample_fun1 = @(hyp_) gp_objfun(hyp_(:),gp1,hprior,0,1);
-            gpsample_fun2 = @(hyp_) gp_objfun(hyp_(:),gp2,hprior,0,1);
-            gpsample_fun = @(hyp_) gp_objfun(hyp_(:),gp,hprior,0,1);
-            
-            Ns = 100;
-            
-            tic
-            samples1 = slicesamplebnd(gpsample_fun1,hyp_start',Ns,Widths,LB,UB,sampleopts);
-            samples2 = slicesamplebnd(gpsample_fun2,hyp_start',Ns,Widths,LB,UB,sampleopts);
-            toc
-
-            tic
-            samples = slicesamplebnd(gpsample_fun,hyp_start',Ns,Widths,LB,UB,sampleopts);
-            toc
-            
-            hyp = samples';
-            
-
         otherwise
             error('gplite_train:UnknownSampler', ...
                 'Unknown MCMC sampler for GP hyperparameters.');
     end
+    
+    % Thin samples
+    hyp = hyp_prethin(:,Thin:Thin:end);    
+    
 else
     hyp = hyp(:,idx);
+    hyp_prethin = hyp;
 end
 
 % Recompute GP with finalized hyperparameters
 gp = gp_objfun(hyp,gp,[],1);
+
+% Additional OUTPUT struct
+if nargout > 2
+    output.LB = LB;
+    output.UB = UB;
+    output.PLB = PLB;
+    output.PUB = PUB;
+    output.hyp_prethin = hyp_prethin;
+end
+
 
 % Check GP posteriors
 % for s = 1:numel(gp.post)
