@@ -66,6 +66,15 @@ case "${1}" in
         4f)     ALGOSET="{'gpthreshwcov'}"
                 IDS=${IDS_SINGLE}
                 ;;
+        4g)     ALGOSET="{'gpthreshcovsample'}"
+                IDS=${IDS_SINGLE}
+                ;;
+        4h)     ALGOSET="{'gpthreshcovsample2'}"
+                IDS=${IDS_SINGLE}
+                ;;
+        4i)     ALGOSET="{'gpthreshcovsample3'}"
+                IDS=${IDS_SINGLE}
+                ;;
         5)      ALGOSET="{'cheapgpmid'}"
                 IDS=${IDS_SINGLE}
 		;;
@@ -197,6 +206,21 @@ case "${1}" in
                 ;;
         104f)   PROBS="{'goris2015'}"
                 ALGOS="{'vbmc@gpthreshwcov'}"
+                DIMS="{'S7','S8'}"
+                IDS=$IDS_CENTO
+                ;;
+        104g)   PROBS="{'goris2015'}"
+                ALGOS="{'vbmc@gpthreshcovsample'}"
+                DIMS="{'S7','S8'}"
+                IDS=$IDS_CENTO
+                ;;
+        104h)   PROBS="{'goris2015'}"
+                ALGOS="{'vbmc@gpthreshcovsample2'}"
+                DIMS="{'S7','S8'}"
+                IDS=$IDS_CENTO
+                ;;
+        104i)   PROBS="{'goris2015'}"
+                ALGOS="{'vbmc@gpthreshcovsample3'}"
                 DIMS="{'S7','S8'}"
                 IDS=$IDS_CENTO
                 ;;
