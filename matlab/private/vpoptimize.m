@@ -14,19 +14,15 @@ MaxBack = min(optimState.iter-1,options.VarParamsBack);
 elbostats = eval_fullelcbo(Nslowopts*2+MaxBack,numel(vp.LB_theta));
 
 % Generate random initial starting point for variational parameters
-if 0
-    [vp0_vec,vp0_type] = vbinitrnd(Nfastopts,vp,K,Xstar,ystar);
-else    
-    switch Nslowopts
-        case 1
-            [vp0_vec,vp0_type] = vbinit(1,Nfastopts,vp,K,Xstar,ystar);
-        otherwise
-            [vp0_vec1,vp0_type1] = vbinit(1,ceil(Nfastopts/3),vp,K,Xstar,ystar);
-            [vp0_vec2,vp0_type2] = vbinit(2,ceil(Nfastopts/3),vp,K,Xstar,ystar);
-            [vp0_vec3,vp0_type3] = vbinit(3,Nfastopts-2*ceil(Nfastopts/3),vp,K,Xstar,ystar);
-            vp0_vec = [vp0_vec1,vp0_vec2,vp0_vec3];
-            vp0_type = [vp0_type1;vp0_type2;vp0_type3];
-    end
+switch Nslowopts
+    case 1
+        [vp0_vec,vp0_type] = vbinit(1,Nfastopts,vp,K,Xstar,ystar);
+    otherwise
+        [vp0_vec1,vp0_type1] = vbinit(1,ceil(Nfastopts/3),vp,K,Xstar,ystar);
+        [vp0_vec2,vp0_type2] = vbinit(2,ceil(Nfastopts/3),vp,K,Xstar,ystar);
+        [vp0_vec3,vp0_type3] = vbinit(3,Nfastopts-2*ceil(Nfastopts/3),vp,K,Xstar,ystar);
+        vp0_vec = [vp0_vec1,vp0_vec2,vp0_vec3];
+        vp0_type = [vp0_type1;vp0_type2;vp0_type3];
 end
 
 % Number of samples per component for MC approximation of the entropy
@@ -34,6 +30,13 @@ if isa(options.NSent,'function_handle')
     NSentK = ceil(options.NSent(K)/K);
 else
     NSentK = ceil(options.NSent/K);
+end
+
+% Number of samples per component for preliminary MC approximation of the entropy
+if isa(options.NSentFast,'function_handle')
+    NSentKFast = ceil(options.NSentFast(K)/K);
+else
+    NSentKFast = ceil(options.NSentFast/K);
 end
 
 % Confidence weight
@@ -47,7 +50,6 @@ end
 
 % Quickly estimate ELCBO at each candidate variational posterior
 % NSentKFast = ceil(NSentK * 0.1);
-NSentKFast = NSentK;
 for iOpt = 1:Nfastopts
     [theta0,vp0_vec(iOpt)] = ...
         get_theta(vp0_vec(iOpt),vp.LB_theta,vp.UB_theta,vp.optimize_lambda);        
@@ -82,8 +84,9 @@ for iOpt = 1:Nslowopts
     vbtrainmc_fun = @(theta_) vbmc_negelcbo(theta_,elcbo_beta,vp0,gp,NSentK,1,compute_var);
 
     % First, fast optimization via entropy approximation
-    if useEntropyApprox
-        vbtrain_options = optimoptions('fmincon','GradObj','on','Display','off','OptimalityTolerance',1e-3);
+    if useEntropyApprox || NSentK == 0
+        if NSentK == 0; TolOpt = 1e-6; else; TolOpt = 1e-3; end        
+        vbtrain_options = optimoptions('fmincon','GradObj','on','Display','off','OptimalityTolerance',TolOpt);
         vbtrain_fun = @(theta_) vbmc_negelcbo(theta_,elcbo_beta,vp0,gp,0,1,compute_var);
         [thetaopt,~,~,output] = ...
             fmincon(vbtrain_fun,theta0(:)',[],[],[],[],vp.LB_theta,vp.UB_theta,[],vbtrain_options);
@@ -93,8 +96,10 @@ for iOpt = 1:Nslowopts
     end
         
     % Second, refine with unbiased stochastic entropy approximation
-    [thetaopt,~,theta_lst,fval_lst] = ...
-        fminadam(vbtrainmc_fun,thetaopt,vp.LB_theta,vp.UB_theta,options.TolFunAdam);
+    if NSentK > 0
+        [thetaopt,~,theta_lst,fval_lst] = ...
+            fminadam(vbtrainmc_fun,thetaopt,vp.LB_theta,vp.UB_theta,options.TolFunAdam);
+    end
     
     if options.ELCBOmidpoint
         % Recompute ELCBO at best midpoint with full variance and more precision

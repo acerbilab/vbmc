@@ -31,6 +31,10 @@ sigma_4(1,1,1,:) = sigma;
 sigmalambda = bsxfun(@times, sigma_4, lambda);
 nconst = 1/(2*pi)^(D/2)/prod(lambda);
 
+lambda_t = vp.lambda(:)';       % LAMBDA is a row vector
+mu_t(:,:) = vp.mu';             % MU transposed
+nf = 1/(2*pi)^(D/2)/prod(lambda)/K;  % Common normalization factor
+
 H = 0;
 
 % Loop over mixture components for generating samples
@@ -40,8 +44,16 @@ for j = 1:K
     epsilon = randn(D,1,Ns);
     xi = bsxfun(@plus, bsxfun(@times, bsxfun(@times, epsilon, lambda), sigma(j)), mu_4(:,1,1,j));
     
-    Xs = reshape(xi,[D,Ns])';    
-    ys = vbmc_pdf(Xs,vp,0);
+    Xs = reshape(xi,[D,Ns])'; 
+
+    % Compute pdf -- this block is equivalent to: ys = vbmc_pdf(Xs,vp,0);
+    ys = zeros(Ns,1);
+    for k = 1:K
+        d2 = sum(bsxfun(@rdivide,bsxfun(@minus,Xs,mu_t(k,:)),sigma(k)*lambda_t).^2,2);
+        nn = nf/sigma(k)^D*exp(-0.5*d2);
+        ys = ys + nn;
+    end
+        
     H = H - sum(log(ys))/Ns/K;
     
     if any(grad_flags)    

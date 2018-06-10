@@ -8,9 +8,9 @@ if nargin < 4; X = []; end
 if nargin < 5; y = []; end
 
 check_kl = 0;
-check_entropy = 0;
+check_entropy = 1;
 check_quadrature = 0;
-check_logjointgrad = 1;
+check_logjointgrad = 0;
 check_gp = 0;
 
 meanfun = 4;
