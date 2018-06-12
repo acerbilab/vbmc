@@ -53,7 +53,7 @@ end
 for iOpt = 1:Nfastopts
     [theta0,vp0_vec(iOpt)] = ...
         get_theta(vp0_vec(iOpt),vp.LB_theta,vp.UB_theta,vp.optimize_lambda);        
-    [nelbo_tmp,~,~,~,varF_tmp] = vbmc_negelcbo(theta0,0,vp0_vec(iOpt),gp,NSentKFast,0,compute_var);
+    [nelbo_tmp,~,~,~,varF_tmp] = vbmc_negelcbo(theta0,0,vp0_vec(iOpt),gp,NSentKFast,0,compute_var,options.AltMCEntropy);
     nelcbo_fill(iOpt) = nelbo_tmp + elcbo_beta*sqrt(varF_tmp);
 end
 
@@ -81,13 +81,13 @@ for iOpt = 1:Nslowopts
     if vp.optimize_lambda; theta0 = [theta0; log(vp0.lambda(:))]; end
     theta0 = min(vp.UB_theta',max(vp.LB_theta', theta0));
 
-    vbtrainmc_fun = @(theta_) vbmc_negelcbo(theta_,elcbo_beta,vp0,gp,NSentK,1,compute_var);
+    vbtrainmc_fun = @(theta_) vbmc_negelcbo(theta_,elcbo_beta,vp0,gp,NSentK,1,compute_var,options.AltMCEntropy);
 
-    % First, fast optimization via entropy approximation
+    % First, fast optimization via deterministic entropy approximation
     if useEntropyApprox || NSentK == 0
         if NSentK == 0; TolOpt = 1e-6; else; TolOpt = 1e-3; end        
         vbtrain_options = optimoptions('fmincon','GradObj','on','Display','off','OptimalityTolerance',TolOpt);
-        vbtrain_fun = @(theta_) vbmc_negelcbo(theta_,elcbo_beta,vp0,gp,0,1,compute_var);
+        vbtrain_fun = @(theta_) vbmc_negelcbo(theta_,elcbo_beta,vp0,gp,0,1,compute_var,0);
         [thetaopt,~,~,output] = ...
             fmincon(vbtrain_fun,theta0(:)',[],[],[],[],vp.LB_theta,vp.UB_theta,[],vbtrain_options);
         % output, % pause
@@ -170,7 +170,7 @@ else
         
     theta = theta(:)';
     [nelbo,~,G,H,varF,~,varss] = ...
-        vbmc_negelcbo(theta,0,vp,gp,NSentFineK,0,1);
+        vbmc_negelcbo(theta,0,vp,gp,NSentFineK,0,1,options.AltMCEntropy);
     nelcbo = nelbo + beta*sqrt(varF);
 
     elbostats.nelbo(idx) = nelbo;

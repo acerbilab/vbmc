@@ -1,4 +1,4 @@
-function [F,dF,G,H,varF,dH,varGss] = vbmc_negelcbo(theta,beta,vp,gp,Ns,compute_grad,compute_var)
+function [F,dF,G,H,varF,dH,varGss] = vbmc_negelcbo(theta,beta,vp,gp,Ns,compute_grad,compute_var,altent_flag)
 %VBMC_NEGELCBO Negative evidence lower confidence bound objective
 %
 % Note that THETA is a vector of *transformed* variational parameters:
@@ -8,6 +8,7 @@ function [F,dF,G,H,varF,dH,varGss] = vbmc_negelcbo(theta,beta,vp,gp,Ns,compute_g
 if nargin < 5 || isempty(Ns); Ns = 0; end
 if nargin < 6 || isempty(compute_grad); compute_grad = nargout > 1; end
 if nargin < 7; compute_var = []; end
+if nargin < 8 || isempty(altent_flag); altent_flag = false; end
 if isempty(beta) || ~isfinite(beta); beta = 0; end
 if isempty(compute_var); compute_var = beta ~=0 || nargout > 4; end
 
@@ -46,7 +47,11 @@ end
 
 % Entropy term
 if Ns > 0   % Use Monte Carlo approximation
-    [H,dH] = vbmc_entmc(vp,Ns,grad_flags,jacobian_flag);
+    if altent_flag  % Alternative entropy approximation
+        [H,dH] = vbmc_entmcalt(vp,Ns,grad_flags,jacobian_flag);        
+    else
+        [H,dH] = vbmc_entmc(vp,Ns,grad_flags,jacobian_flag);
+    end
 else
     [H,dH] = vbmc_ent(vp,grad_flags,jacobian_flag);
 end

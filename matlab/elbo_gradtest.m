@@ -105,34 +105,62 @@ if check_entropy
     vp1.mu = vp.mu(:,idx);
     vp1.sigma = vp.sigma(idx);
     theta1 = [vp1.mu(:); log(vp1.sigma(:)); log(vp1.lambda(:))];
-    f = @(x) enttest(x,vp1,1e6);
+    f = @(x,altflag) enttest(x,vp1,1e6,altflag);
 
     % Entropy and entropy gradient of a multivariate normal
     H_true = 0.5*D*log(2*pi*exp(1)) + D*log(vp1.sigma(1)) + sum(log(vp1.lambda));
     dH_true = [zeros(D,1); D; ones(D,1)];
 
-    [H,dH] = f(theta1);
-
-    [H_true-H]
+    [H,dH] = f(theta1,0);
+    [H_true,H_true-H]
     [dH_true-dH]'
 
+    [H,dH] = f(theta1,1);
+    [H_true,H_true-H]
+    [dH_true-dH]'
+    
     fprintf('Test with multiple (equal) components (signed errors):\n\n');
     vpm = vp;
     vpm.mu = repmat(vp.mu(:,idx),[1,K]);
     vpm.sigma = vp.sigma(idx)*ones(1,K);
     thetam = [vpm.mu(:); log(vpm.sigma(:)); log(vpm.lambda(:))];
-    f = @(x) enttest(x,vpm,1e5);
+    f = @(x,altflag) enttest(x,vpm,1e5,altflag);
 
     % Entropy is the same, gradient should be similar
     H_true = 0.5*D*log(2*pi*exp(1)) + D*log(vp1.sigma(1)) + sum(log(vp1.lambda));
     dH_true = [zeros(D*K,1); D*ones(K,1)/K; ones(D,1)];
 
-    [H,dH] = f(thetam);
-
-    [H_true-H]
+    [H,dH] = f(thetam,0);
+    [H_true,H_true-H]
     [dH_true-dH]'
 
-    % derivcheck(f,theta .* (0.5 + rand(size(theta))),1);
+    [H,dH] = f(thetam,1);
+    [H_true,H_true-H]
+    [dH_true-dH]'
+
+    fprintf('Test with multiple components (signed errors):\n\n');
+    vp1 = vp;
+    vp1.D = 1;
+    % vp1.K = 2; vp1.mu = [-1 1]; vp1.sigma = [1 1];
+    vp1.mu = randn(1,vp1.K);
+    vp1.sigma = 0.5*exp(0.2*randn(1,vp1.K));
+    vp1.lambda = 2;
+
+    theta1 = [vp1.mu(:); log(vp1.sigma(:)); log(vp1.lambda(:))];
+    f = @(x,altflag) enttest(x,vp1,1e5,altflag);
+    
+    % Entropy is the same, gradient should be similar    
+    [H_true,dH_true] = gmment(theta1,vp1);
+    dH_true = dH_true(:);
+
+    [H,dH] = f(theta1,0);
+    [H_true,H_true-H]
+    [dH_true-dH]'
+
+    [H,dH] = f(theta1,1);
+    [H_true,H_true-H]
+    [dH_true-dH]'
+    
 end
 
 if check_quadrature
@@ -216,8 +244,27 @@ end
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [H,dH] = enttest(theta,vp,Nent)
+function [H,dH] = gmment(theta,vp)
 %ENTTEST Test entropy estimation
+
+D = vp.D;
+K = vp.K;
+vp.mu(:,:) = reshape(theta(1:D*K),[D,K]);
+vp.sigma(1,:) = exp(theta(D*K+1:D*K+K));
+if numel(theta) == D*K+K+D; vp.lambda(:,1) = exp(theta(D*K+K+1:end)); end
+
+H = gmm1ent(1/K*ones(1,K),vp.mu,vp.sigma.*vp.lambda);
+if nargout > 1
+    dH = fgrad(@(theta) gmment(theta(:)',vp),theta(:)','five-points');
+end
+
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function [H,dH] = enttest(theta,vp,Nent,altflag)
+%ENTTEST Test entropy estimation
+
+if nargin < 4 || isempty(altflag); altflag = 0; end
 
 % Extract variational parameters from THETA
 D = vp.D;
@@ -228,6 +275,8 @@ if numel(theta) == D*K+K+D; vp.lambda(:,1) = exp(theta(D*K+K+1:end)); end
 
 if Nent == 0
     [H,dH] = vbmc_ent(vp,[1 1 1]);
+elseif altflag
+    [H,dH] = vbmc_entmcalt(vp,Nent,[1 1 1]);
 else
     [H,dH] = vbmc_entmc(vp,Nent,[1 1 1]);    
 end

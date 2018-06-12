@@ -113,6 +113,7 @@ defopts.HypRunWeight       = '0                 % Weight of previous trials (per
 defopts.WeightedHypCov     = 'off               % Use weighted hyperparameter posterior covariance';
 defopts.GPHypSampler       = 'slicesample       % MCMC sampler for GP hyperparameters';
 defopts.CovSampleThresh    = '10                % Switch to covariance sampling below this threshold of stability index';
+defopts.AltMCEntropy       = 'no                % Use alternative Monte Carlo computation for the entropy';
 
 %% If called with 'all', return all default options
 if strcmpi(fun,'all')

@@ -25,7 +25,8 @@ if grad_flags(2); sigma_grad = zeros(K,1); else, sigma_grad = []; end
 if grad_flags(3); lambda_grad = zeros(D,1); else, lambda_grad = []; end
 
 % Reshape in 4-D to allow massive vectorization
-mu_4(:,1,1,:) = reshape(mu, [D,1,1,K]);
+mu_4 = zeros(D,1,1,K);
+mu_4(:,1,1,:) = reshape(mu,[D,1,1,K]);
 sigma_4(1,1,1,:) = sigma;
 
 sigmalambda = bsxfun(@times, sigma_4, lambda);

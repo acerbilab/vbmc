@@ -25,58 +25,88 @@ if grad_flags(2); sigma_grad = zeros(K,1); else, sigma_grad = []; end
 if grad_flags(3); lambda_grad = zeros(D,1); else, lambda_grad = []; end
 
 % Reshape in 4-D to allow massive vectorization
-mu_4(:,1,1,:) = reshape(mu, [D,1,1,K]);
+mu_4 = zeros(D,1,1,K);
+mu_4(:,1,1,:) = reshape(mu,[D,1,1,K]);
 sigma_4(1,1,1,:) = sigma;
 
 sigmalambda = bsxfun(@times, sigma_4, lambda);
-nconst = 1/(2*pi)^(D/2)/prod(lambda);
 
 lambda_t = vp.lambda(:)';       % LAMBDA is a row vector
 mu_t(:,:) = vp.mu';             % MU transposed
-nf = 1/(2*pi)^(D/2)/prod(lambda)/K;  % Common normalization factor
+nf = 1/(2*pi)^(D/2)/prod(lambda);  % Common normalization factor
 
-H = 0;
+% Entropy of non-interacting mixture
+H = log(K) + 0.5*D*(1 + log(2*pi)) + D/K*sum(log(sigma)) + sum(log(lambda));
+
+if grad_flags(2)
+    sigma_grad(:) = D./(K*sigma(:));
+end
+
+if grad_flags(3)
+    lambda_grad(:) = 1./lambda(:);
+end
 
 % Loop over mixture components for generating samples
-for j = 1:K
+for k = 1:K
 
-    % Draw Monte Carlo samples from the j-th component
+    % Draw Monte Carlo samples from the k-th component
     epsilon = randn(D,1,Ns);
-    xi = bsxfun(@plus, bsxfun(@times, bsxfun(@times, epsilon, lambda), sigma(j)), mu_4(:,1,1,j));
+    xi = bsxfun(@plus, bsxfun(@times, bsxfun(@times, epsilon, lambda), sigma(k)), mu_4(:,1,1,k));
     
     Xs = reshape(xi,[D,Ns])'; 
 
-    % Compute pdf -- this block is equivalent to: ys = vbmc_pdf(Xs,vp,0);
+    % Compute sum inside Phi_k
     ys = zeros(Ns,1);
-    for k = 1:K
-        d2 = sum(bsxfun(@rdivide,bsxfun(@minus,Xs,mu_t(k,:)),sigma(k)*lambda_t).^2,2);
-        nn = nf/sigma(k)^D*exp(-0.5*d2);
-        ys = ys + nn;
+    for l = 1:K
+        if l == k; continue; end
+        d2 = sum(bsxfun(@rdivide,bsxfun(@minus,Xs,mu_t(l,:)),sigma(l)*lambda_t).^2,2);
+        nn_l = nf/sigma(l)^D*exp(-0.5*d2);
+        ys = ys + nn_l;
     end
-        
-    H = H - sum(log(ys))/Ns/K;
     
-    if any(grad_flags)    
-        % Full mixture (for sample from the j-th component)
-        norm_jl = bsxfun(@times, nconst./(sigma_4.^D), exp(-0.5*sum(bsxfun(@rdivide, bsxfun(@minus, xi, mu_4), sigmalambda).^2,1)));
-        q_j = 1/K * sum(norm_jl,4);
+    % Compute N_k (denominator)
+    d2 = sum(bsxfun(@rdivide,bsxfun(@minus,Xs,mu_t(k,:)),sigma(k)*lambda_t).^2,2);
+    nn_k = nf/sigma(k)^D*exp(-0.5*d2);
+    
+    Phi_k = 1 + bsxfun(@rdivide,ys,nn_k);
+    H = H - sum(log(Phi_k))/Ns/K;
+    
+    if any(grad_flags)
+        norm_jl = bsxfun(@times, nf./(sigma_4.^D), exp(-0.5*sum(bsxfun(@rdivide, bsxfun(@minus, xi, mu_4), sigmalambda).^2,1)));
+        norm_jl(:,:,:,k) = 0;
+        kden(1,1,:) = 1./(Phi_k .* nn_k);
         
-        % Compute sum for gradient wrt mu
-        lsum = sum(bsxfun(@times,bsxfun(@rdivide, bsxfun(@minus, xi, mu_4), sigmalambda.^2), norm_jl),4);
-
+        zeta_l = bsxfun(@rdivide,bsxfun(@minus,xi,mu_4),sigmalambda.^2);        
+        zeta2_l = bsxfun(@rdivide,bsxfun(@minus,xi,mu_4),sigmalambda).^2;        
+        
         if grad_flags(1)
-            mu_grad(:,j) = sum(bsxfun(@rdivide, lsum, q_j),3) / K^2 / Ns;
+            for j = 1:K
+                if j == k
+                    mu_grad(:,j) = mu_grad(:,j) - 1/K*sum(bsxfun(@times, kden, sum(bsxfun(@times, norm_jl, -zeta_l),4)),3)/Ns;
+                else
+                    mu_grad(:,j) = mu_grad(:,j) - 1/K*sum(bsxfun(@times, kden .* norm_jl(1,1,:,j), zeta_l(:,:,:,j)),3)/Ns;
+                end
+            end
         end
         
         if grad_flags(2)
-            % Compute sum for gradient wrt sigma
-            isum = sum(bsxfun(@times,lsum,bsxfun(@times, epsilon, lambda)),1);
-            sigma_grad(j) = sum(bsxfun(@rdivide, isum, q_j),3) / K^2 / Ns;
+            for j = 1:K
+                if j == k
+                    sigma_grad(j) = sigma_grad(j) - 1/K*sum(bsxfun(@times, kden, sum(bsxfun(@times, norm_jl, ...
+                        bsxfun(@minus, sum(bsxfun(@times,bsxfun(@times,lambda,epsilon),bsxfun(@minus,zeta_l(:,:,:,k),zeta_l)),1), ...
+                        1/sigma(k)*(sum(zeta2_l(:,:,:,k),1)-1))),4)),3)/Ns;
+                else
+                    sigma_grad(j) = sigma_grad(j) - 1/K*sum(bsxfun(@times, kden, bsxfun(@times, norm_jl(1,1,:,j), ...
+                        1/sigma(j)*(sum(zeta2_l(:,:,:,j),1)-1))),3)/Ns;
+                end                
+            end
         end
         
         if grad_flags(3)
-            % Should be dividing by LAMBDA, see below
-            lambda_grad = lambda_grad + sum(bsxfun(@times, lsum, bsxfun(@rdivide, sigma(j)*epsilon,q_j)),3) / K^2 / Ns;
+            lambda_grad = lambda_grad - 1/K * sum(bsxfun(@times, kden, sum(bsxfun(@times, norm_jl, bsxfun(@plus, ...
+                bsxfun(@times, sigma(k) * epsilon, bsxfun(@minus,zeta_l(:,:,:,k), zeta_l)), ...
+                bsxfun(@times, 1./lambda, bsxfun(@minus, zeta2_l, zeta2_l(:,:,:,k))) ...
+                )),4)),3)/Ns;
         end
     end
 end
