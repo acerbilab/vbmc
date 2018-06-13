@@ -106,11 +106,11 @@ defopts.StopWarmupThresh   = '1                 % Stop warm-up when increase in 
 defopts.WarmupKeepThreshold = '10*nvars         % Max log-likelihood difference for points kept after warmup';
 defopts.SearchCMAES        = 'on                % Use CMA-ES for search';
 defopts.MomentsRunWeight   = '0.9               % Weight of previous trials (per trial) for running avg of variational posterior moments';
-defopts.GPRetrainThreshold = '0                 % Upper threshold on reliability index for full retraining of GP hyperparameters';
+defopts.GPRetrainThreshold = '1                 % Upper threshold on reliability index for full retraining of GP hyperparameters';
 defopts.ELCBOmidpoint      = 'on                % Compute full ELCBO also at best midpoint';
-defopts.GPSampleWidths     = 'Inf               % Multiplier to widths from previous posterior for GP sampling (Inf = do not use previous widths)';
-defopts.HypRunWeight       = '0                 % Weight of previous trials (per trial) for running avg of GP hyperparameter covariance';
-defopts.WeightedHypCov     = 'off               % Use weighted hyperparameter posterior covariance';
+defopts.GPSampleWidths     = '5                 % Multiplier to widths from previous posterior for GP sampling (Inf = do not use previous widths)';
+defopts.HypRunWeight       = '0.9               % Weight of previous trials (per trial) for running avg of GP hyperparameter covariance';
+defopts.WeightedHypCov     = 'on                % Use weighted hyperparameter posterior covariance';
 defopts.TolCovWeight       = '0                 % Minimum weight for weighted hyperparameter posterior covariance';
 defopts.GPHypSampler       = 'slicesample       % MCMC sampler for GP hyperparameters';
 defopts.CovSampleThresh    = '10                % Switch to covariance sampling below this threshold of stability index';
