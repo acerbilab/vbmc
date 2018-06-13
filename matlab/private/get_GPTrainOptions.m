@@ -87,8 +87,6 @@ end
 function hypcov = GetHypCov(optimState,stats,options)
 %GETHYPCOV Get hyperparameter posterior covariance
 
-TolW = 1e-10;
-
 if optimState.iter > 1
     if options.WeightedHypCov
         w_list = [];
@@ -101,11 +99,12 @@ if optimState.iter > 1
                     log(stats.sKL(optimState.iter-i+1) ./ (options.TolsKL*options.FunEvalsPerIter)));
                 w = w*(options.HypRunWeight^(options.FunEvalsPerIter*diff_mult));
             end
-            if w < TolW; break; end     % Weight is getting to small, break
+            if w < options.TolCovWeight; break; end     % Weight is getting too small, break
 
-            hyp = stats.gpHypFull{optimState.iter-i};            
+            hyp = stats.gpHypFull{optimState.iter-i};
+            nhyp = size(hyp,2);
             hyp_list = [hyp_list; hyp'];
-            w_list = [w_list; w*ones(size(hyp,2),1)];
+            w_list = [w_list; w*ones(nhyp,1)/nhyp];
         end
         
         w_list = w_list / sum(w_list);                  % Normalize weights

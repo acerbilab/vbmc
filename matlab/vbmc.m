@@ -111,6 +111,7 @@ defopts.ELCBOmidpoint      = 'on                % Compute full ELCBO also at bes
 defopts.GPSampleWidths     = 'Inf               % Multiplier to widths from previous posterior for GP sampling (Inf = do not use previous widths)';
 defopts.HypRunWeight       = '0                 % Weight of previous trials (per trial) for running avg of GP hyperparameter covariance';
 defopts.WeightedHypCov     = 'off               % Use weighted hyperparameter posterior covariance';
+defopts.TolCovWeight       = '0                 % Minimum weight for weighted hyperparameter posterior covariance';
 defopts.GPHypSampler       = 'slicesample       % MCMC sampler for GP hyperparameters';
 defopts.CovSampleThresh    = '10                % Switch to covariance sampling below this threshold of stability index';
 defopts.AltMCEntropy       = 'no                % Use alternative Monte Carlo computation for the entropy';
