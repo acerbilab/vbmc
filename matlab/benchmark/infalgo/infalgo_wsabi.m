@@ -1,5 +1,10 @@
 function [history,post,algoptions] = infalgo_wsabi(algo,algoset,probstruct)
 
+% Add algorithm to MATLAB path
+BaseFolder = fileparts(mfilename('fullpath'));
+AlgoFolder = 'wsabi';
+addpath(genpath([BaseFolder filesep() AlgoFolder]));
+
 algoptions.Method = 'L';    % Default is WSABI-L
 algoptions.Alpha = 0.8;     % Fractional offset, as in paper.
 

@@ -1,0 +1,154 @@
+
+
+Running
+          Method: sequential bayesian quadrature mike v1
+         Problem: funnel 2d
+     Num Samples: 100
+      Repitition: 1
+     Description: Radford Neal's funnel function
+Output directory: results/
+ Output filename: results/problem_funnel 2d__method_sequential bayesian quadrature mike v1__samples_100_reptition_1.mat
+
+{Warning: no time allowed for training, no training performed} 
+{> In <a href="matlab: opentoline('/homes/51/mosb/Code/gp-code-osborne/CoreGP/lw_train_gp.m',241,1)">lw_train_gp at 241</a>
+  In <a href="matlab: opentoline('/homes/51/mosb/Code/gp-code-osborne/CoreGP/sbq.m',118,1)">sbq at 118</a>
+  In <a href="matlab: opentoline('/homes/51/mosb/Code/gp-code-osborne/sbq_experiments/run_one_experiment.m',52,1)">run_one_experiment at 52</a>
+  In <a href="matlab: opentoline('/homes/51/mosb/Code/gp-code-osborne/sbq_experiments/call_one_experiment.m',32,1)">call_one_experiment at 32</a>} 
+{Warning: no time allowed for training, no training performed} 
+{> In <a href="matlab: opentoline('/homes/51/mosb/Code/gp-code-osborne/CoreGP/lw_train_gp.m',241,1)">lw_train_gp at 241</a>
+  In <a href="matlab: opentoline('/homes/51/mosb/Code/gp-code-osborne/CoreGP/sbq.m',122,1)">sbq at 122</a>
+  In <a href="matlab: opentoline('/homes/51/mosb/Code/gp-code-osborne/sbq_experiments/run_one_experiment.m',52,1)">run_one_experiment at 52</a>
+  In <a href="matlab: opentoline('/homes/51/mosb/Code/gp-code-osborne/sbq_experiments/call_one_experiment.m',32,1)">call_one_experiment at 32</a>} 
+{Undefined function 'gt' for input arguments of type 'struct'.
+
+Error in <a href="matlab:helpUtils.errorDocCallback('minimize', '/homes/51/mosb/Code/gpml-matlab/util/minimize.m', 71)" style="font-weight:bold">minimize</a> (<a href="matlab: opentoline('/homes/51/mosb/Code/gpml-matlab/util/minimize.m',71,0)">line 71</a>)
+if length>0, S='Linesearch'; else S='Function evaluation'; end
+
+Error in <a href="matlab:helpUtils.errorDocCallback('fit_hypers_multiple_restart', '/homes/51/mosb/Code/gp-code-osborne/CoreGP/fit_hypers_multiple_restart.m', 43)" style="font-weight:bold">fit_hypers_multiple_restart</a> (<a href="matlab: opentoline('/homes/51/mosb/Code/gp-code-osborne/CoreGP/fit_hypers_multiple_restart.m',43,0)">line 43</a>)
+    [gp_hypers{i} fX] = minimize(init_hypers, @gp_fixedlik, opt_min, ...
+
+Error in <a href="matlab:helpUtils.errorDocCallback('log_evidence', '/homes/51/mosb/Code/gp-code-osborne/CoreGP/log_evidence.m', 169)" style="font-weight:bold">log_evidence</a> (<a href="matlab: opentoline('/homes/51/mosb/Code/gp-code-osborne/CoreGP/log_evidence.m',169,0)">line 169</a>)
+    gp_hypers_del = ...
+
+Error in <a href="matlab:helpUtils.errorDocCallback('sbq', '/homes/51/mosb/Code/gp-code-osborne/CoreGP/sbq.m', 164)" style="font-weight:bold">sbq</a> (<a href="matlab: opentoline('/homes/51/mosb/Code/gp-code-osborne/CoreGP/sbq.m',164,0)">line 164</a>)
+    [log_mean_evidences(i), log_var_evidences(i), ev_params, del_gp_hypers]
+    = ...
+
+Error in <a href="matlab:helpUtils.errorDocCallback('run_one_experiment', '/homes/51/mosb/Code/gp-code-osborne/sbq_experiments/run_one_experiment.m', 52)" style="font-weight:bold">run_one_experiment</a> (<a href="matlab: opentoline('/homes/51/mosb/Code/gp-code-osborne/sbq_experiments/run_one_experiment.m',52,0)">line 52</a>)
+    [mean_log_evidences, var_log_evidences, samples] = ...
+
+Error in <a href="matlab:helpUtils.errorDocCallback('call_one_experiment', '/homes/51/mosb/Code/gp-code-osborne/sbq_experiments/call_one_experiment.m', 32)" style="font-weight:bold">call_one_experiment</a> (<a href="matlab: opentoline('/homes/51/mosb/Code/gp-code-osborne/sbq_experiments/call_one_experiment.m',32,0)">line 32</a>)
+run_one_experiment( problems{problem_number}, methods{method_number}, ...
+} 
+<a href="matlab: opentoline('/homes/51/mosb/Code/gpml-matlab/util/minimize.m',71,1)">71  </a>if length>0, S='Linesearch'; else S='Function evaluation'; end 
+dbquit
+cd ~/Code/gp-code-osborne/
+addpath(genpath('~/Code/gpml-matlab'))
+addpath(genpath(pwd))
+call_one_experiment(4,7,100)
+Running one experiment...
+
+log_Z =
+
+   -1.5155
+
+
+log_Z =
+
+   -5.2655
+
+
+log_Z =
+
+   -1.5155
+
+
+log_Z =
+
+   -5.2655
+
+
+log_Z =
+
+   -3.8181
+
+
+log_Z =
+
+   -7.5681
+
+
+log_Z =
+
+   -1.0768
+
+
+log_Z =
+
+   -4.5130
+
+
+log_Z =
+
+  -11.2825
+
+
+log_Z =
+
+  -22.5650
+
+
+log_Z =
+
+   -1.6749
+
+
+log_Z =
+
+   -2.0864
+
+
+log_Z =
+
+  -10.4319
+
+
+log_Z =
+
+   -3.7215
+
+
+log_Z =
+
+   -3.7215
+
+
+log_Z =
+
+   -3.7221
+
+
+log_Z =
+
+   -3.7221
+
+
+log_Z =
+
+  -13.0914
+
+
+log_Z =
+
+  -13.0914
+
+
+log_Z =
+
+  -13.0229
+
+
+log_Z =
+
+  -13.1022
+

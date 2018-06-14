@@ -1,5 +1,10 @@
 function [history,post,algoptions] = infalgo_ais(algo,algoset,probstruct)
 
+% Add algorithm to MATLAB path
+BaseFolder = fileparts(mfilename('fullpath'));
+AlgoFolder = 'wsabi';
+addpath(genpath([BaseFolder filesep() AlgoFolder]));
+
 algoptions.MaxFunEvals = probstruct.MaxFunEvals;
 
 % Options from current problem

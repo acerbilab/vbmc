@@ -1,5 +1,9 @@
 function [history,post,algoptions] = infalgo_bape(algo,algoset,probstruct)
 
+% Add algorithm to MATLAB path
+BaseFolder = fileparts(mfilename('fullpath'));
+AlgoFolder = 'bape';
+addpath(genpath([BaseFolder filesep() AlgoFolder]));
 
 algoptions.MaxFunEvals = probstruct.MaxFunEvals;
 algoptions.MaxIter = Inf;

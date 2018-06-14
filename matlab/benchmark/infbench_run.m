@@ -38,7 +38,11 @@ if isempty(options.PathDirectory)
 end
 
 % Add sub-directories to path
-addpath(genpath(options.PathDirectory));
+folders = {'infalgo','problems'};
+for iFolder = 1:numel(folders)
+    addpath([options.PathDirectory filesep() folders{iFolder}]);
+end
+% addpath(genpath(options.PathDirectory));
 if ~isempty(options.ProblemDirectory)
     addpath(genpath(options.ProblemDirectory));    
 end

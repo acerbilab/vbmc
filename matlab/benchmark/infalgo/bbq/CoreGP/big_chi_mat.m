@@ -1,0 +1,33 @@
+function mat = big_chi_mat...
+    (sqd_dist_stack_Amu, sqd_dist_stack_A, ...
+    gp_A_hypers, gp_B_hypers, prior)
+% Returns the matrix
+% int int K_A(x_s, x) K_B(x, x') K_A(x', x_t) prior(x) prior(x') dx dx'
+% = N(x_s, mu, L + W_A) * N(x_t, mu, L + W_A) * ...
+%   det(2*pi*(2*L + W_B - 2*L^2/(L+W_A)))^(-0.5) * ...
+%   exp(-0.5*(x_s, x_t, (3*L^2*W_A + 4*w_A^2*L + W^3)/L^2)
+% where x_s and x_s' are elements of A (forming the rows and cols
+% respectively), which is modelled by a GP with sqd input scales W_A.
+% K_B has squared input scales W_B.
+% The prior is Gaussian with mean mu and variance L.
+
+vec_A = small_ups_vec(sqd_dist_stack_Amu, gp_A_hypers, prior);
+
+L = diag(prior.covariance)';
+W_A = exp(2*gp_A_hypers.log_input_scales);
+W_B = exp(2*gp_B_hypers.log_input_scales);
+
+log_det_input_scales = log(sqrt(...
+    (2*L + W_B - 2*L.^2./(L+W_A))...
+    ));
+log_input_scales = log(sqrt(...
+    (L+W_A).^2./L.^2 .* (2*L + W_B - 2*L.^2./(L+W_A))...
+    ));
+
+mat_A = gaussian_mat(sqd_dist_stack_A, ...
+    gp_B_hypers.log_output_scale, ...
+    log_input_scales, log_det_input_scales);
+
+mat = mat_A .* (vec_A * vec_A');
+
+
