@@ -50,7 +50,13 @@ opt.start_pt = x0;
 opt.print = 2;
 opt.plots = false;
 opt.debug = true;
+opt.parallel = false;
 opt.marginalise_scales = algoptions.ApproxMarginalize;
+
+if DEBUG
+    opt.num_retrains = 5;
+    opt.train_gp_time = 20;
+end
 
 % Do not add log prior to function evaluation, already passed
 probstruct.AddLogPrior = false;

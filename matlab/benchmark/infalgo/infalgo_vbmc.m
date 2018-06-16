@@ -80,8 +80,8 @@ switch algoset
     case {223,'gpthreshsplitsample'}; algoset = 'gpthreshsplitsample'; algoptions.GPRetrainThreshold = 1; algoptions.GPSampleWidths = 5; algoptions.HypRunWeight = 0.9; algoptions.WeightedHypCov = 1; algoptions.GPHypSampler = 'splitsample';
     case {224,'gpthreshcovsample3'}; algoset = 'gpthreshcovsample3'; algoptions.GPRetrainThreshold = 1; algoptions.GPSampleWidths = 5; algoptions.HypRunWeight = 0.9; algoptions.WeightedHypCov = 1; algoptions.GPHypSampler = 'covsample'; algoptions.CovSampleThresh = 10;
     case {225,'gpthreshcovsample4'}; algoset = 'gpthreshcovsample4'; algoptions.GPRetrainThreshold = 1; algoptions.GPSampleWidths = 5; algoptions.HypRunWeight = 0.9; algoptions.WeightedHypCov = 1; algoptions.GPHypSampler = 'covsample'; algoptions.CovSampleThresh = 10; algoptions.TolCovWeight = 1e-10;
-    case {226,'gpthreshcovsampleent'}; algoset = 'gpthreshcovsampleent'; algoptions.GPRetrainThreshold = 1; algoptions.GPSampleWidths = 5; algoptions.HypRunWeight = 0.9; algoptions.WeightedHypCov = 1; algoptions.GPHypSampler = 'covsample'; algoptions.CovSampleThresh = 10; algoptions.NSentFast = 0; algoptions.NSent = 0; 
-    case {227,'gpthreshcovsampleentfast'}; algoset = 'gpthreshcovsampleentfast'; algoptions.GPRetrainThreshold = 1; algoptions.GPSampleWidths = 5; algoptions.HypRunWeight = 0.9; algoptions.WeightedHypCov = 1; algoptions.GPHypSampler = 'covsample'; algoptions.CovSampleThresh = 10; algoptions.NSentFast = 0;
+    case {226,'detent'}; algoset = 'detent'; algoptions.NSentFast = 0; algoptions.NSent = 0; 
+    case {227,'detentfast'}; algoset = 'detentfast'; algoptions.NSentFast = 0;
     case {228,'altent'}; algoset = 'altent'; algoptions.AltMCEntropy = 1;
     case {229,'altentquick'}; algoset = 'altentquick'; algoptions.AltMCEntropy = 1; algoptions.NSentFast = '@(K) 20*K'; algoptions.NSent = '@(K) 20*K';
     case {230,'gpthreshwidths2'}; algoset = 'gpthreshwidths2'; algoptions.GPRetrainThreshold = 1; algoptions.GPSampleWidths = 5; algoptions.HypRunWeight = 0.9; algoptions.WeightedHypCov = 1; algoptions.GPHypSampler = 'slicesample';
