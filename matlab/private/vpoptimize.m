@@ -85,7 +85,7 @@ for iOpt = 1:Nslowopts
 
     % First, fast optimization via deterministic entropy approximation
     if useEntropyApprox || NSentK == 0
-        if NSentK == 0; TolOpt = 1e-6; else; TolOpt = 1e-3; end        
+        if NSentK == 0; TolOpt = options.DetEntTolOpt; else; TolOpt = sqrt(options.DetEntTolOpt); end
         vbtrain_options = optimoptions('fmincon','GradObj','on','Display','off','OptimalityTolerance',TolOpt);
         vbtrain_fun = @(theta_) vbmc_negelcbo(theta_,elcbo_beta,vp0,gp,0,1,compute_var,0);
         [thetaopt,~,~,output] = ...

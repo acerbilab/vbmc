@@ -115,6 +115,7 @@ defopts.TolCovWeight       = '0                 % Minimum weight for weighted hy
 defopts.GPHypSampler       = 'slicesample       % MCMC sampler for GP hyperparameters';
 defopts.CovSampleThresh    = '10                % Switch to covariance sampling below this threshold of stability index';
 defopts.AltMCEntropy       = 'no                % Use alternative Monte Carlo computation for the entropy';
+defopts.DetEntTolOpt       = '1e-6              % Optimality tolerance for optimization of deterministic entropy';
 
 %% If called with 'all', return all default options
 if strcmpi(fun,'all')
