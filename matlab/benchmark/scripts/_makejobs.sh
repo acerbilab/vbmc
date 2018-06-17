@@ -54,6 +54,9 @@ case "${1}" in
         4)      ALGOSET="{'gpthresh'}"
 		IDS=${IDS_SINGLE}
                 ;;
+        4b)     ALGOSET="{'gpthreshwidths2'}"
+                IDS=${IDS_SINGLE}
+                ;;
         4c)      ALGOSET="{'gpthreshwidths'}"
                 IDS=${IDS_SINGLE}
                 ;;
@@ -78,10 +81,19 @@ case "${1}" in
         4j)     ALGOSET="{'gpthreshcovsample4'}"
                 IDS=${IDS_SINGLE}
                 ;;
-        4k)     ALGOSET="{'gpthreshcovsampleent'}"
+        4k)     ALGOSET="{'detent'}"
                 IDS=${IDS_SINGLE}
                 ;;
-        4l)     ALGOSET="{'gpthreshcovsampleentfast'}"
+        4l)     ALGOSET="{'detentfast'}"
+                IDS=${IDS_SINGLE}
+                ;;
+        4m)     ALGOSET="{'altent'}"
+                IDS=${IDS_SINGLE}
+                ;;
+        4n)     ALGOSET="{'altentquick'}"
+                IDS=${IDS_SINGLE}
+                ;;
+        4o)     ALGOSET="{'detentopt4'}"
                 IDS=${IDS_SINGLE}
                 ;;
         5)      ALGOSET="{'cheapgpmid'}"
@@ -193,8 +205,8 @@ case "${1}" in
                 DIMS="{'S7','S8'}"
                 IDS=$IDS_CENTO
                 ;;
-        104b)    PROBS="{'goris2015'}"
-                ALGOS="{'vbmc@gpthreshmid'}"
+        104b)   PROBS="{'goris2015'}"
+                ALGOS="{'vbmc@gpthreshwidths2'}"
                 DIMS="{'S7','S8'}"
                 IDS=$IDS_CENTO
                 ;;
@@ -239,12 +251,27 @@ case "${1}" in
                 IDS=$IDS_CENTO
                 ;;
         104k)   PROBS="{'goris2015'}"
-                ALGOS="{'vbmc@gpthreshcovsampleent'}"
+                ALGOS="{'vbmc@detent'}"
                 DIMS="{'S7','S8'}"
                 IDS=$IDS_CENTO
                 ;;
         104l)   PROBS="{'goris2015'}"
-                ALGOS="{'vbmc@gpthreshcovsampleentfast'}"
+                ALGOS="{'vbmc@detentfast'}"
+                DIMS="{'S7','S8'}"
+                IDS=$IDS_CENTO
+                ;;
+        104m)   PROBS="{'goris2015'}"
+                ALGOS="{'vbmc@altent'}"
+                DIMS="{'S7','S8'}"
+                IDS=$IDS_CENTO
+                ;;
+        104n)   PROBS="{'goris2015'}"
+                ALGOS="{'vbmc@altentquick'}"
+                DIMS="{'S7','S8'}"
+                IDS=$IDS_CENTO
+                ;;
+        104o)   PROBS="{'goris2015'}"
+                ALGOS="{'vbmc@detentopt4'}"
                 DIMS="{'S7','S8'}"
                 IDS=$IDS_CENTO
                 ;;
