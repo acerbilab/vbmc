@@ -39,6 +39,12 @@ else
     NSentKFast = ceil(options.NSentFast/K);
 end
 
+% If the entropy switch is on, it means we are still using the deterministic entropy
+if optimState.EntropySwitch
+    NSentK = 0;
+    NSentKFast = 0;
+end
+
 % Confidence weight
 elcbo_beta = options.ELCBOWeight; % * sqrt(vp.D) / sqrt(optimState.N);
    
@@ -97,15 +103,25 @@ for iOpt = 1:Nslowopts
         
     % Second, refine with unbiased stochastic entropy approximation
     if NSentK > 0
-        [thetaopt,~,theta_lst,fval_lst] = ...
-            fminadam(vbtrainmc_fun,thetaopt,vp.LB_theta,vp.UB_theta,options.TolFunAdam);
-        
-        if options.ELCBOmidpoint
-            % Recompute ELCBO at best midpoint with full variance and more precision
-            [~,idx_mid] = min(fval_lst);
-            elbostats = eval_fullelcbo(iOpt_mid,theta_lst(idx_mid,:),vp0,gp,elbostats,elcbo_beta,options);
-            % [idx_mid,numel(fval_lst)]
-        end        
+        switch lower(options.StochasticOptimizer)
+            case 'adam'                
+                [thetaopt,~,theta_lst,fval_lst] = ...
+                    fminadam(vbtrainmc_fun,thetaopt,vp.LB_theta,vp.UB_theta,options.TolFunStochastic);
+
+                if options.ELCBOmidpoint
+                    % Recompute ELCBO at best midpoint with full variance and more precision
+                    [~,idx_mid] = min(fval_lst);
+                    elbostats = eval_fullelcbo(iOpt_mid,theta_lst(idx_mid,:),vp0,gp,elbostats,elcbo_beta,options);
+                    % [idx_mid,numel(fval_lst)]
+                end
+            case 'fmincon'
+                vbtrain_options = optimoptions('fmincon','GradObj','on','Display','off','OptimalityTolerance',options.TolFunStochastic);
+                [thetaopt,~,~,output] = ...
+                    fmincon(vbtrainmc_fun,thetaopt,[],[],[],[],vp.LB_theta,vp.UB_theta,[],vbtrain_options);
+                
+            otherwise
+                error('vbmc:VPoptimize','Unknown stochastic optimizer.');
+        end
     end
         
 	% Recompute ELCBO at endpoint with full variance and more precision

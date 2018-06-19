@@ -87,6 +87,7 @@ switch algoset
     case {230,'gpthreshwidths2'}; algoset = 'gpthreshwidths2'; algoptions.GPRetrainThreshold = 1; algoptions.GPSampleWidths = 5; algoptions.HypRunWeight = 0.9; algoptions.WeightedHypCov = 1; algoptions.GPHypSampler = 'slicesample';
     case {231,'detentopt4'}; algoset = 'detentopt4'; algoptions.NSentFast = 0; algoptions.NSent = 0; algoptions.DetEntTolOpt = 1e-4;
     case {232,'detentopt3'}; algoset = 'detentopt3'; algoptions.NSentFast = 0; algoptions.NSent = 0; algoptions.DetEntTolOpt = 1e-3;
+    case {233,'entswitch'}; algoset = 'entswitch'; algoptions.DetEntTolOpt = 1e-3; algoptions.EntropySwitch = 1;
         
     otherwise
         error(['Unknown algorithm setting ''' algoset ''' for algorithm ''' algo '''.']);

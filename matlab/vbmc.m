@@ -83,7 +83,8 @@ defopts.TolLength          = '1e-6              % Minimum fractional length scal
 defopts.NoiseObj           = 'off               % Objective fcn returns noise estimate as 2nd argument (unsupported)';
 defopts.CacheSize          = '1e4               % Size of cache for storing fcn evaluations';
 defopts.CacheFrac          = '0.5               % Fraction of search points from starting cache (if nonempty)';
-defopts.TolFunAdam         = '0.001             % Stopping threshold for Adam optimizer';
+defopts.StochasticOptimizer = 'adam             % Stochastic optimizer for varational parameters';
+defopts.TolFunStochastic   = '1e-3              % Stopping threshold for stochastic optimization';
 defopts.TolSD              = '0.1               % Tolerance on ELBO uncertainty for stopping (iff variational posterior is stable)';
 defopts.TolsKL             = '0.01*sqrt(nvars)  % Stopping threshold on change of variational posterior per training point';
 defopts.TolStableIters     = '5                 % Number of stable iterations for checking stopping criteria';
@@ -116,6 +117,7 @@ defopts.GPHypSampler       = 'slicesample       % MCMC sampler for GP hyperparam
 defopts.CovSampleThresh    = '10                % Switch to covariance sampling below this threshold of stability index';
 defopts.AltMCEntropy       = 'no                % Use alternative Monte Carlo computation for the entropy';
 defopts.DetEntTolOpt       = '1e-6              % Optimality tolerance for optimization of deterministic entropy';
+defopts.EntropySwitch      = 'off               % Switch from deterministic entropy to stochastic entropy';
 
 %% If called with 'all', return all default options
 if strcmpi(fun,'all')
@@ -235,6 +237,13 @@ while ~isFinished_flag
     optimState.redoRotoscaling = false;    
     
     if iter == 1 && optimState.Warmup; action = 'start warm-up'; end
+    
+    % Switch to stochastic entropy towards the end
+    if optimState.EntropySwitch && ...
+            optimState.funccount >= 0.9*options.MaxFunEvals
+        optimState.EntropySwitch = false;
+        if isempty(action); action = 'entropy switch'; else; action = [action ', entropy switch']; end        
+    end
     
     %% Actively sample new points into the training set
     t = tic;
@@ -592,13 +601,19 @@ while ~isFinished_flag
             all(qindex_vec < 1) && ...
             all(stats.qindex(iter-options.TolStableIters+1:iter) < 1) && ...
             ELCBOimpro < options.TolImprovement
-        isFinished_flag = true;
-        exitflag = 0;
-        if isempty(action); action = 'stable'; else; action = [action ', stable']; end
-        
             % msg = 'Optimization terminated: reached maximum number of iterations OPTIONS.MaxIter.';
+            
+        % If stable but entropy switch is ON, turn it off and continue
+        if optimState.EntropySwitch
+            optimState.EntropySwitch = false;
+            if isempty(action); action = 'entropy switch'; else; action = [action ', entropy switch']; end 
+        else
+            isFinished_flag = true;
+            exitflag = 0;
+            if isempty(action); action = 'stable'; else; action = [action ', stable']; end           
+        end
     end
-    
+        
     % Prevent early termination
     if optimState.N < options.MinFunEvals || ...
             optimState.iter < options.MinIter
