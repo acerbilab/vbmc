@@ -1,0 +1,957 @@
+
+
+Running
+          Method: sequential bayesian quadrature mike v1
+         Problem: two spikes 4d
+     Num Samples: 100
+      Repitition: 1
+     Description: Two widely separated skinny humps
+Output directory: results/
+ Output filename: results/problem_two spikes 4d__method_sequential bayesian quadrature mike v1__samples_100_reptition_1.mat
+
+{Warning: no time allowed for training, no training performed} 
+{> In <a href="matlab: opentoline('/homes/51/mosb/Code/gp-code-osborne/CoreGP/lw_train_gp.m',241,1)">lw_train_gp at 241</a>
+  In <a href="matlab: opentoline('/homes/51/mosb/Code/gp-code-osborne/CoreGP/sbq.m',118,1)">sbq at 118</a>
+  In <a href="matlab: opentoline('/homes/51/mosb/Code/gp-code-osborne/sbq_experiments/run_one_experiment.m',52,1)">run_one_experiment at 52</a>
+  In <a href="matlab: opentoline('/homes/51/mosb/Code/gp-code-osborne/sbq_experiments/call_one_experiment.m',32,1)">call_one_experiment at 32</a>} 
+{Warning: no time allowed for training, no training performed} 
+{> In <a href="matlab: opentoline('/homes/51/mosb/Code/gp-code-osborne/CoreGP/lw_train_gp.m',241,1)">lw_train_gp at 241</a>
+  In <a href="matlab: opentoline('/homes/51/mosb/Code/gp-code-osborne/CoreGP/sbq.m',122,1)">sbq at 122</a>
+  In <a href="matlab: opentoline('/homes/51/mosb/Code/gp-code-osborne/sbq_experiments/run_one_experiment.m',52,1)">run_one_experiment at 52</a>
+  In <a href="matlab: opentoline('/homes/51/mosb/Code/gp-code-osborne/sbq_experiments/call_one_experiment.m',32,1)">call_one_experiment at 32</a>} 
+{Undefined function 'gt' for input arguments of type 'struct'.
+
+Error in <a href="matlab:helpUtils.errorDocCallback('minimize', '/homes/51/mosb/Code/gpml-matlab/util/minimize.m', 71)" style="font-weight:bold">minimize</a> (<a href="matlab: opentoline('/homes/51/mosb/Code/gpml-matlab/util/minimize.m',71,0)">line 71</a>)
+if length>0, S='Linesearch'; else S='Function evaluation'; end
+
+Error in <a href="matlab:helpUtils.errorDocCallback('fit_hypers_multiple_restart', '/homes/51/mosb/Code/gp-code-osborne/CoreGP/fit_hypers_multiple_restart.m', 43)" style="font-weight:bold">fit_hypers_multiple_restart</a> (<a href="matlab: opentoline('/homes/51/mosb/Code/gp-code-osborne/CoreGP/fit_hypers_multiple_restart.m',43,0)">line 43</a>)
+    [gp_hypers{i} fX] = minimize(init_hypers, @gp_fixedlik, opt_min, ...
+
+Error in <a href="matlab:helpUtils.errorDocCallback('log_evidence', '/homes/51/mosb/Code/gp-code-osborne/CoreGP/log_evidence.m', 169)" style="font-weight:bold">log_evidence</a> (<a href="matlab: opentoline('/homes/51/mosb/Code/gp-code-osborne/CoreGP/log_evidence.m',169,0)">line 169</a>)
+    gp_hypers_del = ...
+
+Error in <a href="matlab:helpUtils.errorDocCallback('sbq', '/homes/51/mosb/Code/gp-code-osborne/CoreGP/sbq.m', 164)" style="font-weight:bold">sbq</a> (<a href="matlab: opentoline('/homes/51/mosb/Code/gp-code-osborne/CoreGP/sbq.m',164,0)">line 164</a>)
+    [log_mean_evidences(i), log_var_evidences(i), ev_params,
+    del_gp_hypers] = ...
+
+Error in <a href="matlab:helpUtils.errorDocCallback('run_one_experiment', '/homes/51/mosb/Code/gp-code-osborne/sbq_experiments/run_one_experiment.m', 52)" style="font-weight:bold">run_one_experiment</a> (<a href="matlab: opentoline('/homes/51/mosb/Code/gp-code-osborne/sbq_experiments/run_one_experiment.m',52,0)">line 52</a>)
+    [mean_log_evidences, var_log_evidences, samples] = ...
+
+Error in <a href="matlab:helpUtils.errorDocCallback('call_one_experiment', '/homes/51/mosb/Code/gp-code-osborne/sbq_experiments/call_one_experiment.m', 32)" style="font-weight:bold">call_one_experiment</a> (<a href="matlab: opentoline('/homes/51/mosb/Code/gp-code-osborne/sbq_experiments/call_one_experiment.m',32,0)">line 32</a>)
+run_one_experiment( problems{problem_number}, methods{method_number}, ...
+} 
+<a href="matlab: opentoline('/homes/51/mosb/Code/gpml-matlab/util/minimize.m',71,1)">71  </a>if length>0, S='Linesearch'; else S='Function evaluation'; end 
+dbquit
+compile_all_results
+Compiling all results...
+All content listed in ~/Dropbox/papers/sbq-paper/autocontent.tex
+
+log_Z =
+
+   -1.5155
+
+
+log_Z =
+
+   -5.2655
+
+
+log_Z =
+
+   -1.5155
+
+
+log_Z =
+
+   -5.2655
+
+
+log_Z =
+
+   -3.8181
+
+
+log_Z =
+
+   -7.5681
+
+
+log_Z =
+
+   -1.0768
+
+
+log_Z =
+
+   -4.5130
+
+
+log_Z =
+
+  -11.2825
+
+
+log_Z =
+
+  -22.5650
+
+
+log_Z =
+
+   -1.6749
+
+
+log_Z =
+
+   -2.0864
+
+
+log_Z =
+
+  -10.4319
+
+
+log_Z =
+
+   -3.7215
+
+
+log_Z =
+
+   -3.7215
+
+
+log_Z =
+
+   -3.7221
+
+
+log_Z =
+
+   -3.7221
+
+
+log_Z =
+
+  -13.0914
+
+
+log_Z =
+
+  -13.0914
+
+
+log_Z =
+
+  -13.0229
+
+
+log_Z =
+
+  -13.1022
+
+<a href="matlab: opentoline('/homes/51/mosb/Code/gp-code-osborne/sbq_experiments/compile_all_results.m',53,1)">53  </a>for p_ix = 1:num_problems
+if system_dependent('IsDebugMode')==1, dbcont; end
+
+Compiling results for simple...
+   SMC |N 
+   AIS |N 
+   BMC |N 
+  BQ G |N 
+ BQ* G |N 
+   BBQ |O 
+  BBQ* |O 
+  LBMC |N 
+
+
+Compiling results for two spikes 1d...
+   SMC |N 
+   AIS |N 
+   BMC |N 
+  BQ G |N 
+ BQ* G |N 
+   BBQ |O 
+  BBQ* |O 
+  LBMC |N 
+
+
+Compiling results for two hills 1d...
+   SMC |N 
+   AIS |N 
+   BMC |N 
+  BQ G |N 
+ BQ* G |N 
+   BBQ |O 
+  BBQ* |O 
+  LBMC |N 
+
+
+Compiling results for funnel 2d...
+   SMC |N 
+   AIS |N 
+   BMC |N 
+  BQ G |N 
+ BQ* G |N 
+   BBQ |iO 
+  BBQ* |iO 
+  LBMC |N 
+
+
+Compiling results for easy 4d...
+   SMC |N 
+   AIS |N 
+   BMC |N 
+  BQ G |N 
+ BQ* G |N 
+   BBQ |iO 
+  BBQ* |iO 
+  LBMC |N 
+
+
+Compiling results for two spikes 4d...
+   SMC |N 
+   AIS |N 
+   BMC |N 
+  BQ G |N 
+ BQ* G |N 
+   BBQ |iO 
+  BBQ* |iO 
+  LBMC |N 
+
+
+Compiling results for two hills 4d...
+   SMC |N 
+   AIS |N 
+   BMC |N 
+  BQ G |N 
+ BQ* G |N 
+   BBQ |iO 
+  BBQ* |iO 
+  LBMC |N 
+
+
+Compiling results for spike 10d...
+   SMC |N 
+   AIS |N 
+   BMC |N 
+  BQ G |N 
+ BQ* G |N 
+   BBQ |iO 
+  BBQ* |iO 
+  LBMC |N 
+
+
+Compiling results for easy 10d...
+   SMC |N 
+   AIS |N 
+   BMC |N 
+  BQ G |N 
+ BQ* G |N 
+   BBQ |iO 
+  BBQ* |iO 
+  LBMC |N 
+
+
+Compiling results for easy 20d...
+   SMC |N 
+   AIS |N 
+   BMC |N 
+  BQ G |N 
+ BQ* G |N 
+   BBQ |O 
+  BBQ* |O 
+  LBMC |N 
+
+time taken (s)       | SMC              | AIS              | BMC              | BQ G             | BQ* G            | BBQ              | BBQ*             | LBMC             | 
+-------------------------------------------------------------------------------------------
+simple               |      0.004       |      0.063       |      0.169       |      6.943       |      7.519       |     77.787       |     80.608       |      0.655       | 
+two spikes 1d        |      0.003       |      0.085       |      0.176       |      7.920       |      7.800       |     77.397       |     62.663       |      0.514       | 
+two hills 1d         |      0.004       |      0.060       |      0.159       |      7.016       |      6.531       |     46.017       |     47.692       |      0.468       | 
+funnel 2d            |      0.014       |      0.071       |      0.146       |      9.489       |      9.494       |    186.297       |    339.190       |      0.520       | 
+easy 4d              |      0.002       |      0.075       |      0.136       |     10.163       |     10.488       |    424.241       |    422.609       |      0.493       | 
+two spikes 4d        |      0.002       |      0.072       |      0.162       |     13.679       |     13.575       |    233.273       |    341.324       |      0.561       | 
+two hills 4d         |      0.002       |      0.098       |      0.238       |     13.432       |     13.485       |    210.908       |    258.402       |      0.544       | 
+spike 10d            |      0.002       |      0.056       |      0.176       |     18.640       |     19.040       |    1074.376       |    1086.654       |      0.646       | 
+easy 10d             |      0.003       |      0.057       |      0.174       |     24.849       |     24.429       |    484.775       |    723.850       |      0.444       | 
+easy 20d             |      0.002       |      0.060       |      0.150       |     36.256       |     36.402       |    1742.434       |    3118.194       |      0.497       | 
+
+
+mean_log_ev          | SMC              | AIS              | BMC              | BQ G             | BQ* G            | BBQ              | BBQ*             | LBMC             | Truth            | 
+-------------------------------------------------------------------------------------------
+simple               |     -1.550       |     -2.177       |     -1.498       |     -1.494       |     -1.494       |     -1.493       |     -1.493       |     -1.492       |     -1.492       | 
+two spikes 1d        |     -6.548       |     -5.959       |     -4.328       |     -6.718       |     -6.718       |     -6.086       |     -6.029       |     -7.013       |     -6.024       | 
+two hills 1d         |     -6.016       |     -5.715       |     -5.765       |     -6.005       |     -6.005       |     -6.028       |     -6.027       |     -5.341       |     -6.025       | 
+funnel 2d            |     -2.607       |     -3.714       |     -2.872       |     -3.186       |     -3.186       |     -3.745       |      1.312       |     -1.118       |     -2.748       | 
+easy 4d              |     -4.477       |     -4.611       |     -4.514       |     -4.428       |     -4.428       |     -4.642       |     -4.511       |     -3.970       |     -4.513       | 
+two spikes 4d        |    -12.761       |    -18.645       |     -8.810       |    -12.584       |    -12.584       |    -14.861       |    -14.824       |    -13.678       |    -12.398       | 
+two hills 4d         |    -13.071       |    -16.543       |    -10.273       |    -12.737       |    -12.737       |    -14.129       |    -12.336       |    -11.100       |    -12.369       | 
+spike 10d            |    -174.176       |    -66.984       |    -10.314       |    -25.503       |    -25.503       |     -6.526       |    -60.039       |     -7.790       |    -10.432       | 
+easy 10d             |    -13.099       |    -10.529       |    -11.939       |    -10.248       |    -10.248       |     -9.065       |     -9.928       |    -11.289       |    -11.283       | 
+easy 20d             |    -27.128       |    -28.348       |    -36.716       |    -67.454       |    -67.454       |    -20.299       |    -21.844       |    -35.459       |    -22.565       | 
+
+
+var_log_ev           | SMC              | AIS              | BMC              | BQ G             | BQ* G            | BBQ              | BBQ*             | LBMC             | 
+-------------------------------------------------------------------------------------------
+simple               |     -9.045       |      0.000       |    -15.397       |    -16.427       |    -16.427       |    -16.581       |    -16.643       |    -15.380       | 
+two spikes 1d        |    -15.274       |      0.000       |    -13.487       |    -13.417       |    -13.417       |    -18.456       |    -23.967       |    -13.178       | 
+two hills 1d         |    -16.644       |      0.000       |    -19.077       |    -16.264       |    -16.263       |    -24.549       |    -24.962       |    -18.947       | 
+funnel 2d            |     -7.528       |      0.001       |     -9.645       |     -9.879       |     -9.879       |     -5.853       |     -4.855       |     -9.406       | 
+easy 4d              |    -11.755       |      0.001       |    -12.117       |    -12.135       |    -12.128       |    -13.733       |    -16.418       |    -11.613       | 
+two spikes 4d        |    -25.528       |      0.064       |    -19.300       |    -23.637       |    -23.637       |    -26.334       |    -25.482       |    -18.761       | 
+two hills 4d         |    -26.172       |      0.021       |    -22.374       |    -25.289       |    -25.287       |    -25.137       |    -27.890       |    -21.854       | 
+spike 10d            |    -348.360       |      8.665       |    -19.497       |    -29.334       |    -29.334       |    -20.555       |    -107.540       |    -18.810       | 
+easy 10d             |    -27.834       |      0.007       |    -23.914       |    -20.933       |    -20.926       |    -21.721       |    -21.817       |    -23.225       | 
+easy 20d             |    -54.670       |      0.105       |    -63.704       |    -55.512       |    -55.510       |    -38.065       |    -42.467       |    -63.011       | 
+compile_all_results
+Compiling all results...
+All content listed in ~/Dropbox/papers/sbq-paper/autocontent.tex
+
+log_Z =
+
+   -1.5155
+
+
+log_Z =
+
+   -5.2655
+
+
+log_Z =
+
+   -1.5155
+
+
+log_Z =
+
+   -5.2655
+
+
+log_Z =
+
+   -3.8181
+
+
+log_Z =
+
+   -7.5681
+
+
+log_Z =
+
+   -1.0768
+
+
+log_Z =
+
+   -4.5130
+
+
+log_Z =
+
+  -11.2825
+
+
+log_Z =
+
+  -22.5650
+
+
+log_Z =
+
+   -1.6749
+
+
+log_Z =
+
+   -2.0864
+
+
+log_Z =
+
+  -10.4319
+
+
+log_Z =
+
+   -3.7215
+
+
+log_Z =
+
+   -3.7215
+
+
+log_Z =
+
+   -3.7221
+
+
+log_Z =
+
+   -3.7221
+
+
+log_Z =
+
+  -13.0914
+
+
+log_Z =
+
+  -13.0914
+
+
+log_Z =
+
+  -13.0229
+
+
+log_Z =
+
+  -13.1022
+
+
+Compiling results for simple...
+   SMC |N 
+   AIS |N 
+   BMC |N 
+  BQ G |N 
+ BQ* G |N 
+   BBQ |O 
+  BBQ* |O 
+  LBMC |N 
+
+
+Compiling results for two spikes 1d...
+   SMC |N 
+   AIS |N 
+   BMC |N 
+  BQ G |N 
+ BQ* G |N 
+   BBQ |O 
+  BBQ* |O 
+  LBMC |N 
+
+
+Compiling results for two hills 1d...
+   SMC |N 
+   AIS |N 
+   BMC |N 
+  BQ G |N 
+ BQ* G |N 
+   BBQ |O 
+  BBQ* |O 
+  LBMC |N 
+
+
+Compiling results for funnel 2d...
+   SMC |N 
+   AIS |N 
+   BMC |N 
+  BQ G |N 
+ BQ* G |N 
+   BBQ |iO 
+  BBQ* |iO 
+  LBMC |N 
+
+
+Compiling results for easy 4d...
+   SMC |N 
+   AIS |N 
+   BMC |N 
+  BQ G |N 
+ BQ* G |N 
+   BBQ |iO 
+  BBQ* |iO 
+  LBMC |N 
+
+
+Compiling results for two spikes 4d...
+   SMC |N 
+   AIS |N 
+   BMC |N 
+  BQ G |N 
+ BQ* G |N 
+   BBQ |iO 
+  BBQ* |iO 
+  LBMC |N 
+
+
+Compiling results for two hills 4d...
+   SMC |N 
+   AIS |N 
+   BMC |N 
+  BQ G |N 
+ BQ* G |N 
+   BBQ |iO 
+  BBQ* |iO 
+  LBMC |N 
+
+
+Compiling results for spike 10d...
+   SMC |N 
+   AIS |N 
+   BMC |N 
+  BQ G |N 
+ BQ* G |N 
+   BBQ |iO 
+  BBQ* |iO 
+  LBMC |N 
+
+
+Compiling results for easy 10d...
+   SMC |N 
+   AIS |N 
+   BMC |N 
+  BQ G |N 
+ BQ* G |N 
+   BBQ |iO 
+  BBQ* |iO 
+  LBMC |N 
+
+
+Compiling results for easy 20d...
+   SMC |N 
+   AIS |N 
+   BMC |N 
+  BQ G |N 
+ BQ* G |N 
+   BBQ |O 
+  BBQ* |O 
+  LBMC |N 
+
+time taken (s)       | SMC              | AIS              | BMC              | BQ G             | BQ* G            | BBQ              | BBQ*             | LBMC             | 
+-------------------------------------------------------------------------------------------
+simple               |      0.004       |      0.063       |      0.169       |      6.943       |      7.519       |     77.787       |     80.608       |      0.655       | 
+two spikes 1d        |      0.003       |      0.085       |      0.176       |      7.920       |      7.800       |     77.397       |     62.663       |      0.514       | 
+two hills 1d         |      0.004       |      0.060       |      0.159       |      7.016       |      6.531       |     46.017       |     47.692       |      0.468       | 
+funnel 2d            |      0.014       |      0.071       |      0.146       |      9.489       |      9.494       |    186.297       |    339.190       |      0.520       | 
+easy 4d              |      0.002       |      0.075       |      0.136       |     10.163       |     10.488       |    424.241       |    422.609       |      0.493       | 
+two spikes 4d        |      0.002       |      0.072       |      0.162       |     13.679       |     13.575       |    233.273       |    341.324       |      0.561       | 
+two hills 4d         |      0.002       |      0.098       |      0.238       |     13.432       |     13.485       |    210.908       |    258.402       |      0.544       | 
+spike 10d            |      0.002       |      0.056       |      0.176       |     18.640       |     19.040       |    1074.376       |    1086.654       |      0.646       | 
+easy 10d             |      0.003       |      0.057       |      0.174       |     24.849       |     24.429       |    484.775       |    723.850       |      0.444       | 
+easy 20d             |      0.002       |      0.060       |      0.150       |     36.256       |     36.402       |    1742.434       |    3118.194       |      0.497       | 
+
+
+mean_log_ev          | SMC              | AIS              | BMC              | BQ G             | BQ* G            | BBQ              | BBQ*             | LBMC             | Truth            | 
+-------------------------------------------------------------------------------------------
+simple               |     -1.550       |     -2.177       |     -1.498       |     -1.494       |     -1.494       |     -1.493       |     -1.493       |     -1.492       |     -1.492       | 
+two spikes 1d        |     -6.548       |     -5.959       |     -4.328       |     -6.718       |     -6.718       |     -6.086       |     -6.029       |     -7.013       |     -6.024       | 
+two hills 1d         |     -6.016       |     -5.715       |     -5.765       |     -6.005       |     -6.005       |     -6.028       |     -6.027       |     -5.341       |     -6.025       | 
+funnel 2d            |     -2.607       |     -3.714       |     -2.872       |     -3.186       |     -3.186       |     -3.745       |      1.312       |     -1.118       |     -2.748       | 
+easy 4d              |     -4.477       |     -4.611       |     -4.514       |     -4.428       |     -4.428       |     -4.642       |     -4.511       |     -3.970       |     -4.513       | 
+two spikes 4d        |    -12.761       |    -18.645       |     -8.810       |    -12.584       |    -12.584       |    -14.861       |    -14.824       |    -13.678       |    -12.398       | 
+two hills 4d         |    -13.071       |    -16.543       |    -10.273       |    -12.737       |    -12.737       |    -14.129       |    -12.336       |    -11.100       |    -12.369       | 
+spike 10d            |    -174.176       |    -66.984       |    -10.314       |    -25.503       |    -25.503       |     -6.526       |    -60.039       |     -7.790       |    -10.432       | 
+easy 10d             |    -13.099       |    -10.529       |    -11.939       |    -10.248       |    -10.248       |     -9.065       |     -9.928       |    -11.289       |    -11.283       | 
+easy 20d             |    -27.128       |    -28.348       |    -36.716       |    -67.454       |    -67.454       |    -20.299       |    -21.844       |    -35.459       |    -22.565       | 
+
+
+var_log_ev           | SMC              | AIS              | BMC              | BQ G             | BQ* G            | BBQ              | BBQ*             | LBMC             | 
+-------------------------------------------------------------------------------------------
+simple               |     -9.045       |      0.000       |    -15.397       |    -16.427       |    -16.427       |    -16.581       |    -16.643       |    -15.380       | 
+two spikes 1d        |    -15.274       |      0.000       |    -13.487       |    -13.417       |    -13.417       |    -18.456       |    -23.967       |    -13.178       | 
+two hills 1d         |    -16.644       |      0.000       |    -19.077       |    -16.264       |    -16.263       |    -24.549       |    -24.962       |    -18.947       | 
+funnel 2d            |     -7.528       |      0.001       |     -9.645       |     -9.879       |     -9.879       |     -5.853       |     -4.855       |     -9.406       | 
+easy 4d              |    -11.755       |      0.001       |    -12.117       |    -12.135       |    -12.128       |    -13.733       |    -16.418       |    -11.613       | 
+two spikes 4d        |    -25.528       |      0.064       |    -19.300       |    -23.637       |    -23.637       |    -26.334       |    -25.482       |    -18.761       | 
+two hills 4d         |    -26.172       |      0.021       |    -22.374       |    -25.289       |    -25.287       |    -25.137       |    -27.890       |    -21.854       | 
+spike 10d            |    -348.360       |      8.665       |    -19.497       |    -29.334       |    -29.334       |    -20.555       |    -107.540       |    -18.810       | 
+easy 10d             |    -27.834       |      0.007       |    -23.914       |    -20.933       |    -20.926       |    -21.721       |    -21.817       |    -23.225       | 
+easy 20d             |    -54.670       |      0.105       |    -63.704       |    -55.512       |    -55.510       |    -38.065       |    -42.467       |    -63.011       | 
+<a href="matlab: opentoline('/homes/51/mosb/Code/gp-code-osborne/sbq_experiments/compile_all_results.m',150,1)">150 </a>        log_liks(m_ix, p_ix) = logmvnpdf(1, exp(log_mean_prediction), ...
+if system_dependent('IsDebugMode')==1, dbcont; end
+
+
+log squared error    | SMC              | AIS              | BMC              | BQ G             | BQ* G            | BBQ              | BBQ*             | LBMC             | 
+-------------------------------------------------------------------------------------------
+simple               |     -5.713       |     -0.758       |    -10.296       |    -12.369       |    -12.369       |    -13.634       |    -14.113       |    -15.890       | 
+two spikes 1d        |     -1.294       |     -5.449       |      1.057       |     -0.732       |     -0.732       |     -5.580       |    -10.692       |     -0.022       | 
+two hills 1d         |     -9.423       |     -2.346       |     -2.697       |     -7.894       |     -7.894       |    -11.178       |    -12.193       |     -0.760       | 
+funnel 2d            |     -3.921       |     -0.070       |     -4.175       |     -1.653       |     -1.653       |     -0.005       |      2.803       |      0.978       | 
+easy 4d              |     -6.665       |     -4.655       |    -14.225       |     -4.926       |     -4.926       |     -4.099       |    -12.579       |     -1.222       | 
+two spikes 4d        |     -2.030       |      3.664       |      2.555       |     -3.367       |     -3.367       |      1.802       |      1.773       |      0.494       | 
+two hills 4d         |     -0.707       |      2.858       |      1.480       |     -1.998       |     -1.998       |      1.131       |     -6.863       |      0.476       | 
+spike 10d            |     10.197       |      8.070       |     -4.273       |      5.426       |      5.426       |      2.725       |      7.808       |      1.943       | 
+easy 10d             |      1.194       |     -0.565       |     -0.842       |      0.068       |      0.068       |      1.592       |      0.607       |    -10.055       | 
+easy 20d             |      3.036       |      3.510       |      5.300       |      7.608       |      7.608       |      1.636       |     -0.655       |      5.114       | 
+
+
+neg log density      | SMC              | AIS              | BMC              | BQ G             | BQ* G            | BBQ              | BBQ*             | LBMC             | 
+-------------------------------------------------------------------------------------------
+simple               |     -1.443       |      2.418       |     -1.158       |     -4.342       |     -4.343       |     -5.398       |     -5.593       |     -5.263       | 
+two spikes 1d        |      1.397       |      6.943       |     41.960       |      0.726       |      0.726       |     -1.209       |     -3.344       |      0.965       | 
+two hills 1d         |     -1.374       |      6.944       |     46.907       |     -1.175       |     -1.175       |     -3.464       |     -4.513       |    474.328       | 
+funnel 2d            |     -0.010       |      3.668       |     -0.725       |      3.758       |      3.754       |      1.025       |    857.355       |    419.659       | 
+easy 4d              |     -0.435       |      5.432       |     -0.627       |     -0.547       |     -0.544       |     -0.626       |     -2.774       |      3.078       | 
+two spikes 4d        |      0.649       |     13.349       |      6.204       |      1.503       |      1.503       |      2.097       |      1.401       |      3.937       | 
+two hills 4d         |      0.736       |     13.298       |      4.493       |      0.726       |      0.726       |      1.230       |     -0.645       |      2.543       | 
+spike 10d            |    8482857635172159982590496432488507859672774875118024686827133265005588456629066752892844868751948434597587243527388686935012922840893595058176.000       |     15.684       |      1.605       |    2381.589       |    2381.557       |    871.134       |    21973734290830370638752274743629447168.000       |     12.840       | 
+easy 10d             |     66.366       |     12.205       |      0.691       |      2.057       |      2.058       |     15.734       |      3.248       |      0.589       | 
+easy 20d             |    6801.846       |     23.537       |    58275886.478       |    16135.127       |    16092.588       |      4.483       |      2.289       |    29137844.710       | 
+
+
+squared_error        | SMC              | AIS              | BMC              | BQ G             | BQ* G            | BBQ              | BBQ*             | LBMC             | 
+-------------------------------------------------------------------------------------------
+simple               |      0.003       |      0.246       |      0.000       |      0.000       |      0.000       |      0.000       |      0.000       |      0.000       | 
+two spikes 1d        |      0.166       |      0.005       |     19.822       |      0.250       |      0.250       |      0.004       |      0.000       |      0.395       | 
+two hills 1d         |      0.000       |      0.131       |      0.088       |      0.000       |      0.000       |      0.000       |      0.000       |      0.963       | 
+funnel 2d            |      0.023       |      0.383       |      0.014       |      0.126       |      0.126       |      0.398       |    3249.105       |     16.861       | 
+easy 4d              |      0.001       |      0.009       |      0.000       |      0.008       |      0.008       |      0.015       |      0.000       |      0.520       | 
+two spikes 4d        |      0.092       |      0.996       |    1237.249       |      0.029       |      0.029       |      0.837       |      0.831       |      0.521       | 
+two hills 4d         |      0.255       |      0.969       |     50.829       |      0.095       |      0.095       |      0.686       |      0.001       |      6.529       | 
+spike 10d            |      1.000       |      1.000       |      0.016       |      1.000       |      1.000       |    2369.501       |      1.000       |    169.891       | 
+easy 10d             |      0.701       |      1.266       |      0.232       |      3.292       |      3.292       |     66.931       |      8.262       |      0.000       | 
+easy 20d             |      0.979       |      0.994       |      1.000       |      1.000       |      1.000       |     74.601       |      1.114       |      1.000       | 
+
+
+calibration          | SMC              | AIS              | BMC              | BQ G             | BQ* G            | BBQ              | BBQ*             | LBMC             | 
+-------------------------------------------------------------------------------------------
+simple               |      0.000       |      1.000       |      0.000       |      0.000       |      0.000       |      0.000       |      0.000       |      1.000       | 
+two spikes 1d        |      0.000       |      1.000       |      0.000       |      0.000       |      0.000       |      0.000       |      0.000       |      0.000       | 
+two hills 1d         |      1.000       |      1.000       |      0.000       |      1.000       |      1.000       |      0.000       |      0.000       |      0.000       | 
+funnel 2d            |      1.000       |      1.000       |      0.000       |      0.000       |      0.000       |      0.000       |      0.000       |      0.000       | 
+easy 4d              |      1.000       |      1.000       |      1.000       |      1.000       |      1.000       |      0.000       |      1.000       |      0.000       | 
+two spikes 4d        |      1.000       |      1.000       |      0.000       |      1.000       |      1.000       |      0.000       |      0.000       |      1.000       | 
+two hills 4d         |      0.000       |      1.000       |      0.000       |      1.000       |      1.000       |      0.000       |      1.000       |      1.000       | 
+spike 10d            |      0.000       |      1.000       |      1.000       |      0.000       |      0.000       |      0.000       |      0.000       |      0.000       | 
+easy 10d             |      0.000       |      1.000       |      0.000       |      0.000       |      0.000       |      0.000       |      0.000       |      1.000       | 
+easy 20d             |      0.000       |      1.000       |      0.000       |      0.000       |      0.000       |      1.000       |      1.000       |      0.000       | 
+
+
+normalized_mean      | SMC              | AIS              | BMC              | BQ G             | BQ* G            | BBQ              | BBQ*             | LBMC             | 
+-------------------------------------------------------------------------------------------
+simple               |      0.944       |      0.504       |      0.994       |      0.998       |      0.998       |      0.999       |      0.999       |      1.000       | 
+two spikes 1d        |      0.592       |      1.068       |      5.452       |      0.500       |      0.500       |      0.940       |      0.995       |      0.372       | 
+two hills 1d         |      1.009       |      1.363       |      1.296       |      1.020       |      1.020       |      0.996       |      0.998       |      1.981       | 
+funnel 2d            |      1.151       |      0.381       |      0.883       |      0.646       |      0.646       |      0.369       |     58.001       |      5.106       | 
+easy 4d              |      1.036       |      0.907       |      0.999       |      1.089       |      1.089       |      0.879       |      1.002       |      1.721       | 
+two spikes 4d        |      0.696       |      0.002       |     36.175       |      0.830       |      0.830       |      0.085       |      0.088       |      0.278       | 
+two hills 4d         |      0.495       |      0.015       |      8.129       |      0.692       |      0.692       |      0.172       |      1.033       |      3.555       | 
+spike 10d            |      0.000       |      0.000       |      1.125       |      0.000       |      0.000       |     49.678       |      0.000       |     14.034       | 
+easy 10d             |      0.163       |      2.125       |      0.519       |      2.814       |      2.814       |      9.181       |      3.874       |      0.993       | 
+easy 20d             |      0.010       |      0.003       |      0.000       |      0.000       |      0.000       |      9.637       |      2.056       |      0.000       | 
+
+
+normalized_std       | SMC              | AIS              | BMC              | BQ G             | BQ* G            | BBQ              | BBQ*             | LBMC             | 
+-------------------------------------------------------------------------------------------
+simple               |      0.048       |      4.448       |      0.002       |      0.001       |      0.001       |      0.001       |      0.001       |      0.002       | 
+two spikes 1d        |      0.199       |    413.302       |      0.487       |      0.504       |      0.504       |      0.041       |      0.003       |      0.568       | 
+two hills 1d         |      0.101       |    413.518       |      0.030       |      0.122       |      0.122       |      0.002       |      0.002       |      0.032       | 
+funnel 2d            |      0.362       |     15.616       |      0.126       |      0.112       |      0.112       |      0.837       |      1.378       |      0.142       | 
+easy 4d              |      0.256       |     91.229       |      0.213       |      0.211       |      0.212       |      0.095       |      0.025       |      0.274       | 
+two spikes 4d        |      0.694       |    250206.124       |     15.616       |      1.785       |      1.786       |      0.464       |      0.710       |     20.443       | 
+two hills 4d         |      0.488       |    237733.048       |      3.259       |      0.759       |      0.760       |      0.819       |      0.207       |      4.228       | 
+spike 10d            |      0.000       |    2583356.484       |      1.981       |      0.014       |      0.014       |      1.167       |      0.000       |      2.792       | 
+easy 10d             |      0.072       |    79701.361       |      0.509       |      2.261       |      2.269       |      1.525       |      1.454       |      0.719       | 
+easy 20d             |      0.008       |    6647988739.584       |      0.000       |      0.006       |      0.006       |     34.213       |      3.786       |      0.000       | 
+if system_dependent('IsDebugMode')==1, dbcont; end
+
+e = 
+
+  <a href="matlab:help MException">MException</a>
+
+  Properties:
+    identifier: 'MATLAB:UndefinedFunction'
+       message: 'Undefined function or variable "plotted_sample_set".'
+         cause: {}
+         stack: [1x1 struct]
+
+  <a href="matlab:methods('MException')">Methods</a>
+
+
+e = 
+
+  <a href="matlab:help MException">MException</a>
+
+  Properties:
+    identifier: 'MATLAB:UndefinedFunction'
+       message: 'Undefined function or variable "plotted_sample_set".'
+         cause: {}
+         stack: [1x1 struct]
+
+  <a href="matlab:methods('MException')">Methods</a>
+
+dbcont
+
+
+log squared error    | SMC              | AIS              | BMC              | BQ G             | BQ* G            | BBQ              | BBQ*             | LBMC             | 
+-------------------------------------------------------------------------------------------
+simple               |     -5.713       |     -0.758       |    -10.296       |    -12.369       |    -12.369       |    -13.634       |    -14.113       |    -15.890       | 
+two spikes 1d        |     -1.294       |     -5.449       |      1.057       |     -0.732       |     -0.732       |     -5.580       |    -10.692       |     -0.022       | 
+two hills 1d         |     -9.423       |     -2.346       |     -2.697       |     -7.894       |     -7.894       |    -11.178       |    -12.193       |     -0.760       | 
+funnel 2d            |     -3.921       |     -0.070       |     -4.175       |     -1.653       |     -1.653       |     -0.005       |      2.803       |      0.978       | 
+easy 4d              |     -6.665       |     -4.655       |    -14.225       |     -4.926       |     -4.926       |     -4.099       |    -12.579       |     -1.222       | 
+two spikes 4d        |     -2.030       |      3.664       |      2.555       |     -3.367       |     -3.367       |      1.802       |      1.773       |      0.494       | 
+two hills 4d         |     -0.707       |      2.858       |      1.480       |     -1.998       |     -1.998       |      1.131       |     -6.863       |      0.476       | 
+spike 10d            |     10.197       |      8.070       |     -4.273       |      5.426       |      5.426       |      2.725       |      7.808       |      1.943       | 
+easy 10d             |      1.194       |     -0.565       |     -0.842       |      0.068       |      0.068       |      1.592       |      0.607       |    -10.055       | 
+easy 20d             |      3.036       |      3.510       |      5.300       |      7.608       |      7.608       |      1.636       |     -0.655       |      5.114       | 
+
+
+neg log density      | SMC              | AIS              | BMC              | BQ G             | BQ* G            | BBQ              | BBQ*             | LBMC             | 
+-------------------------------------------------------------------------------------------
+simple               |     -1.443       |      2.418       |     -1.158       |     -4.342       |     -4.343       |     -5.398       |     -5.593       |     -5.263       | 
+two spikes 1d        |      1.397       |      6.943       |     41.960       |      0.726       |      0.726       |     -1.209       |     -3.344       |      0.965       | 
+two hills 1d         |     -1.374       |      6.944       |     46.907       |     -1.175       |     -1.175       |     -3.464       |     -4.513       |    474.328       | 
+funnel 2d            |     -0.010       |      3.668       |     -0.725       |      3.758       |      3.754       |      1.025       |    857.355       |    419.659       | 
+easy 4d              |     -0.435       |      5.432       |     -0.627       |     -0.547       |     -0.544       |     -0.626       |     -2.774       |      3.078       | 
+two spikes 4d        |      0.649       |     13.349       |      6.204       |      1.503       |      1.503       |      2.097       |      1.401       |      3.937       | 
+two hills 4d         |      0.736       |     13.298       |      4.493       |      0.726       |      0.726       |      1.230       |     -0.645       |      2.543       | 
+spike 10d            |    8482857635172159982590496432488507859672774875118024686827133265005588456629066752892844868751948434597587243527388686935012922840893595058176.000       |     15.684       |      1.605       |    2381.589       |    2381.557       |    871.134       |    21973734290830370638752274743629447168.000       |     12.840       | 
+easy 10d             |     66.366       |     12.205       |      0.691       |      2.057       |      2.058       |     15.734       |      3.248       |      0.589       | 
+easy 20d             |    6801.846       |     23.537       |    58275886.478       |    16135.127       |    16092.588       |      4.483       |      2.289       |    29137844.710       | 
+
+
+squared_error        | SMC              | AIS              | BMC              | BQ G             | BQ* G            | BBQ              | BBQ*             | LBMC             | 
+-------------------------------------------------------------------------------------------
+simple               |      0.003       |      0.246       |      0.000       |      0.000       |      0.000       |      0.000       |      0.000       |      0.000       | 
+two spikes 1d        |      0.166       |      0.005       |     19.822       |      0.250       |      0.250       |      0.004       |      0.000       |      0.395       | 
+two hills 1d         |      0.000       |      0.131       |      0.088       |      0.000       |      0.000       |      0.000       |      0.000       |      0.963       | 
+funnel 2d            |      0.023       |      0.383       |      0.014       |      0.126       |      0.126       |      0.398       |    3249.105       |     16.861       | 
+easy 4d              |      0.001       |      0.009       |      0.000       |      0.008       |      0.008       |      0.015       |      0.000       |      0.520       | 
+two spikes 4d        |      0.092       |      0.996       |    1237.249       |      0.029       |      0.029       |      0.837       |      0.831       |      0.521       | 
+two hills 4d         |      0.255       |      0.969       |     50.829       |      0.095       |      0.095       |      0.686       |      0.001       |      6.529       | 
+spike 10d            |      1.000       |      1.000       |      0.016       |      1.000       |      1.000       |    2369.501       |      1.000       |    169.891       | 
+easy 10d             |      0.701       |      1.266       |      0.232       |      3.292       |      3.292       |     66.931       |      8.262       |      0.000       | 
+easy 20d             |      0.979       |      0.994       |      1.000       |      1.000       |      1.000       |     74.601       |      1.114       |      1.000       | 
+
+
+calibration          | SMC              | AIS              | BMC              | BQ G             | BQ* G            | BBQ              | BBQ*             | LBMC             | 
+-------------------------------------------------------------------------------------------
+simple               |      0.000       |      1.000       |      0.000       |      0.000       |      0.000       |      0.000       |      0.000       |      1.000       | 
+two spikes 1d        |      0.000       |      1.000       |      0.000       |      0.000       |      0.000       |      0.000       |      0.000       |      0.000       | 
+two hills 1d         |      1.000       |      1.000       |      0.000       |      1.000       |      1.000       |      0.000       |      0.000       |      0.000       | 
+funnel 2d            |      1.000       |      1.000       |      0.000       |      0.000       |      0.000       |      0.000       |      0.000       |      0.000       | 
+easy 4d              |      1.000       |      1.000       |      1.000       |      1.000       |      1.000       |      0.000       |      1.000       |      0.000       | 
+two spikes 4d        |      1.000       |      1.000       |      0.000       |      1.000       |      1.000       |      0.000       |      0.000       |      1.000       | 
+two hills 4d         |      0.000       |      1.000       |      0.000       |      1.000       |      1.000       |      0.000       |      1.000       |      1.000       | 
+spike 10d            |      0.000       |      1.000       |      1.000       |      0.000       |      0.000       |      0.000       |      0.000       |      0.000       | 
+easy 10d             |      0.000       |      1.000       |      0.000       |      0.000       |      0.000       |      0.000       |      0.000       |      1.000       | 
+easy 20d             |      0.000       |      1.000       |      0.000       |      0.000       |      0.000       |      1.000       |      1.000       |      0.000       | 
+
+
+normalized_mean      | SMC              | AIS              | BMC              | BQ G             | BQ* G            | BBQ              | BBQ*             | LBMC             | 
+-------------------------------------------------------------------------------------------
+simple               |      0.944       |      0.504       |      0.994       |      0.998       |      0.998       |      0.999       |      0.999       |      1.000       | 
+two spikes 1d        |      0.592       |      1.068       |      5.452       |      0.500       |      0.500       |      0.940       |      0.995       |      0.372       | 
+two hills 1d         |      1.009       |      1.363       |      1.296       |      1.020       |      1.020       |      0.996       |      0.998       |      1.981       | 
+funnel 2d            |      1.151       |      0.381       |      0.883       |      0.646       |      0.646       |      0.369       |     58.001       |      5.106       | 
+easy 4d              |      1.036       |      0.907       |      0.999       |      1.089       |      1.089       |      0.879       |      1.002       |      1.721       | 
+two spikes 4d        |      0.696       |      0.002       |     36.175       |      0.830       |      0.830       |      0.085       |      0.088       |      0.278       | 
+two hills 4d         |      0.495       |      0.015       |      8.129       |      0.692       |      0.692       |      0.172       |      1.033       |      3.555       | 
+spike 10d            |      0.000       |      0.000       |      1.125       |      0.000       |      0.000       |     49.678       |      0.000       |     14.034       | 
+easy 10d             |      0.163       |      2.125       |      0.519       |      2.814       |      2.814       |      9.181       |      3.874       |      0.993       | 
+easy 20d             |      0.010       |      0.003       |      0.000       |      0.000       |      0.000       |      9.637       |      2.056       |      0.000       | 
+
+
+normalized_std       | SMC              | AIS              | BMC              | BQ G             | BQ* G            | BBQ              | BBQ*             | LBMC             | 
+-------------------------------------------------------------------------------------------
+simple               |      0.048       |      4.448       |      0.002       |      0.001       |      0.001       |      0.001       |      0.001       |      0.002       | 
+two spikes 1d        |      0.199       |    413.302       |      0.487       |      0.504       |      0.504       |      0.041       |      0.003       |      0.568       | 
+two hills 1d         |      0.101       |    413.518       |      0.030       |      0.122       |      0.122       |      0.002       |      0.002       |      0.032       | 
+funnel 2d            |      0.362       |     15.616       |      0.126       |      0.112       |      0.112       |      0.837       |      1.378       |      0.142       | 
+easy 4d              |      0.256       |     91.229       |      0.213       |      0.211       |      0.212       |      0.095       |      0.025       |      0.274       | 
+two spikes 4d        |      0.694       |    250206.124       |     15.616       |      1.785       |      1.786       |      0.464       |      0.710       |     20.443       | 
+two hills 4d         |      0.488       |    237733.048       |      3.259       |      0.759       |      0.760       |      0.819       |      0.207       |      4.228       | 
+spike 10d            |      0.000       |    2583356.484       |      1.981       |      0.014       |      0.014       |      1.167       |      0.000       |      2.792       | 
+easy 10d             |      0.072       |    79701.361       |      0.509       |      2.261       |      2.269       |      1.525       |      1.454       |      0.719       | 
+easy 20d             |      0.008       |    6647988739.584       |      0.000       |      0.006       |      0.006       |     34.213       |      3.786       |      0.000       | 
+
+e = 
+
+  <a href="matlab:help MException">MException</a>
+
+  Properties:
+    identifier: 'MATLAB:UndefinedFunction'
+       message: 'Undefined function or variable "plotted_sample_set".'
+         cause: {}
+         stack: [1x1 struct]
+
+  <a href="matlab:methods('MException')">Methods</a>
+
+
+e = 
+
+  <a href="matlab:help MException">MException</a>
+
+  Properties:
+    identifier: 'MATLAB:UndefinedFunction'
+       message: 'Undefined function or variable "plotted_sample_set".'
+         cause: {}
+         stack: [1x1 struct]
+
+  <a href="matlab:methods('MException')">Methods</a>
+
+create_spectrum_likelihood_handle_dla
+Linesearch      0;  Value 4.947637e+02Linesearch      2;  Value 4.258472e+02
+mle log likelihood (no dla): -425.847174
+dla_log_likelihood(exp(10*(rand(9,1)-0.5)));
+{Warning: Inference method failed [Matrix must be positive definite.],
+attempting to continue} 
+{> In <a href="matlab: opentoline('/homes/51/mosb/Code/gpml-matlab/gpml_extensions/gp_likelihood.m',49,1)">gp_likelihood at 49</a>
+  In @(sample)-gp_likelihood(rewrap(total_hyperparameters,construct_dla_sample(sample)),inference_method,total_mean_function,total_covariance_function,likelihood,train_x,train_y)} 
+{Undefined function or variable "post".
+
+Error in <a href="matlab:helpUtils.errorDocCallback('gp_likelihood', '/homes/51/mosb/Code/gpml-matlab/gpml_extensions/gp_likelihood.m', 56)" style="font-weight:bold">gp_likelihood</a> (<a href="matlab: opentoline('/homes/51/mosb/Code/gpml-matlab/gpml_extensions/gp_likelihood.m',56,0)">line 56</a>)
+  varargout = {NaN, dnlZ, post};
+
+Error in
+<a href="matlab:helpUtils.errorDocCallback('@(sample)-gp_likelihood(rewrap(total_hyperparameters,construct_dla_sample(sample)),inference_method,total_mean_function,total_covariance_function,likelihood,train_x,train_y)', '', 0)" style="font-weight:bold">@(sample)-gp_likelihood(rewrap(total_hyperparameters,construct_dla_sample(sample)),inference_method,total_mean_function,total_covariance_function,likelihood,train_x,train_y)</a>
+
+} 
+<a href="matlab: opentoline('/homes/51/mosb/Code/gpml-matlab/gpml_extensions/gp_likelihood.m',56,1)">56  </a>  varargout = {NaN, dnlZ, post};
+if system_dependent('IsDebugMode')==1, dbquit; end
+sample = rand(10,1);
+sample(3) = mean(min(train_x) , maximum_dla_location)
+{Error using <a href="matlab:helpUtils.errorDocCallback('sum')" style="font-weight:bold">sum</a>
+Dimension argument must be a positive integer scalar within indexing range.
+
+Error in <a href="matlab:helpUtils.errorDocCallback('mean', '/usr/local/matlabR2012a/toolbox/matlab/datafun/mean.m', 30)" style="font-weight:bold">mean</a> (<a href="matlab: opentoline('/usr/local/matlabR2012a/toolbox/matlab/datafun/mean.m',30,0)">line 30</a>)
+  y = sum(x,dim)/size(x,dim);
+} 
+<a href="matlab: opentoline('/usr/local/matlabR2012a/toolbox/matlab/datafun/mean.m',30,1)">30  </a>  y = sum(x,dim)/size(x,dim);
+if system_dependent('IsDebugMode')==1, dbquit; end
+sample(3) = mean([min(train_x) , maximum_dla_location])
+
+sample =
+
+   1.0e+03 *
+
+    0.0002
+    0.0001
+    3.9050
+    0.0001
+    0.0005
+    0.0005
+    0.0004
+    0.0000
+    0.0002
+    0.0002
+
+min(train_x)
+
+ans =
+
+   3.5612e+03
+
+dla_log_likelihood(sample)
+
+ans =
+
+  -1.2736e+03
+
+dla_log_prior(sample)
+
+ans =
+
+  -80.1896
+
+call_one_experiment(4,7,100)
+Running one experiment...
+
+log_Z =
+
+   -1.5155
+
+
+log_Z =
+
+   -5.2655
+
+
+log_Z =
+
+   -1.5155
+
+
+log_Z =
+
+   -5.2655
+
+
+log_Z =
+
+   -3.8181
+
+
+log_Z =
+
+   -7.5681
+
+
+log_Z =
+
+   -1.0768
+
+
+log_Z =
+
+   -4.5130
+
+
+log_Z =
+
+  -11.2825
+
+
+log_Z =
+
+  -22.5650
+
+
+log_Z =
+
+   -1.6749
+
+
+log_Z =
+
+   -2.0864
+
+
+log_Z =
+
+  -10.4319
+
+
+log_Z =
+
+   -3.7215
+
+
+log_Z =
+
+   -3.7215
+
+
+log_Z =
+
+   -3.7221
+
+
+log_Z =
+
+   -3.7221
+
+
+log_Z =
+
+  -13.0914
+
+
+log_Z =
+
+  -13.0914
+
+
+log_Z =
+
+  -13.0229
+
+
+log_Z =
+
+  -13.1022
+

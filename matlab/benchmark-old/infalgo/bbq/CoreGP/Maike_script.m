@@ -1,0 +1,53 @@
+%function [XStars,YMean,YSD] = tracking(XsFull,YsFull)
+% An example of how to do on-line tracking
+
+% load whatever data is needed and prepare it for 'mosb' format. This
+% requires XsFull to contain two columns, the first of which labels the
+% dimension (e.g. sensor) associated with each observation, the second the
+% time of observation. YsFull is a column of the observations associated
+% with XsFull.
+% y = load('fixedCorrData');
+% [L,D] = size(y.yi);
+% XFull=allcombs({(1:D)',(1:L)'});
+% exampleData = [y.yi(:,1); y.yi(:,2)];
+% Both=[XFull,exampleData(:)];
+% Both2=Both((Both(:,3)~=-Inf),:);
+% Both3=sortrows(Both2,2);
+% XsFull=Both3(:,1:2);
+% YsFull=Both3(:,3);
+
+load('mg');
+[L,D] = size(t_te);
+XsFull=allcombs({(1:D)',(1:L)'});
+YsFull=(t_te-mean(t_te))/std(t_te);
+
+lookahead=0; % how many steps to lookahead
+
+params.maxpts=3; % max number of data points to store
+params.threshold=1.e-3; % thresh for desired accuracy [determines the # data points to store]
+
+type={'sqdexp','periodic'};
+
+% specify a function, such as Matern or sq exp etc
+covvy=struct('covfn',@(varargin) versatile_cov_fn(type,varargin{:}));
+
+% setting priors for specified cov function - if want marginalisation then
+% NSamples > 1
+covvy.hyperparams(1)=struct('name','mean',...
+    'priorMean',0, 'priorSD',1, 'NSamples',1, 'type','real');
+covvy.hyperparams(2)=struct('name','logNoiseSD',...
+    'priorMean',log(0.001), 'priorSD',log(0.2), 'NSamples',1, 'type','real');
+covvy.hyperparams(3)=struct('name','logTimeScale',...
+    'priorMean',log(40), 'priorSD',log(0.5), 'NSamples',5, 'type','real');
+covvy.hyperparams(4)=struct('name','logOutputScale',...
+    'priorMean',log(40), 'priorSD',log(0.5), 'NSamples',5, 'type','real');
+
+% Now actually perform the tracking!
+[XStars,YMean,YSD,covvy,closestInd]=track(XsFull,YsFull,covvy,lookahead,params);
+
+% The most strongly weighted hyperparameter samples
+closest_hyperparameters=covvy.hypersamples(closestInd).hyperparameters;
+
+%plot
+plot_ts(XsFull,YsFull,XStars,YMean,YSD)
+

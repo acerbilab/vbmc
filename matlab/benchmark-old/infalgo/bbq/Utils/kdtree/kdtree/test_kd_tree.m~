@@ -1,0 +1,27 @@
+dim = 2;
+num = 100;
+clf
+tic;
+X = rand(num,dim);
+corners = allcombs([zeros(1,dim);ones(1,dim)]);
+X=[X;corners];
+
+tree = kd_buildtree(X,0);
+plot(X(:,1),X(:,2),'k.');
+
+hold on;
+inds = [tree.numpoints]~=1;
+
+means = arrayfun(@(x) mean(x.hyperrect), tree(inds), 'UniformOutput', false);
+nodes = arrayfun(@(x) x.nodevector, tree(inds), 'UniformOutput', false);
+
+centres = vertcat(means{:});
+points = vertcat(nodes{:});
+
+dists = (centres-points).^2*ones(dim,1);
+[sorted_dists, sort_inds] = sort(dists,1,'descend');
+
+centres = centres(1:end,:);
+
+plot(centres(:,1),centres(:,2),'rx','MarkerSize',12,'LineWidth',2)
+toc

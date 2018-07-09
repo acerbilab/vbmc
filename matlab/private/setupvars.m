@@ -152,6 +152,9 @@ optimState.RunHypCov = [];
 % Current number of components for variational posterior
 optimState.vpK = K;
 
+% Need to switch from deterministic entropy to stochastic entropy
+optimState.EntropySwitch = options.EntropySwitch;
+
 % List of points at the end of each iteration
 optimState.iterList.u = [];
 optimState.iterList.fval = [];
