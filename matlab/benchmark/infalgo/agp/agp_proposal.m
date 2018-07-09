@@ -1,5 +1,5 @@
-function y = bape_proposal(X,PLB,PUB,LB,UB)
-%BAPE_PROPOSAL Default proposal function.
+function y = agp_proposal(X,PLB,PUB,LB,UB)
+%AGP_PROPOSAL Default proposal function for AGP.
 
 [N,D] = size(X);
 y = zeros(N,1);

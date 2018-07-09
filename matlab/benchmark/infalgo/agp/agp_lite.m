@@ -1,5 +1,12 @@
-function [vbmodel,exitflag,output] = bape_lite(fun,x0,PLB,PUB,options)
-%BAPE_LITE Light implementation of BAPE.
+function [vbmodel,exitflag,output] = agp_lite(fun,x0,PLB,PUB,options)
+%AGP_LITE Light implementation of AGP method for Bayesian inference.
+
+% This is a variant of the AGP algorithm proposed in:
+% Wang, H., & Li, J. (2017). Adaptive Gaussian process approximation for 
+% Bayesian inference with expensive likelihood functions. 
+% arXiv preprint arXiv:1703.09930.
+
+% Code by Luigi Acerbi (2018).
 
 % Add variational Gaussian mixture model toolbox to path
 mypath = fileparts(mfilename('fullpath'));
@@ -30,8 +37,8 @@ StopGPSampling = 200 + 10*D;
 if isfield(options,'StopGPSampling') && ~isempty(options.StopGPSampling)
     StopGPSampling = options.StopGPSampling;
 end
-% BAPE acquisition function
-acqfun = @acqbape;
+% AGP standard acquisition function
+acqfun = @acqagp;
 if isfield(options,'AcqFun') && ~isempty(options.AcqFun)
     acqfun = options.AcqFun;
 end
@@ -85,7 +92,7 @@ hyp = [log(width(:));log(std(y));log(1e-3)];
 
 % Set proposal fcn based on PLB and PUB
 if ~isfield(options,'ProposalFcn') || isempty(options.ProposalFcn)
-    options.ProposalFcn = @(x) bape_proposal(x,PLB,PUB);
+    options.ProposalFcn = @(x) agp_proposal(x,PLB,PUB);
 end
 
 iter = 1;

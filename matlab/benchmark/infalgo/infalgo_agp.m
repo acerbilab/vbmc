@@ -1,8 +1,8 @@
-function [history,post,algoptions] = infalgo_bape(algo,algoset,probstruct)
+function [history,post,algoptions] = infalgo_agp(algo,algoset,probstruct)
 
 % Add algorithm to MATLAB path
 BaseFolder = fileparts(mfilename('fullpath'));
-AlgoFolder = 'bape';
+AlgoFolder = 'agp';
 addpath(genpath([BaseFolder filesep() AlgoFolder]));
 
 algoptions.MaxFunEvals = probstruct.MaxFunEvals;
@@ -22,9 +22,9 @@ end
 switch algoset
     case {0,'debug'}; algoset = 'debug'; algoptions.Debug = 1; algoptions.Plot = 'scatter';
     case {1,'base'}; algoset = 'base';           % Use defaults
-    case {2,'long'}; algoset = 'long'; algoptions.Nsamples = 1e4;
-    case {3,'prop'}; algoset = 'prop'; algoptions.AcqFun = @acqbapeprop;
-    case {4,'acqg'}; algoset = 'acqg'; algoptions.AcqFun = @acqbapeg;
+    case {2,'long'}; algoset = 'long'; algoptions.Nsamples = 2e4;
+    case {3,'prop'}; algoset = 'prop'; algoptions.AcqFun = @acqagpprop;
+    case {4,'acqg'}; algoset = 'acqg'; algoptions.AcqFun = @acqagpg;
         
     otherwise
         error(['Unknown algorithm setting ''' algoset ''' for algorithm ''' algo '''.']);
@@ -38,12 +38,12 @@ x0 = probstruct.InitPoint;
 D = size(x0,2);
 
 % Add log prior to function evaluation 
-% (BAPE is agnostic of the prior)
+% (AGP is agnostic of the prior)
 probstruct.AddLogPrior = true;
 
 algo_timer = tic;
 [vbmodel,exitflag,output] = ...
-    bape_lite(@(x) infbench_func(x,probstruct),x0,PLB,PUB,algoptions);
+    agp_lite(@(x) infbench_func(x,probstruct),x0,PLB,PUB,algoptions);
 TotalTime = toc(algo_timer);
 
 stats = output.stats;
