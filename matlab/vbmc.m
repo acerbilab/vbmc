@@ -23,7 +23,6 @@ function [vp,elbo,elbo_sd,exitflag,output,stats] = vbmc(fun,x0,LB,UB,PLB,PUB,opt
 
 
 %% Basic default options
-
 defopts.Display                 = 'iter         % Level of display ("iter", "notify", "final", or "off")';
 defopts.MaxIter                 = '20*nvars     % Max number of iterations';
 defopts.MaxFunEvals             = '200*nvars    % Max number of objective fcn evaluations';
@@ -49,9 +48,7 @@ end
 %% Advanced options (do not modify unless you *know* what you are doing)
 defopts.FunEvalStart       = 'max(D,10)         % Number of initial objective fcn evals';
 defopts.FunEvalsPerIter    = '5                 % Number of objective fcn evals per iteration';
-defopts.AcqFcn             = '@vbmc_acqskl       % Expensive acquisition fcn';
 defopts.SearchAcqFcn       = '@vbmc_acqprop     % Fast search acquisition fcn(s)';
-defopts.Nacq               = '1                 % Expensive acquisition fcn evals per new point';
 defopts.NSsearch           = '2^13              % Samples for fast acquisition fcn eval per new point';
 defopts.NSent              = '@(K) 100*K        % Total samples for Monte Carlo approx. of the entropy';
 defopts.NSentFast          = '@(K) 100*K        % Total samples for preliminary Monte Carlo approx. of the entropy';
@@ -69,15 +66,6 @@ defopts.KfunMax            = '@(N) 2*sqrt(N)    % Max variational components as 
 defopts.Kwarmup            = '2                 % Variational components during warmup';
 defopts.AdaptiveK          = '1                 % Added variational components for stable solution';
 defopts.HPDFrac            = '0.5               % High Posterior Density region (fraction of training inputs)';
-defopts.WarpRotoScaling    = 'off               % Rotate and scale input';
-%defopts.WarpCovReg         = '@(N) 25/N         % Regularization weight towards diagonal covariance matrix for N training inputs';
-defopts.WarpCovReg         = '0                 % Regularization weight towards diagonal covariance matrix for N training inputs';
-defopts.WarpNonlinear      = 'off               % Nonlinear input warping';
-defopts.WarpEpoch          = '100               % Recalculate warpings after this number of fcn evals';
-defopts.WarpMinFun         = '10 + 2*D          % Minimum training points before starting warping';
-defopts.WarpNonlinearEpoch = '100               % Recalculate nonlinear warpings after this number of fcn evals';
-defopts.WarpNonlinearMinFun = '20 + 5*D         % Minimum training points before starting nonlinear warping';
-defopts.ELCBOWeight        = '0                 % Uncertainty weight during ELCBO optimization';
 defopts.ELCBOImproWeight   = '3                 % Uncertainty weight on ELCBO for computing lower bound improvement';
 defopts.TolLength          = '1e-6              % Minimum fractional length scale';
 defopts.NoiseObj           = 'off               % Objective fcn returns noise estimate as 2nd argument (unsupported)';
@@ -98,9 +86,7 @@ defopts.MinFunEvals        = '2*nvars^2         % Min number of fcn evals';
 defopts.MinIter            = 'nvars             % Min number of iterations';
 defopts.HeavyTailSearchFrac = '0.25               % Fraction of search points from heavy-tailed variational posterior';
 defopts.MVNSearchFrac      = '0.25              % Fraction of search points from multivariate normal';
-defopts.SearchSampleGP     = 'false             % Generate search candidates sampling from GP surrogate';
 defopts.AlwaysRefitVarPost = 'no                % Always fully refit variational posterior';
-defopts.VarParamsBack      = '0                 % Check variational posteriors back to these previous iterations';
 defopts.Plot               = 'off               % Show variational posterior triangle plots';
 defopts.Warmup             = 'on                % Perform warm-up stage';
 defopts.StopWarmupThresh   = '1                 % Stop warm-up when increase in ELBO is confidently below threshold';
@@ -115,9 +101,26 @@ defopts.WeightedHypCov     = 'on                % Use weighted hyperparameter po
 defopts.TolCovWeight       = '0                 % Minimum weight for weighted hyperparameter posterior covariance';
 defopts.GPHypSampler       = 'slicesample       % MCMC sampler for GP hyperparameters';
 defopts.CovSampleThresh    = '10                % Switch to covariance sampling below this threshold of stability index';
+defopts.DetEntTolOpt       = '1e-3              % Optimality tolerance for optimization of deterministic entropy';
+defopts.EntropySwitch      = 'on                % Switch from deterministic entropy to stochastic entropy when reaching stability';
+defopts.EntropyForceSwitch = '0.9               % Force switch to stochastic entropy at this fraction of total fcn evals';
+
+%% Advanced options for unsupported/untested features (do *not* modify)
+defopts.AcqFcn             = '@vbmc_acqskl       % Expensive acquisition fcn';
+defopts.Nacq               = '1                 % Expensive acquisition fcn evals per new point';
+defopts.WarpRotoScaling    = 'off               % Rotate and scale input';
+%defopts.WarpCovReg         = '@(N) 25/N         % Regularization weight towards diagonal covariance matrix for N training inputs';
+defopts.WarpCovReg         = '0                 % Regularization weight towards diagonal covariance matrix for N training inputs';
+defopts.WarpNonlinear      = 'off               % Nonlinear input warping';
+defopts.WarpEpoch          = '100               % Recalculate warpings after this number of fcn evals';
+defopts.WarpMinFun         = '10 + 2*D          % Minimum training points before starting warping';
+defopts.WarpNonlinearEpoch = '100               % Recalculate nonlinear warpings after this number of fcn evals';
+defopts.WarpNonlinearMinFun = '20 + 5*D         % Minimum training points before starting nonlinear warping';
+defopts.ELCBOWeight        = '0                 % Uncertainty weight during ELCBO optimization';
+defopts.SearchSampleGP     = 'false             % Generate search candidates sampling from GP surrogate';
+defopts.VarParamsBack      = '0                 % Check variational posteriors back to these previous iterations';
 defopts.AltMCEntropy       = 'no                % Use alternative Monte Carlo computation for the entropy';
-defopts.DetEntTolOpt       = '1e-6              % Optimality tolerance for optimization of deterministic entropy';
-defopts.EntropySwitch      = 'off               % Switch from deterministic entropy to stochastic entropy';
+
 
 %% If called with 'all', return all default options
 if strcmpi(fun,'all')
@@ -240,7 +243,7 @@ while ~isFinished_flag
     
     % Switch to stochastic entropy towards the end
     if optimState.EntropySwitch && ...
-            optimState.funccount >= 0.9*options.MaxFunEvals
+            optimState.funccount >= options.EntropyForceSwitch*options.MaxFunEvals
         optimState.EntropySwitch = false;
         if isempty(action); action = 'entropy switch'; else; action = [action ', entropy switch']; end        
     end
