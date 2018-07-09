@@ -93,7 +93,10 @@ case "${1}" in
         4n)     ALGOSET="{'altentquick'}"
                 IDS=${IDS_SINGLE}
                 ;;
-        4o)     ALGOSET="{'detentopt4'}"
+        4o)     ALGOSET="{'detentopt3'}"
+                IDS=${IDS_SINGLE}
+                ;;
+        4p)     ALGOSET="{'entswitch'}"
                 IDS=${IDS_SINGLE}
                 ;;
         5)      ALGOSET="{'cheapgpmid'}"
@@ -271,7 +274,12 @@ case "${1}" in
                 IDS=$IDS_CENTO
                 ;;
         104o)   PROBS="{'goris2015'}"
-                ALGOS="{'vbmc@detentopt4'}"
+                ALGOS="{'vbmc@detentopt3'}"
+                DIMS="{'S7','S8'}"
+                IDS=$IDS_CENTO
+                ;;
+        104p)   PROBS="{'goris2015'}"
+                ALGOS="{'vbmc@entswitch'}"
                 DIMS="{'S7','S8'}"
                 IDS=$IDS_CENTO
                 ;;
