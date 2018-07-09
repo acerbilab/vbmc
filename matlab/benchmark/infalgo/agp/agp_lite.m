@@ -12,6 +12,11 @@ function [vbmodel,exitflag,output] = agp_lite(fun,x0,PLB,PUB,options)
 mypath = fileparts(mfilename('fullpath'));
 addpath([mypath filesep 'vbgmm']);
 
+% Check existence of GPlite toolbox in path
+if ~exist('gplite_train.m','file')
+    error('agp_lite:NoGPliteToolbox','The GPlite toolbox needs to be in the MATLAB path to run AGP_LITE.');
+end
+
 exitflag = 0;   % To be used in the future
 D = size(x0,2);
 
