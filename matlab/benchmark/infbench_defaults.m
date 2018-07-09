@@ -181,7 +181,7 @@ switch lower(type)
                 defaults.linewidth = 2;
                 defaults.linestyle = line_deterministic;
 
-            case 'bape'
+            case {'agp','bape'}
 %                defaults.color = [128 177 211]/255;
                  defaults.color = [60 220 200]/255;
                 defaults.linewidth = 2;

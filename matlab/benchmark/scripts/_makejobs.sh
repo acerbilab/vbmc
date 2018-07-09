@@ -176,10 +176,10 @@ case "${1}" in
                 ;;
         80)     ALGOS="{'ais'}"
                 ;;
-	90)	ALGOS="{'bape'}"
+	90)	ALGOS="{'agp'}"
 		IDS=$IDS_SINGLE
 		;;
-       	91)     ALGOS="{'bape@long'}"
+       	91)     ALGOS="{'agp@long'}"
                 IDS=$IDS_SINGLE
                 ;;
 
@@ -349,12 +349,12 @@ case "${1}" in
                 IDS=$IDS_CENTO
                 ;;
         120)    PROBS="{'goris2015'}"
-                ALGOS="{'bape'}"
+                ALGOS="{'agp'}"
                 DIMS="{'S7','S8'}"
                 IDS=$IDS_FIFTY
                 ;;
         121)    PROBS="{'goris2015'}"
-                ALGOS="{'bape@long'}"
+                ALGOS="{'agp@long'}"
                 DIMS="{'S7','S8'}"
                 IDS=$IDS_FIFTY
                 ;;
