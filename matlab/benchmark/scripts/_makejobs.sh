@@ -42,9 +42,9 @@ case "${1}" in
 		DIMS="{'2D','4D'}"
 		IDS="{'1','2'}"
 		;;
-	1)	ALGOSET="{'base'}"
-		IDS=${IDS_SINGLE}
-		;;
+        1)      ALGOSET="{'base'}"
+                IDS=${IDS_SINGLE}
+                ;;
 	2)      ALGOSET="{'cheapgp'}"
 		IDS=${IDS_SINGLE}
 		;;
@@ -187,6 +187,11 @@ case "${1}" in
                 ALGOS="{'vbmc@baseluigi'}"
                 DIMS="{'S7','S8'}"
                 IDS=$IDS_FIFTY
+                ;;
+        103P)   PROBS="{'goris2015'}"
+                ALGOS="{'vbmc@basepaul'}"
+                DIMS="{'S7','S8'}"
+                IDS=$IDS_CENTO
                 ;;
         104)    PROBS="{'goris2015'}"
                 ALGOS="{'vbmc@gpthresh'}"
