@@ -440,9 +440,19 @@ while ~isFinished_flag
     end
     
     if options.Plot
-        xx = vbmc_rnd(1e5,vp,1,1);
+        Xrnd = vbmc_rnd(1e5,vp,1,1);
+        X_train = gp.X;
+        if ~isempty(vp.trinfo); X_train = warpvars(X_train,'inv',vp.trinfo); end
         try
-            cornerplot(xx,[],[],[]);
+            for i = 1:D; names{i} = ['x_{' num2str(i) '}']; end
+            [~,ax] = cornerplot(Xrnd,names);
+            for i = 1:D-1
+                for j = i+1:D
+                    axes(ax(j,i));  hold on;
+                    scatter(X_train(:,i),X_train(:,j),'ok');
+                end
+            end
+            drawnow;            
         catch
             % pause
         end        
