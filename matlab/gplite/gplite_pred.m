@@ -41,17 +41,15 @@ for s = 1:Ns
     sn2_mult = gp.post(s).sn2_mult;    
 
     % Extract GP hyperparameters from HYP
-    ln_ell = hyp(1:D);
-    ell = exp(ln_ell);
-    ln_sf = hyp(D+1);
-    % sf2 = exp(2*ln_sf);
+    ell = exp(hyp(1:D));
+    sf2 = exp(2*hyp(D+1));
     sn2 = exp(2*hyp(D+2));
     
     hyp_mean = hyp(Ncov+2:Ncov+1+Nmean);                % Get mean function hyperparameters
     mstar = gplite_meanfun(hyp_mean,Xstar,gp.meanfun);  % GP mean evaluated at test points
 
     % Compute cross-kernel matrix Ks_mat
-    nf = 1 / (2*pi)^(D/2) * exp(2*ln_sf - sum(ln_ell));  % Kernel normalization factor
+    nf = 1 / (2*pi)^(D/2) * sf2;  % Kernel normalization factor
     Ks_mat = sq_dist(diag(1./ell)*gp.X',diag(1./ell)*Xstar');
     Ks_mat = nf * exp(-Ks_mat/2);
     kss = nf * ones(Nstar,1);        % Self-covariance vector

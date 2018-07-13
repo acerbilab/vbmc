@@ -42,14 +42,12 @@ if compute_grad && Ns > 1
 end
 
 % Extract GP hyperparameters from HYP
-ln_ell = hyp(1:D);
-ell = exp(ln_ell);
-ln_sf = hyp(D+1);
-% sf2 = exp(2*ln_sf);
+ell = exp(hyp(1:D));
+sf2 = exp(2*hyp(D+1));
 sn2 = exp(2*hyp(Ncov+1));
 sn2_mult = 1;  % Effective noise variance multiplier
 
-nf = 1 / (2*pi)^(D/2) * exp(2*ln_sf - sum(ln_ell));  % Kernel normalization factor
+nf = 1 / (2*pi)^(D/2) * sf2;  % Kernel normalization factor
 
 % Evaluate mean function on training inputs
 hyp_mean = hyp(Ncov+2:Ncov+1+Nmean); % Get mean function hyperparameters
@@ -96,9 +94,10 @@ if compute_grad
     Q = L\(L'\eye(N))/sl - alpha*alpha';    % precomputed
 
     for i = 1:D                             % Grad of cov length scales
-        K_temp = K_mat .* (sq_dist(gp.X(:,i)'/ell(i)) - 1);
+        % K_temp = K_mat .* (sq_dist(gp.X(:,i)'/ell(i)) - 1);
+        K_temp = K_mat .* sq_dist(gp.X(:,i)'/ell(i));
         dnlZ(i) = sum(sum(Q.*K_temp))/2;
-    end        
+    end
     dnlZ(D+1) = sum(sum(Q.*(2*K_mat)))/2;  % Grad of cov variability
     dnlZ(D+2) = sn2*sn2_mult*trace(Q);               % Grad of GP obs noise
 

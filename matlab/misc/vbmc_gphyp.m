@@ -23,7 +23,7 @@ Nhyp = Ncov+1+Nmean;
 % Initial GP hyperparameters
 hyp0 = zeros(Nhyp,1);
 hyp0(1:D) = log(std(X_hpd))';
-hyp0(D+1) = log(std(y_hpd)) + 0.5*sum(hyp0(1:D));
+hyp0(D+1) = log(std(y_hpd));
 hyp0(Ncov+1) = log(1e-2);
 hyp0(Ncov+2:Ncov+1+Nmean) = meaninfo.x0;
 

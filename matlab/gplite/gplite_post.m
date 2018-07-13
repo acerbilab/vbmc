@@ -71,14 +71,12 @@ if ~update1
         hyp = gp.post(s).hyp;
 
         % Extract GP hyperparameters from HYP
-        ln_ell = hyp(1:D);
-        ell = exp(ln_ell);
-        ln_sf = hyp(D+1);
-        % sf2 = exp(2*ln_sf);
+        ell = exp(hyp(1:D));
+        sf2 = exp(2*hyp(D+1));
         sn2 = exp(2*hyp(Ncov+1));
         sn2_mult = 1;  % Effective noise variance multiplier
 
-        nf = 1 / (2*pi)^(D/2) * exp(2*ln_sf - sum(ln_ell));  % Kernel normalization factor
+        nf = 1 / (2*pi)^(D/2) * sf2;  % Kernel normalization factor
         
         % Evaluate mean function on training inputs
         hyp_mean = hyp(Ncov+2:Ncov+1+Nmean); % Get mean function hyperparameters        
@@ -136,14 +134,12 @@ else
         hyp = gp(1).post(s).hyp;
 
         % Extract GP hyperparameters from HYP
-        ln_ell = hyp(1:D);
-        ell = exp(ln_ell);
-        ln_sf = hyp(D+1);
-        % sf2 = exp(2*ln_sf);
+        ell = exp(hyp(1:D));
+        sf2 = exp(2*hyp(D+1));
         sn2 = exp(2*hyp(Ncov+1));
         sn2_eff = sn2*gp(1).post(s).sn2_mult;            
 
-        nf = 1 / (2*pi)^(D/2) * exp(2*ln_sf - sum(ln_ell));  % Kernel normalization factor
+        nf = 1 / (2*pi)^(D/2) * sf2;  % Kernel normalization factor
         
         % Compute covariance and cross-covariance
         K = nf;

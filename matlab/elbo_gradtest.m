@@ -1,5 +1,5 @@
 function elbo_gradtest(theta,lambda,hyp,X,y)
-% ELBO_GRADTEST Test gradients for ELBO combutation
+% ELBO_GRADTEST Test gradients for ELBO computation
 
 if nargin < 1; theta = []; end
 if nargin < 2; lambda = []; end
@@ -8,10 +8,10 @@ if nargin < 4; X = []; end
 if nargin < 5; y = []; end
 
 check_kl = 0;
-check_entropy = 1;
-check_quadrature = 0;
-check_logjointgrad = 0;
-check_gp = 0;
+check_entropy = 0;
+check_quadrature = 1;
+check_logjointgrad = 1;
+check_gp = 1;
 
 meanfun = 4;
 quadratic_mean = meanfun == 4;
@@ -195,8 +195,8 @@ if check_quadrature
         y1 = y(1);
         tau = sqrt(sigma1^2*lambda1^2 + ell^2);
 
-        Kmat = sf2/sqrt(2*pi*ell^2) + sn2;
-        F = sf2/Kmat*normpdf(x1,mu1,tau)*(y1 - m0 + 1/(2*omega^2)*(x1 - xm)^2) ...
+        Kmat = sf2/sqrt(2*pi) + sn2;
+        F = sf2*prod(ell)/Kmat*normpdf(x1,mu1,tau)*(y1 - m0 + 1/(2*omega^2)*(x1 - xm)^2) ...
             + m0 - 1/(2*omega^2)*(mu1^2 + sigma1^2*lambda1^2 - 2*xm*mu1 + xm^2);
 
         gp1 = gplite_post(hyp1,x1,y1,meanfun);

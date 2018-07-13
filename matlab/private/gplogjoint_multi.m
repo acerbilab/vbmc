@@ -35,8 +35,9 @@ for s = 1:Ns
     
     % Extract GP hyperparameters from HYP
     ell = exp(hyp(1:D));
-    sf2 = exp(2*hyp(D+1));
+    ln_sf2 = 2*hyp(D+1);
     sn2 = exp(2*hyp(D+2));
+    sum_lnell = sum(hyp(1:D));
     
     if gp(1).meanfun > 0; m0 = hyp(D+3); else; m0 = 0; end
     if quadratic_meanfun
@@ -54,9 +55,9 @@ for s = 1:Ns
     for k = 1:K
 
         tau_k = sqrt(sigma(k)^2*lambda.^2 + ell.^2);
-        nf_k = nf / prod(tau_k);  % Covariance normalization factor
+        nf_k = nf * exp(ln_sf2 + sum_lnell - sum(log(tau_k)));  % Covariance normalization factor
         delta_k = bsxfun(@rdivide,bsxfun(@minus, mu(:,k), gp(1).X'), tau_k);
-        z_k = sf2 * nf_k * exp(-0.5 * sum(delta_k.^2,1));    
+        z_k = nf_k * exp(-0.5 * sum(delta_k.^2,1));    
 
         for iGP = 1:Ngp        
             F(iGP,s) = F(iGP,s) + (z_k*alpha(:,iGP) + m0)/K;
@@ -69,31 +70,31 @@ for s = 1:Ns
         
         if compute_var == 2 % Compute only self-variance
             tau_kk = sqrt(2*sigma(k)^2*lambda.^2 + ell.^2);                
-            nf_kk = nf / prod(tau_kk);
+            nf_kk = nf * exp(ln_sf2 + sum_lnell - sum(log(tau_kk)));
             if Lchol
                 invKzk = (L\(L'\z_k'))/sn2_eff;
             else
                 invKzk = -L*z_k';                
             end                
-            J_kk = sf2*nf_kk - z_k*invKzk;
+            J_kk = nf_kk - z_k*invKzk;
             varF(s) = varF(s) + J_kk/K^2;
                                     
         elseif compute_var
             for j = 1:K
                 tau_j = sqrt(sigma(j)^2*lambda.^2 + ell.^2);
-                nf_j = nf / prod(tau_j);
+                nf_j = nf * exp(ln_sf2 + sum_lnell - sum(log(tau_j)));
                 delta_j = bsxfun(@rdivide,bsxfun(@minus, mu(:,j), gp(1).X'), tau_j);
-                z_j = sf2 * nf_j * exp(-0.5 * sum(delta_j.^2,1));                    
+                z_j = nf_j * exp(-0.5 * sum(delta_j.^2,1));                    
                 
                 tau_jk = sqrt((sigma(j)^2 + sigma(k)^2)*lambda.^2 + ell.^2);                
-                nf_jk = nf / prod(tau_jk);
+                nf_jk = nf * exp(ln_sf2 + sum_lnell - sum(log(tau_jk)));
                 delta_jk = (mu(:,j)-mu(:,k))./tau_jk;
                 
                 if Lchol
-                    J_jk = sf2*nf_jk*exp(-0.5*sum(delta_jk.^2,1)) ...
+                    J_jk = nf_jk*exp(-0.5*sum(delta_jk.^2,1)) ...
                      - z_k*(L\(L'\z_j'))/sn2_eff;
                 else
-                    J_jk = sf2*nf_jk*exp(-0.5*sum(delta_jk.^2,1)) ...
+                    J_jk = nf_jk*exp(-0.5*sum(delta_jk.^2,1)) ...
                      + z_k*(L*z_j');                    
                 end
 

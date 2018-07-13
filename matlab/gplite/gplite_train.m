@@ -143,11 +143,6 @@ UB_alpha = 5*ones(1,D);
 UB_beta = 5*ones(1,D);
 if ~input_warping; UB_alpha = []; UB_beta = []; end
 
-% Correct kernel noise bounds for length scale normalization
-ell_corr = 0.5*max(abs([sum(LB_ell),sum(UB_ell)]));
-LB_sf = LB_sf - ell_corr;
-UB_sf = UB_sf + ell_corr;
-
 % Create lower and upper bounds
 LB = [LB_ell,LB_sf,LB_sn,LB_mean,LB_alpha,LB_beta];
 UB = [UB_ell,UB_sf,UB_sn,UB_mean,UB_alpha,UB_beta];
@@ -173,11 +168,6 @@ PLB_beta = -2*ones(1,D);
 PUB_beta = 2*ones(1,D);
 
 if ~input_warping; PLB_alpha = []; PUB_alpha = []; PLB_beta = []; PUB_beta = []; end
-
-% Correct kernel noise bounds for length scale normalization
-ell_corr = 0.5*max(abs([sum(PLB_ell),sum(PUB_ell)]));
-PLB_sf = PLB_sf - ell_corr;
-PUB_sf = PUB_sf + ell_corr;
 
 PLB = [PLB_ell,PLB_sf,PLB_sn,PLB_mean,PLB_alpha,PLB_beta];
 PUB = [PUB_ell,PUB_sf,PUB_sn,PUB_mean,PUB_alpha,PUB_beta];
