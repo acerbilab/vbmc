@@ -154,6 +154,10 @@ optimState.vpK = K;
 
 % Need to switch from deterministic entropy to stochastic entropy
 optimState.EntropySwitch = options.EntropySwitch;
+% Only use deterministic entropy if NVARS larger than a fixed number
+if nvars < options.DetEntropyMinD
+    optimState.EntropySwitch = false;
+end
 
 % List of points at the end of each iteration
 optimState.iterList.u = [];

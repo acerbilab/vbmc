@@ -104,6 +104,7 @@ defopts.CovSampleThresh    = '10                % Switch to covariance sampling 
 defopts.DetEntTolOpt       = '1e-3              % Optimality tolerance for optimization of deterministic entropy';
 defopts.EntropySwitch      = 'on                % Switch from deterministic entropy to stochastic entropy when reaching stability';
 defopts.EntropyForceSwitch = '0.9               % Force switch to stochastic entropy at this fraction of total fcn evals';
+defopts.DetEntropyMinD     = '2                 % Start with deterministic entropy only with this number of vars or more';
 
 %% Advanced options for unsupported/untested features (do *not* modify)
 defopts.AcqFcn             = '@vbmc_acqskl       % Expensive acquisition fcn';
