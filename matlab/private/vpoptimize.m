@@ -1,8 +1,11 @@
 function [vp,elbo,elbo_sd,varss] = vpoptimize(Nfastopts,Nslowopts,useEntropyApprox,vp,gp,K,Xstar,ystar,optimState,stats,options)
 %VPOPTIMIZE Optimize variational posterior.
 
+% vpold = vp;
+
 % Get bounds for variational parameters optimization    
-[vp.LB_theta,vp.UB_theta] = vbmc_vpbnd(vp,Xstar,K,options);
+%[vp.LB_theta,vp.UB_theta] = vbmc_vpbnd(vp,Xstar,K,options);
+[vp.LB_theta,vp.UB_theta] = vbmc_vpbnd(vp,gp.X,K,options);
 
 if isempty(Nfastopts); Nfastopts = options.NSelbo * K; end  % Number of initial starting points
 if isempty(Nslowopts); Nslowopts = 1; end
@@ -134,7 +137,8 @@ for iOpt = 1:Nslowopts
     % [nelbo,nelcbo,sqrt(varF),G,H]
 end
 
-% Finally, add variational parameters from previous iterations
+
+% If requested, add variational parameters from previous iterations
 for iBack = 1:MaxBack
     idx_prev = Nslowopts*2+iBack;
     vp_back = stats.vp(iter-iBack);
@@ -148,6 +152,13 @@ for iBack = 1:MaxBack
     elbostats = eval_fullelcbo(idx_prev,theta_prev,vp0_fine(idx_prev),gp,elbostats,elcbo_beta,options);
 end
 
+% Add previous variational posterior
+% iOpt_old = numel(vp0_fine)+1;
+% vp0_fine(iOpt_old) = vpold;
+% thetaold = get_theta(vpold,vpold.LB_theta,vpold.UB_theta,vpold.optimize_lambda);
+% elbostats = eval_fullelcbo(iOpt_old,thetaold,vp,gp,elbostats,elcbo_beta,options);
+
+
 % Take variational parameters with best ELCBO
 [~,idx] = min(elbostats.nelcbo);
 elbo = -elbostats.nelbo(idx);
@@ -156,8 +167,8 @@ varss = elbostats.varss(idx);
 vp = vp0_fine(idx);
 vp = rescale_params(vp,elbostats.theta(idx,:));
 
-%     idx
-%     elbostats
+% idx
+% elbostats
 
 end
 

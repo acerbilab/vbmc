@@ -8,10 +8,10 @@ if nargin < 4; X = []; end
 if nargin < 5; y = []; end
 
 check_kl = 0;
-check_entropy = 0;
-check_quadrature = 1;
-check_logjointgrad = 1;
-check_gp = 1;
+check_entropy = 1;
+check_quadrature = 0;
+check_logjointgrad = 0;
+check_gp = 0;
 
 meanfun = 4;
 quadratic_mean = meanfun == 4;
@@ -95,6 +95,17 @@ if check_entropy
     f = @(x) enttest(x,vp,0);
     derivcheck(f,theta .* (0.5 + rand(size(theta))));
 
+    % Close distribution
+    vp2 = vp;
+    vp2.K = 2;
+    vp2.mu = 0.1*[-ones(vp.D,1),ones(vp.D,1)];
+    vp2.sigma = [1 1];
+    vp2.lambda = ones(vp.D,1);
+    theta2 = [vp2.mu(:); log(vp2.sigma(:)); log(vp2.lambda(:))];
+    f = @(x) enttest(x,vp2,0);
+    derivcheck(f,theta2);
+    pause
+    
     fprintf('---------------------------------------------------------------------------------\n');
     fprintf('Check Monte Carlo entropy gradient...\n\n');
 

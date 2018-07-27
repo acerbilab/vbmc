@@ -61,7 +61,7 @@ for f = cellfields
     end
 end
 
-% Check if MATLAB's Optimization Toolbox� is available
+% Check if MATLAB's Optimization Toolbox (TM) is available
 if isempty(options.OptimToolbox)
     if exist('fmincon.m','file') && exist('fminunc.m','file') && exist('optimoptions.m','file') ...
             && license('test', 'optimization_toolbox')
