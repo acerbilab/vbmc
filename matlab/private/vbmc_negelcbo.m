@@ -1,4 +1,4 @@
-function [F,dF,G,H,varF,dH,varGss] = vbmc_negelcbo(theta,beta,vp,gp,Ns,compute_grad,compute_var,altent_flag)
+function [F,dF,G,H,varF,dH,varGss] = vbmc_negelcbo(theta,beta,vp,gp,Ns,compute_grad,compute_var,altent_flag,thetabnd)
 %VBMC_NEGELCBO Negative evidence lower confidence bound objective
 %
 % Note that THETA is a vector of *transformed* variational parameters:
@@ -9,6 +9,7 @@ if nargin < 5 || isempty(Ns); Ns = 0; end
 if nargin < 6 || isempty(compute_grad); compute_grad = nargout > 1; end
 if nargin < 7; compute_var = []; end
 if nargin < 8 || isempty(altent_flag); altent_flag = false; end
+if nargin < 9; thetabnd = []; end
 if isempty(beta) || ~isfinite(beta); beta = 0; end
 if isempty(compute_var); compute_var = beta ~=0 || nargout > 4; end
 
@@ -16,7 +17,6 @@ if compute_grad && beta ~= 0 && compute_var ~= 2
     error('vbmc_negelcbo:vargrad', ...
         'Computation of the gradient of ELBO with full variance not supported.');
 end
-
 
 D = vp.D;
 K = vp.K;
@@ -69,10 +69,23 @@ else
     varF = 0;
 end
 
-% Negative ELCBO
+% Negative ELCBO (add confidence bound)
 if beta ~= 0; F = F + beta*sqrt(varF); end
 if beta ~= 0 && compute_grad
     dF = dF + 0.5*beta*dvarG/sqrt(varF);
+end
+
+% Additional loss for variational parameter bound violation (soft bounds)
+% Only done when optimizing the variational parameters, but not when 
+% computing the EL(C)BO at each iteration
+if ~isempty(thetabnd)    
+    if compute_grad
+        [L,dL] = vpbndloss(theta,vp,thetabnd,thetabnd.TolCon);
+        dF = dF + dL;
+    else
+        L = vpbndloss(theta,vp,thetabnd,thetabnd.TolCon);
+    end
+    F = F + L;    
 end
 
 end

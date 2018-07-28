@@ -3,16 +3,16 @@ function [vp,elbo,elbo_sd,varss] = vpoptimize(Nfastopts,Nslowopts,useEntropyAppr
 
 %% Set up optimization variables and options
 
-% Get bounds for variational parameters optimization    
-%[vp.LB_theta,vp.UB_theta] = vbmc_vpbnd(vp,Xstar,K,options);
-[vp.LB_theta,vp.UB_theta] = vbmc_vpbnd(vp,gp.X,K,options);
+% Number of variational parameters
+Ntheta = vp.D*K + K;
+if vp.optimize_lambda; Ntheta = Ntheta + vp.D; end
 
 if isempty(Nfastopts); Nfastopts = options.NSelbo * K; end  % Number of initial starting points
 if isempty(Nslowopts); Nslowopts = 1; end
 nelcbo_fill = zeros(Nfastopts,1);
 
 % Set up empty stats structs for optimization
-elbostats = eval_fullelcbo(Nslowopts*2,numel(vp.LB_theta));
+elbostats = eval_fullelcbo(Nslowopts*2,Ntheta);
 
 % Number of samples per component for MC approximation of the entropy
 if isa(options.NSent,'function_handle')
@@ -43,6 +43,28 @@ else
     compute_var = 0;    % No beta, skip variance
 end
 
+% Set basic options for deterministic optimizer (FMINUNC)
+vbtrain_options = optimoptions('fminunc','GradObj','on','Display','off');
+
+% Compute soft bounds for variational parameters optimization
+if ~isfield(vp,'bounds') || isempty(vp.bounds)
+    vp.bounds.mu_lb = Inf(1,vp.D);
+    vp.bounds.mu_ub = -Inf(1,vp.D);
+    vp.bounds.lnscale_lb = Inf(1,vp.D);
+    vp.bounds.lnscale_ub = -Inf(1,vp.D);
+    vp.bounds
+end    
+vp.bounds.mu_lb = min(min(gp.X),vp.bounds.mu_lb);
+vp.bounds.mu_ub = max(max(gp.X),vp.bounds.mu_ub);
+lnrange = log(vp.bounds.mu_ub - vp.bounds.mu_lb);
+vp.bounds.lnscale_lb = min(vp.bounds.lnscale_lb,lnrange + log(options.TolLength));
+vp.bounds.lnscale_ub = max(vp.bounds.lnscale_ub,lnrange);
+
+% Soft-bound loss is computed on MU and SCALE (which is SIGMA times LAMBDA)
+thetabnd.lb = [repmat(vp.bounds.mu_lb,[1,K]),repmat(vp.bounds.lnscale_lb,[1,K])];
+thetabnd.ub = [repmat(vp.bounds.mu_ub,[1,K]),repmat(vp.bounds.lnscale_ub,[1,K])];
+thetabnd.TolCon = options.TolConLoss;
+
 %% Perform quick shotgun evaluation of many candidate parameters
 
 % Generate a bunch of random candidate variational parameters
@@ -59,9 +81,8 @@ end
 
 % Quickly estimate ELCBO at each candidate variational posterior
 for iOpt = 1:Nfastopts
-    [theta0,vp0_vec(iOpt)] = ...
-        get_theta(vp0_vec(iOpt),vp.LB_theta,vp.UB_theta,vp.optimize_lambda);        
-    [nelbo_tmp,~,~,~,varF_tmp] = vbmc_negelcbo(theta0,0,vp0_vec(iOpt),gp,NSentKFast,0,compute_var,options.AltMCEntropy);
+    [theta0,vp0_vec(iOpt)] = get_theta(vp0_vec(iOpt),vp.optimize_lambda);        
+    [nelbo_tmp,~,~,~,varF_tmp] = vbmc_negelcbo(theta0,0,vp0_vec(iOpt),gp,NSentKFast,0,compute_var,options.AltMCEntropy,thetabnd);
     nelcbo_fill(iOpt) = nelbo_tmp + elcbo_beta*sqrt(varF_tmp);
 end
 
@@ -90,17 +111,16 @@ for iOpt = 1:Nslowopts
 
     theta0 = [vp0.mu(:); log(vp0.sigma(:))];
     if vp.optimize_lambda; theta0 = [theta0; log(vp0.lambda(:))]; end
-    theta0 = min(vp.UB_theta',max(vp.LB_theta', theta0));
+    % theta0 = min(vp.UB_theta',max(vp.LB_theta', theta0));
 
-    vbtrainmc_fun = @(theta_) vbmc_negelcbo(theta_,elcbo_beta,vp0,gp,NSentK,1,compute_var,options.AltMCEntropy);
+    vbtrainmc_fun = @(theta_) vbmc_negelcbo(theta_,elcbo_beta,vp0,gp,NSentK,1,compute_var,options.AltMCEntropy,thetabnd);
 
     % First, fast optimization via deterministic entropy approximation
     if useEntropyApprox || NSentK == 0
         if NSentK == 0; TolOpt = options.DetEntTolOpt; else; TolOpt = sqrt(options.DetEntTolOpt); end
-        vbtrain_options = optimoptions('fmincon','GradObj','on','Display','off','OptimalityTolerance',TolOpt);
-        vbtrain_fun = @(theta_) vbmc_negelcbo(theta_,elcbo_beta,vp0,gp,0,1,compute_var,0);
-        [thetaopt,~,~,output] = ...
-            fmincon(vbtrain_fun,theta0(:)',[],[],[],[],vp.LB_theta,vp.UB_theta,[],vbtrain_options);
+        vbtrain_options.OptimalityTolerance = TolOpt;
+        vbtrain_fun = @(theta_) vbmc_negelcbo(theta_,elcbo_beta,vp0,gp,0,1,compute_var,0,thetabnd);
+        [thetaopt,~,~,output] = fminunc(vbtrain_fun,theta0(:)',vbtrain_options);
         % output, % pause
     else
         thetaopt = theta0(:)';
@@ -111,7 +131,7 @@ for iOpt = 1:Nslowopts
         switch lower(options.StochasticOptimizer)
             case 'adam'                
                 [thetaopt,~,theta_lst,fval_lst] = ...
-                    fminadam(vbtrainmc_fun,thetaopt,vp.LB_theta,vp.UB_theta,options.TolFunStochastic);
+                    fminadam(vbtrainmc_fun,thetaopt,[],[],options.TolFunStochastic);
 
                 if options.ELCBOmidpoint
                     % Recompute ELCBO at best midpoint with full variance and more precision
@@ -119,10 +139,10 @@ for iOpt = 1:Nslowopts
                     elbostats = eval_fullelcbo(iOpt_mid,theta_lst(idx_mid,:),vp0,gp,elbostats,elcbo_beta,options);
                     % [idx_mid,numel(fval_lst)]
                 end
-            case 'fmincon'
-                vbtrain_options = optimoptions('fmincon','GradObj','on','Display','off','OptimalityTolerance',options.TolFunStochastic);
-                [thetaopt,~,~,output] = ...
-                    fmincon(vbtrainmc_fun,thetaopt,[],[],[],[],vp.LB_theta,vp.UB_theta,[],vbtrain_options);
+%             case 'fmincon'
+%                 vbtrain_options.OptimalityTolerance = options.TolFunStochastic;
+%                 [thetaopt,~,~,output] = ...
+%                     fmincon(vbtrainmc_fun,thetaopt,[],[],[],[],vp.LB_theta,vp.UB_theta,[],vbtrain_options);
                 
             otherwise
                 error('vbmc:VPoptimize','Unknown stochastic optimizer.');
@@ -147,6 +167,15 @@ elbo_sd = sqrt(elbostats.varF(idx));
 varss = elbostats.varss(idx);
 vp = vp0_fine(idx);
 vp = rescale_params(vp,elbostats.theta(idx,:));
+
+L = vpbndloss(elbostats.theta(idx,:),vp,thetabnd,thetabnd.TolCon)
+if L > 0
+    lnscale = bsxfun(@plus,log(vp.sigma),log(vp.lambda));    
+    thetaext = [vp.mu(:)',lnscale(:)'];
+    outflag = thetaext < thetabnd.lb(:)' | thetaext > thetabnd.ub(:)';
+    [thetaext;thetabnd.lb(:)'; thetabnd.ub(:)';outflag]    
+end
+
 
 % idx
 % elbostats
@@ -178,7 +207,7 @@ else
         
     theta = theta(:)';
     [nelbo,~,G,H,varF,~,varss] = ...
-        vbmc_negelcbo(theta,0,vp,gp,NSentFineK,0,1,options.AltMCEntropy);
+        vbmc_negelcbo(theta,0,vp,gp,NSentFineK,0,1,options.AltMCEntropy,[]);
     nelcbo = nelbo + beta*sqrt(varF);
 
     elbostats.nelbo(idx) = nelbo;
@@ -189,5 +218,14 @@ else
     elbostats.nelcbo(idx) = nelcbo;
     elbostats.theta(idx,1:numel(theta)) = theta;
 end
+
+end
+
+function [theta,vp] = get_theta(vp,optimize_lambda)
+%GET_THETA Get vector of variational parameters from variational posterior.
+
+vp = rescale_params(vp);
+theta = [vp.mu(:); log(vp.sigma(:))];
+if optimize_lambda; theta = [theta; log(vp.lambda(:))]; end
 
 end
