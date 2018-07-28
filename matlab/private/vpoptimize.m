@@ -52,7 +52,7 @@ if ~isfield(vp,'bounds') || isempty(vp.bounds)
     vp.bounds.mu_ub = -Inf(1,vp.D);
     vp.bounds.lnscale_lb = Inf(1,vp.D);
     vp.bounds.lnscale_ub = -Inf(1,vp.D);
-    vp.bounds
+    % vp.bounds
 end    
 vp.bounds.mu_lb = min(min(gp.X),vp.bounds.mu_lb);
 vp.bounds.mu_ub = max(max(gp.X),vp.bounds.mu_ub);
