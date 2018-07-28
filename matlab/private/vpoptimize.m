@@ -168,13 +168,13 @@ varss = elbostats.varss(idx);
 vp = vp0_fine(idx);
 vp = rescale_params(vp,elbostats.theta(idx,:));
 
-L = vpbndloss(elbostats.theta(idx,:),vp,thetabnd,thetabnd.TolCon)
-if L > 0
-    lnscale = bsxfun(@plus,log(vp.sigma),log(vp.lambda));    
-    thetaext = [vp.mu(:)',lnscale(:)'];
-    outflag = thetaext < thetabnd.lb(:)' | thetaext > thetabnd.ub(:)';
-    [thetaext;thetabnd.lb(:)'; thetabnd.ub(:)';outflag]    
-end
+% L = vpbndloss(elbostats.theta(idx,:),vp,thetabnd,thetabnd.TolCon)
+% if L > 0
+%     lnscale = bsxfun(@plus,log(vp.sigma),log(vp.lambda));    
+%     thetaext = [vp.mu(:)',lnscale(:)'];
+%     outflag = thetaext < thetabnd.lb(:)' | thetaext > thetabnd.ub(:)';
+%     [thetaext;thetabnd.lb(:)'; thetabnd.ub(:)';outflag]    
+% end
 
 
 % idx
