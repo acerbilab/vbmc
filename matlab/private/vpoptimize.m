@@ -1,7 +1,7 @@
 function [vp,elbo,elbo_sd,varss] = vpoptimize(Nfastopts,Nslowopts,useEntropyApprox,vp,gp,K,Xstar,ystar,optimState,stats,options)
 %VPOPTIMIZE Optimize variational posterior.
 
-% vpold = vp;
+%% Set up optimization variables and options
 
 % Get bounds for variational parameters optimization    
 %[vp.LB_theta,vp.UB_theta] = vbmc_vpbnd(vp,Xstar,K,options);
@@ -11,22 +11,8 @@ if isempty(Nfastopts); Nfastopts = options.NSelbo * K; end  % Number of initial 
 if isempty(Nslowopts); Nslowopts = 1; end
 nelcbo_fill = zeros(Nfastopts,1);
 
-% Check variational posteriors from previous iterations
-MaxBack = min(optimState.iter-1,options.VarParamsBack);
-
-elbostats = eval_fullelcbo(Nslowopts*2+MaxBack,numel(vp.LB_theta));
-
-% Generate random initial starting point for variational parameters
-switch Nslowopts
-    case 1
-        [vp0_vec,vp0_type] = vbinit(1,Nfastopts,vp,K,Xstar,ystar);
-    otherwise
-        [vp0_vec1,vp0_type1] = vbinit(1,ceil(Nfastopts/3),vp,K,Xstar,ystar);
-        [vp0_vec2,vp0_type2] = vbinit(2,ceil(Nfastopts/3),vp,K,Xstar,ystar);
-        [vp0_vec3,vp0_type3] = vbinit(3,Nfastopts-2*ceil(Nfastopts/3),vp,K,Xstar,ystar);
-        vp0_vec = [vp0_vec1,vp0_vec2,vp0_vec3];
-        vp0_type = [vp0_type1;vp0_type2;vp0_type3];
-end
+% Set up empty stats structs for optimization
+elbostats = eval_fullelcbo(Nslowopts*2,numel(vp.LB_theta));
 
 % Number of samples per component for MC approximation of the entropy
 if isa(options.NSent,'function_handle')
@@ -57,8 +43,21 @@ else
     compute_var = 0;    % No beta, skip variance
 end
 
+%% Perform quick shotgun evaluation of many candidate parameters
+
+% Generate a bunch of random candidate variational parameters
+switch Nslowopts
+    case 1
+        [vp0_vec,vp0_type] = vbinit(1,Nfastopts,vp,K,Xstar,ystar);
+    otherwise
+        [vp0_vec1,vp0_type1] = vbinit(1,ceil(Nfastopts/3),vp,K,Xstar,ystar);
+        [vp0_vec2,vp0_type2] = vbinit(2,ceil(Nfastopts/3),vp,K,Xstar,ystar);
+        [vp0_vec3,vp0_type3] = vbinit(3,Nfastopts-2*ceil(Nfastopts/3),vp,K,Xstar,ystar);
+        vp0_vec = [vp0_vec1,vp0_vec2,vp0_vec3];
+        vp0_type = [vp0_type1;vp0_type2;vp0_type3];
+end
+
 % Quickly estimate ELCBO at each candidate variational posterior
-% NSentKFast = ceil(NSentK * 0.1);
 for iOpt = 1:Nfastopts
     [theta0,vp0_vec(iOpt)] = ...
         get_theta(vp0_vec(iOpt),vp.LB_theta,vp.UB_theta,vp.optimize_lambda);        
@@ -71,10 +70,13 @@ end
 vp0_vec = vp0_vec(vp0_ord);
 vp0_type = vp0_type(vp0_ord);
 
+%% Perform optimization starting from one or few selected points
+
 for iOpt = 1:Nslowopts
     iOpt_mid = iOpt*2-1;
     iOpt_end = iOpt*2;
 
+    % Select points from best ones depending on subset
     switch Nslowopts
         case 1; idx = 1;
         case 2; if iOpt == 1; idx = find(vp0_type == 1,1); else; idx = find(vp0_type == 2 | vp0_type == 3,1); end
@@ -137,29 +139,8 @@ for iOpt = 1:Nslowopts
     % [nelbo,nelcbo,sqrt(varF),G,H]
 end
 
+%% Finalize optimization by taking variational parameters with best ELCBO
 
-% If requested, add variational parameters from previous iterations
-for iBack = 1:MaxBack
-    idx_prev = Nslowopts*2+iBack;
-    vp_back = stats.vp(iter-iBack);
-    vp0_fine(idx_prev) = vp_back;
-    % Note that TRINFO might have changed, recompute it if needed       
-    vp0_fine(idx_prev).trinfo = vp.trinfo;
-    vp0_fine(idx_prev) = recompute_vp_and_hyp( ...
-        vp0_fine(idx_prev),vp_back,optimState,[],options,0,[],[],...
-        optimState.X(optimState.X_flag,:),optimState.y(optimState.X_flag),[Inf,Inf]);
-    [theta_prev,vp0_fine(idx_prev)] = get_theta(vp0_fine(idx_prev),[],[],vp.optimize_lambda);
-    elbostats = eval_fullelcbo(idx_prev,theta_prev,vp0_fine(idx_prev),gp,elbostats,elcbo_beta,options);
-end
-
-% Add previous variational posterior
-% iOpt_old = numel(vp0_fine)+1;
-% vp0_fine(iOpt_old) = vpold;
-% thetaold = get_theta(vpold,vpold.LB_theta,vpold.UB_theta,vpold.optimize_lambda);
-% elbostats = eval_fullelcbo(iOpt_old,thetaold,vp,gp,elbostats,elcbo_beta,options);
-
-
-% Take variational parameters with best ELCBO
 [~,idx] = min(elbostats.nelcbo);
 elbo = -elbostats.nelbo(idx);
 elbo_sd = sqrt(elbostats.varF(idx));
