@@ -631,6 +631,7 @@ while ~isFinished_flag
     optimState.R = qindex;
     
     % Check stability termination condition
+    stableflag = false;
     if iter >= options.TolStableIters && ... 
             all(qindex_vec < 1) && ...
             all(stats.qindex(iter-options.TolStableIters+1:iter) < 1) && ...
@@ -644,9 +645,11 @@ while ~isFinished_flag
         else
             isFinished_flag = true;
             exitflag = 0;
-            if isempty(action); action = 'stable'; else; action = [action ', stable']; end           
+            stableflag = true;
+            if isempty(action); action = 'stable'; else; action = [action ', stable']; end     
         end
     end
+    stats.stable(iter) = stableflag;        % Store stability flag    
         
     % Prevent early termination
     if optimState.N < options.MinFunEvals || ...
