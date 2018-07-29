@@ -1,4 +1,4 @@
-function [vp,elbo,elbo_sd,varss] = vpoptimize(Nfastopts,Nslowopts,useEntropyApprox,vp,gp,K,Xstar,ystar,optimState,stats,options)
+function [vp,elbo,elbo_sd,varss] = vpoptimize(Nfastopts,Nslowopts,useEntropyApprox,vp,gp,K,Xstar,ystar,optimState,stats,options,cmaes_opts)
 %VPOPTIMIZE Optimize variational posterior.
 
 %% Set up optimization variables and options
@@ -143,7 +143,8 @@ for iOpt = 1:Nslowopts
             insigma_sigma = ones(K,1);
             if vp.optimize_lambda; insigma_lambda = ones(D,1); else; insigma_lambda = []; end
             insigma = [insigma_mu(:); insigma_sigma(:); insigma_lambda];
-            thetaopt = cmaes_modded('vbmc_negelcbo',theta0(:),insigma, ...
+            cmaes_opts.EvalParallel = 'off';
+            thetaopt = cmaes_modded('vbmc_negelcbo',theta0(:),insigma,cmaes_opts, ...
                 elcbo_beta,vp0,gp,0,1,compute_var,0,thetabnd); 
             thetaopt = thetaopt(:)';
         end
