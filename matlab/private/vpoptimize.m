@@ -1,4 +1,4 @@
-function [vp,elbo,elbo_sd,varss] = vpoptimize(Nfastopts,Nslowopts,useEntropyApprox,vp,gp,K,Xstar,ystar,optimState,stats,options,cmaes_opts)
+function [vp,elbo,elbo_sd,varss] = vpoptimize(Nfastopts,Nslowopts,useEntropyApprox,vp,gp,K,Xstar,ystar,optimState,stats,options,cmaes_opts,prnt)
 %VPOPTIMIZE Optimize variational posterior.
 
 %% Set up optimization variables and options
@@ -137,7 +137,9 @@ for iOpt = 1:Nslowopts
             [thetaopt,~,~,output] = fminunc(vbtrain_fun,theta0(:)',vbtrain_options);
         catch
             % FMINUNC failed, try with CMA-ES
-            warning('vbmc:VPOptimizeFail','Error while optimizing variational parameters with FMINUNC. Trying with CMA-ES...');
+            if prnt > 0
+                fprintf('Cannot optimize variational parameters with FMINUNC. Trying with CMA-ES (slower).\n');
+            end
             insigma_mu = repmat(vp.bounds.mu_ub(:) - vp.bounds.mu_lb(:),[vp.K,1]);
             insigma_sigma = ones(K,1);
             if vp.optimize_lambda; insigma_lambda = ones(vp.D,1); else; insigma_lambda = []; end

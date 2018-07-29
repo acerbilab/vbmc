@@ -320,7 +320,7 @@ while ~isFinished_flag
 %     if optimState.DoRotoscaling && isWarping
 %         [~,X_hpd,y_hpd] = ...
 %             vbmc_gphyp(optimState,optimState.gpMeanfun,0,options);            
-%         vp = vpoptimize(Nfastopts,1,0,vp,gp,vp.K,X_hpd,y_hpd,optimState,stats,options,cmaes_opts);
+%         vp = vpoptimize(Nfastopts,1,0,vp,gp,vp.K,X_hpd,y_hpd,optimState,stats,options,cmaes_opts,prnt);
 %         [vp,optimState,hyp] = ...
 %             warp_rotoscaling(vp,optimState,hyp,gp,cmaes_opts,options);
 %         optimState.DoRotoscaling = false;
@@ -422,7 +422,7 @@ while ~isFinished_flag
     end
     
     [vp,elbo,elbo_sd,varss] = ...
-        vpoptimize(Nfastopts,Nslowopts,useEntropyApprox,vp,gp,Knew,X_hpd,y_hpd,optimState,stats,options,cmaes_opts);
+        vpoptimize(Nfastopts,Nslowopts,useEntropyApprox,vp,gp,Knew,X_hpd,y_hpd,optimState,stats,options,cmaes_opts,prnt);
     optimState.vpK = vp.K;
     
     %%  Redo rotoscaling at the end
@@ -439,7 +439,7 @@ while ~isFinished_flag
             optimState.X(optimState.X_flag,:),optimState.y(optimState.X_flag), ...
             optimState.gpMeanfun,hypprior,[],gptrain_options);
         
-         vp = vpoptimize(Nfastopts,1,0,vp,gp,vp.K,X_hpd,y_hpd,optimState,stats,options,cmaes_opts);
+         vp = vpoptimize(Nfastopts,1,0,vp,gp,vp.K,X_hpd,y_hpd,optimState,stats,options,cmaes_opts,prnt);
     end
     
     if options.Plot
