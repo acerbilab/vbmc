@@ -133,7 +133,20 @@ for iOpt = 1:Nslowopts
         if NSentK == 0; TolOpt = options.DetEntTolOpt; else; TolOpt = sqrt(options.DetEntTolOpt); end
         vbtrain_options.OptimalityTolerance = TolOpt;
         vbtrain_fun = @(theta_) vbmc_negelcbo(theta_,elcbo_beta,vp0,gp,0,1,compute_var,0,thetabnd);
-        [thetaopt,~,~,output] = fminunc(vbtrain_fun,theta0(:)',vbtrain_options);
+        try
+            [thetaopt,~,~,output] = fminunc(vbtrain_fun,theta0(:)',vbtrain_options);
+            break
+        catch
+            % FMINUNC failed, try with CMA-ES
+            warning('vbmc:VPOptimizeFail','Error while optimizing variational parameters with FMINUNC. Trying with CMA-ES...');
+            insigma_mu = vp.bounds.mu_ub - vp.bounds.mu_lb;
+            insigma_sigma = ones(K,1);
+            if vp.optimize_lambda; insigma_lambda = ones(D,1); else; insigma_lambda = []; end
+            insigma = [insigma_mu(:); insigma_sigma(:); insigma_lambda];
+            thetaopt = cmaes_modded('vbmc_negelcbo',theta0(:),insigma, ...
+                elcbo_beta,vp0,gp,0,1,compute_var,0,thetabnd); 
+            thetaopt = thetaopt(:)';
+        end
         % output, % pause
     else
         thetaopt = theta0(:)';
