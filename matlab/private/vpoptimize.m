@@ -140,7 +140,7 @@ for iOpt = 1:Nslowopts
             warning('vbmc:VPOptimizeFail','Error while optimizing variational parameters with FMINUNC. Trying with CMA-ES...');
             insigma_mu = vp.bounds.mu_ub - vp.bounds.mu_lb;
             insigma_sigma = ones(K,1);
-            if vp.optimize_lambda; insigma_lambda = ones(D,1); else; insigma_lambda = []; end
+            if vp.optimize_lambda; insigma_lambda = ones(vp.D,1); else; insigma_lambda = []; end
             insigma = [insigma_mu(:); insigma_sigma(:); insigma_lambda];
             cmaes_opts.EvalParallel = 'off';
             thetaopt = cmaes_modded('vbmc_negelcbo',theta0(:),insigma,cmaes_opts, ...
