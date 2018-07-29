@@ -253,7 +253,8 @@ end
 [~,idx] = min(nll); % Take best hyperparameter vector
 hyp_start = hyp(:,idx);
 
-
+% Check that starting point is inside current bounds
+hyp_start = min(max(hyp_start',LB+eps(LB)),UB-eps(UB))';
 
 %% Sample from best hyperparameter vector using slice sampling
 if Ns > 0

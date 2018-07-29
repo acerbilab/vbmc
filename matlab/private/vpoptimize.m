@@ -47,20 +47,33 @@ end
 vbtrain_options = optimoptions('fminunc','GradObj','on','Display','off');
 
 % Compute soft bounds for variational parameters optimization
+
+% Soft-bound loss is computed on MU and SCALE (which is SIGMA times LAMBDA)
 if ~isfield(vp,'bounds') || isempty(vp.bounds)
     vp.bounds.mu_lb = Inf(1,vp.D);
     vp.bounds.mu_ub = -Inf(1,vp.D);
     vp.bounds.lnscale_lb = Inf(1,vp.D);
     vp.bounds.lnscale_ub = -Inf(1,vp.D);
     % vp.bounds
-end    
-vp.bounds.mu_lb = min(min(gp.X),vp.bounds.mu_lb);
-vp.bounds.mu_ub = max(max(gp.X),vp.bounds.mu_ub);
-lnrange = log(vp.bounds.mu_ub - vp.bounds.mu_lb);
+end
+
+% Compute HPD region
+[~,ord] = sort(gp.y,'descend');
+N_hpd = round(options.HPDFrac*size(gp.y,1));
+X_hpd = gp.X(ord(1:N_hpd),:);
+y_hpd = gp.y(ord(1:N_hpd));
+
+% Set bounds for mean parameters of variational components
+vp.bounds.mu_lb = min(min(X_hpd),vp.bounds.mu_lb);
+vp.bounds.mu_ub = max(max(X_hpd),vp.bounds.mu_ub);
+%vp.bounds.mu_lb = min(min(gp.X),vp.bounds.mu_lb);
+%vp.bounds.mu_ub = max(max(gp.X),vp.bounds.mu_ub);
+
+% Set bounds for scale paramters of variational components
+lnrange = log(max(gp.X) - min(gp.X));
 vp.bounds.lnscale_lb = min(vp.bounds.lnscale_lb,lnrange + log(options.TolLength));
 vp.bounds.lnscale_ub = max(vp.bounds.lnscale_ub,lnrange);
 
-% Soft-bound loss is computed on MU and SCALE (which is SIGMA times LAMBDA)
 thetabnd.lb = [repmat(vp.bounds.mu_lb,[1,K]),repmat(vp.bounds.lnscale_lb,[1,K])];
 thetabnd.ub = [repmat(vp.bounds.mu_ub,[1,K]),repmat(vp.bounds.lnscale_ub,[1,K])];
 thetabnd.TolCon = options.TolConLoss;

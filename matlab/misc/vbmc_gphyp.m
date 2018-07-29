@@ -43,8 +43,8 @@ hypprior.df = 3*ones(1,Nhyp);    % Broad Student's t prior
 noisesize = 0.01;
 hypprior.mu(1:D) = log(std(X_hpd));
 hypprior.sigma(1:D) = max(2,log(max(X_hpd)-min(X_hpd)) - log(std(X_hpd)));
-%hypprior.mu(D+1) = log(std(y_hpd));
-%hypprior.sigma(D+1) = 2;
+%hypprior.mu(D+1) = log(std(y_hpd)) + 0.25*D*log(2*pi);
+%hypprior.sigma(D+1) = log(10);
 hypprior.mu(Ncov+1) = log(noisesize);
 hypprior.sigma(Ncov+1) = 0.5;
 if options.QuadraticMean    

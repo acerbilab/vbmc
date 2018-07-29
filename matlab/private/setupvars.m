@@ -159,6 +159,9 @@ if nvars < options.DetEntropyMinD
     optimState.EntropySwitch = false;
 end
 
+% Tolerance threshold on GP variance (used by some acquisition fcns)
+optimState.TolGPVar = options.TolGPVar;
+
 % List of points at the end of each iteration
 optimState.iterList.u = [];
 optimState.iterList.fval = [];

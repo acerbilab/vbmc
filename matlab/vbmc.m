@@ -59,13 +59,13 @@ defopts.ElboStarts         = '2                 % Starting points to refine opti
 defopts.NSgpMax            = '80                % Max GP hyperparameter samples (decreases with training points)';
 defopts.StopGPSampling     = '200 + 10*nvars    % Stop GP hyperparameter sampling (start optimizing)';
 defopts.GPSampleThin       = '5                 % Thinning for GP hyperparameter sampling';
-defopts.TolGPVar           = '1e-4              % Stop GP hyperparameter sampling if sample variance is below this threshold per fcn';
+defopts.TolGPVar           = '1e-4              % Threshold on GP variance, used to stop sampling and by some acquisition fcns';
 defopts.QuadraticMean      = 'yes               % Use GP with quadratic mean function (otherwise constant)';
 defopts.Kfun               = '@sqrt             % Variational components as a function of training points';
 defopts.KfunMax            = '@(N) 2*sqrt(N)    % Max variational components as a function of training points';
 defopts.Kwarmup            = '2                 % Variational components during warmup';
 defopts.AdaptiveK          = '1                 % Added variational components for stable solution';
-defopts.HPDFrac            = '0.5               % High Posterior Density region (fraction of training inputs)';
+defopts.HPDFrac            = '0.8               % High Posterior Density region (fraction of training inputs)';
 defopts.ELCBOImproWeight   = '3                 % Uncertainty weight on ELCBO for computing lower bound improvement';
 defopts.TolLength          = '1e-6              % Minimum fractional length scale';
 defopts.NoiseObj           = 'off               % Objective fcn returns noise estimate as 2nd argument (unsupported)';
@@ -106,6 +106,7 @@ defopts.EntropySwitch      = 'on                % Switch from deterministic entr
 defopts.EntropyForceSwitch = '0.8               % Force switch to stochastic entropy at this fraction of total fcn evals';
 defopts.DetEntropyMinD     = '5                 % Start with deterministic entropy only with this number of vars or more';
 defopts.TolConLoss         = '0.01              % Fractional tolerance for constraint violation of variational parameters';
+defopts.StableGPSampling   = '0                 % Number of GP samples when approaching GP stability (0 = optimize)';
 
 %% Advanced options for unsupported/untested features (do *not* modify)
 defopts.AcqFcn             = '@vbmc_acqskl       % Expensive acquisition fcn';
@@ -351,7 +352,7 @@ while ~isFinished_flag
         end
     end
     if optimState.StopSampling > 0
-        Ns_gp = 0;
+        Ns_gp = options.StableGPSampling;
     end
     
     % Get priors and starting hyperparameters
@@ -659,6 +660,10 @@ while ~isFinished_flag
     else
         fprintf(displayFormat,iter,optimState.funccount,elbo,elbo_sd,sKL,vp.K,qindex,action);
     end    
+    
+%     if optimState.iter > 10 && stats.elboSD(optimState.iter-1) < 0.1 && stats.elboSD(optimState.iter) > 10
+%         fprintf('\nmmmh\n');        
+%     end
     
 end
 
