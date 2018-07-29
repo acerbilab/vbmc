@@ -97,6 +97,9 @@ end
    
 % Setup options for CMA-ES optimization
 cmaes_opts = cmaes_modded('defaults');
+cmaes_opts.TolX = '1e-11*max(insigma)';
+cmaes_opts.TolFun = 1e-12;
+cmaes_opts.TolHistFun = 1e-13;
 cmaes_opts.EvalParallel = 'yes';
 cmaes_opts.DispFinal = 'off';
 cmaes_opts.SaveVariables = 'off';

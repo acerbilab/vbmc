@@ -143,6 +143,9 @@ for iOpt = 1:Nslowopts
             if vp.optimize_lambda; insigma_lambda = ones(vp.D,1); else; insigma_lambda = []; end
             insigma = [insigma_mu(:); insigma_sigma(:); insigma_lambda];
             cmaes_opts.EvalParallel = 'off';
+            cmaes_opts.TolX = '1e-8*max(insigma)';
+            cmaes_opts.TolFun = 1e-6;
+            cmaes_opts.TolHistFun = 1e-7;           
             thetaopt = cmaes_modded('vbmc_negelcbo',theta0(:),insigma,cmaes_opts, ...
                 elcbo_beta,vp0,gp,0,1,compute_var,0,thetabnd); 
             thetaopt = thetaopt(:)';
