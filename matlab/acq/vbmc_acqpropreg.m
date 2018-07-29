@@ -1,5 +1,5 @@
-function acq = vbmc_acqfreg(Xs,vp,gp,optimState,Nacq,transpose_flag)
-%VBMC_ACQFREG Acquisition function via weighted proposal uncertainty search.
+function acq = vbmc_acqpropreg(Xs,vp,gp,optimState,Nacq,transpose_flag)
+%VBMC_ACQPROPREG Acquisition function via weighted proposal uncertainty search.
 
 % Xs is in *transformed* coordinates
 
@@ -13,8 +13,10 @@ if transpose_flag; Xs = Xs'; end
 % Threshold on GP variance, try not to go below this
 TolVar = optimState.TolGPVar;
 
-% Probability density of variational posterior at test points
-p = max(vbmc_pdf(Xs,vp,0),realmin);
+% Search proposal function
+Xs_orig = warpvars(Xs,'inv',vp.trinfo);
+yp = optimState.ProposalFcn(Xs_orig) .* warpvars(Xs,'pdf',vp.trinfo);
+yp = max(yp,realmin);
 
 % GP mean and variance for each hyperparameter sample
 [~,~,fmu,fs2] = gplite_pred(gp,Xs,[],1);
@@ -26,14 +28,14 @@ if Ns > 1; vf = sum((fmu - fbar).^2,2)/(Ns-1); else; vf = 0; end  % Sample varia
 vtot = vf + vbar;       % Total variance
 
 z = optimState.ymax;
-
-acq = -vtot .* exp(fbar-z) .* p;
+acq = -vtot .* exp(fbar-z) .* yp;    
 
 % Regularization: penalize points where GP uncertainty is below threshold
 idx = vtot < TolVar;
 if any(idx)
     acq(idx) = acq(idx) .* exp(-(TolVar./vtot(idx)-1));
 end
+
 acq = max(acq,-realmax);
 
 % Transposed output

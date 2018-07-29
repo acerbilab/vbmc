@@ -138,7 +138,7 @@ for iOpt = 1:Nslowopts
         catch
             % FMINUNC failed, try with CMA-ES
             warning('vbmc:VPOptimizeFail','Error while optimizing variational parameters with FMINUNC. Trying with CMA-ES...');
-            insigma_mu = vp.bounds.mu_ub - vp.bounds.mu_lb;
+            insigma_mu = repmat(vp.bounds.mu_ub(:) - vp.bounds.mu_lb(:),[vp.K,1]);
             insigma_sigma = ones(K,1);
             if vp.optimize_lambda; insigma_lambda = ones(vp.D,1); else; insigma_lambda = []; end
             insigma = [insigma_mu(:); insigma_sigma(:); insigma_lambda];
