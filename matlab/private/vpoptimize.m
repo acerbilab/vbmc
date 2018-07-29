@@ -135,7 +135,6 @@ for iOpt = 1:Nslowopts
         vbtrain_fun = @(theta_) vbmc_negelcbo(theta_,elcbo_beta,vp0,gp,0,1,compute_var,0,thetabnd);
         try
             [thetaopt,~,~,output] = fminunc(vbtrain_fun,theta0(:)',vbtrain_options);
-            break
         catch
             % FMINUNC failed, try with CMA-ES
             warning('vbmc:VPOptimizeFail','Error while optimizing variational parameters with FMINUNC. Trying with CMA-ES...');
