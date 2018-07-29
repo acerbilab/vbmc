@@ -57,9 +57,10 @@ defopts.NSelbo             = '50                % Samples per component for fast
 defopts.NSelboIncr         = '0.1               % Multiplier to samples for fast approx. of ELBO for incremental iterations';
 defopts.ElboStarts         = '2                 % Starting points to refine optimization of the ELBO';
 defopts.NSgpMax            = '80                % Max GP hyperparameter samples (decreases with training points)';
-defopts.StopGPSampling     = '200 + 10*nvars    % Stop GP hyperparameter sampling (start optimizing)';
+defopts.StableGPSampling   = '200 + 10*nvars    % Force stable GP hyperparameter sampling (reduce samples or start optimizing)';
+defopts.StableGPSamples    = '0                 % Number of GP samples when GP is stable (0 = optimize)';
 defopts.GPSampleThin       = '5                 % Thinning for GP hyperparameter sampling';
-defopts.TolGPVar           = '1e-4              % Threshold on GP variance, used to stop sampling and by some acquisition fcns';
+defopts.TolGPVar           = '1e-4              % Threshold on GP variance, used to stabilize sampling and by some acquisition fcns';
 defopts.QuadraticMean      = 'yes               % Use GP with quadratic mean function (otherwise constant)';
 defopts.Kfun               = '@sqrt             % Variational components as a function of training points';
 defopts.KfunMax            = '@(N) 2*sqrt(N)    % Max variational components as a function of training points';
@@ -106,7 +107,6 @@ defopts.EntropySwitch      = 'on                % Switch from deterministic entr
 defopts.EntropyForceSwitch = '0.8               % Force switch to stochastic entropy at this fraction of total fcn evals';
 defopts.DetEntropyMinD     = '5                 % Start with deterministic entropy only with this number of vars or more';
 defopts.TolConLoss         = '0.01              % Fractional tolerance for constraint violation of variational parameters';
-defopts.StableGPSampling   = '0                 % Number of GP samples when approaching GP stability (0 = optimize)';
 
 %% Advanced options for unsupported/untested features (do *not* modify)
 defopts.AcqFcn             = '@vbmc_acqskl       % Expensive acquisition fcn';
@@ -343,16 +343,16 @@ while ~isFinished_flag
         end
         
         % Stop sampling after reaching max number of training points
-        if optimState.N >= options.StopGPSampling
+        if optimState.N >= options.StableGPSampling
             optimState.StopSampling = optimState.N;
         end
                 
         if optimState.StopSampling > 0
-            if isempty(action); action = 'stop GP sampling'; else; action = [action ', stop GP sampling']; end
+            if isempty(action); action = 'stable GP sampling'; else; action = [action ', stable GP sampling']; end
         end
     end
     if optimState.StopSampling > 0
-        Ns_gp = options.StableGPSampling;
+        Ns_gp = options.StableGPSamples;
     end
     
     % Get priors and starting hyperparameters
@@ -608,7 +608,7 @@ while ~isFinished_flag
             varss_list = stats.gpSampleVar;
             if sum(w.*varss_list(idx_stable:iter)) < options.TolGPVar
                 optimState.StopSampling = optimState.N;
-                if isempty(action); action = 'stop GP sampling'; else; action = [action ', stop GP sampling']; end
+                if isempty(action); action = 'stable GP sampling'; else; action = [action ', stable GP sampling']; end
             end
         end
         
