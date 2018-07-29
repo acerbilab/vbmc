@@ -48,7 +48,7 @@ end
 %% Advanced options (do not modify unless you *know* what you are doing)
 defopts.FunEvalStart       = 'max(D,10)         % Number of initial objective fcn evals';
 defopts.FunEvalsPerIter    = '5                 % Number of objective fcn evals per iteration';
-defopts.SearchAcqFcn       = '@vbmc_acqprop     % Fast search acquisition fcn(s)';
+defopts.SearchAcqFcn       = '@vbmc_acqfreg     % Fast search acquisition fcn(s)';
 defopts.NSsearch           = '2^13              % Samples for fast acquisition fcn eval per new point';
 defopts.NSent              = '@(K) 100*K        % Total samples for Monte Carlo approx. of the entropy';
 defopts.NSentFast          = '@(K) 100*K        % Total samples for preliminary Monte Carlo approx. of the entropy';
