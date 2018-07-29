@@ -47,8 +47,6 @@ sf2 = exp(2*hyp(D+1));
 sn2 = exp(2*hyp(Ncov+1));
 sn2_mult = 1;  % Effective noise variance multiplier
 
-nf = 1 / (2*pi)^(D/2) * sf2;  % Kernel normalization factor
-
 % Evaluate mean function on training inputs
 hyp_mean = hyp(Ncov+2:Ncov+1+Nmean); % Get mean function hyperparameters
 if compute_grad
@@ -59,7 +57,7 @@ end
 
 % Compute kernel matrix K_mat
 K_mat = sq_dist(diag(1./ell)*gp.X');
-K_mat = nf * exp(-K_mat/2);
+K_mat = sf2 * exp(-K_mat/2);
 
 if sn2 < 1e-6   % Different representation depending on noise size
     for iter = 1:10     % Cholesky decomposition until it works

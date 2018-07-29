@@ -49,10 +49,9 @@ for s = 1:Ns
     mstar = gplite_meanfun(hyp_mean,Xstar,gp.meanfun);  % GP mean evaluated at test points
 
     % Compute cross-kernel matrix Ks_mat
-    nf = 1 / (2*pi)^(D/2) * sf2;  % Kernel normalization factor
     Ks_mat = sq_dist(diag(1./ell)*gp.X',diag(1./ell)*Xstar');
-    Ks_mat = nf * exp(-Ks_mat/2);
-    kss = nf * ones(Nstar,1);        % Self-covariance vector
+    Ks_mat = sf2 * exp(-Ks_mat/2);
+    kss = sf2 * ones(Nstar,1);        % Self-covariance vector
 
     fmu(:,s) = mstar + Ks_mat'*alpha;            % Conditional mean
     ymu(:,s) = fmu(:,s);                     % observed function mean

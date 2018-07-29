@@ -59,8 +59,6 @@ end
 
 % varF_diag = zeros(1,Nhyp);
 
-nf = 1 / (2*pi)^(D/2);  % Normalization constant
-
 % Loop over hyperparameter samples
 for s = 1:Ns
     hyp = gp.post(s).hyp;
@@ -85,7 +83,7 @@ for s = 1:Ns
     for k = 1:K
 
         tau_k = sqrt(sigma(k)^2*lambda.^2 + ell.^2);
-        nf_k = nf * exp(ln_sf2 + sum_lnell - sum(log(tau_k)));  % Covariance normalization factor
+        nf_k = exp(ln_sf2 + sum_lnell - sum(log(tau_k)));  % Covariance normalization factor
         delta_k = bsxfun(@rdivide,bsxfun(@minus, mu(:,k), gp.X'), tau_k);
         z_k = nf_k * exp(-0.5 * sum(delta_k.^2,1));    
 
@@ -125,7 +123,7 @@ for s = 1:Ns
         
         if compute_var == 2 % Compute only self-variance
             tau_kk = sqrt(2*sigma(k)^2*lambda.^2 + ell.^2);                
-            nf_kk = nf * exp(ln_sf2 + sum_lnell - sum(log(tau_kk)));
+            nf_kk = exp(ln_sf2 + sum_lnell - sum(log(tau_kk)));
             if Lchol
                 invKzk = (L\(L'\z_k'))/sn2_eff;
             else
@@ -141,7 +139,7 @@ for s = 1:Ns
                 end
 
                 if grad_flags(2)
-                    % sigma_vargrad(k,s) = -2*sigma(k)*nf/prod(tau_kk).^2 -(2*dz_dsigma*invKzk)/K^2;
+                    % sigma_vargrad(k,s) = -2*sigma(k)/prod(tau_kk).^2 -(2*dz_dsigma*invKzk)/K^2;
                     sigma_vargrad(k,s) = -2/K^2*(sigma(k)*nf_kk*sum(lambda.^2./tau_kk.^2) + dz_dsigma*invKzk);
                 end
 
@@ -155,12 +153,12 @@ for s = 1:Ns
         elseif compute_var
             for j = 1:K
                 tau_j = sqrt(sigma(j)^2*lambda.^2 + ell.^2);
-                nf_j = nf  * exp(ln_sf2 + sum_lnell - sum(log(tau_j)));
+                nf_j = exp(ln_sf2 + sum_lnell - sum(log(tau_j)));
                 delta_j = bsxfun(@rdivide,bsxfun(@minus, mu(:,j), gp.X'), tau_j);
                 z_j = nf_j * exp(-0.5 * sum(delta_j.^2,1));                    
                 
                 tau_jk = sqrt((sigma(j)^2 + sigma(k)^2)*lambda.^2 + ell.^2);                
-                nf_jk = nf * exp(ln_sf2 + sum_lnell - sum(log(tau_jk)));
+                nf_jk = exp(ln_sf2 + sum_lnell - sum(log(tau_jk)));
                 delta_jk = (mu(:,j)-mu(:,k))./tau_jk;
                 
                 if Lchol

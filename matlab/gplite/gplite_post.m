@@ -75,8 +75,6 @@ if ~update1
         sf2 = exp(2*hyp(D+1));
         sn2 = exp(2*hyp(Ncov+1));
         sn2_mult = 1;  % Effective noise variance multiplier
-
-        nf = 1 / (2*pi)^(D/2) * sf2;  % Kernel normalization factor
         
         % Evaluate mean function on training inputs
         hyp_mean = hyp(Ncov+2:Ncov+1+Nmean); % Get mean function hyperparameters        
@@ -84,7 +82,7 @@ if ~update1
         
         % Compute kernel matrix K_mat
         K_mat = sq_dist(diag(1./ell)*X');
-        K_mat = nf * exp(-K_mat/2);
+        K_mat = sf2 * exp(-K_mat/2);
 
         if sn2 < 1e-6   % Different representation depending on noise size
             for iter = 1:10     % Cholesky decomposition until it works
@@ -138,13 +136,11 @@ else
         sf2 = exp(2*hyp(D+1));
         sn2 = exp(2*hyp(Ncov+1));
         sn2_eff = sn2*gp(1).post(s).sn2_mult;            
-
-        nf = 1 / (2*pi)^(D/2) * sf2;  % Kernel normalization factor
         
         % Compute covariance and cross-covariance
-        K = nf;
+        K = sf2;
         Ks_mat = sq_dist(diag(1./ell)*gp(1).X',diag(1./ell)*xstar');
-        Ks_mat = nf * exp(-Ks_mat/2);    
+        Ks_mat = sf2 * exp(-Ks_mat/2);    
         
         L = gp(1).post(s).L;
         Lchol = gp(1).post(s).Lchol;
