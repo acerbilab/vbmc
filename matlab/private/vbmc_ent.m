@@ -23,53 +23,69 @@ if grad_flags(1); mu_grad = zeros(D,K); else, mu_grad = []; end
 if grad_flags(2); sigma_grad = zeros(K,1); else, sigma_grad = []; end
 if grad_flags(3); lambda_grad = zeros(D,1); else, lambda_grad = []; end
 
-% Reshape in 3-D to allow vectorization
-mu_3(:,1,:) = mu;
-sigma_3(1,1,:) = sigma;
+if K == 1
+    % Entropy of single component
+    H = 0.5*D*(1 + log(2*pi)) + D*sum(log(sigma)) + sum(log(lambda));
 
-sumsigma2 = bsxfun(@plus, sigma.^2, sigma_3.^2);
-sumsigma = sqrt(sumsigma2);
-
-nconst = 1/(2*pi)^(D/2)/prod(lambda);
-
-d2 = sum(bsxfun(@rdivide, bsxfun(@minus, mu, mu_3), bsxfun(@times, sumsigma, lambda)).^2,1);
-gamma(1,:,:) = bsxfun(@times, nconst./(sumsigma.^D), exp(-0.5*d2));
-gammasum = sum(gamma(1,:,:),2);
-
-H = -1/K * sum(log(1/K * gammasum),3);
-
-% Compute gradient if requested
-if any(grad_flags)
-
-    gammafrac = bsxfun(@rdivide, gamma, gammasum);
-    if grad_flags(1)
-        dmu = bsxfun(@rdivide, bsxfun(@minus, mu_3, mu), bsxfun(@times, sumsigma2, lambda.^2));
-    end
     if grad_flags(2)
-        dsigma = -D./sumsigma2 + 1./sumsigma2.^2 .* sum(bsxfun(@rdivide, bsxfun(@minus, mu, mu_3), lambda).^2,1);
+        sigma_grad(:) = D./sigma(:);
     end
 
-    % Loop over mixture components
-    for j = 1:K
-        if grad_flags(1)
-            % Compute terms of gradient with respect to mu_j
-            m1 = sum(bsxfun(@times, gammafrac(:,j,:), dmu(:,j,:)),3);
-            m2 = sum( bsxfun(@times, dmu(:,j,:), gamma(1,j,:)),3) ./ gammasum(j);
-            mu_grad(:,j) = -1/K * (m1 + m2);
-        end
-
-        if grad_flags(2)
-            % Compute terms of gradient with respect to sigma_j
-            s1 = sum(bsxfun(@times, gammafrac(:,j,:), dsigma(:,j,:)),3);
-            s2 = sum( bsxfun(@times, dsigma(:,j,:), gamma(1,j,:)),3) ./ gammasum(j);
-            sigma_grad(j) = -sigma(j)/K * (s1 + s2);
-        end
-    end
-    
     if grad_flags(3)
-        dmu2 = bsxfun(@rdivide, bsxfun(@minus, mu_3, mu).^2, bsxfun(@times, sumsigma2, lambda.^2));
-        lambda_grad(:,1) = -1/K*sum(bsxfun(@rdivide,sum(bsxfun(@times,dmu2-1,gamma),2),gammasum),3); 
         % Should be dividing by LAMBDA, see below
+        lambda_grad(:) = ones(D,1); % 1./lambda(:);
+    end
+else    
+    % Multiple components
+
+    % Reshape in 3-D to allow vectorization
+    mu_3(:,1,:) = mu;
+    sigma_3(1,1,:) = sigma;
+
+    sumsigma2 = bsxfun(@plus, sigma.^2, sigma_3.^2);
+    sumsigma = sqrt(sumsigma2);
+
+    nconst = 1/(2*pi)^(D/2)/prod(lambda);
+
+    d2 = sum(bsxfun(@rdivide, bsxfun(@minus, mu, mu_3), bsxfun(@times, sumsigma, lambda)).^2,1);
+    gamma(1,:,:) = bsxfun(@times, nconst./(sumsigma.^D), exp(-0.5*d2));
+    gammasum = sum(gamma(1,:,:),2);
+
+    H = -1/K * sum(log(1/K * gammasum),3);
+
+    % Compute gradient if requested
+    if any(grad_flags)
+
+        gammafrac = bsxfun(@rdivide, gamma, gammasum);
+        if grad_flags(1)
+            dmu = bsxfun(@rdivide, bsxfun(@minus, mu_3, mu), bsxfun(@times, sumsigma2, lambda.^2));
+        end
+        if grad_flags(2)
+            dsigma = -D./sumsigma2 + 1./sumsigma2.^2 .* sum(bsxfun(@rdivide, bsxfun(@minus, mu, mu_3), lambda).^2,1);
+        end
+
+        % Loop over mixture components
+        for j = 1:K
+            if grad_flags(1)
+                % Compute terms of gradient with respect to mu_j
+                m1 = sum(bsxfun(@times, gammafrac(:,j,:), dmu(:,j,:)),3);
+                m2 = sum( bsxfun(@times, dmu(:,j,:), gamma(1,j,:)),3) ./ gammasum(j);
+                mu_grad(:,j) = -1/K * (m1 + m2);
+            end
+
+            if grad_flags(2)
+                % Compute terms of gradient with respect to sigma_j
+                s1 = sum(bsxfun(@times, gammafrac(:,j,:), dsigma(:,j,:)),3);
+                s2 = sum( bsxfun(@times, dsigma(:,j,:), gamma(1,j,:)),3) ./ gammasum(j);
+                sigma_grad(j) = -sigma(j)/K * (s1 + s2);
+            end
+        end
+
+        if grad_flags(3)
+            dmu2 = bsxfun(@rdivide, bsxfun(@minus, mu_3, mu).^2, bsxfun(@times, sumsigma2, lambda.^2));
+            lambda_grad(:,1) = -1/K*sum(bsxfun(@rdivide,sum(bsxfun(@times,dmu2-1,gamma),2),gammasum),3); 
+            % Should be dividing by LAMBDA, see below
+        end
     end
 end
 

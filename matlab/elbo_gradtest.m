@@ -90,6 +90,17 @@ if check_kl
 end
 
 if check_entropy
+    
+    fprintf('---------------------------------------------------------------------------------\n');
+    fprintf('Check entropy of single component...\n\n');
+    vp1 = vp;
+    vp1.K = 1; vp1.mu = vp1.mu(:,1); vp1.sigma = vp1.sigma(1);
+    theta1 = [vp1.mu(:); log(vp1.sigma(:)); log(vp1.lambda(:))];
+    
+    f = @(x) enttest(x,vp1,0);
+    derivcheck(f,theta1 .* (0.5 + rand(size(theta1))));
+    
+    
     fprintf('---------------------------------------------------------------------------------\n');
     fprintf('Check approximate entropy gradient...\n\n');
     f = @(x) enttest(x,vp,0);

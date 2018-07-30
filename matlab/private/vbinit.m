@@ -26,7 +26,8 @@ switch type
     case 2      % Start from highest-posterior density training points
         [~,ord] = sort(ystar,'descend');
         mu0 = Xstar(ord(1:Knew),:)';
-        sigma0 = sqrt(mean(var(mu0,[],2)./lambda0.^2)/Knew).*exp(0.2*randn(1,Knew));
+        if K > 1; V = var(mu0,[],2); else; V = var(Xstar)'; end
+        sigma0 = sqrt(mean(V./lambda0.^2)/Knew).*exp(0.2*randn(1,Knew));
     case 3      % Start from random provided training points
         mu0 = zeros(D,K);
         sigma0 = zeros(1,K);
@@ -69,7 +70,9 @@ for iOpt = 1:Nopts
         case 3      % Start from random provided training points
             ord = randperm(Nstar);
             mu = Xstar(ord(1:Knew),:)';
-            sigma = sqrt(mean(var(mu,[],2).^2)/Knew)*exp(0.2*randn(1,Knew));
+            if K > 1; V = var(mu,[],2); else; V = var(Xstar)'; end
+
+            sigma = sqrt(mean(V)/Knew)*exp(0.2*randn(1,Knew));
             if vp.optimize_lambda
                 lambda = std(Xstar,[],1)';
                 lambda = lambda*sqrt(D/sum(lambda.^2));

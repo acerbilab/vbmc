@@ -34,6 +34,12 @@ if optimState.EntropySwitch
     NSentKFast = 0;
 end
 
+% If only one component, use analytical expression for the entropy
+if K == 1
+    NSentK = 0;
+    NSentKFast = 0;    
+end
+
 % Confidence weight
 elcbo_beta = options.ELCBOWeight; % * sqrt(vp.D) / sqrt(optimState.N);
    
