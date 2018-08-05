@@ -37,13 +37,14 @@ lambda(:,1) = vp.lambda(:);
 
 Ns = numel(gp.post);            % Hyperparameter samples
 
-if all(gp.meanfun ~= [0 1 4])
+if all(gp.meanfun ~= [0 1 4 6])
     error('gplogjoint:UnsupportedMeanFun', ...
-        'Log joint computation currently only supports zero, constant, or negative quadratic mean functions.');
+        'Log joint computation currently only supports zero, constant, negative quadratic, or squared exponential mean functions.');
 end
 
-% Using negative quadratic mean?
+% Which mean function is being used?
 quadratic_meanfun = gp.meanfun == 4;
+sqexp_meanfun = gp.meanfun == 6;
 
 F = zeros(1,Ns);
 % Check which gradients are computed
@@ -69,11 +70,15 @@ for s = 1:Ns
     sn2 = exp(2*hyp(D+2));
     sum_lnell = sum(hyp(1:D));    
     
+    % GP mean function hyperparameters
     if gp.meanfun > 0; m0 = hyp(D+3); else; m0 = 0; end
-    if quadratic_meanfun
+    if quadratic_meanfun || sqexp_meanfun
         xm = hyp(D+3+(1:D));
-        omega = exp(hyp(2*D+3+(1:D)));        
-    end
+        omega = exp(hyp(2*D+3+(1:D)));
+        if sqexp_meanfun
+            h = exp(hyp(3*D+4));
+        end
+    end    
     
     alpha = gp.post(s).alpha;
     L = gp.post(s).L;
@@ -93,6 +98,11 @@ for s = 1:Ns
             nu_k = -0.5*sum(1./omega.^2 .* ...
                 (mu(:,k).^2 + sigma(k)^2*lambda.^2 - 2*mu(:,k).*xm + xm.^2),1);            
             F(s) = F(s) + nu_k/K;
+        elseif sqexp_meanfun
+            tau2_mfun = sigma(k)^2*lambda.^2 + omega.^2;
+            s2 = ((mu(:,k) - xm).^2)./tau2_mfun;
+            nu_k = h*prod(omega./sqrt(tau2_mfun))*exp(-0.5*sum(s2,1));            
+            F(s) = F(s) + nu_k/K;            
         end
 
         if grad_flags(1)
@@ -100,6 +110,8 @@ for s = 1:Ns
             mu_grad(:,k,s) = dz_dmu*alpha/K;            
             if quadratic_meanfun
                 mu_grad(:,k,s) = mu_grad(:,k,s) - 1./omega.^2.*(mu(:,k) - xm)/K;
+            elseif sqexp_meanfun
+                mu_grad(:,k,s) = mu_grad(:,k,s) - nu_k./tau2_mfun.*(mu(:,k) - xm)/K;                
             end
             
         end
@@ -109,6 +121,9 @@ for s = 1:Ns
             sigma_grad(k,s) = dz_dsigma*alpha/K;
             if quadratic_meanfun
                 sigma_grad(k,s) = sigma_grad(k,s) - sigma(k)*sum(1./omega.^2.*lambda.^2,1)/K;
+            elseif sqexp_meanfun
+                sigma_grad(k,s) = sigma_grad(k,s) - sigma(k)*sum(lambda.^2./tau2_mfun,1)*nu_k/K ...
+                    + sigma(k)*sum((mu(:,k) - xm).^2.*lambda.^2./tau2_mfun.^2,1)*nu_k/K;
             end            
             
         end
@@ -118,6 +133,9 @@ for s = 1:Ns
             lambda_grad(:,s) = lambda_grad(:,s) + (dz_dlambda*alpha)/K;
             if quadratic_meanfun
                 lambda_grad(:,s) = lambda_grad(:,s) - sigma(k)^2./omega.^2.*lambda/K;
+            elseif sqexp_meanfun
+                lambda_grad(:,s) = lambda_grad(:,s) - sigma(k)^2*lambda./tau2_mfun*nu_k/K ...
+                    + sigma(k)^2*(mu(:,k) - xm).^2.*lambda./tau2_mfun.^2*nu_k/K;
             end            
         end
         

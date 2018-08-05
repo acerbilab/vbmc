@@ -21,8 +21,9 @@ if all(gp(1).meanfun ~= [0 1 4])
         'Log joint computation currently only supports zero, constant, or negative quadratic mean functions.');
 end
 
-% Using negative quadratic mean?
-quadratic_meanfun = gp(1).meanfun == 4;
+% Which mean function is being used?
+quadratic_meanfun = gp.meanfun == 4;
+sqexp_meanfun = gp.meanfun == 6;
 
 F = zeros(Ngp,Ns);
 if compute_var; varF = zeros(1,Ns); end
@@ -37,12 +38,16 @@ for s = 1:Ns
     sn2 = exp(2*hyp(D+2));
     sum_lnell = sum(hyp(1:D));
     
-    if gp(1).meanfun > 0; m0 = hyp(D+3); else; m0 = 0; end
-    if quadratic_meanfun
+    % GP mean function hyperparameters
+    if gp.meanfun > 0; m0 = hyp(D+3); else; m0 = 0; end
+    if quadratic_meanfun || sqexp_meanfun
         xm = hyp(D+3+(1:D));
-        omega = exp(hyp(2*D+3+(1:D)));        
-    end
-    
+        omega = exp(hyp(2*D+3+(1:D)));
+        if sqexp_meanfun
+            h = exp(hyp(3*D+4));
+        end
+    end    
+        
     L = gp(1).post(s).L;
     Lchol = gp(1).post(s).Lchol;
     sn2_eff = sn2*gp(1).post(s).sn2_mult;
@@ -63,6 +68,11 @@ for s = 1:Ns
                 nu_k = -0.5*sum(1./omega.^2 .* ...
                     (mu(:,k).^2 + sigma(k)^2*lambda.^2 - 2*mu(:,k).*xm + xm.^2),1);            
                 F(iGP,s) = F(iGP,s) + nu_k/K;
+            elseif sqexp_meanfun
+                tau2_mfun = sigma(k)^2*lambda.^2 + omega.^2;
+                s2 = ((mu(:,k) - xm).^2)./tau2_mfun;
+                nu_k = h*prod(omega./sqrt(tau2_mfun))*exp(-0.5*sum(s2,1));            
+                F(iGP,s) = F(iGP,s) + nu_k/K;                    
             end
         end
         

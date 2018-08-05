@@ -61,7 +61,7 @@ defopts.StableGPSampling   = '200 + 10*nvars    % Force stable GP hyperparameter
 defopts.StableGPSamples    = '0                 % Number of GP samples when GP is stable (0 = optimize)';
 defopts.GPSampleThin       = '5                 % Thinning for GP hyperparameter sampling';
 defopts.TolGPVar           = '1e-4              % Threshold on GP variance, used to stabilize sampling and by some acquisition fcns';
-defopts.QuadraticMean      = 'yes               % Use GP with quadratic mean function (otherwise constant)';
+defopts.gpMeanFun          = 'negquad           % GP mean function';
 defopts.Kfun               = '@sqrt             % Variational components as a function of training points';
 defopts.KfunMax            = '@(N) 2*sqrt(N)    % Max variational components as a function of training points';
 defopts.Kwarmup            = '2                 % Variational components during warmup';
@@ -180,7 +180,7 @@ end
 D = size(x0,2);     % Number of variables
 optimState = [];
 
-% Check correctness of boundaries and starting points
+% Check/fix boundaries and starting points
 [LB,UB,PLB,PUB] = boundscheck(x0,LB,UB,PLB,PUB,prnt);
 
 % Convert from char to function handles
@@ -205,12 +205,14 @@ end
 % Initialize function logger
 [~,optimState] = vbmc_funlogger([],x0(1,:),optimState,'init',options.CacheSize,options.NoiseObj);
 
-% GP hyperparameters
-hyp = [];   hyp_warp = [];  gp = [];
-if options.QuadraticMean
-    optimState.gpMeanfun = 'negquad';
-else
-    optimState.gpMeanfun = 'const';
+% GP struct and GP hyperparameters
+gp = [];    hyp = [];   hyp_warp = [];
+optimState.gpMeanfun = options.gpMeanFun;
+switch optimState.gpMeanfun
+    case {'zero','const','negquad','se'}
+    otherwise
+        error('vbmc:UnknownGPmean', ...
+            'Unknown/unsupported GP mean function. Supported mean functions are ''zero'', ''const'', ''negquad'', and ''se''.');
 end
 
 if optimState.Cache.active
@@ -244,7 +246,7 @@ while ~isFinished_flag
     
     if iter == 1 && optimState.Warmup; action = 'start warm-up'; end
     
-    % Switch to stochastic entropy towards the end
+    % Switch to stochastic entropy towards the end if still on deterministic
     if optimState.EntropySwitch && ...
             optimState.funccount >= options.EntropyForceSwitch*options.MaxFunEvals
         optimState.EntropySwitch = false;
@@ -267,67 +269,15 @@ while ~isFinished_flag
     optimState.N = optimState.Xmax;  % Number of training inputs
     optimState.Neff = sum(optimState.X_flag(1:optimState.Xmax));
     timer.activeSampling = toc(t);
-            
-    % Nonlinear warping iteration? (only after burn-in)
-    isNonlinearWarping = (optimState.N - optimState.LastNonlinearWarping) >= options.WarpNonlinearEpoch ...
-        && (options.MaxFunEvals - optimState.N) >= options.WarpNonlinearEpoch ...
-        && optimState.N >= options.WarpNonlinearMinFun ...
-        && options.WarpNonlinear ...
-        && ~optimState.Warmup;
-    if isNonlinearWarping
-        optimState.LastNonlinearWarping = optimState.N;
-        optimState.WarpingNonlinearCount = optimState.WarpingNonlinearCount + 1;
-        if isempty(action); action = 'warp'; else; action = [action ', warp']; end
+    
+    %% Input warping / reparameterization (unsupported!)
+    if options.WarpNonlinear || options.WarpRotoScaling
+        t = tic;
+        [optimState,vp,hyp,hyp_warp,action] = ...
+            vbmc_warp(optimState,vp,gp,hyp,hyp_warp,action,options,cmaes_opts);
+        timer.warping = toc(t);        
     end
-    
-    % Rotoscaling iteration? (only after burn-in)
-    t = tic;
-    isRotoscaling = (optimState.N - optimState.LastWarping) >= options.WarpEpoch ...
-        && (optimState.N - optimState.LastNonlinearWarping) >= options.WarpEpoch ...
-        && (options.MaxFunEvals - optimState.N) >= options.WarpEpoch ...
-        && optimState.N >= options.WarpMinFun ...
-        && options.WarpRotoScaling ...
-        && ~optimState.Warmup;
-    if isRotoscaling
-        optimState.LastWarping = optimState.N;
-        optimState.WarpingCount = optimState.WarpingCount + 1;
-        if isempty(action); action = 'rotoscale'; else; action = [action ', rotoscale']; end
-    end
-    
-    %% Update stretching of unbounded variables
-    if any(isinf(LB) & isinf(UB)) && ...
-            options.WarpNonlinear && (isNonlinearWarping || iter == 1)
-        [vp,optimState,hyp] = ...
-            warp_unbounded(vp,optimState,hyp,gp,cmaes_opts,options);
-        optimState = ResetRunAvg(optimState);
-    end
-
-    %%  Rotate and rescale variables
-    if options.WarpRotoScaling && isRotoscaling
-        [vp,optimState,hyp] = ...
-            warp_rotoscaling(vp,optimState,hyp,gp,cmaes_opts,options);
-        optimState = ResetRunAvg(optimState);
-    end
-    
-    %% Learn nonlinear warping via GP
-    if options.WarpNonlinear && isNonlinearWarping
-        [vp,optimState,hyp,hyp_warp] = ...
-            warp_nonlinear(vp,optimState,hyp,hyp_warp,cmaes_opts,options);
-        optimState.redoRotoscaling = true;
-        optimState = ResetRunAvg(optimState);
-    end
-    
-%     if optimState.DoRotoscaling && isWarping
-%         [~,X_hpd,y_hpd] = ...
-%             vbmc_gphyp(optimState,optimState.gpMeanfun,0,options);            
-%         vp = vpoptimize(Nfastopts,1,0,vp,gp,vp.K,X_hpd,y_hpd,optimState,stats,options,cmaes_opts,prnt);
-%         [vp,optimState,hyp] = ...
-%             warp_rotoscaling(vp,optimState,hyp,gp,cmaes_opts,options);
-%         optimState.DoRotoscaling = false;
-%     end
-    
-    timer.warping = toc(t);
-    
+        
     %% Train GP
     t = tic;
     
@@ -424,24 +374,16 @@ while ~isFinished_flag
     [vp,elbo,elbo_sd,varss] = ...
         vpoptimize(Nfastopts,Nslowopts,useEntropyApprox,vp,gp,Knew,X_hpd,y_hpd,optimState,stats,options,cmaes_opts,prnt);
     optimState.vpK = vp.K;
+            
+    timer.variationalFit = toc(t);
     
-    %%  Redo rotoscaling at the end
-    if options.WarpRotoScaling && optimState.redoRotoscaling
-        [vp,optimState,hyp] = ...
-            warp_rotoscaling(vp,optimState,hyp,gp,cmaes_opts,options);
-        
-        % Get priors and starting hyperparameters
-        [hypprior,X_hpd,y_hpd,~,hyp0,optimState.gpMeanfun] = ...
-            vbmc_gphyp(optimState,optimState.gpMeanfun,0,options);
-        gptrain_options.Nopts = 1;
-
-        [gp,hyp] = gplite_train(hyp,Ns_gp, ...
-            optimState.X(optimState.X_flag,:),optimState.y(optimState.X_flag), ...
-            optimState.gpMeanfun,hypprior,[],gptrain_options);
-        
-         vp = vpoptimize(Nfastopts,1,0,vp,gp,vp.K,X_hpd,y_hpd,optimState,stats,options,cmaes_opts,prnt);
+    %% Recompute warpings at end iteration (unsupported)
+    if options.WarpNonlinear || options.WarpRotoScaling    
+        [optimState,vp,hyp] = ...
+            vbmc_rewarp(optimState,vp,gp,hyp,options,cmaes_opts);
     end
     
+    %% Plot current iteration (to be improved)
     if options.Plot
         
         if D == 1
@@ -481,8 +423,6 @@ while ~isFinished_flag
     
     %mubar
     %Sigma
-        
-    timer.variationalFit = toc(t);
     
     %----------------------------------------------------------------------
     %% Finalize iteration
@@ -798,15 +738,5 @@ if ~isempty(stats)
     w = 0.5*w1 + 0.5*w2;
     
 end
-
-end
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function optimState = ResetRunAvg(optimState)
-%RESETRUNAVG Reset running averages of moments after warping.
-
-optimState.RunMean = [];
-optimState.RunCov = [];        
-optimState.LastRunAvg = NaN;
 
 end

@@ -12,6 +12,8 @@ function [m,dm] = gplite_meanfun(hyp,X,meanfun,y)
 %      3 or 'quad'      quadratic                           2*D+1
 %      4 or 'negquad'   negative quadratic, centered        2*D+1
 %      5 or 'posquad'   positive quadratic, centered        2*D+1
+%      6 or 'se'        squared exponential                 2*D+2
+%      7 or 'negse'     negative squared exponential        2*D+2
 %      function_handle  custom                              NMEAN
 %
 %   MEANFUN can be a function handle to a custom mean function.
@@ -65,6 +67,12 @@ switch meanfun
     case {5,'5','posquad'}
         Nmean = 1 + 2*D;
         meanfun = 5;
+    case {6,'6','se'}
+        Nmean = 2 + 2*D;
+        meanfun = 6;
+    case {7,'7','negse'}
+        Nmean = 2 + 2*D;
+        meanfun = 7;
     otherwise
         if isnumeric(meanfun); meanfun = num2str(meanfun); end
         error('gplite_meanfun:UnknownMeanFun',...
@@ -106,21 +114,35 @@ if isempty(hyp)
                 dm.PUB(D+2:2*D+1) = delta.^2;                
             end
             
-        elseif meanfun == 4 || meanfun == 5
+        elseif meanfun >= 4 && meanfun <= 7
             
+            % Redefine limits for m0 (meaning depends on mean func type)
             h = max(y) - min(y);    % Height
-            if meanfun == 4
-                dm.LB(1) = min(y);
-                dm.UB(1) = max(y) + h;
-                dm.PLB(1) = median(y);
-                dm.PUB(1) = max(y);
-                dm.x0(1) = quantile1(y,0.9);
-            else
-                dm.LB(1) = min(y) - h;
-                dm.UB(1) = max(y);
-                dm.PLB(1) = min(y);
-                dm.PUB(1) = median(y);
-                dm.x0(1) = quantile1(y,0.1);
+            switch meanfun
+                case 4
+                    dm.LB(1) = min(y);
+                    dm.UB(1) = max(y) + h;
+                    dm.PLB(1) = median(y);
+                    dm.PUB(1) = max(y);
+                    dm.x0(1) = quantile1(y,0.9);
+                case 5
+                    dm.LB(1) = min(y) - h;
+                    dm.UB(1) = max(y);
+                    dm.PLB(1) = min(y);
+                    dm.PUB(1) = median(y);
+                    dm.x0(1) = quantile1(y,0.1);
+                case 6
+                    dm.LB(1) = min(y) - h;
+                    dm.UB(1) = max(y);
+                    dm.PLB(1) = min(y);
+                    dm.PUB(1) = median(y);
+                    dm.x0(1) = quantile1(y,0.1);
+                case 7
+                    dm.LB(1) = min(y);
+                    dm.UB(1) = max(y) + h;
+                    dm.PLB(1) = median(y);
+                    dm.PUB(1) = max(y);
+                    dm.x0(1) = quantile1(y,0.9);                    
             end
             
             w = max(X) - min(X);                    % Width
@@ -136,7 +158,16 @@ if isempty(hyp)
             dm.PLB(D+2:2*D+1) = log(w) + 0.5*log(ToL);
             dm.PUB(D+2:2*D+1) = log(w);
             dm.x0(D+2:2*D+1) = log(std(X));
-        end        
+            
+            if meanfun == 6 || meanfun == 7                
+                dm.LB(2*D+2) = log(h) + log(ToL);   % h
+                dm.UB(2*D+2) = log(h) + log(Big);
+                dm.PLB(2*D+2) = log(h) + 0.5*log(ToL);
+                dm.PUB(2*D+2) = log(h);
+                dm.x0(2*D+2) = log(std(y));                
+            end
+            
+        end
         
         % Plausible starting point
         idx_nan = isnan(dm.x0);
@@ -156,6 +187,10 @@ if isempty(hyp)
                 dm.meanfun_name = 'negquad';
             case 5
                 dm.meanfun_name = 'posquad';
+            case 6
+                dm.meanfun_name = 'se';
+            case 7
+                dm.meanfun_name = 'negse';
         end
         
     end
@@ -215,7 +250,7 @@ switch meanfun
         xm = hyp(1+(1:D))';
         omega = exp(hyp(D+1+(1:D)))';
         z2 = bsxfun(@rdivide,bsxfun(@minus,X,xm),omega).^2;
-        m = m0 - 0.5*sum(z2,2);    
+        m = m0 - 0.5*sum(z2,2);
         if compute_grad
             dm(:,1) = ones(N,1);
             dm(:,2:D+1) = bsxfun(@rdivide,bsxfun(@minus,X,xm), omega.^2);
@@ -232,7 +267,24 @@ switch meanfun
             dm(:,2:D+1) = -bsxfun(@rdivide,bsxfun(@minus,X,xm), omega.^2);
             dm(:,D+2:2*D+1) = -z2;        
         end
-        
+    case {6,7}
+        m0 = hyp(1);
+        xm = hyp(1+(1:D))';
+        omega = exp(hyp(D+1+(1:D)))';
+        h = exp(hyp(2*D+2));
+        z2 = bsxfun(@rdivide,bsxfun(@minus,X,xm),omega).^2;
+        if meanfun == 6
+            se = h*exp(-0.5*sum(z2,2));
+        else
+            se = -h*exp(-0.5*sum(z2,2));
+        end
+        m = m0 + se;
+        if compute_grad
+            dm(:,1) = ones(N,1);
+            dm(:,2:D+1) = bsxfun(@times, bsxfun(@rdivide,bsxfun(@minus,X,xm), omega.^2), se);
+            dm(:,D+2:2*D+1) = bsxfun(@times, z2, se);
+            dm(:,2*D+2) = se;
+        end
 end
 
 end

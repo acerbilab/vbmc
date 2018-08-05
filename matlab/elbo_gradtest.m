@@ -8,14 +8,14 @@ if nargin < 4; X = []; end
 if nargin < 5; y = []; end
 
 check_kl = 0;
-check_entropy = 1;
+check_entropy = 0;
 check_quadrature = 0;
-check_logjointgrad = 0;
+check_logjointgrad = 1;
 check_gp = 0;
 
-meanfun = 4;
+meanfun = 6;
 quadratic_mean = meanfun == 4;
-
+sqexp_mean = meanfun == 6;
 
 if isscalar(theta)
     D = theta;
@@ -42,9 +42,12 @@ theta = [theta; log(lambda(:))];
 if isempty(hyp)
     Ns = randi(3);    % Also test multiple hyperparameters
     hyp = [log(lambda)*ones(1,Ns); 0.1*randn(1,Ns); 0.1*randn(1,Ns)-3; 10*randn(1,Ns)];
-    if quadratic_mean
+    if quadratic_mean || sqexp_mean
         hyp = [hyp; randn(D,Ns); 0.2*randn(D,Ns)-3];
         % hyp = [hyp; theta(1:D*K); theta(D*K+1)+theta(K+D*K+(1:D))];
+    end
+    if sqexp_mean
+        hyp = [hyp; randn(1,Ns)];
     end
 end
 
