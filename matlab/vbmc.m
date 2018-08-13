@@ -16,10 +16,6 @@ function [vp,elbo,elbo_sd,exitflag,output,stats] = vbmc(fun,x0,LB,UB,PLB,PUB,opt
 %   Code repository: https://github.com/lacerbi/vbmc
 %--------------------------------------------------------------------------
 
-% TO-DO list:
-% - Write a private quantile function to avoid calls to Stats Toolbox.
-% - Fix call to fmincon if Optimization Toolbox is not available.
-% - Check that I am not using other ToolBoxes by mistake.
 
 
 %% Basic default options
@@ -234,8 +230,6 @@ end
 iter = 0;
 isFinished_flag = false;
 exitflag = 0;   output = [];    stats = [];     sKL = Inf;
-
-qindex = Inf;
 
 while ~isFinished_flag    
     iter = iter + 1;
@@ -469,9 +463,9 @@ while ~isFinished_flag
     
     % Write iteration
     if optimState.Cache.active
-        fprintf(displayFormat,iter,optimState.funccount,optimState.cachecount,elbo,elbo_sd,sKL,vp.K,qindex,action);
+        fprintf(displayFormat,iter,optimState.funccount,optimState.cachecount,elbo,elbo_sd,sKL,vp.K,optimState.R,action);
     else
-        fprintf(displayFormat,iter,optimState.funccount,elbo,elbo_sd,sKL,vp.K,qindex,action);
+        fprintf(displayFormat,iter,optimState.funccount,elbo,elbo_sd,sKL,vp.K,optimState.R,action);
     end    
     
 %     if optimState.iter > 10 && stats.elboSD(optimState.iter-1) < 0.1 && stats.elboSD(optimState.iter) > 10
@@ -576,3 +570,9 @@ if ~onPath
 end
 
 end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% TO-DO list:
+% - Write a private quantile function to avoid calls to Stats Toolbox.
+% - Fix call to fmincon if Optimization Toolbox is not available.
+% - Check that I am not using other ToolBoxes by mistake.
