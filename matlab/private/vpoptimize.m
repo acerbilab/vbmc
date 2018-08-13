@@ -166,7 +166,7 @@ for iOpt = 1:Nslowopts
     % Second, refine with unbiased stochastic entropy approximation
     if NSentK > 0
         switch lower(options.StochasticOptimizer)
-            case 'adam'                
+            case 'adam'        
                 [thetaopt,~,theta_lst,fval_lst] = ...
                     fminadam(vbtrainmc_fun,thetaopt,[],[],options.TolFunStochastic);
 

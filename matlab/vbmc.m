@@ -280,35 +280,14 @@ while ~isFinished_flag
         
     %% Train GP
     t = tic;
-    
-    % Check whether to perform hyperparameter sampling or optimization
-    if optimState.StopSampling == 0
-        % Number of samples
-        Ns_gp = round(options.NSgpMax/sqrt(optimState.N));
         
-        % Maximum sample cutoff during warm-up
-        if optimState.Warmup
-            MaxWarmupGPSamples = ceil(options.NSgpMax/10);
-            Ns_gp = min(Ns_gp,MaxWarmupGPSamples);
-        end
-        
-        % Stop sampling after reaching max number of training points
-        if optimState.N >= options.StableGPSampling
-            optimState.StopSampling = optimState.N;
-        end
-                
-        if optimState.StopSampling > 0
-            if isempty(action); action = 'stable GP sampling'; else; action = [action ', stable GP sampling']; end
-        end
-    end
-    if optimState.StopSampling > 0
-        Ns_gp = options.StableGPSamples;
-    end
-    
-    % Get priors and starting hyperparameters
-    [hypprior,X_hpd,y_hpd,~,hyp0,optimState.gpMeanfun] = ...
+    % Get priors, starting hyperparameters, and number of samples
+    [hypprior,X_hpd,y_hpd,~,hyp0,optimState.gpMeanfun,Ns_gp] = ...
         vbmc_gphyp(optimState,optimState.gpMeanfun,0,options);
     if isempty(hyp); hyp = hyp0; end % Initial GP hyperparameters
+    if Ns_gp == options.StableGPSamples && optimState.StopSampling == 0
+        optimState.StopSampling = optimState.N; % Reached stable sampling
+    end
     
     % Get GP training options
     gptrain_options = get_GPTrainOptions(Ns_gp,optimState,stats,options);    
@@ -334,7 +313,7 @@ while ~isFinished_flag
         optimState.RunHypCov = [];
     end
     
-    % Sample from GP
+    % Sample from GP (for debug)
     if ~isempty(gp) && 0
         Xgp = vbmc_gpsample(gp,1e3,optimState,1);
         cornerplot(Xgp);
@@ -359,18 +338,20 @@ while ~isFinished_flag
     end
     Knew = min(Knew,Kmax);
 
+    % Decide number of fast/slow optimizations
     if optimState.RecomputeVarPost || options.AlwaysRefitVarPost
         Nfastopts = options.NSelbo * vp.K;
         Nslowopts = options.ElboStarts; % Full optimizations
         useEntropyApprox = true;
         optimState.RecomputeVarPost = false;
     else
-        % Only incremental change
+        % Only incremental change from previous iteration
         Nfastopts = ceil(options.NSelbo * vp.K * options.NSelboIncr);
         Nslowopts = 1;
         useEntropyApprox = false;
     end
     
+    % Run optimization of variational parameters
     [vp,elbo,elbo_sd,varss] = ...
         vpoptimize(Nfastopts,Nslowopts,useEntropyApprox,vp,gp,Knew,X_hpd,y_hpd,optimState,stats,options,cmaes_opts,prnt);
     optimState.vpK = vp.K;
@@ -395,8 +376,6 @@ while ~isFinished_flag
             yy = vbmc_pdf(xx,vp,false,true);
             hold on;
             plot(xx,yy+elbo,':');
-            
-            
             drawnow;
             
         else
@@ -415,9 +394,7 @@ while ~isFinished_flag
                 drawnow;            
             catch
                 % pause
-            end
-            
-            
+            end            
         end
     end    
     
@@ -460,45 +437,10 @@ while ~isFinished_flag
         % optimState.RunT = optimState.RunT + 1;
     end
         
-    % Check if we are still warming-up (95% confidence)
-    if optimState.Warmup && iter > 1
-        elbo_old = stats.elbo(iter-1);
-        elboSD_old = stats.elboSD(iter-1);
-        increaseUCB = elbo - elbo_old + 1.6449*sqrt(elbo_sd^2 + elboSD_old^2);
-        if increaseUCB < options.StopWarmupThresh
-            optimState.WarmupStableIter = optimState.WarmupStableIter + 1;
-        else
-            optimState.WarmupStableIter = 0;
-        end        
-        if optimState.WarmupStableIter >= options.TolStableWarmup            
-            optimState.Warmup = false;
-            if isempty(action); action = 'end warm-up'; else; action = [action ', end warm-up']; end
-            
-            % Remove warm-up points from training set unless close to max
-            ymax = max(optimState.y_orig(1:optimState.Xmax));
-            NkeepMin = 4*D; 
-            idx_keep = (ymax - optimState.y_orig) < options.WarmupKeepThreshold;
-            if sum(idx_keep) < NkeepMin
-                [~,ord] = sort(optimState.y_orig,'descend');
-                idx_keep(ord(1:min(NkeepMin,optimState.Xmax))) = true;
-            end
-            optimState.X_flag = idx_keep & optimState.X_flag;
-            
-            % Start warping
-            optimState.LastWarping = optimState.N;
-            optimState.LastNonlinearWarping = optimState.N;
-            
-            % Skip adaptive sampling for next iteration
-            optimState.SkipAdaptiveSampling = true;
-            
-            % Fully recompute variational posterior
-            optimState.RecomputeVarPost = true;
-            
-            % Reset GP hyperparameter covariance
-            optimState.RunHypCov = [];
-        end
-    end
-    
+    % Check if we are still warming-up
+    if optimState.Warmup && iter > 1    
+        [optimState,action] = vbmc_warmup(optimState,stats,action,elbo,elbo_sd,options);
+    end    
 
     % t_fits(iter) = toc(timer_fits);    
     % dt = (t_adapt(iter)+t_fits(iter))/new_funevals;
@@ -513,89 +455,17 @@ while ~isFinished_flag
     
     %----------------------------------------------------------------------
     %% Check termination conditions    
-        
-    % Maximum number of new function evaluations
-    if optimState.funccount >= options.MaxFunEvals
-        isFinished_flag = true;
-        exitflag = 1;
-        % msg = 'Optimization terminated: reached maximum number of function evaluations OPTIONS.MaxFunEvals.';
-    end
 
-    % Maximum number of iterations
-    if iter >= options.MaxIter
-        isFinished_flag = true;
-        exitflag = 1;
-        % msg = 'Optimization terminated: reached maximum number of iterations OPTIONS.MaxIter.';
-    end
-
-    % Reached stable variational posterior with stable ELBO and low uncertainty
-    [idx_stable,dN,dN_last,w] = getStableIter(stats,optimState,options);
-    if ~isempty(idx_stable)
-        sKL_list = stats.sKL;
-        elbo_list = stats.elbo;
-        
-        err2 = sum((elbo_list(idx_stable:iter) - mean(elbo_list(idx_stable:iter))).^2);
-
-        wmean = sum(w.*elbo_list(idx_stable:iter));
-        wvar = sum(w.*(elbo_list(idx_stable:iter) - wmean).^2) / (1 - sum(w.^2));
-
-        qindex_vec(1) = abs(elbo_list(iter) - elbo_list(iter-1))/options.TolSD;
-        qindex_vec(2) = stats.elboSD(iter) / options.TolSD;
-        qindex_vec(3) = sKL_list(iter) / options.TolsKL;    % This should be fixed
-        
-        % Stop sampling after sample variance has stabilized below ToL
-        if ~isempty(idx_stable) && optimState.StopSampling == 0 && ~optimState.Warmup
-            varss_list = stats.gpSampleVar;
-            if sum(w.*varss_list(idx_stable:iter)) < options.TolGPVar
-                optimState.StopSampling = optimState.N;
-                if isempty(action); action = 'stable GP sampling'; else; action = [action ', stable GP sampling']; end
-            end
-        end
-        
-        % Compute average ELCBO improvement in the past few iterations
-        idx0 = max(1,iter-options.TolStableIters+1);
-        xx = stats.N(idx0:iter);
-        yy = stats.elbo(idx0:iter) - options.ELCBOImproWeight*stats.elboSD(idx0:iter);
-        p = polyfit(xx,yy,1);
-        ELCBOimpro = p(1);
-
-    else
-        qindex_vec = Inf(1,3);
-        ELCBOimpro = NaN;
-    end
-
-    % Store reliability index
-    qindex = mean(qindex_vec);    
-    stats.qindex(iter) = qindex;
-    stats.elcbo_impro(iter) = ELCBOimpro;
-    optimState.R = qindex;
+    [optimState,stats,isFinished_flag,exitflag,action] = ...
+        vbmc_termination(optimState,action,stats,options);
     
-    % Check stability termination condition
-    stableflag = false;
-    if iter >= options.TolStableIters && ... 
-            all(qindex_vec < 1) && ...
-            all(stats.qindex(iter-options.TolStableIters+1:iter) < 1) && ...
-            ELCBOimpro < options.TolImprovement
-            % msg = 'Optimization terminated: reached maximum number of iterations OPTIONS.MaxIter.';
-            
-        % If stable but entropy switch is ON, turn it off and continue
-        if optimState.EntropySwitch
-            optimState.EntropySwitch = false;
-            if isempty(action); action = 'entropy switch'; else; action = [action ', entropy switch']; end 
-        else
-            isFinished_flag = true;
-            exitflag = 0;
-            stableflag = true;
-            if isempty(action); action = 'stable'; else; action = [action ', stable']; end     
-        end
-    end
-    stats.stable(iter) = stableflag;        % Store stability flag    
-        
-    % Prevent early termination
-    if optimState.N < options.MinFunEvals || ...
-            optimState.iter < options.MinIter
-        isFinished_flag = false;
-    end
+    %% Write output
+    
+    % Stopped GP sampling this iteration?
+    if Ns_gp == options.StableGPSamples && ...
+            stats.gpNsamples(max(1,iter-1)) > options.StableGPSamples
+        if isempty(action); action = 'stable GP sampling'; else; action = [action ', stable GP sampling']; end
+    end    
     
     % Write iteration
     if optimState.Cache.active
@@ -686,7 +556,6 @@ end
 function add2path()
 %ADD2PATH Adds VBMC subfolders to MATLAB path.
 
-% subfolders = {'acq','gpdef','gpml_fast','init','poll','search','utils','warp','gpml-matlab-v3.6-2015-07-07'};
 subfolders = {'acq','gplite','misc','utils','warp'};
 pathCell = regexp(path, pathsep, 'split');
 baseFolder = fileparts(mfilename('fullpath'));
@@ -704,39 +573,6 @@ end
 % ADDPATH is slow, call it only if folders are not on path
 if ~onPath
     addpath(genpath(fileparts(mfilename('fullpath'))));
-end
-
-end
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [idx_stable,dN,dN_last,w] = getStableIter(stats,optimState,options)
-%GETSTABLEITER Find index of starting stable iteration.
-
-iter = optimState.iter;
-idx_stable = [];
-dN = [];    dN_last = [];   w = [];
-
-if optimState.iter < 3; return; end
-
-if ~isempty(stats)
-    iter_list = stats.iter;
-    N_list = stats.N;
-    idx_stable = find(N_list <= optimState.N - options.TolStableFunEvals & ...
-        iter_list <= iter - options.TolStableIters,1,'last');
-    idx_stable = 1;
-    if ~isempty(idx_stable)
-        dN = optimState.N - N_list(idx_stable);
-        dN_last = N_list(end) - N_list(end-1);
-    end
-    
-    % Compute weighting function
-    Nw = numel(idx_stable:iter);    
-    w1 = zeros(1,Nw);
-    w1(end) = 1;
-    w2 = exp(-(stats.N(end) - stats.N(end-Nw+1:end))/10);
-    w2 = w2 / sum(w2);
-    w = 0.5*w1 + 0.5*w2;
-    
 end
 
 end
