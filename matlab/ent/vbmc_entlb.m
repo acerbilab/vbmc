@@ -1,5 +1,7 @@
-function [H,dH] = vbmc_ent(vp,grad_flags,jacobian_flag)
-%VBMC_ENT Approximate entropy of variational posterior and gradient
+function [H,dH] = vbmc_entlb(vp,grad_flags,jacobian_flag)
+%VBMC_ENTLB Entropy lower bound for variational posterior
+
+% Uses entropy lower bound of Gershman et al. (2012)
 
 % Check if gradient computation is required
 if nargout < 2                              % No 2nd output, no gradients
@@ -24,7 +26,7 @@ if grad_flags(2); sigma_grad = zeros(K,1); else, sigma_grad = []; end
 if grad_flags(3); lambda_grad = zeros(D,1); else, lambda_grad = []; end
 
 if K == 1
-    % Entropy of single component
+    % Entropy of single component, uses exact expression
     H = 0.5*D*(1 + log(2*pi)) + D*sum(log(sigma)) + sum(log(lambda));
 
     if grad_flags(2)

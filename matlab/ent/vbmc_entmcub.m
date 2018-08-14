@@ -1,5 +1,5 @@
-function [H,dH] = vbmc_entis(vp,Ns,grad_flags,jacobian_flag)
-%VBMC_ENTIS Importance sampling estimate of entropy of variational posterior and gradient
+function [H,dH] = vbmc_entmcub(vp,Ns,grad_flags,jacobian_flag)
+%VBMC_ENTMCUB Upper-bounded Monte Carlo estimate of entropy of variational posterior
 
 if nargin < 2 || isempty(Ns); Ns = 10; end
 % Check if gradient computation is required
@@ -35,7 +35,7 @@ lambda_t = vp.lambda(:)';       % LAMBDA is a row vector
 mu_t(:,:) = vp.mu';             % MU transposed
 nf = 1/(2*pi)^(D/2)/prod(lambda);  % Common normalization factor
 
-% Entropy of non-interacting mixture
+% Entropy of non-interacting mixture (upper bound on entropy)
 H = log(K) + 0.5*D*(1 + log(2*pi)) + D/K*sum(log(sigma)) + sum(log(lambda));
 
 if grad_flags(2)

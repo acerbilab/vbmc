@@ -299,9 +299,9 @@ vp.sigma(1,:) = exp(theta(D*K+1:D*K+K));
 if numel(theta) == D*K+K+D; vp.lambda(:,1) = exp(theta(D*K+K+1:end)); end
 
 if Nent == 0
-    [H,dH] = vbmc_ent(vp,[1 1 1]);
+    [H,dH] = vbmc_entlb(vp,[1 1 1]);
 elseif altflag
-    [H,dH] = vbmc_entmcalt(vp,Nent,[1 1 1]);
+    [H,dH] = vbmc_entmcub(vp,Nent,[1 1 1]);
 else
     [H,dH] = vbmc_entmc(vp,Nent,[1 1 1]);    
 end

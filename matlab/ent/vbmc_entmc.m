@@ -1,5 +1,5 @@
 function [H,dH] = vbmc_entmc(vp,Ns,grad_flags,jacobian_flag)
-%VBMC_ENTMC Monte Carlo estimate of entropy of variational posterior and gradient
+%VBMC_ENTMC Monte Carlo estimate of entropy of variational posterior
 
 if nargin < 2 || isempty(Ns); Ns = 10; end
 % Check if gradient computation is required
@@ -57,6 +57,7 @@ for j = 1:K
         
     H = H - sum(log(ys))/Ns/K;
     
+    % Compute gradient via reparameterization trick
     if any(grad_flags)    
         % Full mixture (for sample from the j-th component)
         norm_jl = bsxfun(@times, nconst./(sigma_4.^D), exp(-0.5*sum(bsxfun(@rdivide, bsxfun(@minus, xi, mu_4), sigmalambda).^2,1)));

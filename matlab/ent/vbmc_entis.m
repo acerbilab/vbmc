@@ -1,5 +1,7 @@
-function [H,dH] = vbmc_entmcalt(vp,Ns,grad_flags,jacobian_flag)
-%VBMC_ENTMCALT Alternatie Monte Carlo estimate of entropy of variational posterior and gradient
+function [H,dH] = vbmc_entis(vp,Ns,grad_flags,jacobian_flag)
+%VBMC_ENTIS Importance sampling estimate of entropy of variational posterior
+
+error('Entropy via importance sampling not supported at the moment.');
 
 if nargin < 2 || isempty(Ns); Ns = 10; end
 % Check if gradient computation is required
