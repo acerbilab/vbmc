@@ -47,15 +47,26 @@ end
 
 % Entropy term
 if Ns > 0   % Use Monte Carlo approximation
+    tic
     if altent_flag  % Alternative entropy approximation via upper bound
         [H,dH] = vbmc_entmcub(vp,Ns,grad_flags,jacobian_flag);        
     else
         [H,dH] = vbmc_entmc(vp,Ns,grad_flags,jacobian_flag);
     end
+    
+%     if Ns > 1e3
+%         toc
+%         tic
+%         Halt = vbmc_entrbf(vp,[0 0 0],jacobian_flag);
+%         toc
+%         [H,Halt]
+%     end
+    
 else
     % Deterministic approximation via lower bound on the entropy
     [H,dH] = vbmc_entlb(vp,grad_flags,jacobian_flag);
 end
+
 %H_check = gmment_num(theta,lambda);
 %[H - H_check, (H - H_check)/H_check ]
 
