@@ -20,7 +20,7 @@ function [vp,elbo,elbo_sd,exitflag,output,optimState,stats] = vbmc(fun,x0,LB,UB,
 %   VBMC toolbox (see examples below).
 %
 %   VP = VBMC(FUN,X0,LB,UB,PLB,PUB) specifies a set of plausible lower and
-%   upper bounds such that LB <= PLB < PUB <= UB. Both PLB and PUB
+%   upper bounds such that LB < PLB < PUB < UB. Both PLB and PUB
 %   need to be finite. PLB and PUB represent a plausible range for where 
 %   most posterior probability mass is expected to lie (say, > 95%). Among
 %   other things, the plausible box is used to draw initial samples and to 
@@ -68,11 +68,7 @@ function [vp,elbo,elbo_sd,exitflag,output,optimState,stats] = vbmc(fun,x0,LB,UB,
 %         algorithm: <Variational Bayesian Monte Carlo>
 %           message: <VBMC termination message>
 %              elbo: <Estimated ELBO for returned solution>
-%               fsd: <Estimated standard deviation of ELBO at returned solution>
-%
-%   [VP,ELBO,ELBO_SD,EXITFLAG,OUTPUT,STATS] = VBMC(...) returns a detailed
-%   inference structure STATS, with information of the algorithm at each 
-%   iteration, mostly for debugging purposes.
+%            elbosd: <Estimated standard deviation of ELBO at returned solution>
 %
 %   OPTIONS = VBMC('defaults') returns a basic default OPTIONS structure.
 
@@ -93,12 +89,16 @@ function [vp,elbo,elbo_sd,exitflag,output,optimState,stats] = vbmc(fun,x0,LB,UB,
 % undergo minor changes before reaching the stable release (1.0).
 
 
+%% Start timer
+
+t0 = tic;
+
 %% Basic default options
 defopts.Display                 = 'iter         % Level of display ("iter", "notify", "final", or "off")';
-defopts.MaxIter                 = '20*nvars     % Max number of iterations';
-defopts.MaxFunEvals             = '100*nvars    % Max number of objective fcn evaluations';
 defopts.Plot                    = 'off          % Plot marginals of variational posterior at each iteration';
-defopts.TolStableIters          = '5            % Required stable iterations for checking termination criteria';
+defopts.MaxIter                 = '20*nvars     % Max number of iterations';
+defopts.MaxFunEvals             = '100*nvars    % Max number of target fcn evaluations';
+defopts.TolStableIters          = '8            % Required stable iterations for checking termination criteria';
 
 %% If called with no arguments or with 'defaults', return default options
 if nargout <= 1 && (nargin == 0 || (nargin == 1 && ischar(fun) && strcmpi(fun,'defaults')))
@@ -118,8 +118,8 @@ defopts.ProposalFcn             = '[]           % Weighted proposal fcn for unce
 defopts.UncertaintyHandling     = '[]           % Explicit noise handling (if empty, determine at runtime)';
 defopts.NoiseSize               = '[]           % Base observation noise magnitude';
 defopts.NonlinearScaling   = 'on                % Automatic nonlinear rescaling of variables';
-defopts.FunEvalStart       = 'max(D,10)         % Number of initial objective fcn evals';
-defopts.FunEvalsPerIter    = '5                 % Number of objective fcn evals per iteration';
+defopts.FunEvalStart       = 'max(D,10)         % Number of initial target fcn evals';
+defopts.FunEvalsPerIter    = '5                 % Number of target fcn evals per iteration';
 defopts.SearchAcqFcn       = '@vbmc_acqfreg     % Fast search acquisition fcn(s)';
 defopts.NSsearch           = '2^13              % Samples for fast acquisition fcn eval per new point';
 defopts.NSent              = '@(K) 100*K        % Total samples for Monte Carlo approx. of the entropy';
@@ -265,7 +265,7 @@ K = getK(struct('Neff',options.FunEvalStart,'Warmup',options.Warmup),options);
 [vp,optimState] = ...
     setupvars(x0,LB,UB,PLB,PUB,K,optimState,options,prnt);
 
-% Store objective function
+% Store target density function
 optimState.fun = fun;
 if isempty(varargin)
     funwrapper = fun;   % No additional function arguments passed
@@ -566,6 +566,10 @@ end
 
 if nargout > 4
     output = vbmc_output(elbo,elbo_sd,optimState,msg,stats,idx_best);
+    
+    % Compute total running time and fractional overhead
+    optimState.totaltime = toc(t0);    
+    output.overhead = optimState.totaltime / optimState.totalfunevaltime - 1;    
 end
 
 if nargout > 6

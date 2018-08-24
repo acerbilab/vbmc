@@ -60,6 +60,13 @@ if ~isreal([x0(:)', LB, UB, PLB, PUB])
     error('All input vectors should be real-valued.');
 end
 
+% Fixed variables (all bounds equal) are not supported
+fixidx = (LB == UB) & (UB == PLB) & (PLB == PUB);
+if any(fixidx)
+    error('vbmc:FixedVariables', ...
+        'VBMC does not support fixed variables. Lower and upper bounds should be different.');
+end
+
 % Test that plausible bounds are different
 if any(PLB == PUB)
     error('vbmc:MatchingPB', ...
@@ -81,15 +88,15 @@ if any(any(bsxfun(@le,x0,PLB))) || any(any(bsxfun(@ge,x0,PUB)))
 end
 
 % Test order of bounds
-ordidx = LB <= PLB & PLB < PUB & PUB <= UB;
+ordidx = LB < PLB & PLB < PUB & PUB < UB;
 if any(~ordidx)
     error('vbmc:StrictBounds', ...
-        'For each variable, hard and plausible bounds should respect the ordering LB <= PLB < PUB <= UB.');
+        'For each variable, hard and plausible bounds should respect the ordering LB < PLB < PUB < UB.');
 end
 
-% Fixed variables (all bounds equal)
-fixidx = (LB == UB) & (UB == PLB) & (PLB == PUB);
-if any(fixidx)
-    error('vbmc:FixedVariables', ...
-        'VBMC does not support fixed variables. Lower and upper bounds should be different.');
+% Test that variables are either bounded or unbounded (not half-bounded)
+halfbnd = (isinf(LB) & isfinite(UB)) | (isfinite(LB) & isinf(UB));
+if any(halfbnd)
+    error('vbmc:HalfBounds', ...
+        'Each variable needs to be unbounded or bounded. Variables bounded only below/above are not supported.');    
 end
