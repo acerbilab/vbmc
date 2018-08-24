@@ -1,22 +1,21 @@
-function [optimState,stats,isFinished_flag,exitflag,action] = vbmc_termination(optimState,action,stats,options)
+function [optimState,stats,isFinished_flag,exitflag,action,msg] = vbmc_termination(optimState,action,stats,options)
 %VBMC_TERMINATION Compute stability index and check termination conditions.
 
 iter = optimState.iter;
 exitflag = 0;
 isFinished_flag = false;
+msg = [];
 
 % Maximum number of new function evaluations
 if optimState.funccount >= options.MaxFunEvals
     isFinished_flag = true;
-    exitflag = 1;
-    % msg = 'Optimization terminated: reached maximum number of function evaluations OPTIONS.MaxFunEvals.';
+    msg = 'Inference terminated: reached maximum number of function evaluations OPTIONS.MaxFunEvals.';
 end
 
 % Maximum number of iterations
 if iter >= options.MaxIter
     isFinished_flag = true;
-    exitflag = 1;
-    % msg = 'Optimization terminated: reached maximum number of iterations OPTIONS.MaxIter.';
+    msg = 'Inference terminated: reached maximum number of iterations OPTIONS.MaxIter.';
 end
 
 % Reached stable variational posterior with stable ELBO and low uncertainty
@@ -69,7 +68,8 @@ if iter >= options.TolStableIters && ...
         if isempty(action); action = 'entropy switch'; else; action = [action ', entropy switch']; end 
     else
         isFinished_flag = true;
-        exitflag = 0;
+        exitflag = 1;
+        msg = 'Inference terminated: variational solution stable for OPTIONS.TolStableIters iterations.';
         stableflag = true;
         if isempty(action); action = 'stable'; else; action = [action ', stable']; end     
     end
@@ -96,9 +96,6 @@ if optimState.iter < 3; return; end
 
 if ~isempty(stats)
     N_list = stats.N;
-    %iter_list = stats.iter;
-    %idx_stable = find(N_list <= optimState.N - options.TolStableFunEvals & ...
-    %    iter_list <= iter - options.TolStableIters,1,'last');
     idx_stable = 1;
     if ~isempty(idx_stable)
         dN = optimState.N - N_list(idx_stable);

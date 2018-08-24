@@ -1,7 +1,80 @@
-function [vp,elbo,elbo_sd,exitflag,output,stats] = vbmc(fun,x0,LB,UB,PLB,PUB,options,varargin)
-%VBMC Posterior and model inference via Variational Bayesian Monte Carlo (v0.7)
-%   Documentation to be written -- work in progress.
-% 
+function [vp,elbo,elbo_sd,exitflag,output,optimState,stats] = vbmc(fun,x0,LB,UB,PLB,PUB,options,varargin)
+%VBMC Posterior and model inference via Variational Bayesian Monte Carlo (v0.8)
+%   VBMC computes a variational approximation of the full posterior and a 
+%   lower bound on the normalization constant (marginal likelhood or model
+%   evidence) for a provided unnormalized log posterior.
+%
+%   VP = VBMC(FUN,X0,LB,UB) initializes the variational posterior in the
+%   proximity of X0 (ideally, a posterior mode) and iteratively computes
+%   a variational approximation for a given target log posterior FUN.
+%   FUN accepts input X and returns the value of the target (unnormalized) 
+%   log posterior density at X. LB and UB define a set of strict lower and 
+%   upper bounds coordinate vector, X, so that the posterior has support on 
+%   LB < X < UB. LB and UB can be scalars or vectors. If scalars, the bound 
+%   is replicated in each dimension. Use empty matrices for LB and UB if no 
+%   bounds exist. Set LB(i) = -Inf and UB(i) = Inf if the i-th coordinate
+%   is unbounded (while other coordinates may be bounded). Note that if LB 
+%   and UB contain unbounded variables, the respective values of PLB and PUB
+%   need to be specified (see below). VBMC returns a variational posterior
+%   solution VP, which can then be manipulated via other functions in the
+%   VBMC toolbox (see examples below).
+%
+%   VP = VBMC(FUN,X0,LB,UB,PLB,PUB) specifies a set of plausible lower and
+%   upper bounds such that LB <= PLB < PUB <= UB. Both PLB and PUB
+%   need to be finite. PLB and PUB represent a plausible range for where 
+%   most posterior probability mass is expected to lie (say, > 95%). Among
+%   other things, the plausible box is used to draw initial samples and to 
+%   set priors over hyperparameters of the algorithm. When in doubt, use
+%   the 95% quantile range of the prior to set PLB and PUB (but note that
+%   additional information might afford a better guess).
+%  
+%   VP = VBMC(FUN,X0,LB,UB,PLB,PUB,OPTIONS) performs variational inference
+%   with the default parameters replaced by values in the structure OPTIONS.
+%   VBMC('defaults') returns the default OPTIONS struct.
+%  
+%   VP = VBMC(FUN,X0,LB,UB,PLB,PUB,OPTIONS,...) passes additional arguments
+%   to FUN.
+%
+%   [VP,ELBO] = VBMC(...) returns an estimate of the ELBO, the variational
+%   expected lower bound on the log marginal likelihood (log model evidence).
+%   This estimate is computed via Bayesian quadrature.
+%
+%   [VP,ELBO,ELBO_SD] = VBMC(...) returns the standard deviation of the
+%   estimate of the ELBO, as computed via Bayesian quadrature. Note that
+%   this standard deviation is *not* representative of the error between the 
+%   ELBO and the true log marginal likelihood.
+%
+%   [VP,ELBO,ELBO_SD,EXITFLAG] = VBMC(...) returns an EXITFLAG that describes
+%   the exit condition. Possible values of EXITFLAG and the corresponding
+%   exit conditions are
+%
+%    1  Change in the variational posterior, in the ELBO and its uncertainty 
+%       have reached a satisfactory level of stability across recent
+%       iterations, suggesting convergence of the variational solution.
+%    0  Maximum number of function evaluations or iterations reached. Note
+%       that the returned solution has *not* stabilized.
+%
+%   [VP,ELBO,ELBO_SD,EXITFLAG,OUTPUT] = VBMC(...) returns a structure OUTPUT 
+%   with the following information:
+%          function: <Target probability density function name>
+%        iterations: <Total iterations>
+%         funccount: <Total function evaluations>
+%      trainsetsize: <Size of training set for returned solution>
+%        components: <Number of mixture components of returned solution>
+%  convergenceindex: <Heuristic index of convergence (< 1 is good)>
+% convergencestatus: <"probable" or "no" convergence>
+%          overhead: <Fractional overhead (total runtime / total fcn time - 1)>
+%          rngstate: <Status of random number generator>
+%         algorithm: <Variational Bayesian Monte Carlo>
+%           message: <VBMC termination message>
+%              elbo: <Estimated ELBO for returned solution>
+%               fsd: <Estimated standard deviation of ELBO at returned solution>
+%
+%   [VP,ELBO,ELBO_SD,EXITFLAG,OUTPUT,STATS] = VBMC(...) returns a detailed
+%   inference structure STATS, with information of the algorithm at each 
+%   iteration, mostly for debugging purposes.
+%
+%   OPTIONS = VBMC('defaults') returns a basic default OPTIONS structure.
 
 %--------------------------------------------------------------------------
 % VBMC: Variational Bayesian Monte Carlo for posterior and model inference.
@@ -11,26 +84,21 @@ function [vp,elbo,elbo_sd,exitflag,output,stats] = vbmc(fun,x0,LB,UB,PLB,PUB,opt
 %   Author (copyright): Luigi Acerbi, 2018
 %   e-mail: luigi.acerbi@{gmail.com,nyu.edu,unige.ch}
 %   URL: http://luigiacerbi.com
-%   Version: 0.7 (alpha)
-%   Release date: May 2, 2018
+%   Version: 0.8 (beta)
+%   Release date: Aug 24, 2018
 %   Code repository: https://github.com/lacerbi/vbmc
 %--------------------------------------------------------------------------
 
+% The VBMC interface (such as details of input and output arguments) may 
+% undergo minor changes before reaching the stable release (1.0).
 
 
 %% Basic default options
 defopts.Display                 = 'iter         % Level of display ("iter", "notify", "final", or "off")';
 defopts.MaxIter                 = '20*nvars     % Max number of iterations';
-defopts.MaxFunEvals             = '200*nvars    % Max number of objective fcn evaluations';
-defopts.NonlinearScaling        = 'on           % Automatic nonlinear rescaling of variables';
-defopts.OutputFcn               = '[]           % Output function'; 
-defopts.UncertaintyHandling     = '[]           % Explicit noise handling (if empty, determine at runtime)';
-defopts.NoiseSize               = '[]           % Base observation noise magnitude';
-%defopts.NoiseFinalSamples       = '10           % Samples to estimate FVAL at the end (for noisy objectives)';
-defopts.Fvals                   = '[]           % Evaluated fcn values at X0';
-defopts.OptimToolbox            = '[]           % Use Optimization Toolbox (if empty, determine at runtime)';
-defopts.Diagnostics             = 'on           % Run in diagnostics mode, get additional info';
-defopts.ProposalFcn             = '[]           % Weighted proposal fcn for uncertainty search';
+defopts.MaxFunEvals             = '100*nvars    % Max number of objective fcn evaluations';
+defopts.Plot                    = 'off          % Plot marginals of variational posterior at each iteration';
+defopts.TolStableIters          = '5            % Required stable iterations for checking termination criteria';
 
 %% If called with no arguments or with 'defaults', return default options
 if nargout <= 1 && (nargin == 0 || (nargin == 1 && ischar(fun) && strcmpi(fun,'defaults')))
@@ -42,6 +110,14 @@ if nargout <= 1 && (nargin == 0 || (nargin == 1 && ischar(fun) && strcmpi(fun,'d
 end
 
 %% Advanced options (do not modify unless you *know* what you are doing)
+defopts.Diagnostics             = 'off          % Run in diagnostics mode, get additional info';
+defopts.OutputFcn               = '[]           % Output function';
+defopts.Fvals                   = '[]           % Evaluated fcn values at X0';
+defopts.OptimToolbox            = '[]           % Use Optimization Toolbox (if empty, determine at runtime)';
+defopts.ProposalFcn             = '[]           % Weighted proposal fcn for uncertainty search';
+defopts.UncertaintyHandling     = '[]           % Explicit noise handling (if empty, determine at runtime)';
+defopts.NoiseSize               = '[]           % Base observation noise magnitude';
+defopts.NonlinearScaling   = 'on                % Automatic nonlinear rescaling of variables';
 defopts.FunEvalStart       = 'max(D,10)         % Number of initial objective fcn evals';
 defopts.FunEvalsPerIter    = '5                 % Number of objective fcn evals per iteration';
 defopts.SearchAcqFcn       = '@vbmc_acqfreg     % Fast search acquisition fcn(s)';
@@ -72,8 +148,6 @@ defopts.StochasticOptimizer = 'adam             % Stochastic optimizer for varat
 defopts.TolFunStochastic   = '1e-3              % Stopping threshold for stochastic optimization';
 defopts.TolSD              = '0.1               % Tolerance on ELBO uncertainty for stopping (iff variational posterior is stable)';
 defopts.TolsKL             = '0.01*sqrt(nvars)  % Stopping threshold on change of variational posterior per training point';
-defopts.TolStableIters     = '5                 % Number of stable iterations for checking stopping criteria';
-defopts.TolStableFunEvals  = '5*nvars           % Number of stable fcn evals for checking stopping criteria';
 defopts.TolStableWarmup    = '3                 % Number of stable iterations for stopping warmup';
 defopts.TolImprovement     = '0.01              % Required ELCBO improvement per fcn eval before termination';
 defopts.KLgauss            = 'yes               % Use Gaussian approximation for symmetrized KL-divergence b\w iters';
@@ -84,7 +158,6 @@ defopts.MinIter            = 'nvars             % Min number of iterations';
 defopts.HeavyTailSearchFrac = '0.25               % Fraction of search points from heavy-tailed variational posterior';
 defopts.MVNSearchFrac      = '0.25              % Fraction of search points from multivariate normal';
 defopts.AlwaysRefitVarPost = 'no                % Always fully refit variational posterior';
-defopts.Plot               = 'off               % Show variational posterior triangle plots';
 defopts.Warmup             = 'on                % Perform warm-up stage';
 defopts.StopWarmupThresh   = '1                 % Stop warm-up when increase in ELBO is confidently below threshold';
 defopts.WarmupKeepThreshold = '10*nvars         % Max log-likelihood difference for points kept after warmup';
@@ -103,6 +176,8 @@ defopts.EntropySwitch      = 'on                % Switch from deterministic entr
 defopts.EntropyForceSwitch = '0.8               % Force switch to stochastic entropy at this fraction of total fcn evals';
 defopts.DetEntropyMinD     = '5                 % Start with deterministic entropy only with this number of vars or more';
 defopts.TolConLoss         = '0.01              % Fractional tolerance for constraint violation of variational parameters';
+defopts.BestSafeSD         = '5                 % SD multiplier of ELCBO for computing best variational solution';
+defopts.BestFracBack       = '0.25              % When computing best solution, lacking stability go back up to this fraction of iterations';
 
 %% Advanced options for unsupported/untested features (do *not* modify)
 defopts.AcqFcn             = '@vbmc_acqskl       % Expensive acquisition fcn';
@@ -318,7 +393,7 @@ while ~isFinished_flag
     %% Optimize variational parameters
     t = tic;
     
-    % Adaptive increase of number of components
+    % Adaptive increase of number of components (this should be improved)
     if isa(options.AdaptiveK,'function_handle')
         Kbonus = round(options.AdaptiveK(optimState.vpK));
     else
@@ -450,10 +525,10 @@ while ~isFinished_flag
     %----------------------------------------------------------------------
     %% Check termination conditions    
 
-    [optimState,stats,isFinished_flag,exitflag,action] = ...
+    [optimState,stats,isFinished_flag,exitflag,action,msg] = ...
         vbmc_termination(optimState,action,stats,options);
     
-    %% Write output
+    %% Write iteration output
     
     % Stopped GP sampling this iteration?
     if Ns_gp == options.StableGPSamples && ...
@@ -461,7 +536,6 @@ while ~isFinished_flag
         if isempty(action); action = 'stable GP sampling'; else; action = [action ', stable GP sampling']; end
     end    
     
-    % Write iteration
     if optimState.Cache.active
         fprintf(displayFormat,iter,optimState.funccount,optimState.cachecount,elbo,elbo_sd,sKL,vp.K,optimState.R,action);
     else
@@ -474,13 +548,30 @@ while ~isFinished_flag
     
 end
 
-if nargout > 3
-    output = optimState;    
+% Pick "best" variational solution to return
+[vp,elbo,elbo_sd,idx_best] = ...
+    vbmc_best(stats,iter,options.BestSafeSD,options.BestFracBack);
+
+if ~stats.stable(idx_best); exitflag = 0; end
+
+% Print final message
+if prnt > 1
+    fprintf('\n%s\n', msg);    
+    fprintf('Estimated ELBO: %g ± %g.\n', elbo, elbo_sd);
+    if exitflag < 1
+        fprintf('Caution: Returned variational solution may have not converged.\n');
+    end
+    fprintf('\n');
 end
 
 if nargout > 4
-    % Remove full GP hyperparameter samples from stats unless diagnostic run
+    output = vbmc_output(elbo,elbo_sd,optimState,msg,stats,idx_best);
+end
+
+if nargout > 6
+    % Remove GP from stats struct unless diagnostic run
     if ~options.Diagnostics
+        stats = rmfield(stats,'gp');
         stats = rmfield(stats,'gpHypFull');
     end
 end
@@ -509,11 +600,8 @@ stats.gpSampleVar(iter) = varss;
 stats.gpNsamples(iter) = Ns_gp;
 stats.gpHypFull{iter} = hyp_full;
 stats.timer(iter) = timer;
-
-if debugflag
-    stats.vp(iter) = vp;
-    stats.gp(iter) = gplite_clean(gp);
-end
+stats.vp(iter) = vp;
+stats.gp(iter) = gplite_clean(gp);
 
 end
         
