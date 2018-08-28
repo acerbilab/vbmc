@@ -112,7 +112,6 @@ end
 %% Advanced options (do not modify unless you *know* what you are doing)
 defopts.Diagnostics             = 'off          % Run in diagnostics mode, get additional info';
 defopts.OutputFcn               = '[]           % Output function';
-defopts.TolStableExceptions     = '1            % Allowed exceptions when computing iteration stability';
 defopts.Fvals                   = '[]           % Evaluated fcn values at X0';
 defopts.OptimToolbox            = '[]           % Use Optimization Toolbox (if empty, determine at runtime)';
 defopts.ProposalFcn             = '[]           % Weighted proposal fcn for uncertainty search';

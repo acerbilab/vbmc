@@ -58,20 +58,24 @@ optimState.R = qindex;
 stableflag = false;
 if iter >= options.TolStableIters && ... 
         all(qindex_vec < 1) && ...
-        all(stats.qindex(iter-options.TolStableIters+1:iter) < 1) && ...
         ELCBOimpro < options.TolImprovement
-        % msg = 'Optimization terminated: reached maximum number of iterations OPTIONS.MaxIter.';
-
-    % If stable but entropy switch is ON, turn it off and continue
-    if optimState.EntropySwitch
-        optimState.EntropySwitch = false;
-        if isempty(action); action = 'entropy switch'; else; action = [action ', entropy switch']; end 
-    else
-        isFinished_flag = true;
-        exitflag = 1;
-        msg = 'Inference terminated: variational solution stable for OPTIONS.TolStableIters iterations.';
-        stableflag = true;
-        if isempty(action); action = 'stable'; else; action = [action ', stable']; end     
+    
+    % Count how many good iters in the recent past (excluding current)
+    stablecount = sum(stats.qindex(iter-options.TolStableIters+1:iter-1) < 1);
+    
+    % Iteration is stable if almost all recent iterations are stable
+    if stablecount >= options.TolStableIters - options.TolStableExceptions - 1
+        % If stable but entropy switch is ON, turn it off and continue
+        if optimState.EntropySwitch
+            optimState.EntropySwitch = false;
+            if isempty(action); action = 'entropy switch'; else; action = [action ', entropy switch']; end 
+        else
+            isFinished_flag = true;
+            exitflag = 1;
+            msg = 'Inference terminated: variational solution stable for OPTIONS.TolStableIters iterations.';
+            stableflag = true;
+            if isempty(action); action = 'stable'; else; action = [action ', stable']; end     
+        end
     end
 end
 stats.stable(iter) = stableflag;        % Store stability flag    
