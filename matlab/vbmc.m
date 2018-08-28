@@ -71,6 +71,29 @@ function [vp,elbo,elbo_sd,exitflag,output,optimState,stats] = vbmc(fun,x0,LB,UB,
 %            elbosd: <Estimated standard deviation of ELBO at returned solution>
 %
 %   OPTIONS = VBMC('defaults') returns a basic default OPTIONS structure.
+%
+%   Examples:
+%     FUN can be a function handle (using @)
+%       vp = vbmc(@rosenbrock_test, ...)
+%     In this case, F = rosenbrock_test(X) returns the scalar log pdf F of 
+%     the target pdf evaluated at X.
+%
+%     An example with no hard bounds, only plausible bounds
+%       plb = [-5 -5]; pub = [5 5]; options.Plot = 'on';
+%       [vp,elbo,elbo_sd] = vbmc(@rosenbrock_test,[0 0],[],[],plb,pub,options);
+%
+%     FUN can also be an anonymous function:
+%        lb = [0 0]; ub = [pi 5]; plb = [0.1 0.1]; pub = [3 4]; options.Plot = 'on';
+%        vp = vbmc(@(x) 3*sin(x(1))*exp(-x(2)),[1 1],lb,ub,plb,pub,options)
+%
+%   See VBMC_EXAMPLES for more examples. The most recent version of the 
+%   algorithm and additional documentation can be found here:
+%   https://github.com/lacerbi/vbmc
+%   Also, check out the FAQ: https://github.com/lacerbi/vbmc/wiki
+%
+%   Reference: Acerbi, L. (2018). "Variational Bayesian Monte Carlo". 
+%
+%   See also VBMC_EXAMPLES, @.
 
 %--------------------------------------------------------------------------
 % VBMC: Variational Bayesian Monte Carlo for posterior and model inference.
@@ -110,6 +133,8 @@ if nargout <= 1 && (nargin == 0 || (nargin == 1 && ischar(fun) && strcmpi(fun,'d
 end
 
 %% Advanced options (do not modify unless you *know* what you are doing)
+defopts.UncertaintyHandling     = 'no           % Explicit noise handling (only partially supported)';
+defopts.NoiseSize               = '[]           % Base observation noise magnitude';
 defopts.Diagnostics             = 'off          % Run in diagnostics mode, get additional info';
 defopts.OutputFcn               = '[]           % Output function';
 defopts.TolStableExceptions     = '1            % Allowed exceptions when computing iteration stability';
