@@ -121,7 +121,7 @@ defopts.Display                 = 'iter         % Level of display ("iter", "not
 defopts.Plot                    = 'off          % Plot marginals of variational posterior at each iteration';
 defopts.MaxIter                 = '50*nvars     % Max number of iterations';
 defopts.MaxFunEvals             = '100*nvars    % Max number of target fcn evaluations';
-defopts.TolStableIters          = '8            % Required stable iterations for checking termination criteria';
+defopts.TolStableIters          = '8            % Required stable iterations for termination';
 
 %% If called with no arguments or with 'defaults', return default options
 if nargout <= 1 && (nargin == 0 || (nargin == 1 && ischar(fun) && strcmpi(fun,'defaults')))
@@ -133,6 +133,7 @@ if nargout <= 1 && (nargin == 0 || (nargin == 1 && ischar(fun) && strcmpi(fun,'d
 end
 
 %% Advanced options (do not modify unless you *know* what you are doing)
+defopts.TolStableEntropyIters   = '6            % Required stable iterations to switch entropy approximation';
 defopts.UncertaintyHandling     = 'no           % Explicit noise handling (only partially supported)';
 defopts.NoiseSize               = '[]           % Base observation noise magnitude';
 defopts.Diagnostics             = 'off          % Run in diagnostics mode, get additional info';

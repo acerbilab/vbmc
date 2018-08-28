@@ -1,5 +1,5 @@
 function acq = vbmc_acqfreg(Xs,vp,gp,optimState,Nacq,transpose_flag)
-%VBMC_ACQFREG Acquisition function via weighted proposal uncertainty search.
+%VBMC_ACQFREG Acquisition function for prospective uncertainty search.
 
 % Xs is in *transformed* coordinates
 

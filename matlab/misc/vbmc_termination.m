@@ -18,6 +18,13 @@ if iter >= options.MaxIter
     msg = 'Inference terminated: reached maximum number of iterations OPTIONS.MaxIter.';
 end
 
+% Quicker stability check for entropy switching 
+if optimState.EntropySwitch
+    TolStableIters = options.TolStableEntropyIters;
+else
+    TolStableIters = options.TolStableIters;
+end
+
 % Reached stable variational posterior with stable ELBO and low uncertainty
 [idx_stable,dN,dN_last,w] = getStableIter(stats,optimState,options);
 if ~isempty(idx_stable)
@@ -37,7 +44,7 @@ if ~isempty(idx_stable)
     end
 
     % Compute average ELCBO improvement in the past few iterations
-    idx0 = max(1,iter-options.TolStableIters+1);
+    idx0 = max(1,iter-TolStableIters+1);
     xx = stats.N(idx0:iter);
     yy = stats.elbo(idx0:iter) - options.ELCBOImproWeight*stats.elboSD(idx0:iter);
     p = polyfit(xx,yy,1);
@@ -56,15 +63,15 @@ optimState.R = qindex;
 
 % Check stability termination condition
 stableflag = false;
-if iter >= options.TolStableIters && ... 
+if iter >= TolStableIters && ... 
         all(qindex_vec < 1) && ...
         ELCBOimpro < options.TolImprovement
     
     % Count how many good iters in the recent past (excluding current)
-    stablecount = sum(stats.qindex(iter-options.TolStableIters+1:iter-1) < 1);
+    stablecount = sum(stats.qindex(iter-TolStableIters+1:iter-1) < 1);
     
     % Iteration is stable if almost all recent iterations are stable
-    if stablecount >= options.TolStableIters - options.TolStableExceptions - 1
+    if stablecount >= TolStableIters - options.TolStableExceptions - 1
         % If stable but entropy switch is ON, turn it off and continue
         if optimState.EntropySwitch
             optimState.EntropySwitch = false;
