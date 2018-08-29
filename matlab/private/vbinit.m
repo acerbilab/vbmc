@@ -18,6 +18,7 @@ add_jitter = true;
 
 type_vec = type*ones(Nopts,1);
 lambda0 = vp.lambda;
+w0 = vp.w;
 
 switch type
     case 1      % Start from old variational parameters
@@ -40,6 +41,7 @@ for iOpt = 1:Nopts
     mu = mu0;
     sigma = sigma0;
     lambda = lambda0;
+    if vp.optimize_weights; w = w0; end
     
     switch type
         
@@ -55,6 +57,12 @@ for iOpt = 1:Nopts
                     sigma(iNew) = sigma(idx);
                     mu(:,iNew) = mu(:,iNew) + 0.5*sigma(iNew)*lambda.*randn(D,1);
                     sigma(iNew) = sigma(iNew)*exp(0.2*randn());
+                    if vp.optimize_weights
+                        xi = 0.5*rand();
+                        w(iNew) = xi*w(idx);
+                        w(idx) = (1-xi)*w(idx);
+                    end
+                    
                end
             end
             
@@ -66,6 +74,9 @@ for iOpt = 1:Nopts
                 lambda = std(Xstar,[],1)';
                 lambda = lambda*sqrt(D/sum(lambda.^2));
             end
+            if vp.optimize_weights
+                w = ones(1,Knew)/Knew;
+            end
 
         case 3      % Start from random provided training points
             ord = randperm(Nstar);
@@ -76,6 +87,9 @@ for iOpt = 1:Nopts
             if vp.optimize_lambda
                 lambda = std(Xstar,[],1)';
                 lambda = lambda*sqrt(D/sum(lambda.^2));
+            end
+            if vp.optimize_weights
+                w = ones(1,Knew)/Knew;
             end
             
         otherwise
@@ -89,8 +103,17 @@ for iOpt = 1:Nopts
         if vp.optimize_lambda
             lambda = lambda.*exp(0.2*randn(D,1));
         end
+        if vp.optimize_weights
+            w = w.*exp(0.2*randn(1,Knew));
+            w = w/sum(w);
+        end
     end
 
+    if vp.optimize_weights
+        vp0_vec(iOpt).w = w;
+    else
+        vp0_vec(iOpt).w = ones(1,Knew)/Knew;        
+    end
     vp0_vec(iOpt).mu = mu;
     vp0_vec(iOpt).sigma = sigma;
     vp0_vec(iOpt).lambda = lambda;

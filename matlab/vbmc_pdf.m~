@@ -15,13 +15,13 @@ end
 
 [N,D] = size(X);
 K = vp.K;                       % Number of components
-w = vp.w;                       % Mixture weights
+w = vp.w;                       % Weight vector
 lambda = vp.lambda(:)';         % LAMBDA is a row vector
 
 mu_t(:,:) = vp.mu';             % MU transposed
 sigma(1,:) = vp.sigma;
 
-nf = 1/(2*pi)^(D/2)/prod(lambda);  % Common normalization factor
+nf = 1/(2*pi)^(D/2)/prod(lambda)/K;  % Common normalization factor
 
 y = zeros(N,1); % Allocate probability vector
 if gradflag; dy = zeros(N,D); end
@@ -29,7 +29,7 @@ if gradflag; dy = zeros(N,D); end
 % Compute pdf
 for k = 1:K
     d2 = sum(bsxfun(@rdivide,bsxfun(@minus, X, mu_t(k,:)),sigma(k)*lambda).^2,2);
-    nn = nf*w(k)/sigma(k)^D*exp(-0.5*d2);
+    nn = nf/sigma(k)^D*exp(-0.5*d2);
     y = y + nn;
     if gradflag
         dy = dy - bsxfun(@times,nn, ...

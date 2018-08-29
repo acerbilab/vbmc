@@ -11,12 +11,13 @@ if origflag
     mubar = mean(X,1)';
     Sigma = cov(X);    
 else
+    w(1,:) = vp.w;                       % Mixture weights
     mu(:,:) = vp.mu;
     sigma(1,:) = vp.sigma;
     lambda(:,1) = vp.lambda(:);
 
-    mubar = mean(mu,2);
+    mubar = sum(bsxfun(@times,w,mu),2);
 
-    Sigma = mean(sigma.^2)*diag(lambda.^2);
-    for k = 1:K; Sigma = Sigma + (mu(:,k)-mubar)*(mu(:,k)-mubar)'/K; end
+    Sigma = sum(w.*sigma.^2)*diag(lambda.^2);
+    for k = 1:K; Sigma = Sigma + w(k)*(mu(:,k)-mubar)*(mu(:,k)-mubar)'; end
 end

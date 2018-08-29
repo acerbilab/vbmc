@@ -42,11 +42,13 @@ x0 = warpvars(x0,'dir',trinfo);
 vp.D = nvars;
 vp.K = K;
 x0start = repmat(x0,[ceil(K/size(x0,1)),1]);
+vp.w = ones(1,K)/K;
 vp.mu = bsxfun(@plus,x0start(1:K,:)',1e-6*randn(vp.D,K));
 vp.sigma = 1e-3*ones(1,K);
 vp.lambda = ones(vp.D,1);
 vp.trinfo = trinfo;
 vp.optimize_lambda = true;
+vp.optimize_weights = logical(options.VariableWeights);
 
 optimState.trinfo = vp.trinfo;
 
