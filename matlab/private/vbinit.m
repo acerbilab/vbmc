@@ -58,7 +58,7 @@ for iOpt = 1:Nopts
                     mu(:,iNew) = mu(:,iNew) + 0.5*sigma(iNew)*lambda.*randn(D,1);
                     sigma(iNew) = sigma(iNew)*exp(0.2*randn());
                     if vp.optimize_weights
-                        xi = 0.5*rand();
+                        xi = 0.05 + 0.45*rand();
                         w(iNew) = xi*w(idx);
                         w(idx) = (1-xi)*w(idx);
                     end
