@@ -38,6 +38,7 @@ for k = 1:K
     % Single mixture component
     vp1 = vp;
     vp1.K = 1;
+    vp1.w = 1;
     vp1.mu = vp1.mu(:,k);
     vp1.sigma = vp1.sigma(k);
     q1 = vbmc_pdf(Xstar,vp1,0);
@@ -50,5 +51,5 @@ for k = 1:K
     I_k(k) = sum(fstar .* q1) * prod(dx);        
 end
 
-F = sum(I_k)/K;
+F = sum(vp.w.*I_k);
 dF = [];                    % Gradient computation not supported

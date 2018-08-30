@@ -56,6 +56,8 @@ vbtrain_options = optimoptions('fminunc','GradObj','on','Display','off');
 % Compute soft bounds for variational parameters optimization
 
 % Soft-bound loss is computed on MU and SCALE (which is SIGMA times LAMBDA)
+
+% Start with reversed bounds (see below)
 if ~isfield(vp,'bounds') || isempty(vp.bounds)
     vp.bounds.mu_lb = Inf(1,vp.D);
     vp.bounds.mu_ub = -Inf(1,vp.D);
@@ -73,16 +75,25 @@ y_hpd = gp.y(ord(1:N_hpd));
 % Set bounds for mean parameters of variational components
 vp.bounds.mu_lb = min(min(X_hpd),vp.bounds.mu_lb);
 vp.bounds.mu_ub = max(max(X_hpd),vp.bounds.mu_ub);
-%vp.bounds.mu_lb = min(min(gp.X),vp.bounds.mu_lb);
-%vp.bounds.mu_ub = max(max(gp.X),vp.bounds.mu_ub);
 
-% Set bounds for scale paramters of variational components
+% Set bounds for log scale parameters of variational components
 lnrange = log(max(gp.X) - min(gp.X));
 vp.bounds.lnscale_lb = min(vp.bounds.lnscale_lb,lnrange + log(options.TolLength));
 vp.bounds.lnscale_ub = max(vp.bounds.lnscale_ub,lnrange);
 
+% Set bounds for log weight parameters of variational components
+if vp.optimize_weights
+    vp.bounds.eta_lb = log(1e-3);
+    vp.bounds.eta_ub = 0;
+end
+
 thetabnd.lb = [repmat(vp.bounds.mu_lb,[1,K]),repmat(vp.bounds.lnscale_lb,[1,K])];
 thetabnd.ub = [repmat(vp.bounds.mu_ub,[1,K]),repmat(vp.bounds.lnscale_ub,[1,K])];
+if vp.optimize_weights
+    thetabnd.lb = [thetabnd.lb,repmat(vp.bounds.eta_lb,[1,K])];
+    thetabnd.ub = [thetabnd.ub,repmat(vp.bounds.eta_ub,[1,K])];
+end
+
 thetabnd.TolCon = options.TolConLoss;
 
 %% Perform quick shotgun evaluation of many candidate parameters
@@ -151,7 +162,8 @@ for iOpt = 1:Nslowopts
             insigma_mu = repmat(vp.bounds.mu_ub(:) - vp.bounds.mu_lb(:),[vp.K,1]);
             insigma_sigma = ones(K,1);
             if vp.optimize_lambda; insigma_lambda = ones(vp.D,1); else; insigma_lambda = []; end
-            insigma = [insigma_mu(:); insigma_sigma(:); insigma_lambda];
+            if vp.optimize_weights; insigma_eta = ones(vp.K,1); else; insigma_eta = []; end
+            insigma = [insigma_mu(:); insigma_sigma(:); insigma_lambda; insigma_eta];
             cmaes_opts.EvalParallel = 'off';
             cmaes_opts.TolX = '1e-8*max(insigma)';
             cmaes_opts.TolFun = 1e-6;

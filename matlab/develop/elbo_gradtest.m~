@@ -13,7 +13,7 @@ check_quadrature = 0;
 check_logjointgrad = 1;
 check_gp = 0;
 
-meanfun = 4;
+meanfun = 6;
 quadratic_mean = meanfun == 4;
 sqexp_mean = meanfun == 6;
 
@@ -39,8 +39,8 @@ if isempty(lambda)
 end
 theta = [theta; log(lambda(:))];
 
-% Add ETA to variational parameter vector
-theta = [theta; log(ones(K,1)/K)];
+% Add W to variational parameter vector
+theta = [theta; ones(K,1)/K];
 
 if isempty(hyp)
     Ns = randi(3);    % Also test multiple hyperparameters
@@ -57,10 +57,8 @@ end
 % Extract variational parameters from THETA
 mu(:,:) = reshape(theta(1:D*K),[D,K]);
 sigma(1,:) = exp(theta(D*K+1:D*K+K));
-lambda(:,1) = exp(theta(D*K+K+1:D*K+K+D));
-eta(1,:) = theta(end-K+1:end);
-w(1,:) = exp(eta);
-w(1,:) = w(1,:)/sum(w);
+lambda(:,1) = exp(theta(D*K+K+1:end));
+w(1,:) = 
 
 if isempty(X)
     N = 100;
@@ -80,16 +78,12 @@ gp = gplite_post(hyp,X,y,meanfun);
 % Variational posterior
 vp.D = D;
 vp.K = K;
-vp.w = w;
-vp.eta = eta;
 vp.mu = mu;
 vp.sigma = sigma;
 vp.lambda = lambda;
 vp.LB_orig = [];
 vp.UB_orig = [];
 vp.trinfo = [];
-vp.optimize_lambda = true;
-vp.optimize_weights = true;
 
 if check_kl
     fprintf('---------------------------------------------------------------------------------\n');
@@ -207,8 +201,6 @@ if check_quadrature
         % Variational posterior and hyperparameters for D=1 and K=1
         vp1.D = 1;
         vp1.K = 1;
-        vp1.w = 1;
-        vp1.eta = log(vp1.w);
         vp1.mu = mu(1,1);
         vp1.sigma = sigma(1);
         vp1.lambda = lambda(1);
@@ -232,8 +224,8 @@ if check_quadrature
         y1 = y(1);
         tau = sqrt(sigma1^2*lambda1^2 + ell^2);
 
-        Kmat = sf2 + sn2;
-        F = sf2*sqrt(2*pi)*prod(ell)/Kmat*normpdf(x1,mu1,tau)*(y1 - m0 + 1/(2*omega^2)*(x1 - xm)^2) ...
+        Kmat = sf2/sqrt(2*pi) + sn2;
+        F = sf2*prod(ell)/Kmat*normpdf(x1,mu1,tau)*(y1 - m0 + 1/(2*omega^2)*(x1 - xm)^2) ...
             + m0 - 1/(2*omega^2)*(mu1^2 + sigma1^2*lambda1^2 - 2*xm*mu1 + xm^2);
 
         gp1 = gplite_post(hyp1,x1,y1,meanfun);
@@ -284,8 +276,13 @@ end
 function [H,dH] = gmment(theta,vp)
 %ENTTEST Test entropy estimation
 
-vp = assign_theta(theta,vp);
-H = gmm1ent(vp.w,vp.mu,vp.sigma.*vp.lambda);
+D = vp.D;
+K = vp.K;
+vp.mu(:,:) = reshape(theta(1:D*K),[D,K]);
+vp.sigma(1,:) = exp(theta(D*K+1:D*K+K));
+if numel(theta) == D*K+K+D; vp.lambda(:,1) = exp(theta(D*K+K+1:end)); end
+
+H = gmm1ent(1/K*ones(1,K),vp.mu,vp.sigma.*vp.lambda);
 if nargout > 1
     dH = fgrad(@(theta) gmment(theta(:)',vp),theta(:)','five-points');
 end
@@ -298,7 +295,12 @@ function [H,dH] = enttest(theta,vp,Nent,altflag)
 
 if nargin < 4 || isempty(altflag); altflag = 0; end
 
-vp = assign_theta(theta,vp);
+% Extract variational parameters from THETA
+D = vp.D;
+K = vp.K;
+vp.mu(:,:) = reshape(theta(1:D*K),[D,K]);
+vp.sigma(1,:) = exp(theta(D*K+1:D*K+K));
+if numel(theta) == D*K+K+D; vp.lambda(:,1) = exp(theta(D*K+K+1:end)); end
 
 if Nent == 0
     [H,dH] = vbmc_entlb(vp,[1 1 1]);
@@ -314,7 +316,13 @@ end
 function [G,dG] = logjointtest(theta,vp,gp)
 %LOGJOINTTEST Test log joint
 
-vp = assign_theta(theta,vp);
+% Extract variational parameters from THETA
+D = vp.D;
+K = vp.K;
+vp.mu(:,:) = reshape(theta(1:D*K),[D,K]);
+vp.sigma(1,:) = exp(theta(D*K+1:D*K+K));
+if numel(theta) == D*K+K+D; vp.lambda(:,1) = exp(theta(D*K+K+1:end)); end
+
 [G,dG] = gplogjoint(vp,gp);
 
 end
@@ -323,28 +331,13 @@ end
 function [V,dV] = logjointvartest(theta,vp,gp)
 %LOGJOINTVARTEST Test log joint variance
 
-vp = assign_theta(theta,vp);
-[~,~,V,dV] = gplogjoint(vp,gp,[1 1 1 1],1,1,2);
-
-end
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function vp = assign_theta(theta,vp)
-%ASSIGN_THETA Set variational parameters
-
+% Extract variational parameters from THETA
 D = vp.D;
 K = vp.K;
 vp.mu(:,:) = reshape(theta(1:D*K),[D,K]);
 vp.sigma(1,:) = exp(theta(D*K+1:D*K+K));
-if vp.optimize_lambda
-    vp.lambda(:,1) = exp(theta(D*K+K+1:D*K+K+D));
-end
-if vp.optimize_weights
-    vp.eta(1,:) = theta(end-K+1:end);
-    vp.w(1,:) = exp(vp.eta);
-    vp.w = vp.w/sum(vp.w);
-end
+if numel(theta) == D*K+K+D; vp.lambda(:,1) = exp(theta(D*K+K+1:end)); end
+
+[~,~,V,dV] = gplogjoint(vp,gp,[1 1 1],1,1,2);
 
 end
-
-

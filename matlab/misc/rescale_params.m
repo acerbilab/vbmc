@@ -23,7 +23,10 @@ vp.sigma = vp.sigma(:)'*nl;
 
 % Ensure that weights are normalized
 if vp.optimize_weights
-    vp.w = vp.w(:)'/sum(vp.w);
+    vp.w = vp.w(:)'/sum(vp.w);   
+    % Remove ETA, used only for optimization
+    if isfield(vp,'eta'); vp = rmfield(vp,'eta'); end
 end
+
 
 end

@@ -56,11 +56,17 @@ vbtrain_options = optimoptions('fminunc','GradObj','on','Display','off');
 % Compute soft bounds for variational parameters optimization
 
 % Soft-bound loss is computed on MU and SCALE (which is SIGMA times LAMBDA)
+
+% Start with reversed bound (see brl
 if ~isfield(vp,'bounds') || isempty(vp.bounds)
     vp.bounds.mu_lb = Inf(1,vp.D);
     vp.bounds.mu_ub = -Inf(1,vp.D);
     vp.bounds.lnscale_lb = Inf(1,vp.D);
     vp.bounds.lnscale_ub = -Inf(1,vp.D);
+    if vp.optimize_weights
+        vp.bounds.eta_lb = Inf(1,vp.K);
+        vp.bounds.eta_ub = -Inf(1,vp.K);        
+    end
     % vp.bounds
 end
 
@@ -101,7 +107,7 @@ end
 
 % Quickly estimate ELCBO at each candidate variational posterior
 for iOpt = 1:Nfastopts
-    [theta0,vp0_vec(iOpt)] = get_theta(vp0_vec(iOpt),vp.optimize_lambda);        
+    [theta0,vp0_vec(iOpt)] = get_theta(vp0_vec(iOpt),vp.optimize_lambda,vp.optimize_weights);        
     [nelbo_tmp,~,~,~,varF_tmp] = vbmc_negelcbo(theta0,0,vp0_vec(iOpt),gp,NSentKFast,0,compute_var,options.AltMCEntropy,thetabnd);
     nelcbo_fill(iOpt) = nelbo_tmp + elcbo_beta*sqrt(varF_tmp);
 end
@@ -131,6 +137,7 @@ for iOpt = 1:Nslowopts
 
     theta0 = [vp0.mu(:); log(vp0.sigma(:))];
     if vp.optimize_lambda; theta0 = [theta0; log(vp0.lambda(:))]; end
+    if vp.optimize_weights; theta0 = [theta0; log(vp0.w(:))]; end
     % theta0 = min(vp.UB_theta',max(vp.LB_theta', theta0));
 
     vbtrainmc_fun = @(theta_) vbmc_negelcbo(theta_,elcbo_beta,vp0,gp,NSentK,1,compute_var,options.AltMCEntropy,thetabnd);
@@ -259,17 +266,12 @@ end
 
 end
 
-function [theta,vp] = get_theta(vp,optimize_lambda)
+function [theta,vp] = get_theta(vp,optimize_lambda,optimize_weights)
 %GET_THETA Get vector of variational parameters from variational posterior.
 
 vp = rescale_params(vp);
 theta = [vp.mu(:); log(vp.sigma(:))];
 if optimize_lambda; theta = [theta; log(vp.lambda(:))]; end
-if optimize_weights
-    eta = 
-    
-    theta = [theta; log(vp.w(:))];
-end
-
+if optimize_weights; theta = [theta; log(vp.w(:))]; end
 
 end

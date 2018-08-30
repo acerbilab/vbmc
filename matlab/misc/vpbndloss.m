@@ -13,8 +13,14 @@ if vp.optimize_lambda
 else
     lnlambda = log(vp.lambda(:));
 end
+if vp.optimize_weights
+    eta = theta(end-K+1:end);   
+else
+    eta = [];
+end
+
 lnscale = bsxfun(@plus,lnsigma(:)',lnlambda(:));    
-theta_ext = [mu(:); lnscale(:)];
+theta_ext = [mu(:); lnscale(:); eta(:)];
 
 if compute_grad
     [L,dL] = softbndloss(theta_ext,thetabnd.lb(:),thetabnd.ub(:),TolCon);
@@ -26,7 +32,12 @@ if compute_grad
     else
         dlambda = [];
     end
-    dL = [dmu(:); dsigma(:); dlambda(:)];
+    if vp.optimize_weights
+        deta = dL(end-K+1:end);   
+    else
+        deta = [];
+    end
+    dL = [dmu(:); dsigma(:); dlambda(:); deta(:)];
 else
     L = softbndloss(theta_ext,thetabnd.lb(:),thetabnd.ub(:),TolCon);
 end
