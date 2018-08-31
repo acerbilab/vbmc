@@ -30,7 +30,7 @@ vp.mu(:,:) = reshape(theta(1:D*K),[D,K]);
 vp.sigma(1,:) = exp(theta(D*K+(1:K)));
 if vp.optimize_lambda; vp.lambda(:,1) = exp(theta(D*K+K+(1:D))); end
 if vp.optimize_weights
-    vp.eta(1,:) = theta(end-K-1:end);
+    vp.eta(1,:) = theta(end-K+1:end);
     vp.w(1,:) = exp(vp.eta);
     vp.w = vp.w/sum(vp.w);
 end

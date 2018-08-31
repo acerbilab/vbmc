@@ -537,7 +537,10 @@ while ~isFinished_flag
     % Check if we are still warming-up
     if optimState.Warmup && iter > 1    
         [optimState,action] = vbmc_warmup(optimState,stats,action,elbo,elbo_sd,options);
-    end    
+        if ~optimState.Warmup
+            vp.optimize_weights = logical(options.VariableWeights);
+        end        
+    end
 
     % t_fits(iter) = toc(timer_fits);    
     % dt = (t_adapt(iter)+t_fits(iter))/new_funevals;

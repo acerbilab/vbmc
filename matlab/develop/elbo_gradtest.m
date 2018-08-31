@@ -8,9 +8,9 @@ if nargin < 4; X = []; end
 if nargin < 5; y = []; end
 
 check_kl = 0;
-check_entropy = 0;
+check_entropy = 1;
 check_quadrature = 0;
-check_logjointgrad = 1;
+check_logjointgrad = 0;
 check_gp = 0;
 
 meanfun = 4;
@@ -40,7 +40,8 @@ end
 theta = [theta; log(lambda(:))];
 
 % Add ETA to variational parameter vector
-theta = [theta; log(ones(K,1)/K)];
+eta = randn(1,K);
+theta = [theta; eta(:)];
 
 if isempty(hyp)
     Ns = randi(3);    % Also test multiple hyperparameters
@@ -108,7 +109,8 @@ if check_entropy
     fprintf('Check entropy of single component...\n\n');
     vp1 = vp;
     vp1.K = 1; vp1.mu = vp1.mu(:,1); vp1.sigma = vp1.sigma(1);
-    theta1 = [vp1.mu(:); log(vp1.sigma(:)); log(vp1.lambda(:))];
+    vp1.w = vp1.w(1); vp1.eta = vp1.eta(1);
+    theta1 = [vp1.mu(:); log(vp1.sigma(:)); log(vp1.lambda(:)); log(vp1.w(:))];
     
     f = @(x) enttest(x,vp1,0);
     derivcheck(f,theta1 .* (0.5 + rand(size(theta1))));
@@ -125,10 +127,11 @@ if check_entropy
     vp2.mu = 0.1*[-ones(vp.D,1),ones(vp.D,1)];
     vp2.sigma = [1 1];
     vp2.lambda = ones(vp.D,1);
-    theta2 = [vp2.mu(:); log(vp2.sigma(:)); log(vp2.lambda(:))];
+    vp2.w = [0.6 0.4];
+    vp2.eta = log(vp2.w);
+    theta2 = [vp2.mu(:); log(vp2.sigma(:)); log(vp2.lambda(:)); log(vp2.w(:))];
     f = @(x) enttest(x,vp2,0);
     derivcheck(f,theta2);
-    pause
     
     fprintf('---------------------------------------------------------------------------------\n');
     fprintf('Check Monte Carlo entropy gradient...\n\n');
@@ -139,49 +142,55 @@ if check_entropy
     vp1.K = 1;
     vp1.mu = vp.mu(:,idx);
     vp1.sigma = vp.sigma(idx);
-    theta1 = [vp1.mu(:); log(vp1.sigma(:)); log(vp1.lambda(:))];
+    vp1.w = 1;
+    vp1.eta = 0;
+    theta1 = [vp1.mu(:); log(vp1.sigma(:)); log(vp1.lambda(:)); vp1.eta(:)];
     f = @(x,altflag) enttest(x,vp1,1e6,altflag);
 
     % Entropy and entropy gradient of a multivariate normal
     H_true = 0.5*D*log(2*pi*exp(1)) + D*log(vp1.sigma(1)) + sum(log(vp1.lambda));
-    dH_true = [zeros(D,1); D; ones(D,1)];
+    dH_true = [zeros(D,1); D; ones(D,1); 0];
 
     [H,dH] = f(theta1,0);
     [H_true,H_true-H]
     [dH_true-dH]'
 
-    [H,dH] = f(theta1,1);
-    [H_true,H_true-H]
-    [dH_true-dH]'
+%     [H,dH] = f(theta1,1);
+%     [H_true,H_true-H]
+%     [dH_true-dH]'
     
-    fprintf('Test with multiple (equal) components (signed errors):\n\n');
+    fprintf('Test with multiple (equal) components K=%d (signed errors):\n\n',vp.K);
     vpm = vp;
     vpm.mu = repmat(vp.mu(:,idx),[1,K]);
     vpm.sigma = vp.sigma(idx)*ones(1,K);
-    thetam = [vpm.mu(:); log(vpm.sigma(:)); log(vpm.lambda(:))];
+    vpm.eta = 0.5*randn(1,K);
+    vp.w = exp(vpm.eta)/sum(exp(vpm.eta));
+    thetam = [vpm.mu(:); log(vpm.sigma(:)); log(vpm.lambda(:)); vpm.eta(:)];
     f = @(x,altflag) enttest(x,vpm,1e5,altflag);
 
     % Entropy is the same, gradient should be similar
     H_true = 0.5*D*log(2*pi*exp(1)) + D*log(vp1.sigma(1)) + sum(log(vp1.lambda));
-    dH_true = [zeros(D*K,1); D*ones(K,1)/K; ones(D,1)];
+    dH_true = [zeros(D*K,1); D*ones(K,1).*vp.w(:); ones(D,1); zeros(K,1)];
 
     [H,dH] = f(thetam,0);
     [H_true,H_true-H]
     [dH_true-dH]'
 
-    [H,dH] = f(thetam,1);
-    [H_true,H_true-H]
-    [dH_true-dH]'
+%     [H,dH] = f(thetam,1);
+%     [H_true,H_true-H]
+%     [dH_true-dH]'
 
-    fprintf('Test with multiple components (signed errors):\n\n');
+    fprintf('Test with multiple components K=%d (signed errors):\n\n',vp.K);
     vp1 = vp;
     vp1.D = 1;
     % vp1.K = 2; vp1.mu = [-1 1]; vp1.sigma = [1 1];
     vp1.mu = randn(1,vp1.K);
     vp1.sigma = 0.5*exp(0.2*randn(1,vp1.K));
     vp1.lambda = 2;
+    vp1.eta = 0.5*randn(1,K);
+    vp1.w = exp(vp1.eta)/sum(exp(vp1.eta));
 
-    theta1 = [vp1.mu(:); log(vp1.sigma(:)); log(vp1.lambda(:))];
+    theta1 = [vp1.mu(:); log(vp1.sigma(:)); log(vp1.lambda(:));vp1.eta(:)];
     f = @(x,altflag) enttest(x,vp1,1e5,altflag);
     
     % Entropy is the same, gradient should be similar    
@@ -192,9 +201,9 @@ if check_entropy
     [H_true,H_true-H]
     [dH_true-dH]'
 
-    [H,dH] = f(theta1,1);
-    [H_true,H_true-H]
-    [dH_true-dH]'
+%     [H,dH] = f(theta1,1);
+%     [H_true,H_true-H]
+%     [dH_true-dH]'
     
 end
 
@@ -299,13 +308,14 @@ function [H,dH] = enttest(theta,vp,Nent,altflag)
 if nargin < 4 || isempty(altflag); altflag = 0; end
 
 vp = assign_theta(theta,vp);
+grad_flags = ones(1,4);
 
 if Nent == 0
-    [H,dH] = vbmc_entlb(vp,[1 1 1]);
+    [H,dH] = vbmc_entlb(vp,grad_flags);
 elseif altflag
-    [H,dH] = vbmc_entmcub(vp,Nent,[1 1 1]);
+    [H,dH] = vbmc_entmcub(vp,Nent,grad_flags);
 else
-    [H,dH] = vbmc_entmc(vp,Nent,[1 1 1]);    
+    [H,dH] = vbmc_entmc(vp,Nent,grad_flags);
 end
 
 end

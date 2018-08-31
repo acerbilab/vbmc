@@ -48,8 +48,7 @@ vp.sigma = 1e-3*ones(1,K);
 vp.lambda = ones(vp.D,1);
 vp.trinfo = trinfo;
 vp.optimize_lambda = true;
-vp.optimize_weights = logical(options.VariableWeights);
-
+vp.optimize_weights = false;
 optimState.trinfo = vp.trinfo;
 
 % Import prior function evaluations
