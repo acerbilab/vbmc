@@ -1,16 +1,23 @@
-function [x,f,xtab,ftab] = fminadam(fun,x0,LB,UB,TolFun,MaxIter)
+function [x,f,xtab,ftab] = fminadam(fun,x0,LB,UB,TolFun,MaxIter,master_stepsize)
 
 if nargin < 3; LB = []; end
 if nargin < 4; UB = []; end
 if nargin < 5 || isempty(TolFun); TolFun = 0.001; end
 if nargin < 6 || isempty(MaxIter); MaxIter = 1e4; end
+if nargin < 7; master_stepsize = []; end
+
+% Assign default parameters
+master_stepsize_default.max = 0.1;
+master_stepsize_default.min = 0.001;
+master_stepsize_default.decay = 200;
+for f = fields(master_stepsize_default)'
+    if ~isfield(master_stepsize,f{:}) || isempty(master_stepsize.(f{:}))
+        master_stepsize.(f{:}) = master_stepsize_default.(f{:});
+    end
+end
 
 %% Adam with momentum
 fudge_factor = sqrt(eps);
-
-master_stepsize_max = 0.1;
-master_stepsize_min = 0.001;
-master_stepsize_decay = 200;
 beta1 = 0.9;
 beta2 = 0.999;
 batchsize = 20;
@@ -45,8 +52,8 @@ for iter = 1:MaxIter
     mhat = m / (1-beta1^iter);
     vhat = v / (1-beta2^iter);
     
-    stepsize = master_stepsize_min + ...
-        (master_stepsize_max - master_stepsize_min)*exp(-iter/master_stepsize_decay);
+    stepsize = master_stepsize.min + ...
+        (master_stepsize.max - master_stepsize.min)*exp(-iter/master_stepsize.decay);
 
     x = x - stepsize * mhat ./(sqrt(vhat) + fudge_factor); % update
     x = min(max(x,LB(:)),UB(:));

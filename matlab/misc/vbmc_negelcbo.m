@@ -94,6 +94,7 @@ if beta ~= 0 && compute_grad
 end
 
 % Additional loss for variational parameter bound violation (soft bounds)
+% and for weight size (if optimizing mixture weights)
 % Only done when optimizing the variational parameters, but not when 
 % computing the EL(C)BO at each iteration
 if ~isempty(thetabnd)    
@@ -103,7 +104,27 @@ if ~isempty(thetabnd)
     else
         L = vpbndloss(theta,vp,thetabnd,thetabnd.TolCon);
     end
-    F = F + L;    
+    F = F + L;
+    
+    % Penalty to reduce weight size
+    if vp.optimize_weights
+        Thresh = 1/(4*K);
+        %L = sum(vp.w)*thetabnd.WeightPenalty;
+        % L = sum(sqrt(vp.w))*thetabnd.WeightPenalty;
+        L = sum(vp.w.*(vp.w<Thresh) + Thresh*(vp.w>=Thresh))*thetabnd.WeightPenalty;
+        F = F + L;
+        if compute_grad
+            %w_grad = thetabnd.WeightPenalty*ones(K,1);
+            % w_grad = 0.5./sqrt(vp.w(:))*thetabnd.WeightPenalty;
+            w_grad = thetabnd.WeightPenalty.*(vp.w(:)<Thresh);
+            eta_sum = sum(exp(vp.eta));
+            J_w = bsxfun(@times,-exp(vp.eta)',exp(vp.eta)/eta_sum^2) + diag(exp(vp.eta)/eta_sum);
+            w_grad = J_w*w_grad;
+            dL = zeros(size(dF));
+            dL(end-K+1:end) = w_grad;
+            dF = dF + dL;
+        end
+    end
 end
 
 end

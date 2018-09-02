@@ -1,4 +1,4 @@
-function [vp,elbo,elbo_sd,varss] = vpoptimize(Nfastopts,Nslowopts,useEntropyApprox,vp,gp,K,Xstar,ystar,optimState,stats,options,cmaes_opts,prnt)
+function [vp,elbo,elbo_sd,varss,pruned] = vpoptimize(Nfastopts,Nslowopts,useEntropyApprox,vp,gp,K,Xstar,ystar,optimState,stats,options,cmaes_opts,prnt)
 %VPOPTIMIZE Optimize variational posterior.
 
 %% Set up optimization variables and options
@@ -83,7 +83,7 @@ vp.bounds.lnscale_ub = max(vp.bounds.lnscale_ub,lnrange);
 
 % Set bounds for log weight parameters of variational components
 if vp.optimize_weights
-    vp.bounds.eta_lb = log(1e-3);
+    vp.bounds.eta_lb = log(0.5*options.TolWeight);
     vp.bounds.eta_ub = 0;
 end
 
@@ -95,6 +95,10 @@ if vp.optimize_weights
 end
 
 thetabnd.TolCon = options.TolConLoss;
+
+if vp.optimize_weights
+    thetabnd.WeightPenalty = 1;
+end
 
 %% Perform quick shotgun evaluation of many candidate parameters
 
@@ -180,9 +184,16 @@ for iOpt = 1:Nslowopts
     % Second, refine with unbiased stochastic entropy approximation
     if NSentK > 0
         switch lower(options.StochasticOptimizer)
-            case 'adam'        
+            case 'adam'
+                if optimState.Warmup || ~vp.optimize_weights
+                    master_stepsize.max = 0.1;                    
+                else
+                    master_stepsize.max = 0.01;
+                end
+                master_stepsize.min = 0.001;
+                master_stepsize.decay = 200;
                 [thetaopt,~,theta_lst,fval_lst] = ...
-                    fminadam(vbtrainmc_fun,thetaopt,[],[],options.TolFunStochastic);
+                    fminadam(vbtrainmc_fun,thetaopt,[],[],options.TolFunStochastic,[],master_stepsize);
 
                 if options.ELCBOmidpoint
                     % Recompute ELCBO at best midpoint with full variance and more precision
@@ -218,6 +229,45 @@ elbo_sd = sqrt(elbostats.varF(idx));
 varss = elbostats.varss(idx);
 vp = vp0_fine(idx);
 vp = rescale_params(vp,elbostats.theta(idx,:));
+
+%% Potentially prune mixture components
+
+pruned = 0;
+if vp.optimize_weights
+    while any(vp.w < options.TolWeight)
+        vp_pruned = vp;
+        
+        % Choose a random component below threshold
+        idx = find(vp_pruned.w < options.TolWeight);
+        idx = idx(randi(numel(idx)));
+        vp_pruned.w(idx) = [];
+        if isfield(vp_pruned,'eta'); vp_pruned.eta(idx) = []; end
+        vp_pruned.sigma(idx) = [];
+        vp_pruned.mu(:,idx) = [];
+        vp_pruned.K = vp_pruned.K - 1;
+        [theta_pruned,vp_pruned] = get_theta(vp_pruned,vp_pruned.optimize_lambda,vp_pruned.optimize_weights);
+        
+        % Recompute ELCBO
+        elbostats = eval_fullelcbo(1,theta_pruned,vp_pruned,gp,elbostats,elcbo_beta,options);        
+        elbo_pruned = -elbostats.nelbo(1);
+        elbo_pruned_sd = sqrt(elbostats.varF(1));
+        
+        % Difference in ELCBO (before and after pruning)
+        delta_elcbo = abs((elbo_pruned - options.ELCBOImproWeight*elbo_pruned_sd) ...
+            - (elbo - options.ELCBOImproWeight*elbo_sd))
+        
+        % Prune component if it has negligible influence on ELCBO
+        if delta_elcbo < options.TolImprovement
+            vp = vp_pruned;
+            elbo = elbo_pruned;
+            elbo_sd = elbo_pruned_sd;
+            varss = elbostats.varss(1);
+            pruned = pruned + 1;
+        else
+            break;
+        end
+    end
+end
 
 % L = vpbndloss(elbostats.theta(idx,:),vp,thetabnd,thetabnd.TolCon)
 % if L > 0

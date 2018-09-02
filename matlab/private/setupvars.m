@@ -153,6 +153,9 @@ optimState.RunHypCov = [];
 % Current number of components for variational posterior
 optimState.vpK = K;
 
+% Number of variational components pruned in last iteration
+optimState.pruned = 0;
+
 % Need to switch from deterministic entropy to stochastic entropy
 optimState.EntropySwitch = options.EntropySwitch;
 % Only use deterministic entropy if NVARS larger than a fixed number

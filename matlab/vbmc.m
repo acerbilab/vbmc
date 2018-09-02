@@ -206,6 +206,7 @@ defopts.DetEntropyMinD     = '5                 % Start with deterministic entro
 defopts.TolConLoss         = '0.01              % Fractional tolerance for constraint violation of variational parameters';
 defopts.BestSafeSD         = '5                 % SD multiplier of ELCBO for computing best variational solution';
 defopts.BestFracBack       = '0.25              % When computing best solution, lacking stability go back up to this fraction of iterations';
+defopts.TolWeight          = '1e-2              % Minimum mixture component weight';
 
 %% Advanced options for unsupported/untested features (do *not* modify)
 defopts.AcqFcn             = '@vbmc_acqskl       % Expensive acquisition fcn';
@@ -430,8 +431,13 @@ while ~isFinished_flag
     [Kmin,Kmax] = getK(optimState,options);
     Knew = optimState.vpK;
     Knew = max(Knew,Kmin);
-    if sKL < options.TolsKL*options.FunEvalsPerIter
-        Knew = optimState.vpK + Kbonus;
+    % Bonus component for stable solution (speed up exploration)
+    if iter > 1 && sKL < options.TolsKL*options.FunEvalsPerIter
+        % No bonus if any component was recently pruned
+        RecentPrunedIters = ceil(options.TolStableIters/2);
+        if all(stats.pruned(max(1,end-RecentPrunedIters+1):end) == 0)
+            Knew = optimState.vpK + Kbonus;
+        end
     end
     Knew = min(Knew,Kmax);
 
@@ -449,7 +455,7 @@ while ~isFinished_flag
     end
     
     % Run optimization of variational parameters
-    [vp,elbo,elbo_sd,varss] = ...
+    [vp,elbo,elbo_sd,varss,pruned] = ...
         vpoptimize(Nfastopts,Nslowopts,useEntropyApprox,vp,gp,Knew,X_hpd,y_hpd,optimState,stats,options,cmaes_opts,prnt);
     optimState.vpK = vp.K;
             
@@ -551,7 +557,7 @@ while ~isFinished_flag
     
     % Record all useful stats
     stats = savestats(stats, ...
-        optimState,vp,elbo,elbo_sd,varss,sKL,sKL_true,gp,hyp_full,Ns_gp,timer,options.Diagnostics);
+        optimState,vp,elbo,elbo_sd,varss,sKL,sKL_true,gp,hyp_full,Ns_gp,pruned,timer,options.Diagnostics);
     
     %----------------------------------------------------------------------
     %% Check termination conditions    
@@ -560,6 +566,8 @@ while ~isFinished_flag
         vbmc_termination(optimState,action,stats,options);
     
     %% Write iteration output
+    
+    % vp.w
     
     % Stopped GP sampling this iteration?
     if Ns_gp == options.StableGPSamples && ...
@@ -616,7 +624,7 @@ end
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function stats = savestats(stats,optimState,vp,elbo,elbo_sd,varss,sKL,sKL_true,gp,hyp_full,Ns_gp,timer,debugflag)
+function stats = savestats(stats,optimState,vp,elbo,elbo_sd,varss,sKL,sKL_true,gp,hyp_full,Ns_gp,pruned,timer,debugflag)
 
 iter = optimState.iter;
 stats.iter(iter) = iter;
@@ -625,6 +633,7 @@ stats.Neff(iter) = optimState.Neff;
 stats.funccount(iter) = optimState.funccount;
 stats.cachecount(iter) = optimState.cachecount;
 stats.vpK(iter) = vp.K;
+stats.pruned(iter) = pruned;
 stats.elbo(iter) = elbo;
 stats.elboSD(iter) = elbo_sd;
 stats.sKL(iter) = sKL;
