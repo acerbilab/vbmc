@@ -32,11 +32,19 @@ if 0
 else    
     Knew = optimState.vpK;
     if ~optimState.Warmup && optimState.iter > 1
-        if stats.pruned(end) == 0
+        idx_range = ceil(options.TolStableIters/2);
+        elbos = stats.elbo(max(1,end-idx_range+1):end);
+        elboSDs = stats.elboSD(max(1,end-idx_range+1):end);
+        elcbos = elbos - options.ELCBOImproWeight*elboSDs;
+        warmups = stats.warmup(max(1,end-idx_range+1):end);
+        elcbo_max = max(elcbos(~warmups));
+        if elcbos(end) >= elcbo_max; improving_flag = true; else; improving_flag = false; end        
+        
+        if stats.pruned(end) == 0 && improving_flag
             Knew = Knew + 1;
         end
         % Bonus component for stable solution (speed up exploration)
-        if stats.qindex(end) < 1 && ~optimState.RecomputeVarPost
+        if stats.qindex(end) < 1 && ~optimState.RecomputeVarPost && improving_flag
             % No bonus if any component was recently pruned
             RecentPrunedIters = ceil(options.TolStableIters/2);
             if all(stats.pruned(max(1,end-RecentPrunedIters+1):end) == 0)

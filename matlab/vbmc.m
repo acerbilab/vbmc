@@ -618,6 +618,7 @@ stats.Neff(iter) = optimState.Neff;
 stats.funccount(iter) = optimState.funccount;
 stats.cachecount(iter) = optimState.cachecount;
 stats.vpK(iter) = vp.K;
+stats.warmup(iter) = optimState.Warmup;
 stats.pruned(iter) = pruned;
 stats.elbo(iter) = elbo;
 stats.elboSD(iter) = elbo_sd;

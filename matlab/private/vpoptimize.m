@@ -236,11 +236,14 @@ vp = rescale_params(vp,elbostats.theta(idx,:));
 
 pruned = 0;
 if vp.optimize_weights
-    while any(vp.w < options.TolWeight)
+    
+    alreadychecked = false(1,vp.K);
+    
+    while any(vp.w < options.TolWeight & ~alreadychecked)
         vp_pruned = vp;
         
         % Choose a random component below threshold
-        idx = find(vp_pruned.w < options.TolWeight);
+        idx = find(vp_pruned.w < options.TolWeight & ~alreadychecked);
         idx = idx(randi(numel(idx)));
         vp_pruned.w(idx) = [];
         if isfield(vp_pruned,'eta'); vp_pruned.eta(idx) = []; end
@@ -265,8 +268,9 @@ if vp.optimize_weights
             elbo_sd = elbo_pruned_sd;
             varss = elbostats.varss(1);
             pruned = pruned + 1;
+            alreadychecked(idx) = [];
         else
-            break;
+            alreadychecked(idx) = true;
         end
     end
 end
