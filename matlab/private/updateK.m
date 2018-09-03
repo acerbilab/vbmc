@@ -1,6 +1,14 @@
 function Knew = updateK(optimState,stats,options)
 %UPDATEK Update number of variational mixture components.
 
+Kfun_max = options.KfunMax;
+Neff = optimState.Neff;
+if isnumeric(Kfun_max)
+    Kmax = ceil(Kfun_max);
+elseif isa(Kfun_max,'function_handle')
+    Kmax = ceil(Kfun_max(Neff));
+end
+
 if isa(options.AdaptiveK,'function_handle')
     Kbonus = round(options.AdaptiveK(optimState.vpK));
 else
@@ -21,24 +29,21 @@ if 0
         end
     end
     Knew = min(Knew,Kmax);
-else
-    
-    if optimState.Warmup
-        Knew = options.Kwarmup;
-    else
-        Knew = optimState.vpK;        
-        if optimState.iter > 1 && stats.pruned(end) == 0
+else    
+    Knew = optimState.vpK;
+    if ~optimState.Warmup && optimState.iter > 1
+        if stats.pruned(end) == 0
             Knew = Knew + 1;
         end
         % Bonus component for stable solution (speed up exploration)
-        if optimState.iter > 1 && stats.qindex(end) < 1
+        if stats.qindex(end) < 1 && ~optimState.RecomputeVarPost
             % No bonus if any component was recently pruned
             RecentPrunedIters = ceil(options.TolStableIters/2);
             if all(stats.pruned(max(1,end-RecentPrunedIters+1):end) == 0)
                 Knew = Knew + Kbonus;
             end
         end
-        Knew = min(Knew,ceil(optimState.Neff.^(2/3)));
+        Knew = min(Knew,Kmax);
     end
 end
     

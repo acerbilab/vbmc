@@ -108,7 +108,7 @@ if ~isempty(thetabnd)
     
     % Penalty to reduce weight size
     if vp.optimize_weights
-        Thresh = 1/(4*K);
+        Thresh = thetabnd.WeightThreshold;
         %L = sum(vp.w)*thetabnd.WeightPenalty;
         % L = sum(sqrt(vp.w))*thetabnd.WeightPenalty;
         L = sum(vp.w.*(vp.w<Thresh) + Thresh*(vp.w>=Thresh))*thetabnd.WeightPenalty;

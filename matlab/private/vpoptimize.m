@@ -96,8 +96,10 @@ end
 
 thetabnd.TolCon = options.TolConLoss;
 
+% Weights below a certain threshold are penalized
 if vp.optimize_weights
-    thetabnd.WeightPenalty = 1;
+    thetabnd.WeightThreshold = max(1/(4*K),options.TolWeight);
+    thetabnd.WeightPenalty = options.WeightPenalty;
 end
 
 %% Perform quick shotgun evaluation of many candidate parameters

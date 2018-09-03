@@ -137,6 +137,7 @@ defopts.TolStableEntropyIters   = '6            % Required stable iterations to 
 defopts.UncertaintyHandling     = 'no           % Explicit noise handling (only partially supported)';
 defopts.NoiseSize               = '[]           % Base observation noise magnitude';
 defopts.VariableWeights         = 'no           % Use variable mixture weight for variational posterior';
+defopts.WeightPenalty           = '1            % Penalty multiplier for small mixture weights';
 defopts.Diagnostics             = 'off          % Run in diagnostics mode, get additional info';
 defopts.OutputFcn               = '[]           % Output function';
 defopts.TolStableExceptions     = '1            % Allowed exceptions when computing iteration stability';
