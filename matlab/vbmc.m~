@@ -210,10 +210,10 @@ defopts.TolWeight          = '1e-2              % Threshold mixture component we
 
 % Portfolio allocation parameters (experimental feature)
 defopts.Portfolio          = 'off               % Portfolio allocation for acquisition function';
-defopts.HedgeGamma         = '0.125';
-defopts.HedgeBeta          = '1';
+defopts.HedgeGamma         = '0.15';
+defopts.HedgeBeta          = '0.1';
 defopts.HedgeDecay         = '0.5';
-defopts.HedgeMax           = '10';
+defopts.HedgeMax           = '1';
 
 %% Advanced options for unsupported/untested features (do *not* modify)
 defopts.AcqFcn             = '@vbmc_acqskl       % Expensive acquisition fcn';
@@ -436,19 +436,16 @@ while ~isFinished_flag
     if optimState.RecomputeVarPost || options.AlwaysRefitVarPost
         Nfastopts = options.NSelbo * vp.K;
         Nslowopts = options.ElboStarts; % Full optimizations
-        % useEntropyApprox = true;
-        useEntropyApprox = false;
         optimState.RecomputeVarPost = false;
     else
         % Only incremental change from previous iteration
         Nfastopts = ceil(options.NSelbo * vp.K * options.NSelboIncr);
         Nslowopts = 1;
-        useEntropyApprox = false;
     end
     
     % Run optimization of variational parameters
     [vp,elbo,elbo_sd,H,varss,pruned] = ...
-        vpoptimize(Nfastopts,Nslowopts,useEntropyApprox,vp,gp,Knew,X_hpd,y_hpd,optimState,stats,options,cmaes_opts,prnt);
+        vpoptimize(Nfastopts,Nslowopts,vp,gp,Knew,X_hpd,y_hpd,optimState,stats,options,cmaes_opts,prnt);
     optimState.vpK = vp.K;
     optimState.H = H;   % Save current entropy
     
@@ -542,16 +539,22 @@ while ~isFinished_flag
     end
     
     % Update portfolio values
-    if optimState.Portfolio && iter > 2
+    if options.Portfolio && iter > 2
         hedge = optimState.hedge;
         er = zeros(1,hedge.n);
         hedge.count = hedge.count + 1;
+        
+        RecentIters = ceil(options.TolStableIters/2);
+        hedge_beta = max(,mean(stats.elboSD(max(1,end-RecentIters+1):end)));
 
         elcbo_old = stats.elbo(end) - options.ELCBOImproWeight*stats.elboSD(end);
         elcbo = elbo - options.ELCBOImproWeight*elbo_sd;
                 
-        er(hedge.chosen) = min(hedge.max,max(0,elcbo - elcbo_old));        
+        er(hedge.chosen) = min(hedge.max,max(0,(elcbo - elcbo_old)/hedge_beta))/hedge.p(hedge.chosen);        
         hedge.g = hedge.decay*hedge.g + er;
+        
+        hedge.chosen
+        hedge.g
         
         optimState.hedge = hedge;
     end

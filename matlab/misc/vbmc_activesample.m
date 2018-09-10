@@ -25,7 +25,7 @@ else                    % Active uncertainty sampling
     % Pick acquisition function
     if options.Portfolio
         hedge = optimState.hedge;            
-        hedge.p = exp(hedge.beta*(hedge.g - max(hedge.g)));
+        hedge.p = exp(hedge.g - max(hedge.g));
         hedge.p = hedge.p ./ sum(hedge.p);
         hedge.p = hedge.p*(1-hedge.gamma) + hedge.gamma/hedge.n;
         hedge.chosen = find(rand() < cumsum(hedge.p),1);            
@@ -33,7 +33,6 @@ else                    % Active uncertainty sampling
         hedge.phat(hedge.chosen) = hedge.p(hedge.chosen);
         optimState.hedge = hedge;
         SearchAcqFcn{1} = options.SearchAcqFcn{hedge.chosen};
-        hedge.chosen
     else
         SearchAcqFcn = options.SearchAcqFcn;
     end    

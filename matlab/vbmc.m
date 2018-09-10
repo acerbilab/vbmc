@@ -210,10 +210,10 @@ defopts.TolWeight          = '1e-2              % Threshold mixture component we
 
 % Portfolio allocation parameters (experimental feature)
 defopts.Portfolio          = 'off               % Portfolio allocation for acquisition function';
-defopts.HedgeGamma         = '0.15';
+defopts.HedgeGamma         = '0';
 defopts.HedgeBeta          = '0.1';
 defopts.HedgeDecay         = '0.5';
-defopts.HedgeMax           = '1';
+defopts.HedgeMax           = 'log(10)';
 
 %% Advanced options for unsupported/untested features (do *not* modify)
 defopts.AcqFcn             = '@vbmc_acqskl       % Expensive acquisition fcn';
@@ -543,12 +543,17 @@ while ~isFinished_flag
         hedge = optimState.hedge;
         er = zeros(1,hedge.n);
         hedge.count = hedge.count + 1;
+        
+        RecentIters = ceil(options.TolStableIters/2);
+        hedge_beta = max(options.TolImprovement,mean(stats.elboSD(max(1,end-RecentIters+1):end)));
 
         elcbo_old = stats.elbo(end) - options.ELCBOImproWeight*stats.elboSD(end);
         elcbo = elbo - options.ELCBOImproWeight*elbo_sd;
                 
-        er(hedge.chosen) = min(hedge.max,max(0,elcbo - elcbo_old));        
+        er(hedge.chosen) = min(hedge.max,max(0,(elcbo - elcbo_old)/hedge_beta)/hedge.p(hedge.chosen));        
         hedge.g = hedge.decay*hedge.g + er;
+        
+        [hedge.chosen,hedge.g]
         
         optimState.hedge = hedge;
     end
