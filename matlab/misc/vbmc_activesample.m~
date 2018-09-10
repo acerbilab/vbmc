@@ -22,23 +22,11 @@ else                    % Active uncertainty sampling
         optimState.acqScore = zeros(1,Nacq); % Measure metrics effectiveness
     end
     
-    % Pick acquisition function
     if options.Portfolio
-        hedge = optimState.hedge;            
-        hedge.p = exp(hedge.beta*(hedge.g - max(hedge.g)));
-        hedge.p = hedge.p ./ sum(hedge.p);
-        hedge.p = hedge.p*(1-hedge.gamma) + hedge.gamma/hedge.n;
-        hedge.chosen = find(rand() < cumsum(hedge.p),1);            
-        hedge.phat = Inf(size(hedge.p));
-        hedge.phat(hedge.chosen) = hedge.p(hedge.chosen);
-        optimState.hedge = hedge;
-        SearchAcqFcn{1} = options.SearchAcqFcn{hedge.chosen};
-        hedge.chosen
-    else
-        SearchAcqFcn = options.SearchAcqFcn;
-    end    
+        elbolast = elbo;
+        elboSD_last = elbo_sd;
+    end
     
-        
     for is = 1:Ns
 
         % Compute expected log joint and its variance (only diagonal terms)
@@ -48,6 +36,21 @@ else                    % Active uncertainty sampling
 
         % Create search set from cache and randomly generated
         [Xsearch,idx_cache] = getSearchPoints(NSsearch,Ns,optimState,gp,vp,options);
+        
+        % Pick current acquisition function
+        if options.Portfolio
+            hedge optimState.hedge.
+            
+            hedge.p = exp(hedge.beta*(hedge.g - max(hedge.g)));
+            hedge.p = hedge.p ./ sum(hedge.p);
+            hedge.p = hedge.p*(1-hedge.n*hedge.gamma) + hedge.gamma;
+            hedge.chosen = find(rand() < cumsum(hedge.p),1);            
+            hedge.phat = Inf(size(hedge.p));
+            hedge.phat(hedge.chosen) = hedge.p(hedge.chosen);            
+            
+        else
+            SearchAcqFcn = options.SearchAcqFcn;
+        end
         
         % Evaluate fast search acquisition function(s)
         acq_fast = [];

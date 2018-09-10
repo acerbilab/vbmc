@@ -1,4 +1,4 @@
-function acq = vbmc_acqfreg(Xs,vp,gp,optimState,Nacq,transpose_flag)
+function acq = vbmc_acqfregv2(Xs,vp,gp,optimState,Nacq,transpose_flag)
 %VBMC_ACQFREG Acquisition function for prospective uncertainty search.
 
 % Xs is in *transformed* coordinates
@@ -27,7 +27,7 @@ vtot = vf + vbar;       % Total variance
 
 z = optimState.ymax;
 
-acq = -vtot .* exp(fbar-z) .* p;
+acq = -vtot.^2 .* exp(fbar-z) .* p;
 
 % Regularization: penalize points where GP uncertainty is below threshold
 idx = vtot < TolVar;

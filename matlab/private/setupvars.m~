@@ -174,13 +174,13 @@ optimState.iterList.fhyp = [];
 
 %% Initialize portfolio allocation
 
-if options.Portfolio    
+if options.Portfolio
+    
     hedge.n = numel(options.SearchAcqFcn);
     hedge.g = zeros(1,hedge.n);
     hedge.count = 0;
     hedge.gamma = options.HedgeGamma;
     hedge.beta = options.HedgeBeta;
     hedge.decay = options.HedgeDecay;
-    hedge.max = options.HedgeMax;
-    optimState.hedge = hedge;
+        
 end

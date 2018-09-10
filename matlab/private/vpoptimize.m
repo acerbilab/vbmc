@@ -1,4 +1,4 @@
-function [vp,elbo,elbo_sd,varss,pruned] = vpoptimize(Nfastopts,Nslowopts,useEntropyApprox,vp,gp,K,Xstar,ystar,optimState,stats,options,cmaes_opts,prnt)
+function [vp,elbo,elbo_sd,H,varss,pruned] = vpoptimize(Nfastopts,Nslowopts,vp,gp,K,Xstar,ystar,optimState,stats,options,cmaes_opts,prnt)
 %VPOPTIMIZE Optimize variational posterior.
 
 %% Set up optimization variables and options
@@ -153,9 +153,9 @@ for iOpt = 1:Nslowopts
 
     vbtrainmc_fun = @(theta_) vbmc_negelcbo(theta_,elcbo_beta,vp0,gp,NSentK,1,compute_var,options.AltMCEntropy,thetabnd);
 
-    % First, fast optimization via deterministic entropy approximation
-    if useEntropyApprox || NSentK == 0
-        if NSentK == 0; TolOpt = options.DetEntTolOpt; else; TolOpt = sqrt(options.DetEntTolOpt); end
+    if NSentK == 0
+        % Fast optimization via deterministic entropy approximation
+        TolOpt = options.DetEntTolOpt;
         vbtrain_options.OptimalityTolerance = TolOpt;
         vbtrain_fun = @(theta_) vbmc_negelcbo(theta_,elcbo_beta,vp0,gp,0,1,compute_var,0,thetabnd);
         try
@@ -180,11 +180,9 @@ for iOpt = 1:Nslowopts
         end
         % output, % pause
     else
+        % Optimization via unbiased stochastic entropy approximation
         thetaopt = theta0(:)';
-    end
         
-    % Second, refine with unbiased stochastic entropy approximation
-    if NSentK > 0
         switch lower(options.StochasticOptimizer)
             case 'adam'
                 if optimState.Warmup || ~vp.optimize_weights
@@ -228,6 +226,7 @@ end
 [~,idx] = min(elbostats.nelcbo);
 elbo = -elbostats.nelbo(idx);
 elbo_sd = sqrt(elbostats.varF(idx));
+H = elbostats.H(idx);
 varss = elbostats.varss(idx);
 vp = vp0_fine(idx);
 vp = rescale_params(vp,elbostats.theta(idx,:));

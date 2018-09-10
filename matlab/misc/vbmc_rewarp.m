@@ -15,7 +15,7 @@ if options.WarpRotoScaling && optimState.redoRotoscaling
         optimState.X(optimState.X_flag,:),optimState.y(optimState.X_flag), ...
         optimState.gpMeanfun,hypprior,[],gptrain_options);
 
-     vp = vpoptimize(Nfastopts,1,0,vp,gp,vp.K,X_hpd,y_hpd,optimState,stats,options,cmaes_opts,prnt);
+     vp = vpoptimize(Nfastopts,1,vp,gp,vp.K,X_hpd,y_hpd,optimState,stats,options,cmaes_opts,prnt);
 end
 
 end
