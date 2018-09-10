@@ -362,7 +362,7 @@ while ~isFinished_flag
         optimState.SkipAdaptiveSampling = false;
     else
         [optimState,t_adapt(iter),t_func(iter)] = ...
-            adaptive_sampling(optimState,new_funevals,funwrapper,vp,vp_old,gp,options,cmaes_opts);
+            vbmc_activesample(optimState,new_funevals,funwrapper,vp,vp_old,gp,options,cmaes_opts);
     end
     optimState.N = optimState.Xmax;  % Number of training inputs
     optimState.Neff = sum(optimState.X_flag(1:optimState.Xmax));

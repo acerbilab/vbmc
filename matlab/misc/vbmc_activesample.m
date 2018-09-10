@@ -1,6 +1,6 @@
 function [optimState,t_adapt,t_func] = ...
-    adaptive_sampling(optimState,Ns,funwrapper,vp,vp_old,gp,options,cmaes_opts)
-%ADAPTIVE_SAMPLING Choose sampled points iteratively based on acquisition function.
+    vbmc_activesample(optimState,Ns,funwrapper,vp,vp_old,gp,options,cmaes_opts)
+%VBMC_ACTIVESAMPLE Actively sample points iteratively based on acquisition function.
 
 NSsearch = options.NSsearch;    % Number of points for fast acquisition fcn
 Nacq = options.Nacq;            % Number of evals of slow acquisition fcn
