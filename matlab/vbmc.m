@@ -136,8 +136,8 @@ end
 defopts.TolStableEntropyIters   = '6            % Required stable iterations to switch entropy approximation';
 defopts.UncertaintyHandling     = 'no           % Explicit noise handling (only partially supported)';
 defopts.NoiseSize               = '[]           % Base observation noise magnitude';
-defopts.VariableWeights         = 'no           % Use variable mixture weight for variational posterior';
-defopts.WeightPenalty           = '1            % Penalty multiplier for small mixture weights';
+defopts.VariableWeights         = 'yes          % Use variable mixture weight for variational posterior';
+defopts.WeightPenalty           = '0.1          % Penalty multiplier for small mixture weights';
 defopts.Diagnostics             = 'off          % Run in diagnostics mode, get additional info';
 defopts.OutputFcn               = '[]           % Output function';
 defopts.TolStableExceptions     = '1            % Allowed exceptions when computing iteration stability';
@@ -163,10 +163,9 @@ defopts.StableGPSamples    = '0                 % Number of GP samples when GP i
 defopts.GPSampleThin       = '5                 % Thinning for GP hyperparameter sampling';
 defopts.TolGPVar           = '1e-4              % Threshold on GP variance, used to stabilize sampling and by some acquisition fcns';
 defopts.gpMeanFun          = 'negquad           % GP mean function';
-defopts.Kfun               = '@sqrt             % Variational components as a function of training points';
-defopts.KfunMax            = '@(N) 2*sqrt(N)    % Max variational components as a function of training points';
+defopts.KfunMax            = '@(N) N.^(2/3)     % Max variational components as a function of training points';
 defopts.Kwarmup            = '2                 % Variational components during warmup';
-defopts.AdaptiveK          = '1                 % Added variational components for stable solution';
+defopts.AdaptiveK          = '2                 % Added variational components for stable solution';
 defopts.HPDFrac            = '0.8               % High Posterior Density region (fraction of training inputs)';
 defopts.ELCBOImproWeight   = '3                 % Uncertainty weight on ELCBO for computing lower bound improvement';
 defopts.TolLength          = '1e-6              % Minimum fractional length scale';
@@ -207,7 +206,7 @@ defopts.DetEntropyMinD     = '5                 % Start with deterministic entro
 defopts.TolConLoss         = '0.01              % Fractional tolerance for constraint violation of variational parameters';
 defopts.BestSafeSD         = '5                 % SD multiplier of ELCBO for computing best variational solution';
 defopts.BestFracBack       = '0.25              % When computing best solution, lacking stability go back up to this fraction of iterations';
-defopts.TolWeight          = '1e-2              % Minimum mixture component weight';
+defopts.TolWeight          = '1e-2              % Threshold mixture component weight for pruning';
 
 %% Advanced options for unsupported/untested features (do *not* modify)
 defopts.AcqFcn             = '@vbmc_acqskl       % Expensive acquisition fcn';
