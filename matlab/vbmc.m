@@ -429,7 +429,8 @@ while ~isFinished_flag
     if optimState.RecomputeVarPost || options.AlwaysRefitVarPost
         Nfastopts = options.NSelbo * vp.K;
         Nslowopts = options.ElboStarts; % Full optimizations
-        useEntropyApprox = true;
+        % useEntropyApprox = true;
+        useEntropyApprox = false;
         optimState.RecomputeVarPost = false;
     else
         % Only incremental change from previous iteration
