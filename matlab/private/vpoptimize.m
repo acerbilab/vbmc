@@ -258,7 +258,7 @@ if vp.optimize_weights
         
         % Difference in ELCBO (before and after pruning)
         delta_elcbo = abs((elbo_pruned - options.ELCBOImproWeight*elbo_pruned_sd) ...
-            - (elbo - options.ELCBOImproWeight*elbo_sd))
+            - (elbo - options.ELCBOImproWeight*elbo_sd));
         
         % Prune component if it has negligible influence on ELCBO
         if delta_elcbo < options.TolImprovement
