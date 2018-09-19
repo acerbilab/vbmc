@@ -37,7 +37,7 @@ if optimState.WarmupStableIter >= options.TolStableWarmup
     optimState.LastNonlinearWarping = optimState.N;
 
     % Skip adaptive sampling for next iteration
-    optimState.SkipAdaptiveSampling = true;
+    optimState.SkipActiveSampling = options.SkipActiveSamplingAfterWarmup;
 
     % Fully recompute variational posterior
     optimState.RecomputeVarPost = true;

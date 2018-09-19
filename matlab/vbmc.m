@@ -133,6 +133,8 @@ if nargout <= 1 && (nargin == 0 || (nargin == 1 && ischar(fun) && strcmpi(fun,'d
 end
 
 %% Advanced options (do not modify unless you *know* what you are doing)
+
+defopts.SkipActiveSamplingAfterWarmup   = 'yes  % Skip active sampling for one iteration at the end of warmup';
 defopts.TolStableEntropyIters   = '6            % Required stable iterations to switch entropy approximation';
 defopts.UncertaintyHandling     = 'no           % Explicit noise handling (only partially supported)';
 defopts.NoiseSize               = '[]           % Base observation noise magnitude';
@@ -365,8 +367,8 @@ while ~isFinished_flag
     if optimState.Xmax > 0
         optimState.ymax = max(optimState.y(optimState.X_flag));
     end
-    if optimState.SkipAdaptiveSampling
-        optimState.SkipAdaptiveSampling = false;
+    if optimState.SkipActiveSampling
+        optimState.SkipActiveSampling = false;
     else
         [optimState,t_active(iter),t_func(iter)] = ...
             vbmc_activesample(optimState,new_funevals,funwrapper,vp,vp_old,gp,options,cmaes_opts);

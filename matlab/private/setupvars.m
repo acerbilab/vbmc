@@ -140,7 +140,7 @@ end
 optimState.R = Inf;
 
 % Start with adaptive sampling
-optimState.SkipAdaptiveSampling = false;
+optimState.SkipActiveSampling = false;
 
 % Running mean and covariance of variational posterior in transformed space
 optimState.RunMean = [];
