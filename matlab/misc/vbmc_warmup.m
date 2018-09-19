@@ -1,12 +1,16 @@
 function [optimState,action] = vbmc_warmup(optimState,stats,action,elbo,elbo_sd,options)
 %VBMC_WARMUP Check when warmup stage ends
 
-CI_95 = 1.6449; % Normal inverse cdf for 0.95
 iter = optimState.iter;
 
 elbo_old = stats.elbo(iter-1);
 elboSD_old = stats.elboSD(iter-1);
-increaseUCB = elbo - elbo_old + CI_95*sqrt(elbo_sd^2 + elboSD_old^2);
+
+% CI_95 = 1.6449; % Normal inverse cdf for 0.95
+% increaseUCB = elbo - elbo_old + CI_95*sqrt(elbo_sd^2 + elboSD_old^2);
+increaseUCB = (elbo - options.ELCBOImproWeight*elbo_sd) - ...
+    (elbo_old - options.ELCBOImproWeight*elboSD_old);
+
 if increaseUCB < options.StopWarmupThresh
     optimState.WarmupStableIter = optimState.WarmupStableIter + 1;
 else
