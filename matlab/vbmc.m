@@ -134,7 +134,7 @@ end
 
 %% Advanced options (do not modify unless you *know* what you are doing)
 
-defopts.SkipActiveSamplingAfterWarmup   = 'yes  % Skip active sampling for one iteration at the end of warmup';
+defopts.SkipActiveSamplingAfterWarmup   = 'yes  % Skip active sampling the first iteration after warmup';
 defopts.TolStableEntropyIters   = '6            % Required stable iterations to switch entropy approximation';
 defopts.UncertaintyHandling     = 'no           % Explicit noise handling (only partially supported)';
 defopts.NoiseSize               = '[]           % Base observation noise magnitude';

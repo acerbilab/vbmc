@@ -1,13 +1,23 @@
-function vbmc_demo2d(stats,fun)
+function stats = vbmc_demo2d(fun,stats,plotbnd)
 %VBMC_DEMO2D Demo plot of VBMC at work (only for 2D problems).
 
+if nargin < 1 || isempty(fun); fun = @rosenbrock_test; end
+if nargin < 2 || isempty(stats)
+    rng(0);
+    [~,~,~,~,~,~,stats] = vbmc(fun,[-1 -1],-Inf,Inf,-3,3);
+end
+if nargin < 3 || isempty(plotbnd)
+    vp = stats.vp(end);
+    xrnd = vbmc_rnd(1e6,vp);
+    for i = 1:size(xrnd,2)
+        LB(i) = floor(quantile1(xrnd(:,i),0.01) - 0.5);
+        UB(i) = ceil(quantile1(xrnd(:,i),0.99)+0.5);
+    end
+else
+    LB = plotbnd(1,:);
+    UB = plotbnd(2,:);
+end
 
-% rng(0); [vp,elbo,elbo_sd,exitflag,output,optimState,stats] = vbmc(@(x) rosenbrock_test(x),[-1 -1],-Inf,Inf,-3,3,struct('Plot','on'));
-
-if nargin < 2 || isempty(fun); fun = @rosenbrock_test; end
-
-LB = [-3,-2];
-UB = [3,6];
 tolx = 1e-3;
 Nx = 128;
 Npanels = 8;
@@ -22,8 +32,19 @@ idx(2) = find(stats.warmup == 1,1,'last');
 tmp = floor(linspace(idx(2),numel(stats.vp),Npanels-3));
 idx(3:Npanels-2) = tmp(2:end);
 
-grid = [reshape(1:Npanels-2,[(Npanels-2)/2,2])',[Npanels;Npanels-1]];
-h = plotify(grid,'gutter',[0.05 0.15],'margins',[.05 .02 .075 .05]);
+Np = 5;
+grid = [];
+for i = 1:(Npanels-2)/2
+    grid = [grid, [i*ones(1,Np); (i+(Npanels-2)/2)*ones(1,Np)]];    
+end
+grid = [grid, [0,Npanels*ones(1,Np);0,(Npanels-1)*ones(1,Np)]];
+
+% grid = [reshape(1:Npanels-2,[(Npanels-2)/2,2])',[Npanels;Npanels-1]];
+labels{1} = 'A';
+labels{Npanels-1} = 'C';
+labels{Npanels} = 'B';
+
+h = plotify(grid,'gutter',[0.05 0.15],'margins',[.05 .02 .075 .05],'labels',labels);
 
 for iPlot = 1:Npanels
     axes(h(iPlot));
@@ -64,14 +85,18 @@ for iPlot = 1:Npanels
         hl(2) = plot([iter(1),iter(end)],log(Z)*[1 1],'k','LineWidth',1);
         titlestr = 'Model evidence';
         xlim([0.9, stats.iter(end)+0.1]);
-        ylims = [floor(min(elbo)-0.1),ceil(max(elbo)+0.1)];
+        ylims = [floor(min(elbo)-0.5),ceil(max(elbo)+0.5)];
         ylim(ylims);
         xticks(idx);
         yticks([ylims(1),round(log(Z),2),ylims(2)])
-        xlabel('Iterations');
-        
-        hll = legend(hl,'ELBO','lnZ');
-        set(hll,'Location','SouthEast','Box','off');
+        xlabel('Iterations');        
+        if log(Z) < mean(ylims)
+            loc = 'NorthEast';
+        else
+            loc = 'SouthEast';
+        end        
+        hll = legend(hl,'ELBO','LML');        
+        set(hll,'Location',loc,'Box','off');
         
     else
         s = contour(x1,x2,reshape(yy',[Nx,Nx])');
@@ -95,6 +120,7 @@ for iPlot = 1:Npanels
         
         xlim([LB(1),UB(1)]);
         ylim([LB(2),UB(2)]);
+        set(gca,'TickLength',get(gca,'TickLength')*2);
     end    
     
     title(titlestr);
@@ -108,6 +134,5 @@ set(gcf,'Position',pos);
 set(gcf,'Units','inches'); pos = get(gcf,'Position');
 set(gcf,'PaperPositionMode','Auto','PaperUnits','Inches','PaperSize',[pos(3), pos(4)])
 drawnow;
-
-
+    
 end
