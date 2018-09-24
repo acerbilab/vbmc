@@ -61,7 +61,7 @@ function [vp,elbo,elbo_sd,exitflag,output,optimState,stats] = vbmc(fun,x0,LB,UB,
 %         funccount: <Total function evaluations>
 %      trainsetsize: <Size of training set for returned solution>
 %        components: <Number of mixture components of returned solution>
-%  convergenceindex: <Heuristic index of convergence (< 1 is good)>
+%            rindex: <Reliability index (< 1 is good)>
 % convergencestatus: <"probable" or "no" convergence>
 %          overhead: <Fractional overhead (total runtime / total fcn time - 1)>
 %          rngstate: <Status of random number generator>
