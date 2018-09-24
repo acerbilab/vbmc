@@ -9,6 +9,7 @@ else
 end
 output.iterations = optimState.iter;
 output.funccount = optimState.funccount;
+output.bestiter = idx_best;
 output.trainsetsize = stats.Neff(idx_best);
 output.components = stats.vpK(idx_best);
 output.rindex = stats.rindex(idx_best);

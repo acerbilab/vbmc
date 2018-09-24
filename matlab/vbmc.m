@@ -59,6 +59,7 @@ function [vp,elbo,elbo_sd,exitflag,output,optimState,stats] = vbmc(fun,x0,LB,UB,
 %          function: <Target probability density function name>
 %        iterations: <Total iterations>
 %         funccount: <Total function evaluations>
+%          bestiter: <Iteration of returned solution>
 %      trainsetsize: <Size of training set for returned solution>
 %        components: <Number of mixture components of returned solution>
 %            rindex: <Reliability index (< 1 is good)>
