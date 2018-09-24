@@ -38,7 +38,7 @@ if ~optimState.Warmup && optimState.iter > 1
     end
     
     % Bonus components for stable solution (speed up exploration)
-    if stats.qindex(end) < 1 && ~optimState.RecomputeVarPost && improving_flag
+    if stats.rindex(end) < 1 && ~optimState.RecomputeVarPost && improving_flag
         % No bonus if any component was recently pruned
         if all(stats.pruned(max(1,end-RecentIters+1):end) == 0)
             Knew = Knew + Kbonus;

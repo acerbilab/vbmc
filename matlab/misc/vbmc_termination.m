@@ -31,9 +31,9 @@ if ~isempty(idx_stable)
     sKL_list = stats.sKL;
     elbo_list = stats.elbo;
 
-    qindex_vec(1) = abs(elbo_list(iter) - elbo_list(iter-1))/options.TolSD;
-    qindex_vec(2) = stats.elboSD(iter) / options.TolSD;
-    qindex_vec(3) = sKL_list(iter) / options.TolsKL;    % This should be fixed
+    rindex_vec(1) = abs(elbo_list(iter) - elbo_list(iter-1))/options.TolSD;
+    rindex_vec(2) = stats.elboSD(iter) / options.TolSD;
+    rindex_vec(3) = sKL_list(iter) / options.TolsKL;    % This should be fixed
 
     % Stop sampling after sample variance has stabilized below ToL
     if ~isempty(idx_stable) && optimState.StopSampling == 0 && ~optimState.Warmup
@@ -51,24 +51,24 @@ if ~isempty(idx_stable)
     ELCBOimpro = p(1);
 
 else
-    qindex_vec = Inf(1,3);
+    rindex_vec = Inf(1,3);
     ELCBOimpro = NaN;
 end
 
 % Store reliability index
-qindex = mean(qindex_vec);
-stats.qindex(iter) = qindex;
+rindex = mean(rindex_vec);
+stats.rindex(iter) = rindex;
 stats.elcbo_impro(iter) = ELCBOimpro;
-optimState.R = qindex;
+optimState.R = rindex;
 
 % Check stability termination condition
 stableflag = false;
 if iter >= TolStableIters && ... 
-        all(qindex_vec < 1) && ...
+        all(rindex_vec < 1) && ...
         ELCBOimpro < options.TolImprovement
     
     % Count how many good iters in the recent past (excluding current)
-    stablecount = sum(stats.qindex(iter-TolStableIters+1:iter-1) < 1);
+    stablecount = sum(stats.rindex(iter-TolStableIters+1:iter-1) < 1);
     
     % Iteration is stable if almost all recent iterations are stable
     if stablecount >= TolStableIters - options.TolStableExceptions - 1

@@ -11,7 +11,7 @@ output.iterations = optimState.iter;
 output.funccount = optimState.funccount;
 output.trainsetsize = stats.Neff(idx_best);
 output.components = stats.vpK(idx_best);
-output.convergenceindex = stats.qindex(idx_best);
+output.rindex = stats.rindex(idx_best);
 if stats.stable(idx_best)
     output.convergencestatus = 'probable';
 else

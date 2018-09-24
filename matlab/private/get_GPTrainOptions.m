@@ -2,7 +2,7 @@ function gptrain_options = get_GPTrainOptions(Ns_gp,optimState,stats,options)
 %GETGPTRAINOPTIONS Get options for training GP hyperparameters.
 
 iter = optimState.iter;
-if iter > 1; qindex = stats.qindex(iter-1); else; qindex = Inf; end
+if iter > 1; rindex = stats.rindex(iter-1); else; rindex = Inf; end
 
 gptrain_options.Thin = options.GPSampleThin;    % MCMC thinning
 
@@ -14,7 +14,7 @@ switch lower(options.GPHypSampler)
     case {'slicesample'}
         gptrain_options.Sampler = 'slicesample';        
         if options.GPSampleWidths > 0 && ~isempty(hypcov)
-            widthmult = max(options.GPSampleWidths,qindex);
+            widthmult = max(options.GPSampleWidths,rindex);
             hypwidths = sqrt(diag(hypcov)');
             gptrain_options.Widths = max(hypwidths,1e-3)*widthmult;
         else
@@ -23,7 +23,7 @@ switch lower(options.GPHypSampler)
     case {'splitsample'}
         gptrain_options.Sampler = 'splitsample';        
         if options.GPSampleWidths > 0 && ~isempty(hypcov)
-            widthmult = max(options.GPSampleWidths,qindex);
+            widthmult = max(options.GPSampleWidths,rindex);
             hypwidths = sqrt(diag(hypcov)');
             gptrain_options.Widths = max(hypwidths,1e-3)*widthmult;
         else
@@ -31,8 +31,8 @@ switch lower(options.GPHypSampler)
         end        
     case 'covsample'
         if options.GPSampleWidths > 0 && ~isempty(hypcov)
-            widthmult = max(options.GPSampleWidths,qindex);
-            if all(isfinite(widthmult)) && all(qindex < options.CovSampleThresh)
+            widthmult = max(options.GPSampleWidths,rindex);
+            if all(isfinite(widthmult)) && all(rindex < options.CovSampleThresh)
                 nhyp = size(hypcov,1);
                 gptrain_options.Widths = (hypcov + 1e-6*eye(nhyp))*widthmult^2;
                 gptrain_options.Sampler = 'covsample';
@@ -51,7 +51,7 @@ switch lower(options.GPHypSampler)
         if optimState.Neff < 30
             gptrain_options.Sampler = 'slicesample';        
             if options.GPSampleWidths > 0 && ~isempty(hypcov)
-                widthmult = max(options.GPSampleWidths,qindex);
+                widthmult = max(options.GPSampleWidths,rindex);
                 hypwidths = sqrt(diag(hypcov)');
                 gptrain_options.Widths = max(hypwidths,1e-3)*widthmult;
             end
@@ -71,7 +71,7 @@ if optimState.RecomputeVarPost
     if Ns_gp > 0; gptrain_options.Nopts = 1; else; gptrain_options.Nopts = 2; end
 else
     gptrain_options.Burnin = gptrain_options.Thin*3;
-    if iter > 1 && stats.qindex(iter-1) < options.GPRetrainThreshold
+    if iter > 1 && stats.rindex(iter-1) < options.GPRetrainThreshold
         gptrain_options.Ninit = 0;
         if Ns_gp > 0; gptrain_options.Nopts = 0; else; gptrain_options.Nopts = 1; end            
     else
@@ -94,7 +94,7 @@ if optimState.iter > 1
         w = 1;
         for i = 1:optimState.iter-1
             if i > 1
-                % diff_mult = max(1,log(stats.qindex(optimState.iter-i+1)));
+                % diff_mult = max(1,log(stats.rindex(optimState.iter-i+1)));
                 diff_mult = max(1, ...
                     log(stats.sKL(optimState.iter-i+1) ./ (options.TolsKL*options.FunEvalsPerIter)));
                 w = w*(options.HypRunWeight^(options.FunEvalsPerIter*diff_mult));
