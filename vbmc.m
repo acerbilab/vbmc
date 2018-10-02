@@ -90,10 +90,11 @@ function [vp,elbo,elbo_sd,exitflag,output,optimState,stats] = vbmc(fun,x0,LB,UB,
 %   See VBMC_EXAMPLES for more examples. The most recent version of the 
 %   algorithm and additional documentation can be found here:
 %   https://github.com/lacerbi/vbmc
-%   Also, check out the FAQ: https://github.com/lacerbi/vbmc/wiki
 %
 %   Reference: Acerbi, L. (2018). "Variational Bayesian Monte Carlo". 
-%
+%   To appear in Advances in Neural Information Processing Systems 31. 
+%   arXiv preprint arXiv:XXXX.YYYY
+
 %   See also VBMC_EXAMPLES, @.
 
 %--------------------------------------------------------------------------
@@ -104,8 +105,8 @@ function [vp,elbo,elbo_sd,exitflag,output,optimState,stats] = vbmc(fun,x0,LB,UB,
 %   Author (copyright): Luigi Acerbi, 2018
 %   e-mail: luigi.acerbi@{gmail.com,nyu.edu,unige.ch}
 %   URL: http://luigiacerbi.com
-%   Version: 0.8 (beta)
-%   Release date: Aug 24, 2018
+%   Version: 0.9 (beta)
+%   Release date: Oct 9, 2018
 %   Code repository: https://github.com/lacerbi/vbmc
 %--------------------------------------------------------------------------
 
