@@ -22,7 +22,7 @@ K = vp.K;
 
 if origflag
     X = vbmc_rnd(vp,Ns,1,1);
-    mubar = mean(X,1)';
+    mubar = mean(X,1);
     if covflag
         Sigma = cov(X);
     end
@@ -39,4 +39,6 @@ else
         Sigma = sum(w.*sigma.^2)*diag(lambda.^2);
         for k = 1:K; Sigma = Sigma + w(k)*(mu(:,k)-mubar)*(mu(:,k)-mubar)'; end
     end
+    
+    mubar = mubar(:)';              % Return row vector
 end

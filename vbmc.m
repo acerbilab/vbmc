@@ -73,6 +73,9 @@ function [vp,elbo,elbo_sd,exitflag,output,optimState,stats] = vbmc(fun,x0,LB,UB,
 %
 %   OPTIONS = VBMC('defaults') returns a basic default OPTIONS structure.
 %
+%   EXITFLAG = VBMC('test') runs a battery of tests. Here EXITFLAG is 0 if
+%   everything works correctly.
+%
 %   Examples:
 %     FUN can be a function handle (using @)
 %       vp = vbmc(@rosenbrock_test, ...)
@@ -135,6 +138,12 @@ if nargout <= 1 && (nargin == 0 || (nargin == 1 && ischar(fun) && strcmpi(fun,'d
     return;
 end
 
+%% If called with one argument which is 'test', run test
+if nargout <= 1 && nargin == 1 && ischar(fun) && strcmpi(fun,'test')
+    x = runtest();
+    return;
+end
+
 %% Advanced options (do not modify unless you *know* what you are doing)
 
 defopts.SkipActiveSamplingAfterWarmup   = 'yes  % Skip active sampling the first iteration after warmup';
@@ -186,7 +195,7 @@ defopts.TolImprovement     = '0.01              % Required ELCBO improvement per
 defopts.KLgauss            = 'yes               % Use Gaussian approximation for symmetrized KL-divergence b\w iters';
 defopts.TrueMean           = '[]                % True mean of the target density (for debugging)';
 defopts.TrueCov            = '[]                % True covariance of the target density (for debugging)';
-defopts.MinFunEvals        = '2*nvars^2         % Min number of fcn evals';
+defopts.MinFunEvals        = '5*nvars           % Min number of fcn evals';
 defopts.MinIter            = 'nvars             % Min number of iterations';
 defopts.HeavyTailSearchFrac = '0.25               % Fraction of search points from heavy-tailed variational posterior';
 defopts.MVNSearchFrac      = '0.25              % Fraction of search points from multivariate normal';
@@ -522,14 +531,14 @@ while ~isFinished_flag
     % Record moments in transformed space
     [mubar,Sigma] = vbmc_moments(vp,0);
     if isempty(optimState.RunMean) || isempty(optimState.RunCov)
-        optimState.RunMean = mubar;
+        optimState.RunMean = mubar(:);
         optimState.RunCov = Sigma;        
         optimState.LastRunAvg = optimState.N;
         % optimState.RunCorrection = 1;
     else
         Nnew = optimState.N - optimState.LastRunAvg;
         wRun = options.MomentsRunWeight^Nnew;
-        optimState.RunMean = wRun*optimState.RunMean + (1-wRun)*mubar;        
+        optimState.RunMean = wRun*optimState.RunMean + (1-wRun)*mubar(:);
         optimState.RunCov = wRun*optimState.RunCov + (1-wRun)*Sigma;
         optimState.LastRunAvg = optimState.N;
         % optimState.RunT = optimState.RunT + 1;
