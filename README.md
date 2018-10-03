@@ -89,3 +89,19 @@ However, before contacting me for this reason, please have a good look at the co
 ## Reference
 
 1. Acerbi, L. (2018). Variational Bayesian Monte Carlo. To appear in *Advances in Neural Information Processing Systems 31*. [arXiv preprint](https://arxiv.org/abs/XXXX.YYYY) arXiv:XXXX.YYYY
+
+You can cite VBMC in your work with something along the lines of
+
+> We estimated approximate posterior distibutions and approximate lower bounds to the model evidence of our models using Variational Bayesian Monte Carlo (VBMC; Acerbi, 2018). VBMC combines variational inference and Bayesian quadrature to perform approximate Bayesian inference in a sample-efficient manner.
+
+Besides formal citations, you can demonstrate your appreciation for VBMC in the following ways:
+
+- *Star* the VBMC repository on GitHub;
+- [Follow me on Twitter](https://twitter.com/AcerbiLuigi) for updates about VBMC and other projects I am involved with;
+- Tell me about your model-fitting problem and your experience with VBMC (positive or negative) at <luigi.acerbi@unige.ch> (putting  'VBMC' in the subject of the email).
+
+You may also want to check out [Bayesian Adaptive Direct Search](https://github.com/lacerbi/bads) (BADS), our method for fast Bayesian optimization.
+
+### License
+
+VBMC is released under the terms of the [GNU General Public License v3.0](https://github.com/lacerbi/vbmc/blob/master/LICENSE.txt).
