@@ -56,6 +56,36 @@ For more usage examples, see [**vbmc_examples.m**](https://github.com/lacerbi/ba
 
 For practical recommendations, such as how to set `LB` and `UB`, and any other question, we will prepare a FAQ soon. For now, you can find useful information on the [BADS wiki](https://github.com/lacerbi/bads/wiki).
 
+
+## How does it work
+
+BADS follows a [mesh adaptive direct search](http://epubs.siam.org/doi/abs/10.1137/040603371) (MADS) procedure for function minimization that alternates **poll** steps and **search** steps (see **Fig 1**). 
+
+- In the **poll** stage, points are evaluated on a mesh by taking steps in one direction at a time, until an improvement is found or all directions have been tried. The step size is doubled in case of success, halved otherwise. 
+- In the **search** stage, a [Gaussian process](https://en.wikipedia.org/wiki/Gaussian_process) (GP) is fit to a (local) subset of the points evaluated so far. Then, we iteratively choose points to evaluate according to a *lower confidence bound* strategy that trades off between exploration of uncertain regions (high GP uncertainty) and exploitation of promising solutions (low GP mean).
+
+**Fig 1: BADS procedure** ![BADS procedure](https://github.com/lacerbi/bads/blob/master/docs/bads-cartoon.png "Fig 1: BADS procedure")
+
+See [here](https://github.com/lacerbi/optimviz) for a visualization of several optimizers at work, including BADS.
+
+See our paper for more details [[1](#reference)].
+
+## Troubleshooting
+
+The VBMC toolbox is under active development and currently in its beta version (close to final).
+
+It is still in beta since we are validating the algorithm on an additional batch of model-fitting problems, and we want to include in the toolbox some semi-automated diagnostics tools for robustness. The toolbox interface (that is, details of input and output arguments of some functions) may change from the beta to the final version.
+As of now, the toolbox is usable, but you should double-check your results (as you would do in any case, of course).
+
+If you have trouble doing something with VBMC, spot bugs or strange behavior, or you simply have some questions, please contact me at <luigi.acerbi@unige.ch>, putting 'VBMC' in the subject of the email.
+
+## VBMC for other programming languages
+
+VBMC is currently available only for MATLAB. A Python version is being planned.
+
+If you are interested in porting VBMC to Python or another language (R, [Julia](https://julialang.org/)), please get in touch at <luigi.acerbi@unige.ch> (putting  'VBMC' in the subject of the email); I'd be willing to help.
+However, before contacting me for this reason, please have a good look at the codebase here on GitHub, and at the paper [[1](#reference)]. VBMC is a fairly complex piece of software, so be aware that porting it will require considerable effort and programming/computing skills.
+
 ## Reference
 
 1. Acerbi, L. (2018). Variational Bayesian Monte Carlo. To appear in *Advances in Neural Information Processing Systems 31*. [arXiv preprint](https://arxiv.org/abs/XXXX.YYYY) arXiv:XXXX.YYYY
