@@ -10,7 +10,7 @@ function [x,vp] = vbmc_mode(vp,origflag)
 %   [X,VP] = VBMC_PDF(...) returns the variational posterior with the mode 
 %   stored in the VP struct.
 %
-%   See also VBMC, VBMC_PDF.
+%   See also VBMC, VBMC_MOMENTS, VBMC_PDF.
 
 if nargin < 2 || isempty(origflag); origflag = true; end
 

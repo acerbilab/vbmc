@@ -8,7 +8,7 @@ if nargin < 2 || isempty(stats)
 end
 if nargin < 3 || isempty(plotbnd)
     vp = stats.vp(end);
-    xrnd = vbmc_rnd(1e6,vp);
+    xrnd = vbmc_rnd(vp,1e6);
     for i = 1:size(xrnd,2)
         LB(i) = floor(quantile1(xrnd(:,i),0.01) - 0.5);
         UB(i) = ceil(quantile1(xrnd(:,i),0.99)+0.5);

@@ -212,7 +212,7 @@ function [gsKL,Mean,Cov,Mode] = computeStats(vp,probstruct)
     
 % Compute Gaussianized symmetric KL-divergence with ground truth
 Ns_moments = 1e6;
-xx = vbmc_rnd(Ns_moments,vp,1,1);
+xx = vbmc_rnd(vp,Ns_moments,1,1);
 Mean = mean(xx,1);
 Cov = cov(xx);
 [kl1,kl2] = mvnkl(Mean,Cov,probstruct.Post.Mean,probstruct.Post.Cov);

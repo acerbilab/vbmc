@@ -11,7 +11,7 @@ W = 2*(D+1);
 if isempty(vp)
     x0 = [];
 else
-    x0 = vbmc_rnd(W,vp,0,1);
+    x0 = vbmc_rnd(vp,W,0,1);
 end
 
 [Xs,gp] = gplite_sample(gp,Ns,x0,method);

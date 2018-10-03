@@ -1,8 +1,33 @@
-function [X,I] = vbmc_rnd(N,vp,origflag,exactflag,df)
-%VBMC_RND Draw random samples from VBMC posterior approximation.
+function [X,I] = vbmc_rnd(vp,N,origflag,balanceflag,df)
+%VBMC_RND Random samples from VBMC posterior approximation.
+%   X = VBMC_RND(VP,N) returns an N-by-D matrix X of random vectors chosen 
+%   from the variational posterior VP.
+%
+%   X = VBMC_RND(VP,N,ORIGFLAG) returns the random vectors in the original
+%   parameter space if ORIGFLAG=1 (default), or in the transformed VBMC
+%   space if ORIGFLAG=0.
+%
+%   X = VBMC_RND(VP,N,ORIGFLAG,BALANCEFLAG) for BALANCEFLAG=1 balances the 
+%   generating process such that the random samples in X come from each 
+%   mixture component exactly proportionally (or as close as possible) to 
+%   the variational mixture weights. If BALANCEFLAG=0 (default), the 
+%   generating mixture for each sample is determined randomly according to 
+%   the mixture weights.
+%
+%   X = VBMC_RND(VP,N,ORIGFLAG,BALANCEFLAG,DF) returns random samples
+%   generated from an heavy-tailed version of the variational posterior,
+%   in which the multivariate normal components have been replaced by
+%   multivariate t-distributions with DF degrees of freedom. The default is
+%   DF=Inf, limit in which the t-distribution becomes a multivariate normal.
+%
+%   [X,I] = VBMC_RND(...) also returns an N-by-1 array such that the n-th
+%   element of I indicates the index of the variational mixture component 
+%   from which the n-th row of X has been generated.
+%
+%   See also VBMC, VBMC_MOMENTS, VBMC_PDF.
 
 if nargin < 3 || isempty(origflag); origflag = true; end
-if nargin < 4 || isempty(exactflag); exactflag = false; end
+if nargin < 4 || isempty(balanceflag); balanceflag = false; end
 if nargin < 5 || isempty(df); df = Inf; end
 
 D = vp.D;   % Number of dimensions
@@ -18,7 +43,7 @@ else
     lambda_t(1,:) = vp.lambda(:)';
 
     if vp.K > 1        
-        if exactflag
+        if balanceflag
             % Exact split of samples according to mixture weights
             N_floor = floor(w*N);
             cumN = [0,cumsum(N_floor)];

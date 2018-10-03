@@ -94,8 +94,9 @@ function [vp,elbo,elbo_sd,exitflag,output,optimState,stats] = vbmc(fun,x0,LB,UB,
 %   Reference: Acerbi, L. (2018). "Variational Bayesian Monte Carlo". 
 %   To appear in Advances in Neural Information Processing Systems 31. 
 %   arXiv preprint arXiv:XXXX.YYYY
-
-%   See also VBMC_EXAMPLES, @.
+%
+%   See also VBMC_EXAMPLES, VBMC_KLDIV, VBMC_MODE, VBMC_MOMENTS, VBMC_PDF, 
+%   VBMC_RND, @.
 
 %--------------------------------------------------------------------------
 % VBMC: Variational Bayesian Monte Carlo for posterior and model inference.
@@ -476,7 +477,7 @@ while ~isFinished_flag
             drawnow;
             
         else
-            Xrnd = vbmc_rnd(1e5,vp,1,1);
+            Xrnd = vbmc_rnd(vp,1e5,1,1);
             X_train = gp.X;
             if ~isempty(vp.trinfo); X_train = warpvars(X_train,'inv',vp.trinfo); end
             try
@@ -504,7 +505,7 @@ while ~isFinished_flag
     
     % Compute symmetrized KL-divergence between old and new posteriors
     Nkl = 1e5;
-    sKL = max(0,0.5*sum(vbmc_kldiv(vp,vp_old,Nkl,options.KLgauss,1)));
+    sKL = max(0,0.5*sum(vbmc_kldiv(vp,vp_old,Nkl,options.KLgauss)));
     
     % Compare variational posterior's moments with ground truth
     if ~isempty(options.TrueMean) && ~isempty(options.TrueCov) ...

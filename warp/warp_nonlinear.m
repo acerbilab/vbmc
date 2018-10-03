@@ -31,7 +31,7 @@ end
 % such as fitting a Kumaraswamy-logit-normal to each marginal 
 % variational pdf and getting the Kumaraswamy parameters.
 
-%         xx = vbmc_rnd(1e5,vp,1,1);
+%         xx = vbmc_rnd(vp,1e5,1,1);
 %         hyp_warpt = fmincon(@(hyp) warpgaussfit(hyp,xx,vp.trinfo),hyp_warp(Nhyp+1:end,1),[],[],[],[],LB_warp,UB_warp);
 
 gptrain_options.Nopts = 3;  % Warping is expensive, only one restart

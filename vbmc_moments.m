@@ -11,7 +11,7 @@ function [mubar,Sigma] = vbmc_moments(vp,origflag,Ns)
 %   [...] = VBMC_MOMENTS(VP,1,NS) uses NS samples to evaluate the moments
 %   of the variational posterior in the original space (default NS=1e6).
 %
-%   See also VBMC, VBMC_PDF, VBMC_RND.
+%   See also VBMC, VBMC_MODE, VBMC_PDF, VBMC_RND.
 
 if nargin < 2 || isempty(origflag); origflag = true; end
 if nargin < 3 || isempty(Ns); Ns = 1e6; end
@@ -21,7 +21,7 @@ covflag = nargout > 1;      % Compute covariance?
 K = vp.K;
 
 if origflag
-    X = vbmc_rnd(Ns,vp,1,1);
+    X = vbmc_rnd(vp,Ns,1,1);
     mubar = mean(X,1)';
     if covflag
         Sigma = cov(X);

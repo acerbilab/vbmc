@@ -231,12 +231,12 @@ if size(Xsearch,1) < NSsearch
     else
         Xrnd = [];
         Nheavy = round(options.HeavyTailSearchFrac*Nrnd);
-        Xrnd = [Xrnd; vbmc_rnd(Nheavy,vp,0,1,3)];
+        Xrnd = [Xrnd; vbmc_rnd(vp,Nheavy,0,1,3)];
         [mubar,Sigmabar] = vbmc_moments(vp,0);
         Nmvn = round(options.MVNSearchFrac*Nrnd);
         Xrnd = [Xrnd; mvnrnd(mubar,Sigmabar,Nmvn)];
         Nvp = max(0,Nrnd-Nheavy-Nmvn);
-        Xrnd = [Xrnd; vbmc_rnd(Nvp,vp,0,1)];
+        Xrnd = [Xrnd; vbmc_rnd(vp,Nvp,0,1)];
     end
     Xsearch = [Xsearch; Xrnd];
     idx_cache = [idx_cache(:); zeros(Nrnd,1)];

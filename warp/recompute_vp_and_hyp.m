@@ -57,7 +57,7 @@ end
 vp.sigma = vp.sigma .* exp((ln_scaling-mean(ln_scaling))/D);
 %vp.sigma = vp.sigma .* exp(ln_scaling/D);
 
-Xstar = vbmc_rnd(1e3,vp_old,1,1);
+Xstar = vbmc_rnd(vp_old,1e3,1,1);
 % mu_orig = warpvars(vp_old.mu','inv',vp_old.trinfo);
 
 if vp.optimize_lambda
@@ -150,9 +150,9 @@ vp.lambda = exp(lnlambda(:,idx));
 vp = rescale_params(vp);
 
 if 0
-    xx = vbmc_rnd(1e5,vp_old,1,1);
+    xx = vbmc_rnd(vp_old,1e5,1,1);
     cornerplot(xx);
-    xx = vbmc_rnd(1e5,vp,1,1);
+    xx = vbmc_rnd(vp,1e5,1,1);
     cornerplot(xx);
     skl
 end
