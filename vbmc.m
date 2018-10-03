@@ -140,7 +140,7 @@ end
 
 %% If called with one argument which is 'test', run test
 if nargout <= 1 && nargin == 1 && ischar(fun) && strcmpi(fun,'test')
-    x = runtest();
+    vp = runtest();
     return;
 end
 

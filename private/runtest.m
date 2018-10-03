@@ -6,13 +6,13 @@ function failed = runtest()
 % 
 %  See also VBMC, VBMC_EXAMPLES.
 
-tolerr = [0.5 0.3];                     % Error tolerance
+tolerr = [0.5 0.5];                     % Error tolerance
 
 id = 1;
 nvars = 6;
 txt{id} = ['Test with multivariate normal distribution (D = ' num2str(nvars) ', unconstrained)'];
 fprintf('%s.\n', txt{id});
-x0 = -4*ones(1,nvars);                   % Initial point
+x0 = -ones(1,nvars);                   % Initial point
 PLB = -2*nvars; PUB = 2*nvars;
 LB = -Inf; UB = Inf;
 lnZ = 0; mubar = zeros(1,nvars);
@@ -20,12 +20,12 @@ fun = @(x) sum(-0.5*(x./(1:numel(x))).^2) - sum(log(1:numel(x))) - 0.5*numel(x)*
 [exitflag(id),err(id,:)] = testblock(fun,x0,LB,UB,PLB,PUB,lnZ,mubar);
 
 id = 2;
-nvars = 3;
+nvars = 2;
 txt{id} = ['Test with multivariate half-normal distribution (D = ' num2str(nvars) ', constrained)'];
 fprintf('%s.\n', txt{id});
-x0 = -4*ones(1,nvars);                   % Initial point
+x0 = -ones(1,nvars);                   % Initial point
 LB = -nvars*10; UB = 0;
-PLB = -2*nvars; PUB = -0.05;
+PLB = -6; PUB = -0.05;
 lnZ = -nvars*log(2); mubar = -2/sqrt(2*pi)*(1:nvars);
 fun = @(x) sum(-0.5*(x./(1:numel(x))).^2) - sum(log(1:numel(x))) - 0.5*numel(x)*log(2*pi);
 [exitflag(id),err(id,:)] = testblock(fun,x0,LB,UB,PLB,PUB,lnZ,mubar);
@@ -48,7 +48,7 @@ fprintf('\n');
 
 if failed == 0
     display('VBMC is working correctly. See vbmc_examples.m for usage examples; check out the <a href="https://github.com/lacerbi/bads">VBMC website</a>;'); 
-    display('consult the <a href="https://github.com/lacerbi/vbmc/wiki">online FAQ</a>; or digit ''help vbmc'' for more information. Enjoy!');
+    display('consult the <a href="https://github.com/lacerbi/vbmc/wiki">online FAQ</a>; or type ''help vbmc'' for more information. Enjoy!');
 else
     display('VBMC is not working correctly. Please check the <a href="https://github.com/lacerbi/vbmc/wiki">online FAQ</a> for more information.');
 end
