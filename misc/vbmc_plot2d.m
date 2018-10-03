@@ -17,7 +17,7 @@ xx = combvec(x1,x2)';
 if isa(vp,'function_handle'); fun = vp; vpflag = false; else; vpflag = true; end
 
 if vpflag
-    yy = vbmc_pdf(xx,vp);
+    yy = vbmc_pdf(vp,xx);
 else
     lnyy = zeros(size(xx,1),1);
     for ii = 1:size(xx,1)

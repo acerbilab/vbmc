@@ -12,7 +12,7 @@ if transpose_flag; Xs = Xs'; end
 [N,D] = size(Xs);    % Number of points and dimension
 
 % Probability density of variational posterior at test points
-p = vbmc_pdf(Xs,vp,0);
+p = vbmc_pdf(vp,Xs,0);
 p2 = p.^2;  % Squared density
 
 % GP mean and variance for each hyperparameter sample
@@ -67,8 +67,8 @@ end
 
 % Variance-weighted negative K-L divergence old-to-new variational posterior
 if metrics_flags(7)
-    pback = max(vbmc_pdf(Xs,vp,1,0,1),realmin);
-    qback = max(vbmc_pdf(Xs,vp_old,1,0,1),realmin);
+    pback = max(vbmc_pdf(vp,Xs,1,0,1),realmin);
+    qback = max(vbmc_pdf(vp_old,Xs,1,0,1),realmin);
     acq(:,7) = pback .* log(qback./pback) .* vtot;
 end
 

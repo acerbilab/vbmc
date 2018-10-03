@@ -50,7 +50,7 @@ for j = 1:K
     
     Xs = reshape(xi,[D,Ns])'; 
 
-    % Compute pdf -- this block is equivalent to: ys = vbmc_pdf(Xs,vp,0);
+    % Compute pdf -- this block is equivalent to: ys = vbmc_pdf(vp,Xs,0);
     ys = zeros(Ns,1);
     for k = 1:K
         d2 = sum(bsxfun(@rdivide,bsxfun(@minus,Xs,mu_t(k,:)),sigma(k)*lambda_t).^2,2);

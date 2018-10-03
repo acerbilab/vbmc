@@ -470,7 +470,7 @@ while ~isFinished_flag
             hold on;
             xlims = xlim;
             xx = linspace(xlims(1),xlims(2),1e3)';
-            yy = vbmc_pdf(xx,vp,false,true);
+            yy = vbmc_pdf(vp,xx,false,true);
             hold on;
             plot(xx,yy+elbo,':');
             drawnow;

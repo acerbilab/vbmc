@@ -41,7 +41,7 @@ for k = 1:K
     vp1.w = 1;
     vp1.mu = vp1.mu(:,k);
     vp1.sigma = vp1.sigma(k);
-    q1 = vbmc_pdf(Xstar,vp1,0);
+    q1 = vbmc_pdf(vp1,Xstar,0);
    
     if DEBUG
         sum(q1(:))*prod(dx)

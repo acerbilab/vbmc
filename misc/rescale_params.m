@@ -28,5 +28,7 @@ if vp.optimize_weights
     if isfield(vp,'eta'); vp = rmfield(vp,'eta'); end
 end
 
+% The mode may have moved
+if isfield(vp,'mode'); vp = rmfield(vp,'mode'); end
 
 end

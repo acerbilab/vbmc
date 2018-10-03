@@ -11,7 +11,7 @@ if transpose_flag; Xs = Xs'; end
 [N,D] = size(Xs);    % Number of points and dimension
 
 % Probability density of variational posterior at test points
-p = max(vbmc_pdf(Xs,vp,0),realmin);
+p = max(vbmc_pdf(vp,Xs,0),realmin);
 
 % Search proposal function
 Xs_orig = warpvars(Xs,'inv',vp.trinfo);

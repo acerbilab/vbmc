@@ -1,5 +1,23 @@
-function [y,dy] = vbmc_pdf(X,vp,origflag,logflag,transflag)
+function [y,dy] = vbmc_pdf(vp,X,origflag,logflag,transflag)
 %VBMC_PDF Probability density function of VBMC posterior approximation.
+%   Y = VBMC_PDF(VP,X) returns the probability density of the variational 
+%   posterior VP evaluated at each row of X.  Rows of the N-by-D matrix X 
+%   correspond to observations or points, and columns correspond to variables 
+%   or coordinates. Y is an N-by-1 vector.
+%
+%   Y = VBMC_PDF(VP,X,ORIGFLAG) returns the value of the posterior density
+%   evaluated in the original parameter space for ORIGFLAG=1 (default), or 
+%   in the transformed VBMC space if ORIGFLAG=0.
+%
+%   Y = VBMC_PDF(VP,X,ORIGFLAG,LOGFLAG) returns the value of the log 
+%   posterior density if LOGFLAG=1, otherwise the posterior density for
+%   LOGFLAG=0 (default).
+%
+%   Y = VBMC_PDF(VP,X,ORIGFLAG,LOGFLAG,1) assumes that X is already
+%   specified in tranformed VBMC space. Otherwise, X is specified in the
+%   original parameter space.
+%
+%   See also VBMC, VBMC_RND.
 
 if nargin < 3 || isempty(origflag); origflag = true; end
 if nargin < 4 || isempty(logflag); logflag = false; end

@@ -59,7 +59,7 @@ for iPlot = 1:Npanels
     elboflag = false;
     if vpflag
         vp = stats.vp(idx(iPlot));
-        yy = vbmc_pdf(xx,vp);
+        yy = vbmc_pdf(vp,xx);
         titlestr = ['Iteration ' num2str(stats.iter(idx(iPlot)))];
         if iPlot == 2; titlestr = [titlestr ' (end of warm-up)']; end
     elseif iPlot == Npanels-1

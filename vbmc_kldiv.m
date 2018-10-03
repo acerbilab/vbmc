@@ -29,15 +29,15 @@ D = vp1.D;           % Number of dimensions
         MINP = realmin;
         
         xx1 = vbmc_rnd(Ns,vp1,origflag,1);        
-        q1 = vbmc_pdf(xx1,vp1,origflag);
-        q2 = vbmc_pdf(xx1,vp2,origflag);
+        q1 = vbmc_pdf(vp1,xx1,origflag);
+        q2 = vbmc_pdf(vp2,xx1,origflag);
         q1(q1 == 0 | ~isfinite(q1)) = 1;    % Ignore these points
         q2(q2 == 0 | ~isfinite(q2)) = MINP;
         kldivs(1) = -mean(log(q2) - log(q1));
 
         xx2 = vbmc_rnd(Ns,vp2,origflag,1);
-        q1 = vbmc_pdf(xx2,vp1,origflag);
-        q2 = vbmc_pdf(xx2,vp2,origflag);
+        q1 = vbmc_pdf(vp1,xx2,origflag);
+        q2 = vbmc_pdf(vp2,xx2,origflag);
         q1(q1 == 0 | ~isfinite(q1)) = MINP;
         q2(q2 == 0 | ~isfinite(q2)) = 1;    % Ignore these points
         kldivs(2) = -mean(log(q1) - log(q2));
