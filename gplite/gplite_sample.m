@@ -21,7 +21,7 @@ if ~isfield(gp,'post') || isempty(gp.post)
     else
         Ns_gp = 0;
     end
-    if isfield(gp,'Nopts') || ~isempty(gp.Nopts)
+    if isfield(gp,'Nopts') && ~isempty(gp.Nopts)
         options.Nopts = gp.Nopts;
     else
         options.Nopts = 1;  % Do only one optimization
