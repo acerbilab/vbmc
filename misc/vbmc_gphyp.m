@@ -15,6 +15,9 @@ y = y_orig + warpvars(X,'logp',optimState.trinfo);
 N_hpd = round(options.HPDFrac*N);
 X_hpd = X(ord(1:N_hpd),:);
 y_hpd = y(ord(1:N_hpd));
+hpd_range = max(X_hpd)-min(X_hpd);
+
+neff = optimState.Neff;
 
 %% GP observation noise
 
@@ -68,7 +71,7 @@ hypprior.mu = NaN(1,Nhyp);
 hypprior.sigma = NaN(1,Nhyp);
 hypprior.df = 3*ones(1,Nhyp);    % Broad Student's t prior
 hypprior.mu(1:D) = log(std(X_hpd));
-hypprior.sigma(1:D) = max(2,log(max(X_hpd)-min(X_hpd)) - log(std(X_hpd)));
+hypprior.sigma(1:D) = max(2,log(hpd_range) - log(std(X_hpd)));
 %hypprior.mu(D+1) = log(std(y_hpd)) + 0.25*D*log(2*pi);
 %hypprior.sigma(D+1) = log(10);
 hypprior.mu(Ncov+1) = log(noisesize);
@@ -80,9 +83,15 @@ switch meanfun
     case 4
         hypprior.mu(Ncov+2) = max(y_hpd);
         hypprior.sigma(Ncov+2) = max(y_hpd)-min(y_hpd);
+        
+        sigma_omega = options.AnnealedGPMean(neff,optimState.MaxFunEvals)
+        if sigma_omega > 0 && isfinite(sigma_omega)
+            hypprior.mu(Ncov+2+D+(1:D)) = log(hpd_range);
+            hypprior.sigma(Ncov+2+D+(1:D)) = sigma_omega;
+        end
     case 6
         hypprior.mu(Ncov+2) = median(y);
-        hypprior.sigma(Ncov+2) = 0.5*(max(y)-min(y));        
+        hypprior.sigma(Ncov+2) = 0.5*(max(y)-min(y));
 end
 
 hypprior.LB = LB_gp;

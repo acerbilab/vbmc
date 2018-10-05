@@ -221,6 +221,7 @@ defopts.TolConLoss         = '0.01              % Fractional tolerance for const
 defopts.BestSafeSD         = '5                 % SD multiplier of ELCBO for computing best variational solution';
 defopts.BestFracBack       = '0.25              % When computing best solution, lacking stability go back up to this fraction of iterations';
 defopts.TolWeight          = '1e-2              % Threshold mixture component weight for pruning';
+defopts.AnnealedGPMean     = '@(N,NMAX) 0       % Annealing for hyperprior width of GP negative quadratic mean';
 
 % Portfolio allocation parameters (experimental feature)
 defopts.Portfolio          = 'off               % Portfolio allocation for acquisition function';
