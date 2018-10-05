@@ -166,6 +166,10 @@ end
 % Tolerance threshold on GP variance (used by some acquisition fcns)
 optimState.TolGPVar = options.TolGPVar;
 
+% Copy maximum number of fcn. evaluations, used by some acquisition fcns.
+optimState.MaxFunEvals = options.MaxFunEvals;
+
+
 % List of points at the end of each iteration
 optimState.iterList.u = [];
 optimState.iterList.fval = [];
