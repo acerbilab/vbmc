@@ -63,6 +63,9 @@ LB_gp(Ncov+1) = log(MinNoise);     % Increase minimum noise
 switch meanfun
     case 1
         UB_gp(Ncov+2) = min(y_hpd);    % Lower maximum constant mean
+    case 6
+        hyp0(Ncov+2) = min(y);
+        UB_gp(Ncov+2) = min(y_hpd);    % Lower maximum constant mean
 end        
 
 % Set priors over hyperparameters (might want to double-check this)
@@ -84,14 +87,14 @@ switch meanfun
         hypprior.mu(Ncov+2) = max(y_hpd);
         hypprior.sigma(Ncov+2) = max(y_hpd)-min(y_hpd);
         
-        sigma_omega = options.AnnealedGPMean(neff,optimState.MaxFunEvals)
+        sigma_omega = options.AnnealedGPMean(neff,optimState.MaxFunEvals);
         if sigma_omega > 0 && isfinite(sigma_omega)
             hypprior.mu(Ncov+2+D+(1:D)) = log(hpd_range);
             hypprior.sigma(Ncov+2+D+(1:D)) = sigma_omega;
         end
     case 6
-        hypprior.mu(Ncov+2) = median(y);
-        hypprior.sigma(Ncov+2) = 0.5*(max(y)-min(y));
+        hypprior.mu(Ncov+2) = min(y) - std(y_hpd);
+        hypprior.sigma(Ncov+2) = std(y_hpd);
 end
 
 hypprior.LB = LB_gp;
