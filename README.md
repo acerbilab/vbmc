@@ -59,14 +59,13 @@ For practical recommendations, such as how to set `LB` and `UB`, and any other q
 
 ## How does it work
 
-BADS follows a [mesh adaptive direct search](http://epubs.siam.org/doi/abs/10.1137/040603371) (MADS) procedure for function minimization that alternates **poll** steps and **search** steps (see **Fig 1**). 
+VBMC combines two machine learning techniques: 
+- [variational inference](https://en.wikipedia.org/wiki/Variational_Bayesian_methods), a method to perform approximate Bayesian inference;
+- Bayesian quadrature, a technique to estimate the value of expensive integrals.
 
-- In the **poll** stage, points are evaluated on a mesh by taking steps in one direction at a time, until an improvement is found or all directions have been tried. The step size is doubled in case of success, halved otherwise. 
-- In the **search** stage, a [Gaussian process](https://en.wikipedia.org/wiki/Gaussian_process) (GP) is fit to a (local) subset of the points evaluated so far. Then, we iteratively choose points to evaluate according to a *lower confidence bound* strategy that trades off between exploration of uncertain regions (high GP uncertainty) and exploitation of promising solutions (low GP mean).
+VBMC iteratively builds an approximation of the true, expensive target posterior via a [Gaussian process](https://en.wikipedia.org/wiki/Gaussian_process) (GP), and it matches a variational distribution — an expressive mixture of Gaussians — to the GP. This matching process entails optimization of the *expected lower bound* (ELBO), that is a lower bound on the log model evidence. Crucially, the ELBO is estimated via Bayesian quadrature, which is fast and does not require further evaluation of the true target posterior. In each iteration, VBMC uses *active sampling* to select which points to evaluate next in order to reduce uncertainty in the approximation.
 
-**Fig 1: BADS procedure** ![BADS procedure](https://github.com/lacerbi/bads/blob/master/docs/bads-cartoon.png "Fig 1: BADS procedure")
-
-See [here](https://github.com/lacerbi/optimviz) for a visualization of several optimizers at work, including BADS.
+**Fig 1: VBMC procedure** ![VBMC procedure](https://github.com/lacerbi/bads/blob/master/docs/vbmc-demo.png "Fig 1: VBMC procedure")
 
 See our paper for more details [[1](#reference)].
 
