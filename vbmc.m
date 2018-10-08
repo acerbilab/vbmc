@@ -90,9 +90,10 @@ function [vp,elbo,elbo_sd,exitflag,output,optimState,stats] = vbmc(fun,x0,LB,UB,
 %        lb = [0 0]; ub = [pi 5]; plb = [0.1 0.1]; pub = [3 4]; options.Plot = 'on';
 %        vp = vbmc(@(x) 3*sin(x(1))*exp(-x(2)),[1 1],lb,ub,plb,pub,options)
 %
-%   See VBMC_EXAMPLES for more examples. The most recent version of the 
-%   algorithm and additional documentation can be found here:
-%   https://github.com/lacerbi/vbmc
+%   See VBMC_EXAMPLES for an extended tutorial with more examples. 
+%   The most recent version of the algorithm and additional documentation 
+%   can be found here: https://github.com/lacerbi/vbmc
+%   Also, check out the FAQ: https://github.com/lacerbi/vbmc/wiki
 %
 %   Reference: Acerbi, L. (2018). "Variational Bayesian Monte Carlo". 
 %   To appear in Advances in Neural Information Processing Systems 31. 
@@ -600,11 +601,13 @@ while ~isFinished_flag
         if isempty(action); action = 'stable GP sampling'; else; action = [action ', stable GP sampling']; end
     end    
     
-    if optimState.Cache.active
-        fprintf(displayFormat,iter,optimState.funccount,optimState.cachecount,elbo,elbo_sd,sKL,vp.K,optimState.R,action);
-    else
-        fprintf(displayFormat,iter,optimState.funccount,elbo,elbo_sd,sKL,vp.K,optimState.R,action);
-    end    
+    if prnt > 2
+        if optimState.Cache.active
+            fprintf(displayFormat,iter,optimState.funccount,optimState.cachecount,elbo,elbo_sd,sKL,vp.K,optimState.R,action);
+        else
+            fprintf(displayFormat,iter,optimState.funccount,elbo,elbo_sd,sKL,vp.K,optimState.R,action);
+        end
+    end
     
 %     if optimState.iter > 10 && stats.elboSD(optimState.iter-1) < 0.1 && stats.elboSD(optimState.iter) > 10
 %         fprintf('\nmmmh\n');        
@@ -621,7 +624,7 @@ if ~stats.stable(idx_best); exitflag = 0; end
 % Print final message
 if prnt > 1
     fprintf('\n%s\n', msg);    
-    fprintf('Estimated ELBO: %g +/- %g.\n', elbo, elbo_sd);
+    fprintf('Estimated ELBO: %.3f +/- %.3f.\n', elbo, elbo_sd);
     if exitflag < 1
         fprintf('Caution: Returned variational solution may have not converged.\n');
     end

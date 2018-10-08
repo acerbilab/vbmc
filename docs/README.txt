@@ -7,11 +7,12 @@ For a description of the usage of VBMC, type
 
 in the MATLAB shell.
 
-You can also look up the 'vbmc_examples.m' script, for extensively commented examples.
+You can also look up the 'vbmc_examples.m' script, for a tutorial with commented examples.
 
-For any other question, clarification, or troubleshooting, check out the VMBC page:
+For any other question, clarification, or troubleshooting, check out: 
 
-https://github.com/lacerbi/vbmc
+- the VMBC page: https://github.com/lacerbi/vbmc
+- the online FAQ: https://github.com/lacerbi/vbmc/wiki
 
 ==============================================================================================
 
