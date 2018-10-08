@@ -63,9 +63,15 @@ VBMC combines two machine learning techniques:
 - [variational inference](https://en.wikipedia.org/wiki/Variational_Bayesian_methods), a method to perform approximate Bayesian inference;
 - Bayesian quadrature, a technique to estimate the value of expensive integrals.
 
-VBMC iteratively builds an approximation of the true, expensive target posterior via a [Gaussian process](https://en.wikipedia.org/wiki/Gaussian_process) (GP), and it matches a variational distribution — an expressive mixture of Gaussians — to the GP. This matching process entails optimization of the *expected lower bound* (ELBO), that is a lower bound on the log model evidence. Crucially, the ELBO is estimated via Bayesian quadrature, which is fast and does not require further evaluation of the true target posterior. In each iteration, VBMC uses *active sampling* to select which points to evaluate next in order to reduce uncertainty in the approximation.
+VBMC iteratively builds an approximation of the true, expensive target posterior via a [Gaussian process](https://en.wikipedia.org/wiki/Gaussian_process) (GP), and it matches a variational distribution — an expressive mixture of Gaussians — to the GP. 
+
+This matching process entails optimization of the *expected lower bound* (ELBO), that is a lower bound on the log marginal likelihood (LML), also known as log model evidence. Crucially, the ELBO is estimated via Bayesian quadrature, which is fast and does not require further evaluation of the true target posterior.
+
+In each iteration, VBMC uses *active sampling* to select which points to evaluate next in order to reduce uncertainty in the approximation.
 
 **Fig 1: VBMC procedure** ![VBMC procedure](https://github.com/lacerbi/vbmc/blob/master/docs/vbmc-demo.png "Fig 1: VBMC procedure")
+
+In **Fig 1A** above, we show several iterations of VBMC at work (contour plots of the variational posterior). Red crosses are the centers of the mixture of Gaussians used as variational posterior, whereas black dots are sampled points in the current training set. **Fig 1B** shows a plot of the estimated ELBO vs. the true log marginal likelihood (LML). **Fig 1C** represents the ground truth for the target density.
 
 See our paper for more details [[1](#reference)].
 
