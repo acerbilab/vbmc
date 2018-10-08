@@ -23,7 +23,7 @@ VBMC is effective when:
 - the likelihood is at least moderately expensive to compute (say, half a second or more per evaluation);
 - the model has up to `D = 10` parameters (maybe a few more, but no more than `D = 20`).
 
-Conversely, if your model can be written analytically, you should exploit the powerful machinery of probablistic programming frameworks such as [Stan](http://mc-stan.org/) or [PyMC3](https://docs.pymc.io/).
+Conversely, if your model can be written analytically, you should exploit the powerful machinery of probabilistic programming frameworks such as [Stan](http://mc-stan.org/) or [PyMC3](https://docs.pymc.io/).
 
 ## Installation
 
