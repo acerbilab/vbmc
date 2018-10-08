@@ -82,13 +82,13 @@ The VBMC toolbox is under active development and currently in its beta version (
 It is still in beta since we are validating the algorithm on an additional batch of model-fitting problems, and we want to include in the toolbox some semi-automated diagnostics tools for robustness. The toolbox interface (that is, details of input and output arguments of some functions) may change from the beta to the final version.
 As of now, the toolbox is usable, but you should double-check your results (as you would do in any case, of course).
 
-If you have trouble doing something with VBMC, spot bugs or strange behavior, or you simply have some questions, please contact me at <luigi.acerbi@unige.ch>, putting 'VBMC' in the subject of the email.
+If you have trouble doing something with VBMC, spot bugs or strange behavior, or you simply have some questions, please contact me at <luigi.acerbi@gmail.com>, putting 'VBMC' in the subject of the email.
 
 ## VBMC for other programming languages
 
 VBMC is currently available only for MATLAB. A Python version is being planned.
 
-If you are interested in porting VBMC to Python or another language (R, [Julia](https://julialang.org/)), please get in touch at <luigi.acerbi@unige.ch> (putting  'VBMC' in the subject of the email); I'd be willing to help.
+If you are interested in porting VBMC to Python or another language (R, [Julia](https://julialang.org/)), please get in touch at <luigi.acerbi@gmail.com> (putting  'VBMC' in the subject of the email); I'd be willing to help.
 However, before contacting me for this reason, please have a good look at the codebase here on GitHub, and at the paper [[1](#reference)]. VBMC is a fairly complex piece of software, so be aware that porting it will require considerable effort and programming/computing skills.
 
 ## Reference
@@ -103,7 +103,7 @@ Besides formal citations, you can demonstrate your appreciation for VBMC in the 
 
 - *Star* the VBMC repository on GitHub;
 - [Follow me on Twitter](https://twitter.com/AcerbiLuigi) for updates about VBMC and other projects I am involved with;
-- Tell me about your model-fitting problem and your experience with VBMC (positive or negative) at <luigi.acerbi@unige.ch> (putting  'VBMC' in the subject of the email).
+- Tell me about your model-fitting problem and your experience with VBMC (positive or negative) at <luigi.acerbi@gmail.com> (putting  'VBMC' in the subject of the email).
 
 You may also want to check out [Bayesian Adaptive Direct Search](https://github.com/lacerbi/bads) (BADS), our method for fast Bayesian optimization.
 
