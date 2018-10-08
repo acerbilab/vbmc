@@ -52,9 +52,9 @@ The output parameters are:
 
 The variational posterior `vp` can be manipulated with functions such as `vbmc_moments` (compute posterior mean and covariance), `vbmc_pdf` (evaluates the posterior density), `vbmc_rnd` (draw random samples), `vbmc_kldiv` (Kullback-Leibler divergence between two posteriors).
 
-For more usage examples, see [**vbmc_examples.m**](https://github.com/lacerbi/bads/blob/master/vbmc_examples.m). You can also type `help vbmc` to display the documentation.
+For a tutorial with many extensive usage examples, see [**vbmc_examples.m**](https://github.com/lacerbi/bads/blob/master/vbmc_examples.m). You can also type `help vbmc` to display the documentation.
 
-For practical recommendations, such as how to set `LB` and `UB`, and any other question, we will prepare a FAQ soon. For now, you can find useful information on the [BADS wiki](https://github.com/lacerbi/bads/wiki).
+For practical recommendations, such as how to set `LB` and `UB`, and any other question, check out the FAQ on the [VBMC wiki](https://github.com/lacerbi/vbmc/wiki).
 
 
 ## How does it work
