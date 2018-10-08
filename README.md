@@ -65,7 +65,7 @@ VBMC combines two machine learning techniques:
 
 VBMC iteratively builds an approximation of the true, expensive target posterior via a [Gaussian process](https://en.wikipedia.org/wiki/Gaussian_process) (GP), and it matches a variational distribution — an expressive mixture of Gaussians — to the GP. This matching process entails optimization of the *expected lower bound* (ELBO), that is a lower bound on the log model evidence. Crucially, the ELBO is estimated via Bayesian quadrature, which is fast and does not require further evaluation of the true target posterior. In each iteration, VBMC uses *active sampling* to select which points to evaluate next in order to reduce uncertainty in the approximation.
 
-**Fig 1: VBMC procedure** ![VBMC procedure](https://github.com/lacerbi/bads/blob/master/docs/vbmc-demo.png "Fig 1: VBMC procedure")
+**Fig 1: VBMC procedure** ![VBMC procedure](https://github.com/lacerbi/vbmc/blob/master/docs/vbmc-demo.png "Fig 1: VBMC procedure")
 
 See our paper for more details [[1](#reference)].
 
