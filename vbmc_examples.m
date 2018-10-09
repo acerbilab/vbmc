@@ -124,8 +124,10 @@ pause;
 
 llfun = @rosenbrock_test;                   % Log likelihood
 
+D = 3;  % Still in 2-D
+
 % Since parameters are positive, we impose an exponential prior.
-prior_tau = [3 3];      % Length scale of the exponential prior
+prior_tau = 3*ones(1,D);            % Length scale of the exponential prior
 lpriorfun = @(x) -sum(x./prior_tau,2) -log(prod(prior_tau));
 
 fun = @(x) llfun(x) + lpriorfun(x);         % Log joint
@@ -134,7 +136,7 @@ fun = @(x) llfun(x) + lpriorfun(x);         % Log joint
 % 1) the specified bounds are NOT included in the domain, so in this case, 
 %    since we want to be the parameters to be positive, we can set LB = 0, 
 %    knowing that the parameter will always be greater than zero.
-LB = [0 0];                                     % Lower bounds
+LB = zeros(1,D);                                % Lower bounds
 
 % 2) Currently, VBMC does not support half-bounds, so we need to specify
 %    a finite upper bound (cannot be Inf). We pick something very large
@@ -149,6 +151,7 @@ PLB = 0.0253*prior_tau;         % PLB = expinv(0.025,prior_tau);
 PUB = 3.6889*prior_tau;         % PUB = expinv(0.975,prior_tau);
 
 x0 = prior_tau;             % Mean of the prior as starting point
+% x0 = ones(1,D);             % Start in the proximity of the mode
 options = vbmc('defaults');
 options.Plot = true;        % Plot iterations
 

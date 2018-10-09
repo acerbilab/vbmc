@@ -223,6 +223,7 @@ defopts.BestSafeSD         = '5                 % SD multiplier of ELCBO for com
 defopts.BestFracBack       = '0.25              % When computing best solution, lacking stability go back up to this fraction of iterations';
 defopts.TolWeight          = '1e-2              % Threshold mixture component weight for pruning';
 defopts.AnnealedGPMean     = '@(N,NMAX) 0       % Annealing for hyperprior width of GP negative quadratic mean';
+defopts.InitDesign         = 'plausible         % Initial samples ("plausible" is uniform in the plausible box)';
 
 % Portfolio allocation parameters (experimental feature)
 defopts.Portfolio          = 'off               % Portfolio allocation for acquisition function';

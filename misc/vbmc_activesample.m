@@ -14,7 +14,7 @@ timer_active = tic;
 if isempty(gp)
     
     % No GP yet, just use provided points or sample from plausible box
-    [optimState,t_func] = initDesign(optimState,Ns,funwrapper,t_func);
+    [optimState,t_func] = initDesign(optimState,Ns,funwrapper,t_func,options);
     
 else                    % Active uncertainty sampling
         
@@ -151,7 +151,7 @@ t_active = toc(timer_active) - t_func;
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [optimState,t_func] = initDesign(optimState,Ns,funwrapper,t_func)
+function [optimState,t_func] = initDesign(optimState,Ns,funwrapper,t_func,options)
 %INITDESIGN Initial sample design (provided or random box).
 
 x0 = optimState.Cache.X_orig;
@@ -161,8 +161,17 @@ if N0 <= Ns
     Xs = x0;
     ys = optimState.Cache.y_orig;
     if N0 < Ns
-        % Uniform random samples in the plausible box (in transformed space)
-        Xrnd = bsxfun(@plus,bsxfun(@times,rand(Ns-N0,D),optimState.PUB-optimState.PLB),optimState.PLB);
+        switch lower(options.InitDesign)
+            case 'plausible'
+                % Uniform random samples in the plausible box (in transformed space)
+                Xrnd = bsxfun(@plus,bsxfun(@times,rand(Ns-N0,D),optimState.PUB-optimState.PLB),optimState.PLB);
+            case 'narrow'
+                xstart = warpvars(x0(1,:),'dir',optimState.trinfo);
+                Xrnd = bsxfun(@plus,bsxfun(@times,rand(Ns-N0,D)-0.5,0.1*(optimState.PUB-optimState.PLB)),xstart);
+                Xrnd = bsxfun(@min,bsxfun(@max,Xrnd,optimState.PLB),optimState.PUB);
+            otherwise
+                error('Unknown initial design for VBMC.');
+        end
         Xrnd = warpvars(Xrnd,'inv',optimState.trinfo);  % Convert back to original space
         Xs = [Xs; Xrnd];
         ys = [ys; NaN(Ns-N0,1)];
