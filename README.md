@@ -23,7 +23,7 @@ VBMC is effective when:
 - the likelihood is at least moderately expensive to compute (say, half a second or more per evaluation);
 - the model has up to `D = 10` parameters (maybe a few more, but no more than `D = 20`).
 
-Conversely, if your model can be written analytically, you should exploit the powerful machinery of probablistic programming frameworks such as [Stan](http://mc-stan.org/) or [PyMC3](https://docs.pymc.io/).
+Conversely, if your model can be written analytically, you should exploit the powerful machinery of probabilistic programming frameworks such as [Stan](http://mc-stan.org/) or [PyMC3](https://docs.pymc.io/).
 
 ## Installation
 
@@ -59,15 +59,21 @@ For practical recommendations, such as how to set `LB` and `UB`, and any other q
 
 ## How does it work
 
-VBMC combines two machine learning techniques: 
+VBMC combines two machine learning techniques in a novel way: 
 - [variational inference](https://en.wikipedia.org/wiki/Variational_Bayesian_methods), a method to perform approximate Bayesian inference;
 - Bayesian quadrature, a technique to estimate the value of expensive integrals.
 
-VBMC iteratively builds an approximation of the true, expensive target posterior via a [Gaussian process](https://en.wikipedia.org/wiki/Gaussian_process) (GP), and it matches a variational distribution — an expressive mixture of Gaussians — to the GP. This matching process entails optimization of the *expected lower bound* (ELBO), that is a lower bound on the log model evidence. Crucially, the ELBO is estimated via Bayesian quadrature, which is fast and does not require further evaluation of the true target posterior. In each iteration, VBMC uses *active sampling* to select which points to evaluate next in order to reduce uncertainty in the approximation.
+VBMC iteratively builds an approximation of the true, expensive target posterior via a [Gaussian process](https://en.wikipedia.org/wiki/Gaussian_process) (GP), and it matches a variational distribution — an expressive mixture of Gaussians — to the GP. 
+
+This matching process entails optimization of the *expected lower bound* (ELBO), that is a lower bound on the log marginal likelihood (LML), also known as log model evidence. Crucially, we estimate the ELBO via Bayesian quadrature, which is fast and does not require further evaluation of the true target posterior.
+
+In each iteration, VBMC uses *active sampling* to select which points to evaluate next in order to explore the posterior landscape and reduce uncertainty in the approximation.
 
 **Fig 1: VBMC procedure** ![VBMC procedure](https://github.com/lacerbi/vbmc/blob/master/docs/vbmc-demo.png "Fig 1: VBMC procedure")
 
-See our paper for more details [[1](#reference)].
+In **Fig 1A** above, we show several iterations of VBMC at work (contour plots of the variational posterior). Red crosses are the centers of the mixture of Gaussians used as variational posterior, whereas black dots are sampled points in the current training set. **Fig 1B** shows a plot of the estimated ELBO vs. the true log marginal likelihood (LML). **Fig 1C** represents the ground truth for the target posterior density.
+
+See the VBMC paper for more details [[1](#reference)].
 
 ## Troubleshooting
 
@@ -76,13 +82,13 @@ The VBMC toolbox is under active development and currently in its beta version (
 It is still in beta since we are validating the algorithm on an additional batch of model-fitting problems, and we want to include in the toolbox some semi-automated diagnostics tools for robustness. The toolbox interface (that is, details of input and output arguments of some functions) may change from the beta to the final version.
 As of now, the toolbox is usable, but you should double-check your results (as you would do in any case, of course).
 
-If you have trouble doing something with VBMC, spot bugs or strange behavior, or you simply have some questions, please contact me at <luigi.acerbi@unige.ch>, putting 'VBMC' in the subject of the email.
+If you have trouble doing something with VBMC, spot bugs or strange behavior, or you simply have some questions, please contact me at <luigi.acerbi@gmail.com>, putting 'VBMC' in the subject of the email.
 
 ## VBMC for other programming languages
 
 VBMC is currently available only for MATLAB. A Python version is being planned.
 
-If you are interested in porting VBMC to Python or another language (R, [Julia](https://julialang.org/)), please get in touch at <luigi.acerbi@unige.ch> (putting  'VBMC' in the subject of the email); I'd be willing to help.
+If you are interested in porting VBMC to Python or another language (R, [Julia](https://julialang.org/)), please get in touch at <luigi.acerbi@gmail.com> (putting  'VBMC' in the subject of the email); I'd be willing to help.
 However, before contacting me for this reason, please have a good look at the codebase here on GitHub, and at the paper [[1](#reference)]. VBMC is a fairly complex piece of software, so be aware that porting it will require considerable effort and programming/computing skills.
 
 ## Reference
@@ -97,7 +103,7 @@ Besides formal citations, you can demonstrate your appreciation for VBMC in the 
 
 - *Star* the VBMC repository on GitHub;
 - [Follow me on Twitter](https://twitter.com/AcerbiLuigi) for updates about VBMC and other projects I am involved with;
-- Tell me about your model-fitting problem and your experience with VBMC (positive or negative) at <luigi.acerbi@unige.ch> (putting  'VBMC' in the subject of the email).
+- Tell me about your model-fitting problem and your experience with VBMC (positive or negative) at <luigi.acerbi@gmail.com> (putting  'VBMC' in the subject of the email).
 
 You may also want to check out [Bayesian Adaptive Direct Search](https://github.com/lacerbi/bads) (BADS), our method for fast Bayesian optimization.
 
