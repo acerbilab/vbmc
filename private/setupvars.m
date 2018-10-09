@@ -11,18 +11,21 @@ if any(~isfinite(x0))   % Invalid/not provided starting point
     x0 = 0.5*(PLB + PUB);       % Midpoint
 end
 
-optimState.LB = LB;
-optimState.UB = UB;
-optimState.PLB = PLB;
-optimState.PUB = PUB;
+optimState.LB_orig = LB;
+optimState.UB_orig = UB;
+optimState.PLB_orig = PLB;
+optimState.PUB_orig = PUB;
 
 % Transform variables
-trinfo = warpvars(nvars,LB,UB);
+trinfo = warpvars(nvars,LB,UB,PLB,PUB);
 trinfo.x0_orig = x0;
 if ~isfield(trinfo,'R_mat'); trinfo.R_mat = []; end
 if ~isfield(trinfo,'scale'); trinfo.scale = []; end
-trinfo.mu = 0.5*(PLB+PUB);
-trinfo.delta = PUB-PLB;
+
+optimState.LB = warpvars(LB,'dir',trinfo);
+optimState.UB = warpvars(UB,'dir',trinfo);
+optimState.PLB = warpvars(PLB,'dir',trinfo);
+optimState.PUB = warpvars(PUB,'dir',trinfo);
 
 % Record starting points (original coordinates)
 optimState.Cache.X_orig = x0;

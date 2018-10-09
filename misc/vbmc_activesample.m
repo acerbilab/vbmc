@@ -161,7 +161,9 @@ if N0 <= Ns
     Xs = x0;
     ys = optimState.Cache.y_orig;
     if N0 < Ns
+        % Uniform random samples in the plausible box (in transformed space)
         Xrnd = bsxfun(@plus,bsxfun(@times,rand(Ns-N0,D),optimState.PUB-optimState.PLB),optimState.PLB);
+        Xrnd = warpvars(Xrnd,'inv',optimState.trinfo);  % Convert back to original space
         Xs = [Xs; Xrnd];
         ys = [ys; NaN(Ns-N0,1)];
     end

@@ -89,6 +89,7 @@ if isstruct(varargin{3})
                     z = bsxfun(@rdivide, bsxfun(@minus, x(:,idx), a(idx)), ...
                         b(idx) - a(idx)); 
                     y(:,idx) = log(z./(1-z));
+                    y(:,idx) = bsxfun(@rdivide,bsxfun(@minus,y(:,idx),mu(idx)),delta(idx));
                 end
                 
                 % Lower and upper bounded scalars with Beta CDF transform
@@ -221,8 +222,9 @@ if isstruct(varargin{3})
                 % Lower and upper bounded scalars
                 idx = trinfo.type == 3;
                 if any(idx)
+                    x(:,idx) = bsxfun(@plus,bsxfun(@times,y(:,idx),delta(idx)),mu(idx));
                     x(:,idx) = bsxfun(@plus, a(:,idx), bsxfun(@times, ...
-                        b(idx)-a(idx), 1./(1+exp(-y(:,idx)))));
+                        b(idx)-a(idx), 1./(1+exp(-x(:,idx)))));
                 end
                 
                 % Lower and upper bounded scalars with Beta CDF transform
@@ -354,8 +356,10 @@ if isstruct(varargin{3})
                 % Lower and upper bounded scalars
                 idx = trinfo.type == 3;
                 if any(idx)
+                    y(:,idx) = bsxfun(@plus,bsxfun(@times,y(:,idx),delta(idx)),mu(idx));
                     z = -log1p(exp(-y(:,idx)));
                     p(:,idx) = bsxfun(@plus, log(b(idx)-a(idx)), -y(:,idx) + 2*z);
+                    p(:,idx) = bsxfun(@plus, p(:,idx), log(delta(idx)));
                 end
                 
                 % Lower and upper bounded scalars with Beta CDF transform

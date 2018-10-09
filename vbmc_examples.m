@@ -254,7 +254,7 @@ opt_options.Display = 'final';
 x0 = fminsearch(@(x) -fun(x),x0,opt_options);
 
 % Also, instead of FMINSEARCH you should use an efficient method, like BADS:
-% x0 = bads(@(x) -fun(x),x0,LB,UB,PLB,PUB,[],opt_options);
+% x0 = bads(@(x) -fun(x),x0,PLB,PUB,PLB,PUB,[],opt_options);
 % You can download BADS from here: https://github.com/lacerbi/bads
 
 % For demonstration purposes, we run VBMC for too short
