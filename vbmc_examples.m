@@ -29,6 +29,8 @@ fprintf('  Simple usage of VBMC having as target log likelihood <a href="https:/
 fprintf('  Press any key to continue.\n\n');
 pause;
 
+D = 2;                          % We consider a 2-D problem
+
 % We set as toy log likelihood for our model a broad Rosenbrock's banana 
 % function in 2D (see https://en.wikipedia.org/wiki/Rosenbrock_function).
 
@@ -39,8 +41,8 @@ llfun = @rosenbrock_test;
 % We define now a prior over the parameters (for simplicity, independent
 % Gaussian prior on each variable, but you could do whatever).
 
-prior_mu = [0 0];
-prior_var = [3 3].^2;
+prior_mu = zeros(1,D);
+prior_var = 3^2*ones(1,D);
 lpriorfun = @(x) ...
     -0.5*sum((x-prior_mu).^2./prior_var,2) ...
     -0.5*log(prod(2*pi*prior_var));
@@ -49,24 +51,24 @@ lpriorfun = @(x) ...
 fun = @(x) llfun(x) + lpriorfun(x);
 
 % We assume an unconstrained domain for the model parameters, and finite 
-% plausible bounds where we expect most of the posterior probability mass 
-% to be. Not knowing better, we use the ~95% credible interval set by the 
-% prior (mean +/- 1.96 SD) to set plausible bounds.
+% plausible bounds which should denote a region of high posterior 
+% probability mass. Not knowing better, we use mean +/- 1 SD of the prior 
+% (that is, the top ~68% prior credible interval) to set plausible bounds.
 
-LB = -Inf;                                      % Lower bounds
-UB = Inf;                                       % Upper bounds
-PLB = prior_mu - 1.96*sqrt(prior_var);          % Plausible lower bounds
-PUB = prior_mu + 1.96*sqrt(prior_var);          % Plausible upper bounds
+LB = -Inf(1,D);                            % Lower bounds
+UB = Inf(1,D);                             % Upper bounds
+PLB = prior_mu - sqrt(prior_var);          % Plausible lower bounds
+PUB = prior_mu + sqrt(prior_var);          % Plausible upper bounds
 
 % Analogously, you could set the plausible bounds using the quantiles:
-% PLB = norminv(0.025,prior_mu,sqrt(prior_var));
-% PUB = norminv(0.975,prior_mu,sqrt(prior_var));
+% PLB = norminv(0.15865,prior_mu,sqrt(prior_var));
+% PUB = norminv(0.84135,prior_mu,sqrt(prior_var));
 
 % As a starting point, we use the mean of the prior:
 x0 = prior_mu;
 
-% Alternatively, we could have used for example a sample from the prior:
-% x0 = prior_mu + sqrt(prior_var).*randn(size(prior_var));
+% Alternatively, we could have used a sample from inside the plausible box:
+% x0 = PLB + rand(1,D).*(PUB - PLB);
 
 % For now, we use default options for the inference:
 options = vbmc('defaults');
@@ -124,7 +126,7 @@ pause;
 
 llfun = @rosenbrock_test;                   % Log likelihood
 
-D = 3;  % Still in 2-D
+D = 2;  % Still in 2-D
 
 % Since parameters are positive, we impose an exponential prior.
 prior_tau = 3*ones(1,D);            % Length scale of the exponential prior
@@ -146,12 +148,14 @@ UB = 10*prior_tau;                              % Upper bounds
 
 % 3) Plausible bounds need to be meaningfully different from hard bounds,
 %    so here we cannot pick PLB = 0. We follow the same strategy as the first
-%    example, by picking the 95% credible interval of the prior.
-PLB = 0.0253*prior_tau;         % PLB = expinv(0.025,prior_tau);
-PUB = 3.6889*prior_tau;         % PUB = expinv(0.975,prior_tau);
+%    example, by picking the ~68% credible interval of the prior.
+PLB = 0.1727*prior_tau;         % PLB = expinv(0.15865,prior_tau);
+PUB = 1.8411*prior_tau;         % PUB = expinv(0.84135,prior_tau);
 
-x0 = prior_tau;             % Mean of the prior as starting point
-% x0 = ones(1,D);             % Start in the proximity of the mode
+% Good practice is to initialize VBMC in a region of high posterior density.
+% For this example, we cheat and start in the proximity of the mode, which
+% is near the optimum of the likelihood (which we know).
+x0 = ones(1,D);             % Optimum of the Rosenbrock function
 options = vbmc('defaults');
 options.Plot = true;        % Plot iterations
 
@@ -239,15 +243,15 @@ fun = @(x,mu) llfun(x,data) + lpriorfun(x);
 
 LB = -Inf;                                      % Lower bounds
 UB = Inf;                                       % Upper bounds
-PLB = prior_mu - 1.96*sqrt(prior_var);          % Plausible lower bounds
-PUB = prior_mu + 1.96*sqrt(prior_var);          % Plausible upper bounds
+PLB = prior_mu - sqrt(prior_var);               % Plausible lower bounds
+PUB = prior_mu + sqrt(prior_var);               % Plausible upper bounds
 
 % In a typical inference scenario, we recommend to start from a "good"
 % point (e.g., near the mode). A good way is to run a preliminary quick
-% optimization.
-x0 = PLB + (PUB-PLB).*rand(1,numel(PLB));   % Random point inside plausible box
+% optimization (a more extensive optimization would not harm).
+x0 = PLB + (PUB-PLB).*rand(1,D);    % Random point inside plausible box
 
-fprintf('  First, we run a quick optimization to start from a relatively high posterior density region.\n');
+fprintf('  First, we run a preliminary optimization to start from a relatively high posterior density region.\n');
 fprintf('  (You may want to use <a href="https://github.com/lacerbi/bads">Bayesian Adaptive Direct Search (BADS)</a> here.)\n');
 
 % Here we only run it once but consider using multiple starting points.
@@ -310,12 +314,12 @@ fun = @(x) llfun(x) + lpriorfun(x);     % Target log joint
 
 LB = -Inf(1,D);                                 % Lower bounds
 UB = Inf(1,D);                                  % Upper bounds
-PLB = prior_mu - 1.96*sqrt(prior_var);          % Plausible lower bounds
-PUB = prior_mu + 1.96*sqrt(prior_var);          % Plausible upper bounds
+PLB = prior_mu - sqrt(prior_var);               % Plausible lower bounds
+PUB = prior_mu + sqrt(prior_var);               % Plausible upper bounds
 
 options = vbmc('defaults');     % Default VBMC options
 
-opt_options = [];               % Quick optimization options
+opt_options = [];               % Preliminary optimization options
 opt_options.MaxFunEvals = 50*D;
 opt_options.Display = 'final';
 
@@ -332,7 +336,7 @@ for iRun = 1:Nruns
         x0 = prior_mu;
     else
         % Other starting points, randomize
-        x0 = prior_mu + sqrt(prior_var).*randn(size(prior_var));
+        x0 = PLB + (PUB-PLB).*rand(1,D);
     end
     
     x0 = fminsearch(@(x) -fun(x),x0,opt_options);

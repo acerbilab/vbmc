@@ -21,12 +21,13 @@ function [vp,elbo,elbo_sd,exitflag,output,optimState,stats] = vbmc(fun,x0,LB,UB,
 %
 %   VP = VBMC(FUN,X0,LB,UB,PLB,PUB) specifies a set of plausible lower and
 %   upper bounds such that LB < PLB < PUB < UB. Both PLB and PUB
-%   need to be finite. PLB and PUB represent a plausible range for where 
-%   most posterior probability mass is expected to lie (say, > 95%). Among
-%   other things, the plausible box is used to draw initial samples and to 
-%   set priors over hyperparameters of the algorithm. When in doubt, use
-%   the 95% quantile range of the prior to set PLB and PUB (but note that
-%   additional information might afford a better guess).
+%   need to be finite. PLB and PUB represent a "plausible" range, which
+%   should denote a region of high posterior probability mass. Among other 
+%   things, the plausible box is used to draw initial samples and to set 
+%   priors over hyperparameters of the algorithm. When in doubt, we found 
+%   that setting PLB and PUB using the topmost ~68% percentile range of the 
+%   prior (e.g, mean +/- 1 SD for a Gaussian prior) works well in many 
+%   cases (but note that additional information might afford a better guess).
 %  
 %   VP = VBMC(FUN,X0,LB,UB,PLB,PUB,OPTIONS) performs variational inference
 %   with the default parameters replaced by values in the structure OPTIONS.
@@ -414,9 +415,11 @@ while ~isFinished_flag
     % Get GP training options
     gptrain_options = get_GPTrainOptions(Ns_gp,optimState,stats,options);    
     
-    % Fit hyperparameters
-    [gp,hyp,gpoutput] = gplite_train(hyp,Ns_gp, ...
-        optimState.X(optimState.X_flag,:),optimState.y(optimState.X_flag), ...
+    % Get training dataset
+    [X_train,y_train] = get_traindata(optimState,options);
+    
+    % Fit GP to training set
+    [gp,hyp,gpoutput] = gplite_train(hyp,Ns_gp,X_train,y_train, ...
         optimState.gpMeanfun,hypprior,[],gptrain_options);
     hyp_full = gpoutput.hyp_prethin; % Pre-thinning GP hyperparameters
     
