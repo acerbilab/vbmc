@@ -61,8 +61,8 @@ PLB = prior_mu - sqrt(prior_var);          % Plausible lower bounds
 PUB = prior_mu + sqrt(prior_var);          % Plausible upper bounds
 
 % Analogously, you could set the plausible bounds using the quantiles:
-% PLB = norminv(0.15865,prior_mu,sqrt(prior_var));
-% PUB = norminv(0.84135,prior_mu,sqrt(prior_var));
+% PLB = norminv(0.1587,prior_mu,sqrt(prior_var));
+% PUB = norminv(0.8413,prior_mu,sqrt(prior_var));
 
 % As a starting point, we use the mean of the prior:
 x0 = prior_mu;
@@ -148,9 +148,9 @@ UB = 10*prior_tau;                              % Upper bounds
 
 % 3) Plausible bounds need to be meaningfully different from hard bounds,
 %    so here we cannot pick PLB = 0. We follow the same strategy as the first
-%    example, by picking the ~68% credible interval of the prior.
-PLB = 0.1727*prior_tau;         % PLB = expinv(0.15865,prior_tau);
-PUB = 1.8411*prior_tau;         % PUB = expinv(0.84135,prior_tau);
+%    example, by picking the top ~68% credible interval of the prior.
+PLB = 0.1728*prior_tau;         % PLB = expinv(0.1587,prior_tau);
+PUB = 1.8407*prior_tau;         % PUB = expinv(0.8413,prior_tau);
 
 % Good practice is to initialize VBMC in a region of high posterior density.
 % For this example, we cheat and start in the proximity of the mode, which
