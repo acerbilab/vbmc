@@ -286,7 +286,24 @@ fprintf('  In the OUTPUT struct:\n  - the ''convergencestatus'' field says ''%s'
 
 fprintf('  Our diagnostics tell that this run has not converged, suggesting to increase the budget.\n');
 fprintf('  Note that convergence to a solution does not mean that it is a *good* solution.\n');
-fprintf('  You should always check the returned variational posteriors (possibly with multiple runs of VBMC).\n');
+fprintf('  You should always check the returned variational posteriors (possibly with multiple runs of VBMC).\n\n');
+
+fprintf('  We can now rerun VBMC for longer and with a more informed initialization.\n');
+fprintf('  Press any key to continue.\n\n');
+pause;
+
+% Instead of starting from scratch, we use the output variational posterior 
+% from before to obtain a better initialization. This way we do not need 
+% to specify the starting point or the plausible bounds, which are 
+% automatically set based on VP.
+
+options.MaxFunEvals = 100*D;
+[vp,elbo,elbo_sd,exitflag,output] = vbmc(fun,vp,LB,UB,[],[],options);
+
+fprintf('  Thanks to a better initialization, this run converged quickly.\n');
+fprintf('  Press any key to continue.\n\n');
+pause;
+
 
 % Note that the fractional overhead of VBMC reported in OUTPUT is astronomical.
 % The reason is that the objective function we are using is analytical and 

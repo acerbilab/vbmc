@@ -35,6 +35,9 @@ function [vp,elbo,elbo_sd,exitflag,output,optimState,stats] = vbmc(fun,x0,LB,UB,
 %  
 %   VP = VBMC(FUN,X0,LB,UB,PLB,PUB,OPTIONS,...) passes additional arguments
 %   to FUN.
+%  
+%   VP = VBMC(FUN,VP0,...) uses variational posterior VP0 (from a previous
+%   run of VBMC) to initialize the current run.
 %
 %   [VP,ELBO] = VBMC(...) returns an estimate of the ELBO, the variational
 %   expected lower bound on the log marginal likelihood (log model evidence).
@@ -302,6 +305,23 @@ if isempty(x0)
     end
 end
 
+% Initialize from variational posterior
+if isstruct(x0) && isfield(x0,'mu')
+    vp0 = x0;
+    if prnt > 2
+        fprintf('Initializing VBMC from variational posterior (D = %d).', vp0.D);
+        if ~isempty(PLB) || ~isempty(PUB)
+            fprintf(' This will override the provided PLB and PUB.\n');
+        end
+        fprintf('\n');
+    end
+    x0 = vbmc_mode(vp0);
+    Xrnd = vbmc_rnd(vp0,1e6);
+    PLB = quantile(Xrnd,0.1);
+    PUB = quantile(Xrnd,0.9);
+    clear vp0 xrnd;
+end
+    
 D = size(x0,2);     % Number of variables
 optimState = [];
 
