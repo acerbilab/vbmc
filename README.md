@@ -44,7 +44,7 @@ with input parameters:
 - `FUN`, a function handle to the log posterior distribution of your model (that is, log prior plus log likelihood of a dataset and model, for a given input parameter vector);
 - `X0`, the starting point of the inference (a row vector);
 - `LB` and `UB`, hard lower and upper bounds for the parameters;
-- `PLB` and `PUB`, *plausible* lower and upper bounds, that is a box where you would expect to find most of the posterior probability mass.
+- `PLB` and `PUB`, *plausible* lower and upper bounds, that is a box that ideally brackets a region of high posterior density.
 
 The output parameters are:
 - `VP`, a struct with the variational posterior approximating the true posterior;
@@ -55,7 +55,7 @@ The variational posterior `vp` can be manipulated with functions such as `vbmc_m
 
 For a tutorial with many extensive usage examples, see [**vbmc_examples.m**](https://github.com/lacerbi/vbmc/blob/master/vbmc_examples.m). You can also type `help vbmc` to display the documentation.
 
-For practical recommendations, such as how to set `LB` and `UB`, and any other question, check out the FAQ on the [VBMC wiki](https://github.com/lacerbi/vbmc/wiki).
+For practical recommendations, such as how to set `LB` and `UB` and the plausible bounds, and any other question, check out the FAQ on the [VBMC wiki](https://github.com/lacerbi/vbmc/wiki).
 
 
 ## How does it work
@@ -80,8 +80,8 @@ See the VBMC paper for more details [[1](#reference)].
 
 The VBMC toolbox is under active development and currently in its beta version (close to final).
 
-It is still in beta since we are validating the algorithm on an additional batch of model-fitting problems, and we want to include in the toolbox some semi-automated diagnostics tools for robustness. The toolbox interface (that is, details of input and output arguments of some functions) may change from the beta to the final version.
-As of now, the toolbox is usable, but you should double-check your results (as you would do in any case, of course).
+It is still in beta since we are validating the algorithm on an additional batch of model-fitting problems, and we want to include in the toolbox some semi-automated diagnostics tools for robustness. The toolbox interface (that is, details of input and output arguments of some functions) may change slightly from the beta to the final version.
+As of now, the toolbox is usable, but you should double-check your results (as you would do in any case, of course). See the FAQ for more information on [diagnostics](https://github.com/lacerbi/vbmc/wiki#troubleshooting).
 
 If you have trouble doing something with VBMC, spot bugs or strange behavior, or you simply have some questions, please contact me at <luigi.acerbi@gmail.com>, putting 'VBMC' in the subject of the email.
 
