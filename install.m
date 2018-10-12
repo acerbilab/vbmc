@@ -2,26 +2,27 @@
 %
 % Copyright (c) by Luigi Acerbi 2018
 
-display('Installing VBMC... ');
+fprintf('Installing VBMC... ');
 
 me = mfilename;                                 % what is my filename
 pathstr = fileparts(which(me));                 % get my location
 addpath(pathstr);                               % add to the path
 
 try
-    savepath;                                   % save path
-    display('Installation successful!');
-    success_install_flag = true;
+    failed_install_flag = savepath;             % save path
 catch
-    display('Installation failed: could not save path.');
-    display('You need to manually add VBMC''s installation folder to your MATLAB search path (and save it).'); 
-    display('See the <a href="https://www.mathworks.com/help/matlab/matlab_env/add-remove-or-reorder-folders-on-the-search-path.html">MATLAB documentation</a> for more information.'); 
-    success_install_flag = false;
+    failed_install_flag = true;
 end
 
-if success_install_flag
+if failed_install_flag
+    fprintf('Installation failed: could not save path.\n');
+    fprintf('You need to manually add VBMC''s installation folder to your MATLAB search path (and save it).\n'); 
+    fprintf('See the <a href="https://www.mathworks.com/help/matlab/matlab_env/add-remove-or-reorder-folders-on-the-search-path.html">MATLAB documentation</a> for more information.\n'); 
+    fprintf('Note that in Linux systems, e.g. Ubuntu, you need read/write permission to save the MATLAB path (see <a href="https://www.mathworks.com/matlabcentral/answers/95731-why-is-my-modified-path-not-saved-in-matlab">here</a>).\n'); 
+else
+    fprintf('Installation successful!\n');
     type([pathstr filesep 'docs' filesep 'README.txt']);
     fprintf('\n');
 end
 
-clear me pathstr success_install_flag
+clear me pathstr
