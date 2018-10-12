@@ -294,11 +294,11 @@ pause;
 
 % Instead of starting from scratch, we use the output variational posterior 
 % from before to obtain a better initialization. This way we do not need 
-% to specify the starting point or the plausible bounds, which are 
+% to specify the starting point or the hard and plausible bounds, which are 
 % automatically set based on VP.
 
 options.MaxFunEvals = 100*D;
-[vp,elbo,elbo_sd,exitflag,output] = vbmc(fun,vp,LB,UB,[],[],options);
+[vp,elbo,elbo_sd,exitflag,output] = vbmc(fun,vp,[],[],[],[],options);
 
 fprintf('  Thanks to a better initialization, this run converged quickly.\n');
 fprintf('  Press any key to continue.\n\n');

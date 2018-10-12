@@ -37,7 +37,8 @@ function [vp,elbo,elbo_sd,exitflag,output,optimState,stats] = vbmc(fun,x0,LB,UB,
 %   to FUN.
 %  
 %   VP = VBMC(FUN,VP0,...) uses variational posterior VP0 (from a previous
-%   run of VBMC) to initialize the current run.
+%   run of VBMC) to initialize the current run. You can leave PLB and PUB
+%   empty, in which case they will be set using VP0 (recommended).
 %
 %   [VP,ELBO] = VBMC(...) returns an estimate of the ELBO, the variational
 %   expected lower bound on the log marginal likelihood (log model evidence).
@@ -276,17 +277,17 @@ if ~isfield(options,'Display') || isempty(options.Display)
     options.Display = defopts.Display;
 end
 
-switch lower(options.Display(1:3))
-    case {'not','notify','notify-detailed'}
+switch lower(options.Display(1:min(end,3)))
+    case {'not'}                        % notify
         prnt = 1;
-    case {'non','none','off'}
+    case {'no','non','off'}             % none
         prnt = 0;
-    case {'ite','all','iter','iter-detailed'}
+    case {'ite','all','on','yes'}       % iter
         prnt = 3;
-    case {'fin','final','final-detailed'}
+    case {'fin','end'}                  % final
         prnt = 2;
     otherwise
-        prnt = 1;
+        prnt = 3;
 end
 
 %% Initialize variables and algorithm structures
@@ -309,16 +310,20 @@ end
 if isstruct(x0) && isfield(x0,'mu')
     vp0 = x0;
     if prnt > 2
-        fprintf('Initializing VBMC from variational posterior (D = %d).', vp0.D);
-        if ~isempty(PLB) || ~isempty(PUB)
-            fprintf(' This will override the provided PLB and PUB.\n');
+        fprintf('Initializing VBMC from variational posterior (D = %d).\n', vp0.D);
+        if ~isempty(PLB) && ~isempty(PUB)
+            fprintf('Using provided plausible bounds. Note that it might be better to leave them empty,\nand allow VBMC to set them using the provided variational posterior.\n');
         end
-        fprintf('\n');
     end
     x0 = vbmc_mode(vp0);
-    Xrnd = vbmc_rnd(vp0,1e6);
-    PLB = quantile(Xrnd,0.1);
-    PUB = quantile(Xrnd,0.9);
+    if isempty(PLB) && isempty(PUB)
+        Xrnd = vbmc_rnd(vp0,1e6);
+        PLB = quantile(Xrnd,0.1);
+        PUB = quantile(Xrnd,0.9);
+    end
+    if isempty(LB); LB = vp0.trinfo.lb_orig; end
+    if isempty(UB); UB = vp0.trinfo.ub_orig; end
+    
     clear vp0 xrnd;
 end
     
