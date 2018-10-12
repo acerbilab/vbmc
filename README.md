@@ -57,6 +57,9 @@ For a tutorial with many extensive usage examples, see [**vbmc_examples.m**](htt
 
 For practical recommendations, such as how to set `LB` and `UB` and the plausible bounds, and any other question, check out the FAQ on the [VBMC wiki](https://github.com/lacerbi/vbmc/wiki).
 
+### For BADS users
+
+If you already use [Bayesian Adaptive Direct Search (BADS)](https://github.com/lacerbi/bads) to fit your models, setting up VBMC on your problem should be particularly simple; see [here](https://github.com/lacerbi/vbmc/wiki#i-already-run-bads-on-my-problem-how-do-i-run-vbmc).
 
 ## How does it work
 
