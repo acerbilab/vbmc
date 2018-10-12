@@ -711,7 +711,8 @@ end
 function add2path()
 %ADD2PATH Adds VBMC subfolders to MATLAB path.
 
-subfolders = {'acq','ent','gplite','misc','utils','warp'};
+subfolders = {'acq','ent','gplite','misc','utils'};
+% subfolders = {'acq','ent','gplite','misc','utils','warp'};
 pathCell = regexp(path, pathsep, 'split');
 baseFolder = fileparts(mfilename('fullpath'));
 

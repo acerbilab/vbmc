@@ -1,5 +1,5 @@
 function acq = vbmc_acqusreg(Xs,vp,gp,optimState,Nacq,transpose_flag)
-%VBMC_ACQUS Acquisition function via uncertainty sampling.
+%VBMC_ACQUS Acquisition fcn via vanilla uncertainty sampling (regularized).
 
 % Xs is in *transformed* coordinates
 

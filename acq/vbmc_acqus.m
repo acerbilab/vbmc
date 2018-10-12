@@ -1,5 +1,5 @@
 function acq = vbmc_acqus(Xs,vp,gp,optimState,Nacq,transpose_flag)
-%VBMC_ACQUS Acquisition function via uncertainty sampling.
+%VBMC_ACQUS Acquisition function via vanilla uncertainty sampling.
 
 % Xs is in *transformed* coordinates
 
