@@ -307,7 +307,7 @@ if isempty(x0)
 end
 
 % Initialize from variational posterior
-if isstruct(x0) && isfield(x0,'mu')
+if vbmc_isavp(x0)
     vp0 = x0;
     if prnt > 2
         fprintf('Initializing VBMC from variational posterior (D = %d).\n', vp0.D);
