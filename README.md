@@ -101,7 +101,7 @@ However, before contacting me for this reason, please have a good look at the co
 
 You can cite VBMC in your work with something along the lines of
 
-> We estimated approximate posterior distibutions and approximate lower bounds to the model evidence of our models using Variational Bayesian Monte Carlo (VBMC; Acerbi, 2018). VBMC combines variational inference and Bayesian quadrature to perform approximate Bayesian inference in a sample-efficient manner.
+> We estimated approximate posterior distibutions and approximate lower bounds to the model evidence of our models using Variational Bayesian Monte Carlo (VBMC; Acerbi, 2018). VBMC combines variational inference and active-sampling Bayesian quadrature to perform approximate Bayesian inference in a sample-efficient manner.
 
 Besides formal citations, you can demonstrate your appreciation for VBMC in the following ways:
 
