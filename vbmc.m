@@ -102,7 +102,7 @@ function [vp,elbo,elbo_sd,exitflag,output,optimState,stats] = vbmc(fun,x0,LB,UB,
 %
 %   Reference: Acerbi, L. (2018). "Variational Bayesian Monte Carlo". 
 %   To appear in Advances in Neural Information Processing Systems 31. 
-%   arXiv preprint arXiv:XXXX.YYYY
+%   arXiv preprint arXiv:1810.05558
 %
 %   See also VBMC_EXAMPLES, VBMC_KLDIV, VBMC_MODE, VBMC_MOMENTS, VBMC_PDF, 
 %   VBMC_RND, @.
