@@ -504,37 +504,8 @@ while ~isFinished_flag
     
     %% Plot current iteration (to be improved)
     if options.Plot
-        
-        if D == 1
-            hold off;
-            gplite_plot(gp);
-            hold on;
-            xlims = xlim;
-            xx = linspace(xlims(1),xlims(2),1e3)';
-            yy = vbmc_pdf(vp,xx,false,true);
-            hold on;
-            plot(xx,yy+elbo,':');
-            drawnow;
-            
-        else
-            Xrnd = vbmc_rnd(vp,1e5,1,1);
-            X_train = gp.X;
-            if ~isempty(vp.trinfo); X_train = warpvars(X_train,'inv',vp.trinfo); end
-            try
-                for i = 1:D; names{i} = ['x_{' num2str(i) '}']; end
-                [~,ax] = cornerplot(Xrnd,names);
-                for i = 1:D-1
-                    for j = i+1:D
-                        axes(ax(j,i));  hold on;
-                        scatter(X_train(:,i),X_train(:,j),'ok');
-                    end
-                end
-                drawnow;
-            catch
-                % pause
-            end            
-        end
-    end    
+        vbmc_iterplot(vp,gp,optimState,stats,elbo);
+    end
     
     %mubar
     %Sigma
