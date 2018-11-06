@@ -35,7 +35,8 @@ else
     Pdelta = optimState.PUB_orig - optimState.PLB_orig;
     X_min = min(X_train,[],1) - Pdelta*0.1;
     X_max = max(X_train,[],1) + Pdelta*0.1;    
-    bounds = [min(optimState.PLB_orig,X_min); max(optimState.PUB_orig,X_max)];    
+    bounds = [max(min(optimState.PLB_orig,X_min),optimState.LB_orig); ...
+        min(max(optimState.PUB_orig,X_max),optimState.UB_orig)];    
     
     try
         for i = 1:D; names{i} = ['x_{' num2str(i) '}']; end
@@ -43,11 +44,11 @@ else
         for i = 1:D-1
             for j = i+1:D
                 axes(ax(j,i));  hold on;
-                if any(idx_new)
-                    scatter(X_train(idx_new,i),X_train(idx_new,j),'or','MarkerFaceColor','r');                            
-                end
                 if any(idx_old)
                     scatter(X_train(idx_old,i),X_train(idx_old,j),'ok');                            
+                end
+                if any(idx_new)
+                    scatter(X_train(idx_new,i),X_train(idx_new,j),'or','MarkerFaceColor','r');                            
                 end
             end
         end

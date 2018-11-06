@@ -120,7 +120,8 @@ close all;
 fprintf('\n*** Example 2: Bounded parameters\n');
 fprintf('  As in Example 1, but we assume parameters are constrained to be positive.\n');
 fprintf('  We also display the evolution of the variational posterior in each iteration.\n');
-fprintf('  (In the plots, black circles represent points in the current training set.)\n');
+fprintf('  (In the plots, black circles represent points in the training set,\n');
+fprintf('  and red circles points added to the training set in this iteration.)\n');
 fprintf('  Press any key to continue.\n\n');
 pause;
 
