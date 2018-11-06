@@ -53,17 +53,25 @@ for s = 1:Ns
     Ks_mat = sf2 * exp(-Ks_mat/2);
     kss = sf2 * ones(Nstar,1);        % Self-covariance vector
 
-    fmu(:,s) = mstar + Ks_mat'*alpha;            % Conditional mean
+    if N > 0
+        fmu(:,s) = mstar + Ks_mat'*alpha;            % Conditional mean
+    else
+        fmu(:,s) = mstar;
+    end
     ymu(:,s) = fmu(:,s);                     % observed function mean
     if nargout > 1
-        if Lchol
-            V = L'\(repmat(sW,[1,Nstar]).*Ks_mat);
-            fs2(:,s) = kss - sum(V.*V,1)';       % predictive variances
+        if N > 0
+            if Lchol
+                V = L'\(repmat(sW,[1,Nstar]).*Ks_mat);
+                fs2(:,s) = kss - sum(V.*V,1)';       % predictive variances
+            else
+                LKs = L*Ks_mat;
+                fs2(:,s) = kss + sum(Ks_mat.*LKs,1)';
+            end
+            fs2(:,s) = max(fs2(:,s),0);          % remove numerical noise i.e. negative variances
         else
-            LKs = L*Ks_mat;
-            fs2(:,s) = kss + sum(Ks_mat.*LKs,1)';
-        end            
-        fs2(:,s) = max(fs2(:,s),0);          % remove numerical noise i.e. negative variances
+            fs2(:,s) = kss;
+        end
         ys2(:,s) = fs2(:,s) + sn2*sn2_mult;           % observed variance
 
         % Compute log probability of test inputs
