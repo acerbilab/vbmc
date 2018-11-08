@@ -214,6 +214,7 @@ pause;
 %% Example 3: Extended usage and output diagnostics
 
 close all;
+clear data;
 
 % Extended usage of VBMC and a look at some output arguments.
 

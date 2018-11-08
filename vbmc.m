@@ -331,7 +331,7 @@ D = size(x0,2);     % Number of variables
 optimState = [];
 
 % Check/fix boundaries and starting points
-[LB,UB,PLB,PUB] = boundscheck(x0,LB,UB,PLB,PUB,prnt);
+[x0,LB,UB,PLB,PUB] = boundscheck(x0,LB,UB,PLB,PUB,prnt);
 
 % Convert from char to function handles
 if ischar(fun); fun = str2func(fun); end

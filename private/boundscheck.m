@@ -1,4 +1,4 @@
-function [LB,UB,PLB,PUB] = boundscheck(x0,LB,UB,PLB,PUB,prnt)
+function [x0,LB,UB,PLB,PUB] = boundscheck(x0,LB,UB,PLB,PUB,prnt)
 %BOUNDSCHECK Initial check of bounds.
 
 [N0,nvars] = size(x0);
@@ -74,12 +74,46 @@ if any(PLB == PUB)
 end
 
 % Check that all X0 are inside the bounds
-if any(any(bsxfun(@le,x0,LB))) || any(any(bsxfun(@ge,x0,UB)))
+if any(any(bsxfun(@lt,x0,LB))) || any(any(bsxfun(@gt,x0,UB)))
     error('vbmc:InitialPointsNotInsideBounds', ...
-        'The starting points X0 are not strictly inside the provided hard bounds LB and UB.');
+        'The starting points X0 are not inside the provided hard bounds LB and UB.');
 end
 
-% Check that all X0 are inside the plausible bounds, move them otherwise
+% Compute "effective" bounds (slightly inside provided hard bounds)
+LB_eff = LB + 1e6*eps(double(LB));
+UB_eff = UB - 1e6*eps(double(UB));
+LB_eff(isinf(LB)) = LB(isinf(LB));  % Infinities stay the same
+UB_eff(isinf(UB)) = UB(isinf(UB));
+
+if any(LB_eff >= UB_eff)
+    error('vbmc:StrictBoundsTooClose', ...
+        'Hard bounds LB and UB are numerically too close. Make them more separate.');
+end
+
+% Fix when provided X0 are almost on the bounds -- move them inside
+if any(any(bsxfun(@le,x0,LB_eff))) || any(any(bsxfun(@ge,x0,UB_eff)))
+    warning('vbmc:InitialPointsTooClosePB', ...
+        'The starting points X0 are on or numerically too close to the hard bounds LB and UB. Moving the initial points more inside...');
+    x0 = bsxfun(@max, bsxfun(@min,x0,UB_eff), LB_eff);
+end
+
+% Test order of bounds (permissive)
+ordidx = LB <= PLB & PLB < PUB & PUB <= UB;
+if any(~ordidx)
+    error('vbmc:StrictBounds', ...
+        'For each variable, hard and plausible bounds should respect the ordering LB < PLB < PUB < UB.');
+end
+
+% Test that plausible bounds are reasonably separated from hard bounds
+ordidx = LB_eff < PLB & PUB < UB_eff;
+if any(~ordidx)
+    warning('vbmc:TooCloseBounds', ...
+        'For each variable, hard and plausible bounds should not be too close. Moving plausible bounds.');
+    PLB = max(PLB,LB_eff);
+    PUB = min(PUB,UB_eff);    
+end
+
+% Check that all X0 are inside the plausible bounds, move bounds otherwise
 if any(any(bsxfun(@le,x0,PLB))) || any(any(bsxfun(@ge,x0,PUB)))
     warning('vbmc:InitialPointsOutsidePB', ...
         'The starting points X0 are not inside the provided plausible bounds PLB and PUB. Expanding the plausible bounds...');
@@ -93,6 +127,8 @@ if any(~ordidx)
     error('vbmc:StrictBounds', ...
         'For each variable, hard and plausible bounds should respect the ordering LB < PLB < PUB < UB.');
 end
+
+
 
 % Test that variables are either bounded or unbounded (not half-bounded)
 halfbnd = (isinf(LB) & isfinite(UB)) | (isfinite(LB) & isinf(UB));
