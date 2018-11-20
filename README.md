@@ -3,7 +3,7 @@
 **News:** 
 - On Nov 26, 2018, I will give an invited talk about VBMC at the [Oxford Robotics Research Group Seminars](http://www.robots.ox.ac.uk/~seminars/seminars/).
 - A workshop paper that empirically investigates some features of VBMC has been accepted for a poster presentation at the 1st [Symposium on Advances in Approximate Bayesian Inference (AABI)](http://approximateinference.org/).
-- The VBMC paper [[1](#reference)] has been accepted for a poster presentation at [NIPS 2018](https://nips.cc/Conferences/2018/Schedule?showEvent=11786)! (20.8% acceptance rate this year, for a total of 4856 submissions)
+- The VBMC paper [[1](#reference)] has been accepted for a poster presentation at [NeurIPS 2018](https://neurips.cc/Conferences/2018/Schedule?showEvent=11786)! (20.8% acceptance rate this year, for a total of 4856 submissions)
 
 ## What is it
 
