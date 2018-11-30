@@ -99,7 +99,7 @@ However, before contacting me for this reason, please have a good look at the co
 
 ## Reference
 
-1. Acerbi, L. (2018). Variational Bayesian Monte Carlo. To appear in *Advances in Neural Information Processing Systems 31*. [arXiv preprint](https://arxiv.org/abs/1810.05558) arXiv:1810.05558
+1. Acerbi, L. (2018). Variational Bayesian Monte Carlo. In *Advances in Neural Information Processing Systems 31*. pp. 8222-8232. ([arXiv preprint](https://arxiv.org/abs/1810.05558))
 
 You can cite VBMC in your work with something along the lines of
 
