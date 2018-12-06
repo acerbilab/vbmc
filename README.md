@@ -77,7 +77,7 @@ In each iteration, VBMC uses *active sampling* to select which points to evaluat
 
 ![VBMC demo](https://github.com/lacerbi/vbmc/blob/master/docs/vbmc-demo.gif "Fig 1: VBMC demo")
 
-In the figure above, we show an example VBMC run on a "banana" function. The left panel shows the ground truth for the target posterior density. In the middle panel we show VBMC at work (contour plots of the variational posterior). Red crosses are the centers of the mixture of Gaussians used as variational posterior, whereas dots are sampled points in the training set (*black*: previously sampled points, *blue*: points sampled in the current iteration). The right panel shows a plot of the estimated ELBO vs. the true log marginal likelihood (LML).
+In the figure above, we show an example VBMC run on a "banana" function. The left panel shows the ground truth for the target posterior density. In the middle panel we show VBMC at work (contour plots of the variational posterior) across iterations. Red crosses are the centers of the mixture of Gaussians used as variational posterior, whereas dots are sampled points in the training set (*black*: previously sampled points, *blue*: points sampled in the current iteration). The right panel shows a plot of the estimated ELBO vs. the true log marginal likelihood (LML).
 
 In the figure below, we show another example VBMC run on a "lumpy" distribution.
 
