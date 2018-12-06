@@ -165,7 +165,6 @@ defopts.Fvals                   = '[]           % Evaluated fcn values at X0';
 defopts.OptimToolbox            = '[]           % Use Optimization Toolbox (if empty, determine at runtime)';
 defopts.ProposalFcn             = '[]           % Weighted proposal fcn for uncertainty search';
 defopts.UncertaintyHandling     = '[]           % Explicit noise handling (if empty, determine at runtime)';
-defopts.NoiseSize               = '[]           % Base observation noise magnitude';
 defopts.NonlinearScaling   = 'on                % Automatic nonlinear rescaling of variables';
 defopts.FunEvalStart       = 'max(D,10)         % Number of initial target fcn evals';
 defopts.FunEvalsPerIter    = '5                 % Number of target fcn evals per iteration';

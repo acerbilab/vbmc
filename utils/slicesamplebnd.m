@@ -234,12 +234,15 @@ for ii = 1:(effN+burn)
     end
     
     %% Slice-sampling step
-    
-    log_uprime = log(rand) + log_Px;
 
-    % Axes sweep
-    for dd = 1:D
+    % Random-permutation axes sweep    
+    dvec = randperm(D);
+    for idd = 1:D
+        dd = dvec(idd);
+        
         if LB(dd) == UB(dd); continue; end      % Fixed dimension, skip
+    
+        log_uprime = log(rand) + log_Px;
         
         x_l = xx;
         x_r = xx;
