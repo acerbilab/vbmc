@@ -1,7 +1,9 @@
 # Variational Bayesian Monte Carlo (VBMC) - v0.9 (beta)
 
 **News:** 
-- The VBMC paper [[1](#reference)] has been accepted for a poster presentation at [NIPS 2018](https://nips.cc/Conferences/2018/Schedule?showEvent=11786)! (20.8% acceptance rate this year, for a total of 4856 submissions)
+- On Nov 26, 2018, I gave an invited talk about VBMC at the [Oxford Robotics Research Group Seminars](http://www.robots.ox.ac.uk/~seminars/seminars/). Slides are available [here](https://github.com/lacerbi/infbench/raw/master/presentations/acerbi-oxford2018nov.pdf).
+- A [workshop paper](http://approximateinference.org/2018/accepted/Acerbi2018.pdf) that empirically investigates some features of VBMC has been accepted for a poster presentation at the 1st [Symposium on Advances in Approximate Bayesian Inference (AABI)](http://approximateinference.org/).
+- The VBMC paper [[1](#reference)] has been accepted for a poster presentation at [NeurIPS 2018](https://neurips.cc/Conferences/2018/Schedule?showEvent=11786)! (20.8% acceptance rate this year, for a total of 4856 submissions) The poster is available [here](https://github.com/lacerbi/infbench/blob/master/presentations/Acerbi-NeurIPS18-poster.pdf).
 
 ## What is it
 
@@ -97,7 +99,7 @@ However, before contacting me for this reason, please have a good look at the co
 
 ## Reference
 
-1. Acerbi, L. (2018). Variational Bayesian Monte Carlo. To appear in *Advances in Neural Information Processing Systems 31*. [arXiv preprint](https://arxiv.org/abs/1810.05558) arXiv:1810.05558
+1. Acerbi, L. (2018). Variational Bayesian Monte Carlo. In *Advances in Neural Information Processing Systems 31*. pp. 8222-8232. ([arXiv preprint](https://arxiv.org/abs/1810.05558))
 
 You can cite VBMC in your work with something along the lines of
 
