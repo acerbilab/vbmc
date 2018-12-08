@@ -41,11 +41,17 @@ nf = 1/(2*pi)^(D/2)/prod(lambda);  % Common normalization factor
 
 H = 0;
 
+% Make sure Ns is even
+Ns = ceil(Ns/2)*2;
+epsilon = zeros(D,1,Ns);
+
 % Loop over mixture components for generating samples
 for j = 1:K
 
     % Draw Monte Carlo samples from the j-th component
-    epsilon = randn(D,1,Ns);
+    % epsilon = randn(D,1,Ns);
+    epsilon(:,1,1:Ns/2) = randn(D,1,Ns/2);  % Antithetic sampling
+    epsilon(:,1,Ns/2+1:end) = -epsilon(:,1,1:Ns/2);
     xi = bsxfun(@plus, bsxfun(@times, bsxfun(@times, epsilon, lambda), sigma(j)), mu_4(:,1,1,j));
     
     Xs = reshape(xi,[D,Ns])'; 
