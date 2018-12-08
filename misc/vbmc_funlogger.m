@@ -24,6 +24,12 @@ function [fval,optimState] = vbmc_funlogger(fun,x,optimState,state,varargin)
 %   Luigi Acerbi 2018
 
 fval = [];
+
+% Switch warnings on
+for ff = fields(optimState.DefaultWarnings)'
+    warning(optimState.DefaultWarnings.(ff{:}).state,optimState.DefaultWarnings.(ff{:}).identifier);
+end
+
 switch lower(state)
     case 'init' % Start new function logging session
     
@@ -179,6 +185,11 @@ switch lower(state)
         
     otherwise        
         error('vbmc_funlogger:UnknownAction','Unknown FUNLOGGER action.');
+end
+
+% Switch warnings off again
+for ff = fields(optimState.DefaultWarnings)'
+    warning('off',optimState.DefaultWarnings.(ff{:}).identifier);
 end
 
 end

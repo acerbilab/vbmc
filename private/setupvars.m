@@ -179,6 +179,11 @@ optimState.iterList.fval = [];
 optimState.iterList.fsd = [];
 optimState.iterList.fhyp = [];
 
+%% Get warnings state
+
+optimState.DefaultWarnings.singularMatrix = warning('query','MATLAB:singularMatrix');
+warning('off',optimState.DefaultWarnings.singularMatrix.identifier);
+
 %% Initialize portfolio allocation
 
 if options.Portfolio    
