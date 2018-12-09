@@ -385,8 +385,8 @@ end
 function [y,fval,logprior] = logpdfbound(x,varargin)
 %LOGPDFBOUND Evaluate log pdf with bounds and prior.
 
-    fval = [];
-    logprior = [];
+    fval = -Inf;
+    logprior = 0;
 
     if any(x < LB | x > UB)
         y = -Inf;

@@ -355,7 +355,7 @@ end
 [~,optimState] = vbmc_funlogger([],x0(1,:),optimState,'init',options.CacheSize,options.NoiseObj);
 
 % GP struct and GP hyperparameters
-gp = [];    hyp = [];   hyp_warp = [];
+gp = [];    hyp = [];   hyp_warp = [];  hyp_logp = [];
 optimState.gpMeanfun = options.gpMeanFun;
 switch optimState.gpMeanfun
     case {'zero','const','negquad','se'}
@@ -438,6 +438,7 @@ while ~isFinished_flag
     
     % Get GP training options
     gptrain_options = get_GPTrainOptions(Ns_gp,optimState,stats,options);    
+    gptrain_options.LogP = hyp_logp;
     
     % Get training dataset
     [X_train,y_train] = get_traindata(optimState,options);
@@ -446,6 +447,7 @@ while ~isFinished_flag
     [gp,hyp,gpoutput] = gplite_train(hyp,Ns_gp,X_train,y_train, ...
         optimState.gpMeanfun,hypprior,[],gptrain_options);
     hyp_full = gpoutput.hyp_prethin; % Pre-thinning GP hyperparameters
+    hyp_logp = gpoutput.logp;
     
 %      if iter > 10
 %          pause

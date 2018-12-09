@@ -42,6 +42,11 @@ Widths = [];
 if isfield(options,'Widths'); Widths = options.Widths; end
 if isempty(Widths); Widths = []; end   % Default widths (used only for HMC sampler)
 
+LogP = [];
+if isfield(options,'LogP'); LogP = options.LogP; end
+if isempty(LogP); LogP = []; end   % Old log probability associated to starting points 
+
+
 [N,D] = size(X);            % Number of training points and dimension
 ToL = 1e-6;
 
@@ -186,7 +191,7 @@ else
 end
 
 hyp = zeros(Nhyp,Nopts);
-nll = Inf(1,Nopts);
+nll = [];
 
 % Initialize GP
 if input_warping
@@ -219,6 +224,28 @@ end
 % Define objective functions for optimization
 gpoptimize_fun = @(hyp_) gp_objfun(hyp_(:),gp,hprior,0,0);
 
+% Compare old probability with new probability, check amount of change
+if ~isempty(LogP) && Ns > 0
+    nll = Inf(1,size(hyp0,2));
+    for i = 1:size(hyp0,2); nll(i) = gpoptimize_fun(hyp0(:,i)); end    
+    lnw = -nll - LogP(:)';
+    w = exp(lnw - max(lnw));
+    w = w/sum(w);
+    ESS_frac = (1/sum(w.^2))/size(hyp0,2);
+    
+    ESS_thresh = 0.5;
+    % Little change, keep sampling
+    if ESS_frac > ESS_thresh && strcmpi(Sampler,'slicelite')
+        Ninit = 0;
+        Nopts = 0;
+        if strcmpi(Sampler,'slicelite')
+            Thin_eff = max(1,round(Thin*(1 - (ESS_frac-ESS_thresh)/(1-ESS_thresh))));
+            Burnin = Thin_eff*Ns;
+            Thin = 1;
+        end
+    end
+end
+
 % First evaluate GP log posterior on an informed space-filling design
 if Ninit > 0
     optfill.FunEvals = Ninit;
@@ -226,8 +253,10 @@ if Ninit > 0
     hyp(:,:) = output_fill.X(1:Nopts,:)';
     widths_default = std(output_fill.X,[],1);
 else
-    nll = Inf(1,size(hyp0,2));
-    for i = 1:size(hyp0,2); nll(i) = gpoptimize_fun(hyp0(:,i)); end
+    if isempty(nll)
+        nll = Inf(1,size(hyp0,2));
+        for i = 1:size(hyp0,2); nll(i) = gpoptimize_fun(hyp0(:,i)); end
+    end
     [nll,ord] = sort(nll,'ascend');
     hyp = hyp0(:,ord);
     widths_default = PUB - PLB;
@@ -237,11 +266,14 @@ end
 %     derivcheck(gpoptimize_fun,hyp0(:,1),1);
 % end
 
+% Check that hyperparameters are within bounds
+hyp = bsxfun(@min,UB'-eps(UB'),bsxfun(@max,LB'+eps(LB'),hyp));
+
 %tic
 % Perform optimization from most promising NOPTS hyperparameter vectors
 for iTrain = 1:Nopts
+    nll = Inf(1,Nopts);
     try
-        hyp(:,iTrain) = min(UB'-eps(UB'),max(LB'+eps(LB'),hyp(:,iTrain)));
         [hyp(:,iTrain),nll(iTrain)] = ...
             fmincon(gpoptimize_fun,hyp(:,iTrain),[],[],[],[],LB,UB,[],gptrain_options);
     catch
@@ -255,6 +287,8 @@ hyp_start = hyp(:,idx);
 
 % Check that starting point is inside current bounds
 hyp_start = min(max(hyp_start',LB+eps(LB)),UB-eps(UB))';
+
+logp_prethin = [];  % Log posterior of samples
 
 %% Sample from best hyperparameter vector using slice sampling
 if Ns > 0
@@ -278,6 +312,7 @@ if Ns > 0
             [samples,fvals,exitflag,output] = ...
                 slicesamplebnd(gpsample_fun,hyp_start',Ns_eff,Widths,LB,UB,sampleopts);
             hyp_prethin = samples';
+            logp_prethin = fvals;
                         
         case 'slicelite'
             gpsample_fun = @(hyp_) gp_objfun(hyp_(:),gp,hprior,0,1);
@@ -291,8 +326,15 @@ if Ns > 0
                 % [Widths; widths_default]
             end
             
+            
+            
+            try
             if Nopts == 0
                 sampleopts.Adaptive = false;
+                if size(hyp,2) < Ns_eff
+                    hyp = repmat(hyp,[1,ceil(Ns_eff/size(hyp,2))]);
+                    hyp = hyp(:,1:Ns_eff);
+                end                
                 [samples,fvals,exitflag,output] = ...
                     slicelite(gpsample_fun,hyp',Ns_eff,Widths,LB,UB,sampleopts);                
             else            
@@ -300,7 +342,11 @@ if Ns > 0
                 [samples,fvals,exitflag,output] = ...
                     slicelite(gpsample_fun,hyp_start',Ns_eff,Widths,LB,UB,sampleopts);
             end
+            catch
+                pause
+            end
             hyp_prethin = samples';
+            logp_prethin = fvals;
             
         case 'covsample'
             gpsample_fun = @(hyp_) gp_objfun(hyp_(:),gp,hprior,0,1);            
@@ -367,11 +413,14 @@ if Ns > 0
     end
     
     % Thin samples
-    hyp = hyp_prethin(:,Thin:Thin:end);    
-    
+    hyp = hyp_prethin(:,Thin:Thin:end);
+    logp = logp_prethin(Thin:Thin:end);
+   
 else
     hyp = hyp(:,idx);
     hyp_prethin = hyp;
+    logp_prethin = -nll;
+    logp = -nll(idx);
 end
 
 % Recompute GP with finalized hyperparameters
@@ -384,6 +433,8 @@ if nargout > 2
     output.PLB = PLB;
     output.PUB = PUB;
     output.hyp_prethin = hyp_prethin;
+    output.logp = logp;
+    output.logp_prethin = logp_prethin;
 end
 
 
