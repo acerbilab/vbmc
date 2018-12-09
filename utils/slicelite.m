@@ -286,7 +286,7 @@ for ii = 1:(effN+burn)
                 else
                     errorstr = ['Shrunk to current position and proposal still not acceptable. ' ...
                         'Current position: ' num2str(xx(kk,:),' %g') '. ' ...
-                        'Log f: (new value) ' num2str(log_Px(k)), ', (target value) ' num2str(log_uprime) '.'];
+                        'Log f: (new value) ' num2str(log_Px(kk)), ', (target value) ' num2str(log_uprime) '.'];
                     error(errorstr);                    
                 end
             end

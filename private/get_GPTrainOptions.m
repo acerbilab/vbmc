@@ -83,7 +83,7 @@ else
     if iter > 1 && stats.rindex(iter-1) < options.GPRetrainThreshold
         gptrain_options.Ninit = 0;
         if strcmpi(options.GPHypSampler,'slicelite')
-            gptrain_options.Burnin = max(0,round(gptrain_options.Thin*log(stats.rindex(iter-1))/log(options.GPRetrainThreshold)))*Ns_gp;
+            gptrain_options.Burnin = max(1,ceil(gptrain_options.Thin*log(stats.rindex(iter-1))/log(options.GPRetrainThreshold)))*Ns_gp;
             gptrain_options.Thin = 1;
         end
         if Ns_gp > 0; gptrain_options.Nopts = 0; else; gptrain_options.Nopts = 1; end            
