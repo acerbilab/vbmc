@@ -278,6 +278,29 @@ if Ns > 0
             [samples,fvals,exitflag,output] = ...
                 slicesamplebnd(gpsample_fun,hyp_start',Ns_eff,Widths,LB,UB,sampleopts);
             hyp_prethin = samples';
+                        
+        case 'slicelite'
+            gpsample_fun = @(hyp_) gp_objfun(hyp_(:),gp,hprior,0,1);
+            sampleopts.Thin = 1;
+            sampleopts.Burnin = Burnin;
+            sampleopts.Display = 'off';
+            if isempty(Widths)
+                Widths = widths_default; 
+            else
+                Widths = min(Widths(:)',widths_default);
+                % [Widths; widths_default]
+            end
+            
+            if Nopts == 0
+                sampleopts.Adaptive = false;
+                [samples,fvals,exitflag,output] = ...
+                    slicelite(gpsample_fun,hyp',Ns_eff,Widths,LB,UB,sampleopts);                
+            else            
+                sampleopts.Adaptive = true;
+                [samples,fvals,exitflag,output] = ...
+                    slicelite(gpsample_fun,hyp_start',Ns_eff,Widths,LB,UB,sampleopts);
+            end
+            hyp_prethin = samples';
             
         case 'covsample'
             gpsample_fun = @(hyp_) gp_objfun(hyp_(:),gp,hprior,0,1);            

@@ -20,6 +20,15 @@ switch lower(options.GPHypSampler)
         else
             gptrain_options.Widths = [];
         end
+    case {'slicelite'}
+        gptrain_options.Sampler = 'slicelite';        
+        if options.GPSampleWidths > 0 && ~isempty(hypcov)
+            widthmult = max(options.GPSampleWidths,rindex);
+            hypwidths = sqrt(diag(hypcov)');
+            gptrain_options.Widths = max(hypwidths,1e-3)*widthmult;
+        else
+            gptrain_options.Widths = [];
+        end
     case {'splitsample'}
         gptrain_options.Sampler = 'splitsample';        
         if options.GPSampleWidths > 0 && ~isempty(hypcov)
@@ -73,6 +82,10 @@ else
     gptrain_options.Burnin = gptrain_options.Thin*3;
     if iter > 1 && stats.rindex(iter-1) < options.GPRetrainThreshold
         gptrain_options.Ninit = 0;
+        if strcmpi(options.GPHypSampler,'slicelite')
+            gptrain_options.Burnin = max(0,round(gptrain_options.Thin*log(stats.rindex(iter-1))/log(options.GPRetrainThreshold)))*Ns_gp;
+            gptrain_options.Thin = 1;
+        end
         if Ns_gp > 0; gptrain_options.Nopts = 0; else; gptrain_options.Nopts = 1; end            
     else
         gptrain_options.Ninit = 2^10;

@@ -155,6 +155,7 @@ if isempty(options.LogPrior); doprior = false; else; doprior = true; end
 if options.Burnin == 0 && isempty(widths) && options.Adaptive
     warning('WIDTHS not specified and adaptation is ON (OPTIONS.Adaptive == 1), but OPTIONS.Burnin is set to 0. SLICESAMPLEBND will attempt to use default values for WIDTHS.');
 end
+adaptiveflag = options.Adaptive;
 
 if isempty(widths); widths = (UB - LB)/2; end
 widths(isinf(widths)) = 10;
@@ -176,6 +177,7 @@ thin = floor(options.Thin);
 burn = floor(options.Burnin);
 log_Px = y;
 widths(LB == UB) = 1;   % WIDTHS is irrelevant when LB == UB, set to 1
+if burn < 2*D; adaptiveflag = false; end  % Burnin too short to be adaptive
 
 % Sanity checks
 assert(size(LB,1) == 1 && size(UB,1) == 1 && numel(LB) == D && numel(UB) == D, ...
@@ -184,7 +186,7 @@ assert(all(UB >= LB), ...
     'All upper bounds UB need to be equal or greater than lower bounds LB.');
 assert(all(widths > 0 & isfinite(widths)) && isreal(widths), ...
     'The vector WIDTHS need to be all positive real numbers.');
-assert(all(x0 >= LB) & all(x0 <= UB), ...
+assert(all(all(bsxfun(@ge, x0, LB) & bsxfun(@le, x0,UB))), ...
     'The initial starting point X0 is outside the bounds.');
 assert(all(isfinite(y)) && isreal(y), ...
     'The initial starting point(s) X0 need to evaluate to a real number (not Inf or NaN).');
@@ -291,7 +293,7 @@ for ii = 1:(effN+burn)
         end
         
         % Width adaptation (only during burn-in, might break detailed balance)
-        if ii <= burn && options.Adaptive
+        if ii <= burn && adaptiveflag
             delta = UB(dd) - LB(dd);
             if shrink > 3
                 if isfinite(delta)
@@ -329,7 +331,7 @@ for ii = 1:(effN+burn)
         xx_sqsum = xx_sqsum + xx(kk,:).^2;
         
         % End of burn-in, update WIDTHS if using adaptive method
-        if ii == burn && options.Adaptive
+        if ii == burn && adaptiveflag
             burnstored = floor(burn/2);
             newwidths = 5*sqrt(xx_sqsum/burnstored - (xx_sum/burnstored).^2);
             newwidths = min(newwidths, UB_out - LB_out);
@@ -351,6 +353,8 @@ for ii = 1:(effN+burn)
         end
         fprintf(displayFormat,ii-burn,funccount,log_Px,action);
     end
+        
+    kk = max(1,mod(kk + 1,K+1));    % Increment walker counter
     
 end
 

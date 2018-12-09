@@ -447,9 +447,9 @@ while ~isFinished_flag
         optimState.gpMeanfun,hypprior,[],gptrain_options);
     hyp_full = gpoutput.hyp_prethin; % Pre-thinning GP hyperparameters
     
-%     if iter > 30
-%         pause
-%     end
+%      if iter > 10
+%          pause
+%      end
     
     % Update running average of GP hyperparameter covariance (coarse)
     if size(hyp_full,2) > 1
