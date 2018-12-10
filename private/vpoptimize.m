@@ -66,20 +66,9 @@ if ~isfield(vp,'bounds') || isempty(vp.bounds)
     % vp.bounds
 end
 
-% Compute HPD region
-[~,ord] = sort(gp.y,'descend');
-N_hpd = round(options.HPDFrac*size(gp.y,1));
-X_hpd = gp.X(ord(1:N_hpd),:);
-y_hpd = gp.y(ord(1:N_hpd));
-
 % Set bounds for mean parameters of variational components
-if options.FeatureTest
-    vp.bounds.mu_lb = min(min(gp.X),vp.bounds.mu_lb);
-    vp.bounds.mu_ub = max(max(gp.X),vp.bounds.mu_ub);    
-else
-    vp.bounds.mu_lb = min(min(X_hpd),vp.bounds.mu_lb);
-    vp.bounds.mu_ub = max(max(X_hpd),vp.bounds.mu_ub);
-end
+vp.bounds.mu_lb = min(min(gp.X),vp.bounds.mu_lb);
+vp.bounds.mu_ub = max(max(gp.X),vp.bounds.mu_ub);    
     
 % Set bounds for log scale parameters of variational components
 lnrange = log(max(gp.X) - min(gp.X));
