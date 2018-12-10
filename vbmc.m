@@ -251,6 +251,7 @@ defopts.ELCBOWeight        = '0                 % Uncertainty weight during ELCB
 defopts.SearchSampleGP     = 'false             % Generate search candidates sampling from GP surrogate';
 defopts.VarParamsBack      = '0                 % Check variational posteriors back to these previous iterations';
 defopts.AltMCEntropy       = 'no                % Use alternative Monte Carlo computation for the entropy';
+defopts.FeatureTest        = 'no                % Test a new experimental feature';
 
 
 %% If called with 'all', return all default options

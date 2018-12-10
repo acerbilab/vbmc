@@ -73,9 +73,14 @@ X_hpd = gp.X(ord(1:N_hpd),:);
 y_hpd = gp.y(ord(1:N_hpd));
 
 % Set bounds for mean parameters of variational components
-vp.bounds.mu_lb = min(min(X_hpd),vp.bounds.mu_lb);
-vp.bounds.mu_ub = max(max(X_hpd),vp.bounds.mu_ub);
-
+if options.FeatureTest
+    vp.bounds.mu_lb = min(min(gp.X),vp.bounds.mu_lb);
+    vp.bounds.mu_ub = max(max(gp.X),vp.bounds.mu_ub);    
+else
+    vp.bounds.mu_lb = min(min(X_hpd),vp.bounds.mu_lb);
+    vp.bounds.mu_ub = max(max(X_hpd),vp.bounds.mu_ub);
+end
+    
 % Set bounds for log scale parameters of variational components
 lnrange = log(max(gp.X) - min(gp.X));
 vp.bounds.lnscale_lb = min(vp.bounds.lnscale_lb,lnrange + log(options.TolLength));
