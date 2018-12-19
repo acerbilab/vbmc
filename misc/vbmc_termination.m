@@ -73,7 +73,7 @@ if iter >= TolStableIters && ...
     % Iteration is stable if almost all recent iterations are stable
     if stablecount >= TolStableIters - options.TolStableExceptions - 1
         % If stable but entropy switch is ON, turn it off and continue
-        if optimState.EntropySwitch
+        if optimState.EntropySwitch && isfinite(options.EntropyForceSwitch)
             optimState.EntropySwitch = false;
             if isempty(action); action = 'entropy switch'; else; action = [action ', entropy switch']; end 
         else
