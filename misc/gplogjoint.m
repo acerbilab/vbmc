@@ -177,10 +177,9 @@ for s = 1:Ns
                 end
                 
             end
-            
-            
+                        
         elseif compute_var
-            for j = 1:K
+            for j = 1:k
                 tau_j = sqrt(sigma(j)^2*lambda.^2 + ell.^2);
                 nf_j = exp(ln_sf2 + sum_lnell - sum(log(tau_j)));
                 delta_j = bsxfun(@rdivide,bsxfun(@minus, mu(:,j), gp.X'), tau_j);
@@ -197,15 +196,15 @@ for s = 1:Ns
                     J_jk = nf_jk*exp(-0.5*sum(delta_jk.^2,1)) ...
                      + z_k*(L*z_j');                    
                 end
-
-                varF(s) = varF(s) + w(j)*w(k)*max(0,J_jk);            
+                
+                % Off-diagonal elements are symmetric (count twice)
+                varF(s) = varF(s) + (2-(j==k))*w(j)*w(k)*J_jk;            
             end
             
-        end        
+        end
         
     end
     
-
 end
 
 if any(grad_flags)
