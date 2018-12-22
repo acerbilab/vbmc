@@ -204,6 +204,7 @@ defopts.MinFunEvals        = '5*nvars           % Min number of fcn evals';
 defopts.MinIter            = 'nvars             % Min number of iterations';
 defopts.HeavyTailSearchFrac = '0.25               % Fraction of search points from heavy-tailed variational posterior';
 defopts.MVNSearchFrac      = '0.25              % Fraction of search points from multivariate normal';
+defopts.SearchCacheFrac    = '0                % Fraction of search points from previous iterations';
 defopts.AlwaysRefitVarPost = 'no                % Always fully refit variational posterior';
 defopts.Warmup             = 'on                % Perform warm-up stage';
 defopts.StopWarmupThresh   = '1                 % Stop warm-up when increase in ELBO is confidently below threshold';

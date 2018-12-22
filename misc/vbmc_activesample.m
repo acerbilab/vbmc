@@ -53,8 +53,14 @@ else                    % Active uncertainty sampling
         for iAcqFast = 1:numel(SearchAcqFcn)
             acq_fast = [acq_fast,SearchAcqFcn{iAcqFast}(Xsearch,vp,gp,optimState,Nacq,0)];
         end
-        % acq_fast = vbmc_fastacq(Xsearch,vp,vp_old,gp,G,vardiagG,acqfast_flags,0);
-        [~,idx] = min(acq_fast);
+        if options.SearchCacheFrac > 0
+            [~,ord] = sort(acq_fast,'ascend');
+            optimState.SearchCache = Xsearch(ord,:);
+            idx = ord(1);
+        else
+            [~,idx] = min(acq_fast);
+        end
+        % idx/numel(acq_fast)
         Xacq = Xsearch(idx,:);
         [Xacq,idx_unique] = unique(Xacq,'rows');   % Remove duplicates
         idx_cache_acq = idx_cache(idx(idx_unique));
@@ -239,15 +245,25 @@ if size(Xsearch,1) < NSsearch
         Xrnd = vbmc_gpsample(gp,round(Nrnd/Ns),vp,optimState,0);
         toc
         Xrnd = Xrnd(Thin:Thin:end,:);
-    else
+    else        
         Xrnd = [];
+        Nsearchcache = round(options.SearchCacheFrac*Nrnd);
+        if Nsearchcache > 0 % Take points from search cache
+            Xrnd = [Xrnd; optimState.SearchCache(1:min(end,Nsearchcache),:)];
+        end
         Nheavy = round(options.HeavyTailSearchFrac*Nrnd);
-        Xrnd = [Xrnd; vbmc_rnd(vp,Nheavy,0,1,3)];
-        [mubar,Sigmabar] = vbmc_moments(vp,0);
+        if Nheavy > 0
+            Xrnd = [Xrnd; vbmc_rnd(vp,Nheavy,0,1,3)];
+        end
         Nmvn = round(options.MVNSearchFrac*Nrnd);
-        Xrnd = [Xrnd; mvnrnd(mubar,Sigmabar,Nmvn)];
-        Nvp = max(0,Nrnd-Nheavy-Nmvn);
-        Xrnd = [Xrnd; vbmc_rnd(vp,Nvp,0,1)];
+        if Nmvn > 0
+            [mubar,Sigmabar] = vbmc_moments(vp,0);
+            Xrnd = [Xrnd; mvnrnd(mubar,Sigmabar,Nmvn)];
+        end
+        Nvp = max(0,Nrnd-Nsearchcache-Nheavy-Nmvn);
+        if Nvp > 0
+            Xrnd = [Xrnd; vbmc_rnd(vp,Nvp,0,1)];
+        end
     end
     Xsearch = [Xsearch; Xrnd];
     idx_cache = [idx_cache(:); zeros(Nrnd,1)];

@@ -172,6 +172,8 @@ optimState.TolGPVar = options.TolGPVar;
 % Copy maximum number of fcn. evaluations, used by some acquisition fcns.
 optimState.MaxFunEvals = options.MaxFunEvals;
 
+% Setup search cache
+optimState.SearchCache = [];
 
 % List of points at the end of each iteration
 optimState.iterList.u = [];
