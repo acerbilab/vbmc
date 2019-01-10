@@ -156,6 +156,7 @@ defopts.SkipActiveSamplingAfterWarmup   = 'yes  % Skip active sampling the first
 defopts.TolStableEntropyIters   = '6            % Required stable iterations to switch entropy approximation';
 defopts.UncertaintyHandling     = 'no           % Explicit noise handling (only partially supported)';
 defopts.NoiseSize               = '[]           % Base observation noise magnitude';
+defopts.VariableMeans           = 'yes          % Use variable component means for variational posterior';
 defopts.VariableWeights         = 'yes          % Use variable mixture weight for variational posterior';
 defopts.WeightPenalty           = '0.1          % Penalty multiplier for small mixture weights';
 defopts.Diagnostics             = 'off          % Run in diagnostics mode, get additional info';
@@ -173,7 +174,7 @@ defopts.NSsearch           = '2^13              % Samples for fast acquisition f
 defopts.NSent              = '@(K) 100*K        % Total samples for Monte Carlo approx. of the entropy';
 defopts.NSentFast          = '@(K) 100*K        % Total samples for preliminary Monte Carlo approx. of the entropy';
 defopts.NSentFine          = '@(K) 2^15*K       % Total samples for refined Monte Carlo approx. of the entropy';
-defopts.NSelbo             = '50                % Samples per component for fast approx. of ELBO';
+defopts.NSelbo             = '@(K) 50*K         % Samples for fast approximation of the ELBO';
 defopts.NSelboIncr         = '0.1               % Multiplier to samples for fast approx. of ELBO for incremental iterations';
 defopts.ElboStarts         = '2                 % Starting points to refine optimization of the ELBO';
 defopts.NSgpMax            = '80                % Max GP hyperparameter samples (decreases with training points)';
@@ -230,16 +231,7 @@ defopts.TolWeight          = '1e-2              % Threshold mixture component we
 defopts.AnnealedGPMean     = '@(N,NMAX) 0       % Annealing for hyperprior width of GP negative quadratic mean';
 defopts.InitDesign         = 'plausible         % Initial samples ("plausible" is uniform in the plausible box)';
 
-% Portfolio allocation parameters (experimental feature)
-defopts.Portfolio          = 'off               % Portfolio allocation for acquisition function';
-defopts.HedgeGamma         = '0';
-defopts.HedgeBeta          = '0.1';
-defopts.HedgeDecay         = '0.5';
-defopts.HedgeMax           = 'log(10)';
-
 %% Advanced options for unsupported/untested features (do *not* modify)
-defopts.AcqFcn             = '@vbmc_acqskl       % Expensive acquisition fcn';
-defopts.Nacq               = '1                 % Expensive acquisition fcn evals per new point';
 defopts.WarpRotoScaling    = 'off               % Rotate and scale input';
 %defopts.WarpCovReg         = '@(N) 25/N         % Regularization weight towards diagonal covariance matrix for N training inputs';
 defopts.WarpCovReg         = '0                 % Regularization weight towards diagonal covariance matrix for N training inputs';
@@ -249,9 +241,9 @@ defopts.WarpMinFun         = '10 + 2*D          % Minimum training points before
 defopts.WarpNonlinearEpoch = '100               % Recalculate nonlinear warpings after this number of fcn evals';
 defopts.WarpNonlinearMinFun = '20 + 5*D         % Minimum training points before starting nonlinear warping';
 defopts.ELCBOWeight        = '0                 % Uncertainty weight during ELCBO optimization';
-defopts.SearchSampleGP     = 'false             % Generate search candidates sampling from GP surrogate';
 defopts.VarParamsBack      = '0                 % Check variational posteriors back to these previous iterations';
 defopts.AltMCEntropy       = 'no                % Use alternative Monte Carlo computation for the entropy';
+defopts.VarActiveSample    = 'no                % Variational active sampling';
 defopts.FeatureTest        = 'no                % Test a new experimental feature';
 
 
@@ -374,10 +366,8 @@ end
 if prnt > 2
     if optimState.Cache.active
         fprintf(' Iteration f-count/f-cache    Mean[ELBO]     Std[ELBO]     sKL-iter[q]   K[q]  Convergence    Action\n');
-        % fprintf(displayFormat,0,0,0,NaN,NaN,NaN,NaN,Inf,'');        
     else
         fprintf(' Iteration   f-count     Mean[ELBO]     Std[ELBO]     sKL-iter[q]   K[q]  Convergence  Action\n');
-        % fprintf(displayFormat,0,0,NaN,NaN,NaN,NaN,Inf,'');        
     end
 end
 
@@ -412,8 +402,13 @@ while ~isFinished_flag
     if optimState.SkipActiveSampling
         optimState.SkipActiveSampling = false;
     else
-        [optimState,t_active(iter),t_func(iter)] = ...
-            vbmc_activesample(optimState,new_funevals,funwrapper,vp,vp_old,gp,options,cmaes_opts);
+        if options.VarActiveSample
+            [optimState,vp,t_active(iter),t_func(iter)] = ...
+                vbmc_variationalactivesample(optimState,new_funevals,funwrapper,vp,vp_old,gp,options,cmaes_opts);            
+        else
+            [optimState,t_active(iter),t_func(iter)] = ...
+                vbmc_activesample(optimState,new_funevals,funwrapper,vp,vp_old,gp,options,cmaes_opts);
+        end
     end
     optimState.N = optimState.Xmax;  % Number of training inputs
     optimState.Neff = sum(optimState.X_flag(1:optimState.Xmax));
@@ -481,17 +476,26 @@ while ~isFinished_flag
     %% Optimize variational parameters
     t = tic;
     
-    % Update number of variational mixture components
-    Knew = updateK(optimState,stats,options);
-
+    if ~vp.optimize_mu  % Variational components fixed to training inputs
+        vp.mu = gp.X';
+        Knew = size(vp.mu,2);
+    else
+        % Update number of variational mixture components
+        Knew = updateK(optimState,stats,options);
+    end
+    
     % Decide number of fast/slow optimizations
+    if isa(options.NSelbo,'function_handle')
+        Nfastopts = ceil(options.NSelbo(K));
+    else
+        Nfastopts = ceil(options.NSelbo);
+    end
     if optimState.RecomputeVarPost || options.AlwaysRefitVarPost
-        Nfastopts = options.NSelbo * vp.K;
         Nslowopts = options.ElboStarts; % Full optimizations
         optimState.RecomputeVarPost = false;
     else
         % Only incremental change from previous iteration
-        Nfastopts = ceil(options.NSelbo * vp.K * options.NSelboIncr);
+        Nfastopts = ceil(Nfastopts * options.NSelboIncr);
         Nslowopts = 1;
     end
     
@@ -557,30 +561,11 @@ while ~isFinished_flag
     if optimState.Warmup && iter > 1    
         [optimState,action] = vbmc_warmup(optimState,stats,action,elbo,elbo_sd,options);
         if ~optimState.Warmup
+            vp.optimize_mu = logical(options.VariableMeans);
             vp.optimize_weights = logical(options.VariableWeights);
-        end        
+        end
     end
     
-    % Update portfolio values
-    if options.Portfolio && iter > 2
-        hedge = optimState.hedge;
-        er = zeros(1,hedge.n);
-        hedge.count = hedge.count + 1;
-        
-        RecentIters = ceil(options.TolStableIters/2);
-        hedge_beta = max(options.TolImprovement,mean(stats.elboSD(max(1,end-RecentIters+1):end)));
-
-        elcbo_old = stats.elbo(end) - options.ELCBOImproWeight*stats.elboSD(end);
-        elcbo = elbo - options.ELCBOImproWeight*elbo_sd;
-                
-        er(hedge.chosen) = min(hedge.max,max(0,(elcbo - elcbo_old)/hedge_beta)/hedge.p(hedge.chosen));        
-        hedge.g = hedge.decay*hedge.g + er;
-        
-        [hedge.chosen,hedge.g]
-        
-        optimState.hedge = hedge;
-    end
-
     % t_fits(iter) = toc(timer_fits);    
     % dt = (t_active(iter)+t_fits(iter))/new_funevals;
     

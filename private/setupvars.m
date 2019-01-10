@@ -50,9 +50,16 @@ vp.mu = bsxfun(@plus,x0start(1:K,:)',1e-6*randn(vp.D,K));
 vp.sigma = 1e-3*ones(1,K);
 vp.lambda = ones(vp.D,1);
 vp.trinfo = trinfo;
-vp.optimize_lambda = true;
-vp.optimize_weights = false;
 optimState.trinfo = vp.trinfo;
+vp.optimize_lambda = true;
+if options.Warmup
+    vp.optimize_mu = true;
+    vp.optimize_weights = false;
+else
+    vp.optimize_mu = logical(options.VariableMeans);
+    vp.optimize_weights = logical(options.VariableWeights);
+end
+
 
 % Import prior function evaluations
 % if ~isempty(options.FunValues)
@@ -185,16 +192,3 @@ optimState.iterList.fhyp = [];
 
 optimState.DefaultWarnings.singularMatrix = warning('query','MATLAB:singularMatrix');
 warning('off',optimState.DefaultWarnings.singularMatrix.identifier);
-
-%% Initialize portfolio allocation
-
-if options.Portfolio    
-    hedge.n = numel(options.SearchAcqFcn);
-    hedge.g = zeros(1,hedge.n);
-    hedge.count = 0;
-    hedge.gamma = options.HedgeGamma;
-    hedge.beta = options.HedgeBeta;
-    hedge.decay = options.HedgeDecay;
-    hedge.max = options.HedgeMax;
-    optimState.hedge = hedge;
-end

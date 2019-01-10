@@ -26,9 +26,14 @@ avg_flag = 1;       % Average over multiple GP hyperparameters if provided
 jacobian_flag = 1;  % Variational parameters are transformed
 
 % Reformat variational parameters from THETA
-vp.mu(:,:) = reshape(theta(1:D*K),[D,K]);
-vp.sigma(1,:) = exp(theta(D*K+(1:K)));
-if vp.optimize_lambda; vp.lambda(:,1) = exp(theta(D*K+K+(1:D))); end
+if vp.optimize_mu
+    vp.mu(:,:) = reshape(theta(1:D*K),[D,K]);
+    idx_start = D*K;
+else
+    idx_start = 0;
+end
+vp.sigma(1,:) = exp(theta(idx_start+(1:K)));
+if vp.optimize_lambda; vp.lambda(:,1) = exp(theta(idx_start+K+(1:D))); end
 if vp.optimize_weights
     vp.eta(1,:) = theta(end-K+1:end);
     vp.w(1,:) = exp(vp.eta);
@@ -36,7 +41,7 @@ if vp.optimize_weights
 end
 
 % Which gradients should be computed, if any?
-grad_flags = compute_grad*[1,1,vp.optimize_lambda,vp.optimize_weights];
+grad_flags = compute_grad*[vp.optimize_mu,1,vp.optimize_lambda,vp.optimize_weights];
 
 if compute_var
     if compute_grad
@@ -58,16 +63,7 @@ if Ns > 0   % Use Monte Carlo approximation
         [H,dH] = vbmc_entmcub(vp,Ns,grad_flags,jacobian_flag);        
     else
         [H,dH] = vbmc_entmc(vp,Ns,grad_flags,jacobian_flag);
-    end
-    
-%     if Ns > 1e3
-%         toc
-%         tic
-%         Halt = vbmc_entrbf(vp,[0 0 0],jacobian_flag);
-%         toc
-%         [H,Halt]
-%     end
-    
+    end    
 else
     % Deterministic approximation via lower bound on the entropy
     [H,dH] = vbmc_entlb(vp,grad_flags,jacobian_flag);

@@ -4,11 +4,18 @@ function [vp,elbo,elbo_sd,H,varss,pruned] = vpoptimize(Nfastopts,Nslowopts,vp,gp
 %% Set up optimization variables and options
 
 % Number of variational parameters
-Ntheta = vp.D*K + K;
+Ntheta = K;
+if vp.optimize_mu; Ntheta = Ntheta + vp.D*K; end
 if vp.optimize_lambda; Ntheta = Ntheta + vp.D; end
 if vp.optimize_weights; Ntheta = Ntheta + vp.K; end
 
-if isempty(Nfastopts); Nfastopts = options.NSelbo * K; end  % Number of initial starting points
+if isempty(Nfastopts) % Number of initial starting points
+    if isa(options.NSelbo,'function_handle')
+        Nfastopts = ceil(options.NSelbo(K));
+    else
+        Nfastopts = ceil(options.NSelbo);
+    end
+end
 if isempty(Nslowopts); Nslowopts = 1; end
 nelcbo_fill = zeros(Nfastopts,1);
 
@@ -112,7 +119,7 @@ end
 
 % Quickly estimate ELCBO at each candidate variational posterior
 for iOpt = 1:Nfastopts
-    [theta0,vp0_vec(iOpt)] = get_theta(vp0_vec(iOpt),vp.optimize_lambda,vp.optimize_weights);        
+    [theta0,vp0_vec(iOpt)] = get_theta(vp0_vec(iOpt),vp.optimize_mu,vp.optimize_lambda,vp.optimize_weights);        
     [nelbo_tmp,~,~,~,varF_tmp] = vbmc_negelcbo(theta0,0,vp0_vec(iOpt),gp,NSentKFast,0,compute_var,options.AltMCEntropy,thetabnd);
     nelcbo_fill(iOpt) = nelbo_tmp + elcbo_beta*sqrt(varF_tmp);
 end
@@ -140,7 +147,8 @@ for iOpt = 1:Nslowopts
     vp0 = rescale_params(vp0_vec(idx));
     vp0_type(idx) = []; vp0_vec(idx) = [];
 
-    theta0 = [vp0.mu(:); log(vp0.sigma(:))];
+    if vp.optimize_mu; theta0 = vp0.mu(:); else theta0 = []; end
+    theta0 = [theta0; log(vp0.sigma(:))];
     if vp.optimize_lambda; theta0 = [theta0; log(vp0.lambda(:))]; end
     if vp.optimize_weights; theta0 = [theta0; log(vp0.w(:))]; end
     % theta0 = min(vp.UB_theta',max(vp.LB_theta', theta0));
@@ -159,7 +167,7 @@ for iOpt = 1:Nslowopts
             if prnt > 0
                 fprintf('Cannot optimize variational parameters with FMINUNC. Trying with CMA-ES (slower).\n');
             end
-            insigma_mu = repmat(vp.bounds.mu_ub(:) - vp.bounds.mu_lb(:),[vp.K,1]);
+            if vp.optimize_mu; insigma_mu = repmat(vp.bounds.mu_ub(:) - vp.bounds.mu_lb(:),[vp.K,1]); else; insigma_mu = []; end
             insigma_sigma = ones(K,1);
             if vp.optimize_lambda; insigma_lambda = ones(vp.D,1); else; insigma_lambda = []; end
             if vp.optimize_weights; insigma_eta = ones(vp.K,1); else; insigma_eta = []; end
@@ -243,7 +251,7 @@ if vp.optimize_weights
         vp_pruned.sigma(idx) = [];
         vp_pruned.mu(:,idx) = [];
         vp_pruned.K = vp_pruned.K - 1;
-        [theta_pruned,vp_pruned] = get_theta(vp_pruned,vp_pruned.optimize_lambda,vp_pruned.optimize_weights);
+        [theta_pruned,vp_pruned] = get_theta(vp_pruned,vp_pruned.optimize_mu,vp_pruned.optimize_lambda,vp_pruned.optimize_weights);
         
         % Recompute ELCBO
         elbostats = eval_fullelcbo(1,theta_pruned,vp_pruned,gp,elbostats,elcbo_beta,options);        
@@ -321,11 +329,12 @@ end
 
 end
 
-function [theta,vp] = get_theta(vp,optimize_lambda,optimize_weights)
+function [theta,vp] = get_theta(vp,optimize_mu,optimize_lambda,optimize_weights)
 %GET_THETA Get vector of variational parameters from variational posterior.
 
 vp = rescale_params(vp);
-theta = [vp.mu(:); log(vp.sigma(:))];
+if optimize_mu; theta = vp.mu(:); else; theta = []; end
+theta = [theta; log(vp.sigma(:))];
 if optimize_lambda; theta = [theta; log(vp.lambda(:))]; end
 if optimize_weights; theta = [theta; log(vp.w(:))]; end
 

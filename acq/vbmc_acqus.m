@@ -1,9 +1,9 @@
-function acq = vbmc_acqus(Xs,vp,gp,optimState,Nacq,transpose_flag)
+function acq = vbmc_acqus(Xs,vp,gp,optimState,transpose_flag)
 %VBMC_ACQUS Acquisition function via vanilla uncertainty sampling.
 
 % Xs is in *transformed* coordinates
 
-if nargin < 6 || isempty(transpose_flag); transpose_flag = false; end
+if nargin < 5 || isempty(transpose_flag); transpose_flag = false; end
 
 % Transposed input (useful for CMAES)
 if transpose_flag; Xs = Xs'; end

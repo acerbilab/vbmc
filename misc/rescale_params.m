@@ -5,10 +5,15 @@ D = vp.D;
 
 if nargin > 1 && ~isempty(theta)
     K = vp.K;
-    vp.mu = reshape(theta(1:D*K),[D,K]);
-    vp.sigma = exp(theta(D*K+(1:K)));
+    if vp.optimize_mu
+        vp.mu = reshape(theta(1:D*K),[D,K]);
+        idx_start = D*K;
+    else
+        idx_start = 0;
+    end
+    vp.sigma = exp(theta(idx_start+(1:K)));
     if vp.optimize_lambda
-        vp.lambda = exp(theta(D*K+K+(1:D)))';
+        vp.lambda = exp(theta(idx_start+K+(1:D)))';
     end
     if vp.optimize_weights
         eta = theta(end-K+1:end);

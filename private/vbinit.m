@@ -18,19 +18,19 @@ add_jitter = true;
 
 type_vec = type*ones(Nopts,1);
 lambda0 = vp.lambda;
+mu0 = vp.mu;
 w0 = vp.w;
 
 switch type
     case 1      % Start from old variational parameters
-        mu0 = vp.mu;
         sigma0 = vp.sigma;
     case 2      % Start from highest-posterior density training points
         [~,ord] = sort(ystar,'descend');
-        mu0 = Xstar(ord(1:Knew),:)';
+        if vp.optimize_mu; mu0 = Xstar(ord(1:Knew),:)'; end
         if K > 1; V = var(mu0,[],2); else; V = var(Xstar)'; end
         sigma0 = sqrt(mean(V./lambda0.^2)/Knew).*exp(0.2*randn(1,Knew));
     case 3      % Start from random provided training points
-        mu0 = zeros(D,K);
+        if vp.optimize_mu; mu0 = zeros(D,K); end
         sigma0 = zeros(1,K);
 end
 
@@ -80,7 +80,11 @@ for iOpt = 1:Nopts
 
         case 3      % Start from random provided training points
             ord = randperm(Nstar);
-            mu = Xstar(ord(1:Knew),:)';
+            if vp.optimize_mu
+                mu = Xstar(ord(1:Knew),:)';
+            else
+                mu = mu0;
+            end
             if K > 1; V = var(mu,[],2); else; V = var(Xstar)'; end
 
             sigma = sqrt(mean(V)/Knew)*exp(0.2*randn(1,Knew));
@@ -98,7 +102,9 @@ for iOpt = 1:Nopts
     end
 
     if add_jitter
-        mu = mu + bsxfun(@times,sigma,bsxfun(@times,lambda,randn(size(mu))));
+        if vp.optimize_mu
+            mu = mu + bsxfun(@times,sigma,bsxfun(@times,lambda,randn(size(mu))));
+        end
         sigma = sigma.*exp(0.2*randn(1,Knew));
         if vp.optimize_lambda
             lambda = lambda.*exp(0.2*randn(D,1));
@@ -114,7 +120,11 @@ for iOpt = 1:Nopts
     else
         vp0_vec(iOpt).w = ones(1,Knew)/Knew;        
     end
-    vp0_vec(iOpt).mu = mu;
+    if vp.optimize_mu
+        vp0_vec(iOpt).mu = mu;
+    else
+        vp0_vec(iOpt).mu = mu0;        
+    end
     vp0_vec(iOpt).sigma = sigma;
     vp0_vec(iOpt).lambda = lambda;
 
