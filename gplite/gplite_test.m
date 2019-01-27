@@ -42,30 +42,30 @@ hprior.df = exp(randn(size(hyp0))).*(randi(2,size(hyp0))-1);
 f = @(x) gplite_hypprior(x,hprior);
 derivcheck(f,hyp0.*exp(0.1*rand(size(hyp0))));
 
-fprintf('---------------------------------------------------------------------------------\n');
-fprintf('Check GP training with warped data...\n\n');
-
-D = 1;
-s2 = 2;
-Xt = linspace(-3,3,51)';
-yt = -0.5*Xt.^2/s2;
-LB = 0; UB = 5;
-warp.LB = LB; warp.UB = UB;
-trinfo = warpvars(D,LB,UB);
-trinfo.type = 9;
-trinfo.alpha = 3;
-trinfo.beta = 0.1;
-X = warpvars(Xt,'inv',trinfo);
-y = yt - warpvars(Xt,'logp',trinfo);
-Ncov = D+1;
-Nmean = gplite_meanfun([],X,meanfun);
-Nhyp0 = Ncov+1+Nmean+2*D;
-
-warp.LB = LB; warp.UB = UB; warp.logpdf_flag = 1;
-hyp0 = zeros(Nhyp0,1);
-[gp,hyp] = gplite_train(hyp0,0,X,y,meanfun,[],warp);
-plot(Xt,yt); hold on;
-plot(X,y); plot(gp.X,gp.y);
+% fprintf('---------------------------------------------------------------------------------\n');
+% fprintf('Check GP training with warped data...\n\n');
+% 
+% D = 1;
+% s2 = 2;
+% Xt = linspace(-3,3,51)';
+% yt = -0.5*Xt.^2/s2;
+% LB = 0; UB = 5;
+% warp.LB = LB; warp.UB = UB;
+% trinfo = warpvars(D,LB,UB);
+% trinfo.type = 9;
+% trinfo.alpha = 3;
+% trinfo.beta = 0.1;
+% X = warpvars(Xt,'inv',trinfo);
+% y = yt - warpvars(Xt,'logp',trinfo);
+% Ncov = D+1;
+% Nmean = gplite_meanfun([],X,meanfun);
+% Nhyp0 = Ncov+1+Nmean+2*D;
+% 
+% warp.LB = LB; warp.UB = UB; warp.logpdf_flag = 1;
+% hyp0 = zeros(Nhyp0,1);
+% [gp,hyp] = gplite_train(hyp0,0,X,y,meanfun,[],warp);
+% plot(Xt,yt); hold on;
+% plot(X,y); plot(gp.X,gp.y);
 
 
 end
