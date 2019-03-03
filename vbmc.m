@@ -229,6 +229,7 @@ defopts.BestSafeSD         = '5                 % SD multiplier of ELCBO for com
 defopts.BestFracBack       = '0.25              % When computing best solution, lacking stability go back up to this fraction of iterations';
 defopts.TolWeight          = '1e-2              % Threshold mixture component weight for pruning';
 defopts.AnnealedGPMean     = '@(N,NMAX) 0       % Annealing for hyperprior width of GP negative quadratic mean';
+defopts.ConstrainedGPMean  = 'no                % Strict hyperprior for GP negative quadratic mean';
 defopts.InitDesign         = 'plausible         % Initial samples ("plausible" is uniform in the plausible box)';
 
 %% Advanced options for unsupported/untested features (do *not* modify)

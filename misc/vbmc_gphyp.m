@@ -92,6 +92,18 @@ switch meanfun
             hypprior.mu(Ncov+2+D+(1:D)) = log(hpd_range);
             hypprior.sigma(Ncov+2+D+(1:D)) = sigma_omega;
         end
+        
+        if options.ConstrainedGPMean
+            hypprior.mu(Ncov+2) = NaN;
+            hypprior.sigma(Ncov+2) = NaN;
+
+            hypprior.mu(Ncov+2+(1:D)) = 0.5*(optimState.PUB + optimState.PLB);
+            hypprior.sigma(Ncov+2+(1:D)) = 0.5*(optimState.PUB - optimState.PLB);
+            
+            hypprior.mu(Ncov+2+D+(1:D)) = log(0.5*(optimState.PUB - optimState.PLB));
+            hypprior.sigma(Ncov+2+D+(1:D)) = 0.05;            
+        end
+        
     case 6
         hypprior.mu(Ncov+2) = min(y) - std(y_hpd);
         hypprior.sigma(Ncov+2) = std(y_hpd);
