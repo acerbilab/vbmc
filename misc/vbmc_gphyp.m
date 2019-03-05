@@ -73,40 +73,52 @@ hypprior = [];
 hypprior.mu = NaN(1,Nhyp);
 hypprior.sigma = NaN(1,Nhyp);
 hypprior.df = 3*ones(1,Nhyp);    % Broad Student's t prior
-hypprior.mu(1:D) = log(std(X_hpd));
-hypprior.sigma(1:D) = max(2,log(hpd_range) - log(std(X_hpd)));
-%hypprior.mu(D+1) = log(std(y_hpd)) + 0.25*D*log(2*pi);
-%hypprior.sigma(D+1) = log(10);
+
+% Hyperprior over observation noise
 hypprior.mu(Ncov+1) = log(noisesize);
 hypprior.sigma(Ncov+1) = noisestd;
-switch meanfun
-    case 1
-        hypprior.mu(Ncov+2) = quantile1(y,0.25);
-        hypprior.sigma(Ncov+2) = 0.5*(max(y)-min(y));
-    case 4
-        hypprior.mu(Ncov+2) = max(y_hpd);
-        hypprior.sigma(Ncov+2) = max(y_hpd)-min(y_hpd);
-        
-        sigma_omega = options.AnnealedGPMean(neff,optimState.MaxFunEvals);
-        if sigma_omega > 0 && isfinite(sigma_omega)
-            hypprior.mu(Ncov+2+D+(1:D)) = log(hpd_range);
-            hypprior.sigma(Ncov+2+D+(1:D)) = sigma_omega;
-        end
-        
-        if options.ConstrainedGPMean
-            hypprior.mu(Ncov+2) = NaN;
-            hypprior.sigma(Ncov+2) = NaN;
 
-            hypprior.mu(Ncov+2+(1:D)) = 0.5*(optimState.PUB + optimState.PLB);
-            hypprior.sigma(Ncov+2+(1:D)) = 0.5*(optimState.PUB - optimState.PLB);
-            
-            hypprior.mu(Ncov+2+D+(1:D)) = log(0.5*(optimState.PUB - optimState.PLB));
-            hypprior.sigma(Ncov+2+D+(1:D)) = 0.01;            
-        end
-        
-    case 6
-        hypprior.mu(Ncov+2) = min(y) - std(y_hpd);
-        hypprior.sigma(Ncov+2) = std(y_hpd);
+% Empirical Bayes hyperprior on GP hyperparameters
+if options.EmpiricalGPPrior
+    hypprior.mu(1:D) = log(std(X_hpd));
+    hypprior.sigma(1:D) = max(2,log(hpd_range) - log(std(X_hpd)));
+    %hypprior.mu(D+1) = log(std(y_hpd)) + 0.25*D*log(2*pi);
+    %hypprior.sigma(D+1) = log(10);
+    switch meanfun
+        case 1
+            hypprior.mu(Ncov+2) = quantile1(y,0.25);
+            hypprior.sigma(Ncov+2) = 0.5*(max(y)-min(y));
+        case 4
+            hypprior.mu(Ncov+2) = max(y_hpd);
+            hypprior.sigma(Ncov+2) = max(y_hpd)-min(y_hpd);
+
+            sigma_omega = options.AnnealedGPMean(neff,optimState.MaxFunEvals);
+            if sigma_omega > 0 && isfinite(sigma_omega)
+                hypprior.mu(Ncov+2+D+(1:D)) = log(hpd_range);
+                hypprior.sigma(Ncov+2+D+(1:D)) = sigma_omega;
+            end
+
+            if options.ConstrainedGPMean
+                hypprior.mu(Ncov+2) = NaN;
+                hypprior.sigma(Ncov+2) = NaN;
+
+                hypprior.mu(Ncov+2+(1:D)) = 0.5*(optimState.PUB + optimState.PLB);
+                hypprior.sigma(Ncov+2+(1:D)) = 0.5*(optimState.PUB - optimState.PLB);
+
+                hypprior.mu(Ncov+2+D+(1:D)) = log(0.5*(optimState.PUB - optimState.PLB));
+                hypprior.sigma(Ncov+2+D+(1:D)) = 0.01;            
+            end                    
+
+        case 6
+            hypprior.mu(Ncov+2) = min(y) - std(y_hpd);
+            hypprior.sigma(Ncov+2) = std(y_hpd);
+    end
+    
+else
+    
+    hypprior.mu(1:D) = log(0.5*(optimState.PUB - optimState.PLB));
+    hypprior.sigma(1:D) = log(10);
+    
 end
 
 hypprior.LB = LB_gp;
