@@ -133,7 +133,7 @@ for s = 1:Ns
         end
 
         if grad_flags(3)
-            dz_dlambda = bsxfun(@times, (sigma(k)./tau_k).^2 .* (delta_k.^2 - 1), bsxfun(@times,lambda,z_k));
+            dz_dlambda = bsxfun(@times, bsxfun(@times, (sigma(k)./tau_k).^2, delta_k.^2 - 1), bsxfun(@times,lambda,z_k));
             lambda_grad(:,s) = lambda_grad(:,s) + w(k)*(dz_dlambda*alpha);
             if quadratic_meanfun
                 lambda_grad(:,s) = lambda_grad(:,s) - w(k)*sigma(k)^2./omega.^2.*lambda;
