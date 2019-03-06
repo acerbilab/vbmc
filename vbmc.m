@@ -152,10 +152,10 @@ end
 
 %% Advanced options (do not modify unless you *know* what you are doing)
 
-defopts.SkipActiveSamplingAfterWarmup   = 'yes  % Skip active sampling the first iteration after warmup';
-defopts.TolStableEntropyIters   = '6            % Required stable iterations to switch entropy approximation';
 defopts.UncertaintyHandling     = 'no           % Explicit noise handling (only partially supported)';
 defopts.NoiseSize               = '[]           % Base observation noise magnitude';
+defopts.SkipActiveSamplingAfterWarmup   = 'yes  % Skip active sampling the first iteration after warmup';
+defopts.TolStableEntropyIters   = '6            % Required stable iterations to switch entropy approximation';
 defopts.VariableMeans           = 'yes          % Use variable component means for variational posterior';
 defopts.VariableWeights         = 'yes          % Use variable mixture weight for variational posterior';
 defopts.WeightPenalty           = '0.1          % Penalty multiplier for small mixture weights';
@@ -444,7 +444,7 @@ while ~isFinished_flag
     
     % Fit GP to training set
     [gp,hyp,gpoutput] = gplite_train(hyp,Ns_gp,X_train,y_train, ...
-        optimState.gpMeanfun,hypprior,[],gptrain_options);
+        optimState.gpMeanfun,hypprior,gptrain_options);
     hyp_full = gpoutput.hyp_prethin; % Pre-thinning GP hyperparameters
     hyp_logp = gpoutput.logp;
     

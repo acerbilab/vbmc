@@ -11,7 +11,7 @@ hprior = [];        % Prior over hyperparameters
 options = [];       % Additional options
 
 % Train GP on data
-[gp,hyp,output] = gplite_train(hyp0,Ns,x,y,meanfun,hprior,[],options);
+[gp,hyp,output] = gplite_train(hyp0,Ns,x,y,meanfun,hprior,options);
 
 hyp             % Hyperparameter samples
 

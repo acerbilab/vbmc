@@ -158,7 +158,7 @@ for iOpt = 1:Nslowopts
     if NSentK == 0
         % Fast optimization via deterministic entropy approximation
         TolOpt = options.DetEntTolOpt;
-        vbtrain_options.OptimalityTolerance = TolOpt;
+        vbtrain_options.TolFun = TolOpt;
         vbtrain_fun = @(theta_) vbmc_negelcbo(theta_,elcbo_beta,vp0,gp,0,1,compute_var,0,thetabnd);
         try
             [thetaopt,~,~,output] = fminunc(vbtrain_fun,theta0(:)',vbtrain_options);
@@ -204,7 +204,7 @@ for iOpt = 1:Nslowopts
                     % [idx_mid,numel(fval_lst)]
                 end
 %             case 'fmincon'
-%                 vbtrain_options.OptimalityTolerance = options.TolFunStochastic;
+%                 vbtrain_options.TolFun = options.TolFunStochastic;
 %                 [thetaopt,~,~,output] = ...
 %                     fmincon(vbtrainmc_fun,thetaopt,[],[],[],[],vp.LB_theta,vp.UB_theta,[],vbtrain_options);
                 

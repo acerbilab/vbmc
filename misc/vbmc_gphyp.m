@@ -82,6 +82,7 @@ hypprior.sigma(Ncov+1) = noisestd;
 if options.EmpiricalGPPrior
     hypprior.mu(1:D) = log(std(X_hpd));
     hypprior.sigma(1:D) = max(2,log(hpd_range) - log(std(X_hpd)));
+    
     %hypprior.mu(D+1) = log(std(y_hpd)) + 0.25*D*log(2*pi);
     %hypprior.sigma(D+1) = log(10);
     switch meanfun

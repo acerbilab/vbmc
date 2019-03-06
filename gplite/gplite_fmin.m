@@ -24,7 +24,7 @@ if ~isfield(gp,'post') || isempty(gp.post)
     end
     options.Nopts = 1;  % Do only one optimization    
     gp = gplite_train(...
-        [],Ns_gp,gp.X,gp.y,gp.meanfun,[],[],options);
+        [],Ns_gp,gp.X,gp.y,gp.meanfun,[],options);
 end
 
 % Start from the min (or max) of the training data
