@@ -121,7 +121,7 @@ for s = 1:Ns
         end
         
         if grad_flags(2)
-            dz_dsigma = bsxfun(@times, sum((lambda./tau_k).^2 .* (delta_k.^2 - 1),1), sigma(k)*z_k); 
+            dz_dsigma = bsxfun(@times, sum(bsxfun(@times,(lambda./tau_k).^2, delta_k.^2 - 1),1), sigma(k)*z_k);
             sigma_grad(k,s) = w(k)*dz_dsigma*alpha;
             if quadratic_meanfun
                 sigma_grad(k,s) = sigma_grad(k,s) - w(k)*sigma(k)*sum(1./omega.^2.*lambda.^2,1);
