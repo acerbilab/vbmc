@@ -24,7 +24,6 @@ if optimState.WarmupStableIter >= options.TolStableWarmup
     D = numel(optimState.LB);
     NkeepMin = D+1; 
     idx_keep = (ymax - optimState.y_orig) < options.WarmupKeepThreshold;
-    sum(idx_keep)
     if sum(idx_keep) < NkeepMin
         y_temp = optimState.y_orig;
         y_temp(~isfinite(y_temp)) = -Inf;
