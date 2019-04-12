@@ -1,4 +1,4 @@
-# Variational Bayesian Monte Carlo (VBMC) - v0.91 (beta)
+# Variational Bayesian Monte Carlo (VBMC) - v0.92 (beta)
 
 **News:** 
 - On Nov 26, 2018, I gave an invited talk about VBMC at the [Oxford Robotics Research Group Seminars](http://www.robots.ox.ac.uk/~seminars/seminars/). Slides are available [here](https://github.com/lacerbi/infbench/raw/master/presentations/acerbi-oxford2018nov.pdf).
