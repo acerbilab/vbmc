@@ -6,8 +6,6 @@ iter = optimState.iter;
 elbo_old = stats.elbo(iter-1);
 elboSD_old = stats.elboSD(iter-1);
 
-% CI_95 = 1.6449; % Normal inverse cdf for 0.95
-% increaseUCB = elbo - elbo_old + CI_95*sqrt(elbo_sd^2 + elboSD_old^2);
 increaseUCB = (elbo - options.ELCBOImproWeight*elbo_sd) - ...
     (elbo_old - options.ELCBOImproWeight*elboSD_old);
 
@@ -24,10 +22,13 @@ if optimState.WarmupStableIter >= options.TolStableWarmup
     % Remove warm-up points from training set unless close to max
     ymax = max(optimState.y_orig(1:optimState.Xmax));
     D = numel(optimState.LB);
-    NkeepMin = 4*D; 
+    NkeepMin = D+1; 
     idx_keep = (ymax - optimState.y_orig) < options.WarmupKeepThreshold;
+    sum(idx_keep)
     if sum(idx_keep) < NkeepMin
-        [~,ord] = sort(optimState.y_orig,'descend');
+        y_temp = optimState.y_orig;
+        y_temp(~isfinite(y_temp)) = -Inf;
+        [~,ord] = sort(y_temp,'descend');
         idx_keep(ord(1:min(NkeepMin,optimState.Xmax))) = true;
     end
     optimState.X_flag = idx_keep & optimState.X_flag;

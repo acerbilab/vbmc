@@ -73,7 +73,7 @@ else                    % Active uncertainty sampling
         if isnan(y_orig)    % Function value is not available, evaluate
             try
                 [ynew,optimState] = vbmc_funlogger(funwrapper,xnew,optimState,'iter');
-            catch
+            catch func_error
                 pause
             end
         else
