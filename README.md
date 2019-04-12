@@ -1,4 +1,4 @@
-# Variational Bayesian Monte Carlo (VBMC) - v0.91 (beta)
+# Variational Bayesian Monte Carlo (VBMC) - v0.92 (beta)
 
 **News:** 
 - On Nov 26, 2018, I gave an invited talk about VBMC at the [Oxford Robotics Research Group Seminars](http://www.robots.ox.ac.uk/~seminars/seminars/). Slides are available [here](https://github.com/lacerbi/infbench/raw/master/presentations/acerbi-oxford2018nov.pdf).
@@ -103,7 +103,7 @@ However, before contacting me for this reason, please have a good look at the co
 
 ## Reference
 
-1. Acerbi, L. (2018). Variational Bayesian Monte Carlo. In *Advances in Neural Information Processing Systems 31*. pp. 8222-8232. ([arXiv preprint](https://arxiv.org/abs/1810.05558))
+1. Acerbi, L. (2018). Variational Bayesian Monte Carlo. In *Advances in Neural Information Processing Systems 31*. pp. 8222-8232. ([paper + supplement on arXiv](https://arxiv.org/abs/1810.05558), [NeurIPS Proceedings](https://papers.nips.cc/paper/8043-variational-bayesian-monte-carlo))
 
 You can cite VBMC in your work with something along the lines of
 
