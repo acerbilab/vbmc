@@ -116,8 +116,10 @@ if optimState.iter > 1
 
             hyp = stats.gpHypFull{optimState.iter-i};
             nhyp = size(hyp,2);
-            hyp_list = [hyp_list; hyp'];
-            w_list = [w_list; w*ones(nhyp,1)/nhyp];
+            if isempty(hyp_list) || size(hyp_list,2) == size(hyp,1)
+                hyp_list = [hyp_list; hyp'];
+                w_list = [w_list; w*ones(nhyp,1)/nhyp];
+            end
         end
         
         w_list = w_list / sum(w_list);                  % Normalize weights

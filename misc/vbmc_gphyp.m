@@ -1,21 +1,9 @@
 function [hypprior,X_hpd,y_hpd,Nhyp,hyp0,meanfun,Ns_gp] = vbmc_gphyp(optimState,meanfun,warpflag,options)
 %VBMC_GPHYP Define bounds, priors and samples for GP hyperparameters.
 
-%% High-posterior density dataset
-
-% Compute transformed training dataset
-X_orig = optimState.X_orig(optimState.X_flag,:);
-y_orig = optimState.y_orig(optimState.X_flag);
-[N,D] = size(X_orig);
-X = warpvars(X_orig,'d',optimState.trinfo);
-y = y_orig + warpvars(X,'logp',optimState.trinfo);
-
-% Subsample high posterior density dataset
-[~,ord] = sort(y,'descend');
-N_hpd = round(options.HPDFrac*N);
-X_hpd = X(ord(1:N_hpd),:);
-y_hpd = y(ord(1:N_hpd));
-hpd_range = max(X_hpd)-min(X_hpd);
+% Get high-posterior density dataset
+[X_hpd,y_hpd,hpd_range] = vbmc_gethpd(optimState,options);
+[N_hpd,D] = size(X_hpd);
 
 neff = optimState.Neff;
 
@@ -87,8 +75,8 @@ if options.EmpiricalGPPrior
     %hypprior.sigma(D+1) = log(10);
     switch meanfun
         case 1
-            hypprior.mu(Ncov+2) = quantile1(y,0.25);
-            hypprior.sigma(Ncov+2) = 0.5*(max(y)-min(y));
+            hypprior.mu(Ncov+2) = quantile(y_hpd,0.25);
+            hypprior.sigma(Ncov+2) = 0.5*(max(y_hpd)-min(y_hpd));
         case 4
             hypprior.mu(Ncov+2) = max(y_hpd);
             hypprior.sigma(Ncov+2) = max(y_hpd)-min(y_hpd);
@@ -146,10 +134,11 @@ if StopSampling == 0
     % Number of samples
     Ns_gp = round(options.NSgpMax/sqrt(optimState.N));
 
-    % Maximum sample cutoff during warm-up
+    % Maximum sample cutoff
     if optimState.Warmup
-        MaxWarmupGPSamples = ceil(options.NSgpMax/10);
-        Ns_gp = min(Ns_gp,MaxWarmupGPSamples);
+        Ns_gp = min(Ns_gp,options.NSgpMaxWarmup);
+    else
+        Ns_gp = min(Ns_gp,options.NSgpMaxMain);        
     end
 
     % Stop sampling after reaching max number of training points

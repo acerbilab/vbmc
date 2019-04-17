@@ -178,6 +178,9 @@ defopts.NSelbo             = '@(K) 50*K         % Samples for fast approximation
 defopts.NSelboIncr         = '0.1               % Multiplier to samples for fast approx. of ELBO for incremental iterations';
 defopts.ElboStarts         = '2                 % Starting points to refine optimization of the ELBO';
 defopts.NSgpMax            = '80                % Max GP hyperparameter samples (decreases with training points)';
+defopts.NSgpMaxWarmup      = '8                 % Max GP hyperparameter samples during warmup';
+defopts.NSgpMaxMain        = 'Inf               % Max GP hyperparameter samples during main algorithm';
+defopts.WarmupNoImproThreshold = 'Inf           % Fcn evals without improvement before stopping warmup';
 defopts.StableGPSampling   = '200 + 10*nvars    % Force stable GP hyperparameter sampling (reduce samples or start optimizing)';
 defopts.StableGPSamples    = '0                 % Number of GP samples when GP is stable (0 = optimize)';
 defopts.GPSampleThin       = '5                 % Thinning for GP hyperparameter sampling';
@@ -194,6 +197,7 @@ defopts.CacheSize          = '1e4               % Size of cache for storing fcn 
 defopts.CacheFrac          = '0.5               % Fraction of search points from starting cache (if nonempty)';
 defopts.StochasticOptimizer = 'adam             % Stochastic optimizer for varational parameters';
 defopts.TolFunStochastic   = '1e-3              % Stopping threshold for stochastic optimization';
+defopts.GPStochasticStepsize = 'off               % Set stochastic optimization stepsize via GP hyperparameters';
 defopts.TolSD              = '0.1               % Tolerance on ELBO uncertainty for stopping (iff variational posterior is stable)';
 defopts.TolsKL             = '0.01*sqrt(nvars)  % Stopping threshold on change of variational posterior per training point';
 defopts.TolStableWarmup    = '3                 % Number of stable iterations for stopping warmup';
@@ -205,12 +209,15 @@ defopts.MinFunEvals        = '5*nvars           % Min number of fcn evals';
 defopts.MinIter            = 'nvars             % Min number of iterations';
 defopts.HeavyTailSearchFrac = '0.25               % Fraction of search points from heavy-tailed variational posterior';
 defopts.MVNSearchFrac      = '0.25              % Fraction of search points from multivariate normal';
-defopts.SearchCacheFrac    = '0                % Fraction of search points from previous iterations';
+defopts.HPDSearchFrac      = '0                 % Fraction of search points from multivariate normal fitted to HPD points';
+defopts.SearchCacheFrac    = '0                 % Fraction of search points from previous iterations';
 defopts.AlwaysRefitVarPost = 'no                % Always fully refit variational posterior';
 defopts.Warmup             = 'on                % Perform warm-up stage';
+defopts.WarmupOptions      = '[]                % Special OPTIONS struct for warmup stage';
 defopts.StopWarmupThresh   = '1                 % Stop warm-up when increase in ELBO is confidently below threshold';
 defopts.WarmupKeepThreshold = '10*nvars         % Max log-likelihood difference for points kept after warmup';
 defopts.SearchCMAES        = 'on                % Use CMA-ES for search';
+defopts.SearchCMAESVPInit  = 'yes               % Initialize CMA-ES search SIGMA from variational posterior';
 defopts.MomentsRunWeight   = '0.9               % Weight of previous trials (per trial) for running avg of variational posterior moments';
 defopts.GPRetrainThreshold = '1                 % Upper threshold on reliability index for full retraining of GP hyperparameters';
 defopts.ELCBOmidpoint      = 'on                % Compute full ELCBO also at best midpoint';
@@ -232,6 +239,8 @@ defopts.AnnealedGPMean     = '@(N,NMAX) 0       % Annealing for hyperprior width
 defopts.ConstrainedGPMean  = 'no                % Strict hyperprior for GP negative quadratic mean';
 defopts.EmpiricalGPPrior   = 'yes               % Empirical Bayes prior over some GP hyperparameters';
 defopts.InitDesign         = 'plausible         % Initial samples ("plausible" is uniform in the plausible box)';
+defopts.BOWarmup           = 'no                % Bayesian-optimization-like warmup stage';
+
 
 %% Advanced options for unsupported/untested features (do *not* modify)
 defopts.WarpRotoScaling    = 'off               % Rotate and scale input';
@@ -333,6 +342,13 @@ if ischar(fun); fun = str2func(fun); end
 
 % Setup algorithm options
 [options,cmaes_opts] = setupoptions(D,defopts,options);
+if options.Warmup
+    options_main = options;
+    % Use special options during Warmup
+    if isfield(options,'WarmupOptions')
+        options = setupoptions(D,options,options.WarmupOptions);
+    end
+end
 
 % Setup and transform variables
 K = options.Kwarmup;
@@ -362,14 +378,20 @@ end
 
 if optimState.Cache.active
     displayFormat = ' %5.0f     %5.0f  /%5.0f   %12.2f  %12.2f  %12.2f     %4.0f %10.3g       %s\n';
+    displayFormat_warmup = ' %5.0f     %5.0f  /%5.0f   %s\n';
 else
     displayFormat = ' %5.0f       %5.0f    %12.2f  %12.2f  %12.2f     %4.0f %10.3g     %s\n';
+    displayFormat_warmup = ' %5.0f       %5.0f    %12.2f  %s\n';
 end
 if prnt > 2
     if optimState.Cache.active
         fprintf(' Iteration f-count/f-cache    Mean[ELBO]     Std[ELBO]     sKL-iter[q]   K[q]  Convergence    Action\n');
     else
-        fprintf(' Iteration   f-count     Mean[ELBO]     Std[ELBO]     sKL-iter[q]   K[q]  Convergence  Action\n');
+        if options.BOWarmup
+            fprintf(' Iteration   f-count     Max[f]     Action\n');
+        else
+            fprintf(' Iteration   f-count     Mean[ELBO]     Std[ELBO]     sKL-iter[q]   K[q]  Convergence  Action\n');            
+        end
     end
 end
 
@@ -377,6 +399,7 @@ end
 iter = 0;
 isFinished_flag = false;
 exitflag = 0;   output = [];    stats = [];     sKL = Inf;
+
 
 while ~isFinished_flag    
     iter = iter + 1;
@@ -428,8 +451,13 @@ while ~isFinished_flag
     t = tic;
         
     % Get priors, starting hyperparameters, and number of samples
-    [hypprior,X_hpd,y_hpd,~,hyp0,optimState.gpMeanfun,Ns_gp] = ...
-        vbmc_gphyp(optimState,optimState.gpMeanfun,0,options);
+    if optimState.Warmup && options.BOWarmup
+        [hypprior,X_hpd,y_hpd,~,hyp0,optimState.gpMeanfun,Ns_gp] = ...
+            vbmc_gphyp(optimState,'const',0,options);
+    else
+        [hypprior,X_hpd,y_hpd,~,hyp0,optimState.gpMeanfun,Ns_gp] = ...
+            vbmc_gphyp(optimState,optimState.gpMeanfun,0,options);
+    end
     if isempty(hyp); hyp = hyp0; end % Initial GP hyperparameters
     if Ns_gp == options.StableGPSamples && optimState.StopSampling == 0
         optimState.StopSampling = optimState.N; % Reached stable sampling
@@ -438,6 +466,7 @@ while ~isFinished_flag
     % Get GP training options
     gptrain_options = get_GPTrainOptions(Ns_gp,optimState,stats,options);    
     gptrain_options.LogP = hyp_logp;
+    if numel(gptrain_options.Widths) ~= numel(hyp0); gptrain_options.Widths = []; end
     
     % Get training dataset
     [X_train,y_train] = get_traindata(optimState,options);
@@ -502,8 +531,13 @@ while ~isFinished_flag
     end
     
     % Run optimization of variational parameters
-    [vp,elbo,elbo_sd,H,varss,pruned] = ...
-        vpoptimize(Nfastopts,Nslowopts,vp,gp,Knew,X_hpd,y_hpd,optimState,stats,options,cmaes_opts,prnt);
+    if optimState.Warmup && options.BOWarmup
+        elbo = NaN;     elbo_sd = NaN;      varss = NaN;
+        pruned = 0;     H = NaN;
+    else
+        [vp,elbo,elbo_sd,H,varss,pruned] = ...
+            vpoptimize(Nfastopts,Nslowopts,vp,gp,Knew,X_hpd,y_hpd,optimState,stats,options,cmaes_opts,prnt);
+    end
     optimState.vpK = vp.K;
     optimState.H = H;   % Save current entropy
     
@@ -558,15 +592,37 @@ while ~isFinished_flag
         optimState.LastRunAvg = optimState.N;
         % optimState.RunT = optimState.RunT + 1;
     end
-        
+            
     % Check if we are still warming-up
     if optimState.Warmup && iter > 1    
         [optimState,action] = vbmc_warmup(optimState,stats,action,elbo,elbo_sd,options);
         if ~optimState.Warmup
             vp.optimize_mu = logical(options.VariableMeans);
             vp.optimize_weights = logical(options.VariableWeights);
+            if options.BOWarmup
+                optimState.gpMeanfun = options.gpMeanFun;
+                hyp = [];
+            end
+            % Switch to main algorithm options
+            options = options_main;
         end
     end
+
+%     if optimState.Warmup && iter >= floor(D/2)+3
+%         % Remove warm-up points from training set unless close to max
+%         ymax = max(optimState.y_orig(1:optimState.Xmax));
+%         D = numel(optimState.LB);
+%         NkeepMin = 2*D;
+%         idx_keep = (ymax - optimState.y_orig) < options.WarmupKeepThreshold;
+%         if sum(idx_keep) < NkeepMin
+%             y_temp = optimState.y_orig;
+%             y_temp(~isfinite(y_temp)) = -Inf;
+%             [~,ord] = sort(y_temp,'descend');
+%             idx_keep(ord(1:min(NkeepMin,optimState.Xmax))) = true;
+%         end
+%         optimState.X_flag = idx_keep & optimState.X_flag;
+%         if isempty(action); action = 'trim'; else; action = [action ', trim']; end
+%     end
     
     % t_fits(iter) = toc(timer_fits);    
     % dt = (t_active(iter)+t_fits(iter))/new_funevals;
@@ -592,14 +648,22 @@ while ~isFinished_flag
     % Stopped GP sampling this iteration?
     if Ns_gp == options.StableGPSamples && ...
             stats.gpNsamples(max(1,iter-1)) > options.StableGPSamples
-        if isempty(action); action = 'stable GP sampling'; else; action = [action ', stable GP sampling']; end
+        if Ns_gp == 0
+            if isempty(action); action = 'switch to GP opt'; else; action = [action ', switch to GP opt']; end
+        else
+            if isempty(action); action = 'stable GP sampling'; else; action = [action ', stable GP sampling']; end
+        end
     end    
     
     if prnt > 2
-        if optimState.Cache.active
-            fprintf(displayFormat,iter,optimState.funccount,optimState.cachecount,elbo,elbo_sd,sKL,vp.K,optimState.R,action);
+        if options.BOWarmup && optimState.Warmup
+            fprintf(displayFormat_warmup,iter,optimState.funccount,max(optimState.y_orig),action);            
         else
-            fprintf(displayFormat,iter,optimState.funccount,elbo,elbo_sd,sKL,vp.K,optimState.R,action);
+            if optimState.Cache.active
+                fprintf(displayFormat,iter,optimState.funccount,optimState.cachecount,elbo,elbo_sd,sKL,vp.K,optimState.R,action);
+            else
+                fprintf(displayFormat,iter,optimState.funccount,elbo,elbo_sd,sKL,vp.K,optimState.R,action);
+            end
         end
     end
     

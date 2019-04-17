@@ -187,12 +187,51 @@ for iOpt = 1:Nslowopts
         
         switch lower(options.StochasticOptimizer)
             case 'adam'
-                if optimState.Warmup || ~vp.optimize_weights
-                    master_stepsize.max = 0.1;                    
-                else
-                    master_stepsize.max = 0.01;
-                end
+                
                 master_stepsize.min = 0.001;
+                if optimState.Warmup || ~vp.optimize_weights
+                    scaling_factor = 0.1;         
+                else
+                    scaling_factor = 0.01;
+                end                    
+                
+                if options.GPStochasticStepsize
+                    % Set Adam master stepsizes from GP hyperparameters
+                    ll_ker = zeros(vp.D,numel(gp.post)); % GP kernel length scale
+                    ll_mnf = zeros(vp.D,numel(gp.post)); % GP mean fcn length scale
+                    
+                    % Compute mean length scales from samples
+                    for iSample = 1:numel(gp.post)
+                        ll_ker(:,iSample) = exp(gp.post(iSample).hyp(1:vp.D));
+                        switch gp.meanfun
+                            case 1; ll_mnf(:,iSample) = Inf(vp.D,1);
+                            case 4; ll_mnf(:,iSample) = exp(gp.post(iSample).hyp(end-vp.D+1:end));
+                            case 6; ll_mnf(:,iSample) = exp(gp.post(iSample).hyp(end-vp.D:end-1));
+                        end
+                    end                    
+                    ll_ker = mean(ll_ker,2);   
+                    ll_mnf = mean(ll_mnf,2);
+                    % [ll_ker'; ll_mnf']
+                    
+                    % For each dim, take minimum length scale (bounded)
+                    ll = max(min(min(ll_ker,ll_mnf),0.1),0.001);
+                    
+                    % Compute stepsize for variational optimization
+                    ssize = [];
+                    if vp.optimize_mu; ssize = repmat(ll,[K,1]); end
+                    % ssize = [ssize; scaling_factor*ones(K,1)];
+                    ssize = [ssize; min(min(ll),scaling_factor)*ones(K,1)];
+                    if vp.optimize_lambda; ssize = [ssize; ll]; end
+                    % if vp.optimize_weights; ssize = [ssize; min(min(ll),scaling_factor)*ones(K,1)]; end
+                    if vp.optimize_weights; ssize = [ssize; scaling_factor*ones(K,1)]; end
+                    master_stepsize.max = ssize;
+                    master_stepsize.min = min(master_stepsize.max,master_stepsize.min);                    
+                else
+                    % Fixed master stepsize
+                    master_stepsize.max = scaling_factor;         
+                end
+                
+                master_stepsize.max = max(master_stepsize.min,master_stepsize.max);
                 master_stepsize.decay = 200;
                 [thetaopt,~,theta_lst,fval_lst] = ...
                     fminadam(vbtrainmc_fun,thetaopt,[],[],options.TolFunStochastic,[],master_stepsize);

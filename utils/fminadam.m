@@ -55,7 +55,7 @@ for iter = 1:MaxIter
     stepsize = master_stepsize.min + ...
         (master_stepsize.max - master_stepsize.min)*exp(-iter/master_stepsize.decay);
 
-    x = x - stepsize * mhat ./(sqrt(vhat) + fudge_factor); % update
+    x = x - stepsize .* mhat ./(sqrt(vhat) + fudge_factor); % update
     x = min(max(x,LB(:)),UB(:));
 
     % xtab(:,idx) = x;    % Store X

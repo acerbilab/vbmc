@@ -6,16 +6,32 @@ iter = optimState.iter;
 elbo_old = stats.elbo(iter-1);
 elboSD_old = stats.elboSD(iter-1);
 
-increaseUCB = (elbo - options.ELCBOImproWeight*elbo_sd) - ...
-    (elbo_old - options.ELCBOImproWeight*elboSD_old);
+if options.BOWarmup
+    % Bayesian optimization like warmup - criterion is improvement over max
+    y = optimState.y(optimState.X_flag);
+    idx_last = false(size(y));
+    idx_last(numel(y)-options.FunEvalsPerIter+1:numel(y)) = true;
+    improCriterion = max(y(idx_last)) - max(y(~idx_last));
+else
+    % Variational posterior like warmup - criterion is ELCBO
+    improCriterion = (elbo - options.ELCBOImproWeight*elbo_sd) - ...
+        (elbo_old - options.ELCBOImproWeight*elboSD_old);
+end
 
-if increaseUCB < options.StopWarmupThresh
+if improCriterion < options.StopWarmupThresh
     optimState.WarmupStableIter = optimState.WarmupStableIter + 1;
 else
     optimState.WarmupStableIter = 0;
-end        
+end
 
-if optimState.WarmupStableIter >= options.TolStableWarmup            
+% Additional criterion for stopping -- no improvement over max fcn value
+[~,pos] = max(optimState.y);
+currentpos = optimState.Xn;
+
+stopWarmup = optimState.WarmupStableIter >= options.TolStableWarmup || ...
+    (currentpos - pos) > options.WarmupNoImproThreshold;
+    
+if stopWarmup
     optimState.Warmup = false;
     if isempty(action); action = 'end warm-up'; else; action = [action ', end warm-up']; end
 
@@ -43,5 +59,5 @@ if optimState.WarmupStableIter >= options.TolStableWarmup
     optimState.RecomputeVarPost = true;
 
     % Reset GP hyperparameter covariance
-    optimState.RunHypCov = [];
+    optimState.RunHypCov = [];    
 end

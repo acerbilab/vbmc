@@ -42,7 +42,13 @@ else                    % Active uncertainty sampling
         
         % Additional search with CMA-ES
         if options.SearchCMAES
-            [~,Sigma] = vbmc_moments(vp,0); insigma = sqrt(diag(Sigma));
+            if options.SearchCMAESVPInit
+                [~,Sigma] = vbmc_moments(vp,0);       
+            else
+                X_hpd = vbmc_gethpd(optimState,options);
+                Sigma = cov(X_hpd,1);
+            end
+            insigma = sqrt(diag(Sigma));
             % cmaes_opts.PopSize = 16 + 3*vp.D;   % Large population size
             % cmaes_opts.DispModulo = Inf;
             fval_old = SearchAcqFcn{1}(Xacq(1,:),vp,gp,optimState,0);
@@ -83,7 +89,7 @@ else                    % Active uncertainty sampling
             optimState.Cache.y_orig(idx) = [];            
         end                
         t_func = t_func + toc(timer_func);
-        
+            
         gp = gplite_post(gp,xnew,ynew,[],1);   % Rank-1 update
     end
     
@@ -127,7 +133,14 @@ if size(Xsearch,1) < NSsearch
         [mubar,Sigmabar] = vbmc_moments(vp,0);
         Xrnd = [Xrnd; mvnrnd(mubar,Sigmabar,Nmvn)];
     end
-    Nvp = max(0,Nrnd-Nsearchcache-Nheavy-Nmvn);
+    Nhpd = round(options.HPDSearchFrac*Nrnd);
+    if Nhpd > 0
+        X_hpd = vbmc_gethpd(optimState,options);
+        mubar = mean(X_hpd,1);
+        Sigmabar = cov(X_hpd,1);
+        Xrnd = [Xrnd; mvnrnd(mubar,Sigmabar,Nhpd)];
+    end
+    Nvp = max(0,Nrnd-Nsearchcache-Nheavy-Nmvn-Nhpd);
     if Nvp > 0
         Xrnd = [Xrnd; vbmc_rnd(vp,Nvp,0,1)];
     end

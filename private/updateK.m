@@ -10,7 +10,7 @@ elseif isa(Kfun_max,'function_handle')
     Kmax = ceil(Kfun_max(Neff));
 end
 
-% Evalute bonus for stable solution
+% Evaluate bonus for stable solution
 if isa(options.AdaptiveK,'function_handle')
     Kbonus = round(options.AdaptiveK(optimState.vpK));
 else
@@ -44,7 +44,7 @@ if ~optimState.Warmup && optimState.iter > 1
             Knew = Knew + Kbonus;
         end
     end
-    Knew = min(Knew,Kmax);
+    Knew = max(optimState.vpK,min(Knew,Kmax));
 end
     
 end

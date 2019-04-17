@@ -59,7 +59,7 @@ else
     vp.optimize_mu = logical(options.VariableMeans);
     vp.optimize_weights = logical(options.VariableWeights);
 end
-
+vp.bounds = [];
 
 % Import prior function evaluations
 % if ~isempty(options.FunValues)
