@@ -181,6 +181,7 @@ defopts.NSgpMax            = '80                % Max GP hyperparameter samples 
 defopts.NSgpMaxWarmup      = '8                 % Max GP hyperparameter samples during warmup';
 defopts.NSgpMaxMain        = 'Inf               % Max GP hyperparameter samples during main algorithm';
 defopts.WarmupNoImproThreshold = 'Inf           % Fcn evals without improvement before stopping warmup';
+defopts.WarmupCheckMax     = 'no                % Also check for max fcn value improvement before stopping warmup';
 defopts.StableGPSampling   = '200 + 10*nvars    % Force stable GP hyperparameter sampling (reduce samples or start optimizing)';
 defopts.StableGPSamples    = '0                 % Number of GP samples when GP is stable (0 = optimize)';
 defopts.GPSampleThin       = '5                 % Thinning for GP hyperparameter sampling';

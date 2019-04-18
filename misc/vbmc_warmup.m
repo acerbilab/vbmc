@@ -6,11 +6,12 @@ iter = optimState.iter;
 elbo_old = stats.elbo(iter-1);
 elboSD_old = stats.elboSD(iter-1);
 
+% First requirement for stopping, no constant improvement of metric
 if options.BOWarmup
     % Bayesian optimization like warmup - criterion is improvement over max
     y = optimState.y(optimState.X_flag);
     idx_last = false(size(y));
-    idx_last(numel(y)-options.FunEvalsPerIter+1:numel(y)) = true;
+    idx_last(max(2,numel(y)-options.FunEvalsPerIter+1):numel(y)) = true;
     improCriterion = max(y(idx_last)) - max(y(~idx_last));
 else
     % Variational posterior like warmup - criterion is ELCBO
@@ -24,11 +25,23 @@ else
     optimState.WarmupStableIter = 0;
 end
 
-% Additional criterion for stopping -- no improvement over max fcn value
-[~,pos] = max(optimState.y);
+% Second requirement, also no substantial improvement of max fcn value 
+% in recent iters (unless already performing BO-like warmup)
+if ~options.BOWarmup && options.WarmupCheckMax
+    y = optimState.y(optimState.X_flag);
+    idx_last = false(size(y));
+    idx_last(max(2,numel(y)-options.FunEvalsPerIter*options.TolStableWarmup+1):numel(y)) = true;
+    improFcn = max(0,max(y(idx_last)) - max(y(~idx_last)))
+else
+    improFcn = 0;
+end
+
+% Alternative criterion for stopping -- no improvement over max fcn value
+[y_max,pos] = max(optimState.y);
 currentpos = optimState.Xn;
 
-stopWarmup = optimState.WarmupStableIter >= options.TolStableWarmup || ...
+stopWarmup = (optimState.WarmupStableIter >= options.TolStableWarmup && ...
+    improFcn < options.StopWarmupThresh) || ...
     (currentpos - pos) > options.WarmupNoImproThreshold;
     
 if stopWarmup
