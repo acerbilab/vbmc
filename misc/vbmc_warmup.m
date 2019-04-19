@@ -31,7 +31,7 @@ if ~options.BOWarmup && options.WarmupCheckMax
     y = optimState.y(optimState.X_flag);
     idx_last = false(size(y));
     idx_last(max(2,numel(y)-options.FunEvalsPerIter*options.TolStableWarmup+1):numel(y)) = true;
-    improFcn = max(0,max(y(idx_last)) - max(y(~idx_last)))
+    improFcn = max(0,max(y(idx_last)) - max(y(~idx_last)));
 else
     improFcn = 0;
 end
