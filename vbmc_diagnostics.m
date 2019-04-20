@@ -65,7 +65,7 @@ elcbo = elbo - beta_lcb*elbo_sd;
 
 % Pick best variational solution based on ELCBO
 elcbo_eff = elcbo;
-elcbo_eff(~idx_ok) = -Inf;
+elcbo_eff(~idx_active) = -Inf;
 [~,idx_best] = max(elcbo_eff);
 
 % Compute KL-divergence across all pairs of solutions

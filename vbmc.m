@@ -101,8 +101,8 @@ function [vp,elbo,elbo_sd,exitflag,output,optimState,stats] = vbmc(fun,x0,LB,UB,
 %   Also, check out the FAQ: https://github.com/lacerbi/vbmc/wiki
 %
 %   Reference: Acerbi, L. (2018). "Variational Bayesian Monte Carlo". 
-%   To appear in Advances in Neural Information Processing Systems 31. 
-%   arXiv preprint arXiv:1810.05558
+%   In Advances in Neural Information Processing Systems 31 (NeurIPS 2018), 
+%   pp. 8213-8223.
 %
 %   See also VBMC_EXAMPLES, VBMC_KLDIV, VBMC_MODE, VBMC_MOMENTS, VBMC_PDF, 
 %   VBMC_RND, VBMC_DIAGNOSTICS, @.
@@ -313,6 +313,7 @@ end
 
 % Initialize from variational posterior
 if vbmc_isavp(x0)
+    init_from_vp_flag = true;    
     vp0 = x0;
     if prnt > 2
         fprintf('Initializing VBMC from variational posterior (D = %d).\n', vp0.D);
@@ -325,21 +326,19 @@ if vbmc_isavp(x0)
         Xrnd = vbmc_rnd(vp0,1e6);
         PLB = quantile(Xrnd,0.1);
         PUB = quantile(Xrnd,0.9);
-    end
+    else
+        Xrnd = vbmc_rnd(vp0,1e3);
+    end    
     if isempty(LB); LB = vp0.trinfo.lb_orig; end
     if isempty(UB); UB = vp0.trinfo.ub_orig; end
     
-    clear vp0 xrnd;
+    clear vp0;
+else
+    init_from_vp_flag = false;    
 end
     
 D = size(x0,2);     % Number of variables
 optimState = [];
-
-% Check/fix boundaries and starting points
-[x0,LB,UB,PLB,PUB] = boundscheck(x0,LB,UB,PLB,PUB,prnt);
-
-% Convert from char to function handles
-if ischar(fun); fun = str2func(fun); end
 
 % Setup algorithm options
 [options,cmaes_opts] = setupoptions(D,defopts,options);
@@ -350,6 +349,17 @@ if options.Warmup
         options = setupoptions(D,options,options.WarmupOptions);
     end
 end
+
+if init_from_vp_flag    % Finish initialization from variational posterior
+    x0 = [x0; Xrnd(1:options.FunEvalStart-1,:)];
+    clear Xrnd;
+end
+
+% Check/fix boundaries and starting points
+[x0,LB,UB,PLB,PUB] = boundscheck(x0,LB,UB,PLB,PUB,prnt);
+
+% Convert from char to function handles
+if ischar(fun); fun = str2func(fun); end
 
 % Setup and transform variables
 K = options.Kwarmup;
