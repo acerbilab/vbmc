@@ -9,7 +9,7 @@ if nargin < 4 || isempty(thresh); thresh = [1,1]; end
 
 % Tolerance threshold on ELBO and SKL differences
 elbo_thresh = thresh(1);
-if numel(thresh) > 1; skl_thresh = thresh(2); else; skl_thresh = thresh(1); end
+if numel(thresh) > 1; sKL_thresh = thresh(2); else; sKL_thresh = thresh(1); end
 
 Nruns = numel(vps);
 exitflag = Inf;
@@ -95,14 +95,14 @@ fprintf('\n');
 if sum(idx_active) > 1
    elbo_ok = abs(elbo(idx_best) - elbo) < elbo_thresh;
    elbo_ok(idx_best) = false;
-   if sum(elbo_ok) < 0.5*(sum(idx_active)-1)
-       warning('Less than 50% of variational solutions are close to the best solution in terms of ELBO.');
+   if sum(elbo_ok) < (sum(idx_active)-1)/3
+       warning('Less than 33% of variational solutions are close to the best solution in terms of ELBO.');
        exitflag = min(exitflag,-1);
    end
-   sKL_ok = sKL_best < skl_thresh;
+   sKL_ok = sKL_best < sKL_thresh;
    sKL_ok(idx_best) = false;
-   if sum(sKL_ok) < 0.5*(sum(idx_active)-1)
-       warning('Less than 50% of variational solutions are close to the best solution in terms of symmetrized KL-divergence.');
+   if sum(sKL_ok) < (sum(idx_active)-1)/3
+       warning('Less than 33% of variational solutions are close to the best solution in terms of symmetrized KL-divergence.');
        exitflag = min(exitflag,-1);
    end
 end
@@ -116,7 +116,7 @@ if isinf(exitflag); exitflag = 1; end
 switch exitflag
     case 1; msg = 'Diagnostic test PASSED.';
     case 0; msg = 'Diagnostic test FAILED. Only one solution converged; cannot perform useful diagnostics.';
-    case -1; msg = 'Diagnostic test FAILED. Less than 50% of valid solutions are close to the best solution.';
+    case -1; msg = 'Diagnostic test FAILED. Less than 33% of valid solutions are close to the best solution.';
     case -2; msg = 'Diagnostic test FAILED. No solution has converged.';    
 end
 
@@ -124,9 +124,11 @@ fprintf('\n%s\n',msg);
 
 % Create diagnostics OUTPUT struct
 if nargout > 1
+    output.beta_lcb = beta_lcb;
+    output.elbo_thresh = elbo_thresh;
+    output.sKL_thresh = sKL_thresh;
     output.elbo = elbo;
     output.elbo_sd = elbo_sd;
-    output.beta_lcb = beta_lcb;
     output.elcbo = elcbo;
     output.idx_best = idx_best;
     output.sKL_best = sKL_best;
