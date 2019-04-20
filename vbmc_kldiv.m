@@ -15,7 +15,7 @@ function kls = vbmc_kldiv(vp1,vp2,Ns,gaussflag)
 %   posteriors given as inputs. Otherwise, the standard KL-divergence is 
 %   returned for GAUSSFLAG=0 (default).
 %
-%   See also VBMC, VBMC_PDF, VBMC_RND.
+%   See also VBMC, VBMC_PDF, VBMC_RND, VBMC_DIAGNOSTICS.
 
 if nargin < 3 || isempty(Ns); Ns = 1e5; end
 if nargin < 4 || isempty(gaussflag); gaussflag = false; end

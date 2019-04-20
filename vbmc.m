@@ -105,7 +105,7 @@ function [vp,elbo,elbo_sd,exitflag,output,optimState,stats] = vbmc(fun,x0,LB,UB,
 %   arXiv preprint arXiv:1810.05558
 %
 %   See also VBMC_EXAMPLES, VBMC_KLDIV, VBMC_MODE, VBMC_MOMENTS, VBMC_PDF, 
-%   VBMC_RND, @.
+%   VBMC_RND, VBMC_DIAGNOSTICS, @.
 
 %--------------------------------------------------------------------------
 % VBMC: Variational Bayesian Monte Carlo for posterior and model inference.
