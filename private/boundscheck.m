@@ -80,10 +80,13 @@ if any(any(bsxfun(@lt,x0,LB))) || any(any(bsxfun(@gt,x0,UB)))
 end
 
 % Compute "effective" bounds (slightly inside provided hard bounds)
-LB_eff = LB + 1e8*eps(double(LB));
-LB_eff(LB == 0) = 1e8*eps;
-UB_eff = UB - 1e8*eps(double(UB));
-UB_eff(UB == 0) = -1e8*eps;
+bounds_range = UB - LB;
+bounds_range(isinf(bounds_range)) = 1e3;
+scale_factor = 1e-3;
+LB_eff = LB + scale_factor*bounds_range;
+LB_eff(abs(LB) <= realmin) = scale_factor*bounds_range(abs(LB) <= realmin);
+UB_eff = UB - scale_factor*bounds_range;
+UB_eff(abs(UB) <= realmin) = -scale_factor*bounds_range(abs(UB) <= realmin);
 LB_eff(isinf(LB)) = LB(isinf(LB));  % Infinities stay the same
 UB_eff(isinf(UB)) = UB(isinf(UB));
 
