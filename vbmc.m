@@ -708,7 +708,7 @@ if exitflag < 1 && options.RetryMaxFunEvals > 0
     
     % Get better VBMC parameters and initialization from current run
     [x0,LB,UB,PLB,PUB,Xvp] = initFromVP(vp,LB,UB,PLB,PUB,0);
-    Ninit = max(options.FunEvalStart,ceil(options.MaxFunEvals/10));
+    Ninit = max(options.FunEvalStart,ceil(options.RetryMaxFunEvals/10));
     x0 = [x0; robustSampleFromVP(vp,Ninit-1,Xvp)];
     
     options.FunEvalStart = Ninit;
