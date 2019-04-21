@@ -134,6 +134,7 @@ defopts.Plot                    = 'off          % Plot marginals of variational 
 defopts.MaxIter                 = '50*nvars     % Max number of iterations';
 defopts.MaxFunEvals             = '100*nvars    % Max number of target fcn evaluations';
 defopts.TolStableIters          = '8            % Required stable iterations for termination';
+defopts.Retry                   = 'off          % Retry variational optimization if first attempt failed';
 
 %% If called with no arguments or with 'defaults', return default options
 if nargout <= 1 && (nargin == 0 || (nargin == 1 && ischar(fun) && strcmpi(fun,'defaults')))
@@ -154,6 +155,8 @@ end
 
 defopts.UncertaintyHandling     = 'no           % Explicit noise handling (only partially supported)';
 defopts.NoiseSize               = '[]           % Base observation noise magnitude';
+defopts.FunEvalStart       = 'max(D,10)         % Number of initial target fcn evals';
+defopts.FunEvalsPerIter    = '5                 % Number of target fcn evals per iteration';
 defopts.SkipActiveSamplingAfterWarmup   = 'yes  % Skip active sampling the first iteration after warmup';
 defopts.TolStableEntropyIters   = '6            % Required stable iterations to switch entropy approximation';
 defopts.VariableMeans           = 'yes          % Use variable component means for variational posterior';
@@ -167,8 +170,6 @@ defopts.OptimToolbox            = '[]           % Use Optimization Toolbox (if e
 defopts.ProposalFcn             = '[]           % Weighted proposal fcn for uncertainty search';
 defopts.UncertaintyHandling     = '[]           % Explicit noise handling (if empty, determine at runtime)';
 defopts.NonlinearScaling   = 'on                % Automatic nonlinear rescaling of variables';
-defopts.FunEvalStart       = 'max(D,10)         % Number of initial target fcn evals';
-defopts.FunEvalsPerIter    = '5                 % Number of target fcn evals per iteration';
 defopts.SearchAcqFcn       = '@vbmc_acqfreg     % Fast search acquisition fcn(s)';
 defopts.NSsearch           = '2^13              % Samples for fast acquisition fcn eval per new point';
 defopts.NSent              = '@(K) 100*K        % Total samples for Monte Carlo approx. of the entropy';
@@ -313,26 +314,9 @@ end
 
 % Initialize from variational posterior
 if vbmc_isavp(x0)
-    init_from_vp_flag = true;    
+    init_from_vp_flag = true;
     vp0 = x0;
-    if prnt > 2
-        fprintf('Initializing VBMC from variational posterior (D = %d).\n', vp0.D);
-        if ~isempty(PLB) && ~isempty(PUB)
-            fprintf('Using provided plausible bounds. Note that it might be better to leave them empty,\nand allow VBMC to set them using the provided variational posterior.\n');
-        end
-    end
-    x0 = vbmc_mode(vp0);
-    if isempty(PLB) && isempty(PUB)
-        Xrnd = vbmc_rnd(vp0,1e6);
-        PLB = quantile(Xrnd,0.1);
-        PUB = quantile(Xrnd,0.9);
-    else
-        Xrnd = vbmc_rnd(vp0,1e3);
-    end    
-    if isempty(LB); LB = vp0.trinfo.lb_orig; end
-    if isempty(UB); UB = vp0.trinfo.ub_orig; end
-    
-    clear vp0;
+    [x0,LB,UB,PLB,PUB,Xvp] = initFromVP(vp0,LB,UB,PLB,PUB,prnt);
 else
     init_from_vp_flag = false;    
 end
@@ -351,8 +335,8 @@ if options.Warmup
 end
 
 if init_from_vp_flag    % Finish initialization from variational posterior
-    x0 = [x0; Xrnd(1:options.FunEvalStart-1,:)];
-    clear Xrnd;
+    x0 = [x0; robustSampleFromVP(vp0,options.FunEvalStart-1,Xvp)];
+    clear Xvp vp0;
 end
 
 % Check/fix boundaries and starting points
@@ -716,6 +700,45 @@ if nargout > 6
     end
 end
 
+if exitflag < 1 && options.Retry
+    
+    if prnt > 0
+        fprintf('First attempt did not converge. Trying to rerun variational optimization.\n');
+    end    
+    
+    [x0,LB,UB,PLB,PUB,Xvp] = initFromVP(vp,LB,UB,PLB,PUB,0);
+    Ninit = options.FunEvalStart;
+    x0 = [x0; robustSampleFromVP(vp,Ninit-1,Xvp)];
+    options.Retry = 'off';  % Avoid infinite loop
+    
+    try
+        [vp,elbo,elbo_sd,exitflag,output2,optimState2,stats] = vbmc(fun,x0,LB,UB,PLB,PUB,options,varargin{:});
+        
+        if nargout > 4
+            optimState2.totaltime = toc(t0);
+            output2.overhead = optimState.totaltime / (optimState.totalfunevaltime + optimState2.totalfunevaltime) - 1;
+            output2.iterations = output2.iterations + output.iterations;
+            output2.funccount = output2.funccount + output.funccount;
+            output2.Retried = 'yes';
+            output = output2;
+            optimState = optimState2;
+        end        
+    catch retryException
+        msgText = getReport(retryException);
+        warning(msgText);
+        if prnt > 0
+            fprintf('Attempt of rerunning variational optimization FAILED. Keeping original results.\n');
+        end
+        if nargout > 4
+            output.Retried = 'error';
+        end
+    end
+    
+else
+    if nargout > 4; output.Retried = 'no'; end
+end
+
+
 
 end
 
@@ -772,6 +795,54 @@ if ~onPath
 end
 
 end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function [x0,LB,UB,PLB,PUB,Xvp] = initFromVP(vp,LB,UB,PLB,PUB,prnt)
+
+if prnt > 2
+    fprintf('Initializing VBMC from variational posterior (D = %d).\n', vp.D);
+    if ~isempty(PLB) && ~isempty(PUB)
+        fprintf('Using provided plausible bounds. Note that it might be better to leave them empty,\nand allow VBMC to set them using the provided variational posterior.\n');
+    end
+end
+
+% Find mode in transformed space
+x0t = vbmc_mode(vp,0);
+x0 = warpvars(x0t,'inv',vp.trinfo);
+
+% Sample from variational posterior and set plausible bounds accordingly
+if isempty(PLB) && isempty(PUB)
+    Xvp = vbmc_rnd(vp,1e6);
+    PLB = quantile(Xvp,0.05);
+    PUB = quantile(Xvp,0.95);
+else
+    Xvp = [];
+end    
+if isempty(LB); LB = vp.trinfo.lb_orig; end
+if isempty(UB); UB = vp.trinfo.ub_orig; end
+
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function Xrnd = robustSampleFromVP(vp,Ns,Xrnd,quantile_thresh)
+%ROBUSTSAMPLEFROMVP Robust sample from variational posterior.
+
+if nargin < 3; Xrnd = []; end
+if nargin < 4 || isempty(quantile_thresh); quantile_thresh = 0.01; end
+
+Ns_big = 1e4;
+Xrnd = [Xrnd; vbmc_rnd(vp,max(0,Ns_big-size(Xrnd,1)))];
+Xrnd = Xrnd(1:Ns_big,:);
+
+y = vbmc_pdf(vp,Xrnd);
+y_thresh = quantile(y,quantile_thresh);
+
+Xrnd = Xrnd(y > y_thresh,:);
+Xrnd = Xrnd(1:Ns,:);
+
+end
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % TO-DO list:

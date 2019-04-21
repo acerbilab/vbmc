@@ -300,7 +300,9 @@ pause;
 % automatically set based on VP.
 
 options.MaxFunEvals = 100*D;
-[vp,elbo,elbo_sd,exitflag,output] = vbmc(fun,vp,[],[],[],[],options);
+if exitflag ~= 1        % Retry fit if the previous one did not converge
+    [vp,elbo,elbo_sd,exitflag,output] = vbmc(fun,vp,[],[],[],[],options);
+end
 
 fprintf('  Thanks to a better initialization, this run converged quickly.\n');
 fprintf('  Press any key to continue.\n\n');
