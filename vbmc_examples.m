@@ -299,7 +299,7 @@ pause;
 % to specify the starting point or the hard and plausible bounds, which are 
 % automatically set based on VP.
 
-options.MaxFunEvals = 100*D;
+options.MaxFunEvals = 50*(D+2);
 if exitflag ~= 1        % Retry fit if the previous one did not converge
     [vp,elbo,elbo_sd,exitflag,output] = vbmc(fun,vp,[],[],[],[],options);
 end

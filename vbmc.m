@@ -132,9 +132,9 @@ t0 = tic;
 defopts.Display                 = 'iter         % Level of display ("iter", "notify", "final", or "off")';
 defopts.Plot                    = 'off          % Plot marginals of variational posterior at each iteration';
 defopts.MaxIter                 = '50*nvars     % Max number of iterations';
-defopts.MaxFunEvals             = '100*nvars    % Max number of target fcn evaluations';
+defopts.MaxFunEvals             = '50*(2+nvars) % Max number of target fcn evals';
 defopts.TolStableIters          = '8            % Required stable iterations for termination';
-defopts.Retry                   = 'off          % Retry variational optimization if first attempt failed';
+defopts.RetryMaxFunEvals        = '0            % Max number of target fcn evals on retry (0 = no retry)';
 
 %% If called with no arguments or with 'defaults', return default options
 if nargout <= 1 && (nargin == 0 || (nargin == 1 && ischar(fun) && strcmpi(fun,'defaults')))
@@ -700,16 +700,20 @@ if nargout > 6
     end
 end
 
-if exitflag < 1 && options.Retry
-    
+if exitflag < 1 && options.RetryMaxFunEvals > 0
+    % Rerun VBMC with better initialization if first try did not work    
     if prnt > 0
         fprintf('First attempt did not converge. Trying to rerun variational optimization.\n');
     end    
     
+    % Get better VBMC parameters and initialization from current run
     [x0,LB,UB,PLB,PUB,Xvp] = initFromVP(vp,LB,UB,PLB,PUB,0);
-    Ninit = options.FunEvalStart;
+    Ninit = max(options.FunEvalStart,ceil(options.MaxFunEvals/10));
     x0 = [x0; robustSampleFromVP(vp,Ninit-1,Xvp)];
-    options.Retry = 'off';  % Avoid infinite loop
+    
+    options.FunEvalStart = Ninit;
+    options.MaxFunEvals = options.RetryMaxFunEvals;
+    options.RetryMaxFunEvals = 0;   % Avoid infinite loop
     
     try
         [vp,elbo,elbo_sd,exitflag,output2,optimState2,stats] = vbmc(fun,x0,LB,UB,PLB,PUB,options,varargin{:});
