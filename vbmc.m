@@ -816,7 +816,7 @@ x0 = warpvars(x0t,'inv',vp.trinfo);
 
 % Sample from variational posterior and set plausible bounds accordingly
 if isempty(PLB) && isempty(PUB)
-    Xvp = vbmc_rnd(vp,1e6);
+    Xvp = vbmc_rnd(vp,1e6,[],1);
     PLB = quantile(Xvp,0.05);
     PUB = quantile(Xvp,0.95);
 else
@@ -835,7 +835,7 @@ if nargin < 3; Xrnd = []; end
 if nargin < 4 || isempty(quantile_thresh); quantile_thresh = 0.01; end
 
 Ns_big = 1e4;
-Xrnd = [Xrnd; vbmc_rnd(vp,max(0,Ns_big-size(Xrnd,1)))];
+Xrnd = [Xrnd; vbmc_rnd(vp,max(0,Ns_big-size(Xrnd,1)),[],1)];
 Xrnd = Xrnd(1:Ns_big,:);
 
 y = vbmc_pdf(vp,Xrnd);
@@ -850,6 +850,8 @@ end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % TO-DO list:
+% - Initialization with multiple (e.g., cell array of) variational posteriors.
+% - Quasi-random sampling from variational posterior (e.g., for initialization).
 % - Write a private quantile function to avoid calls to Stats Toolbox.
 % - Fix call to fmincon if Optimization Toolbox is not available.
 % - Check that I am not using other ToolBoxes by mistake.
