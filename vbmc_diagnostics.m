@@ -14,6 +14,9 @@ if numel(thresh) > 1; sKL_thresh = thresh(2); else; sKL_thresh = thresh(1); end
 Nruns = numel(vps);
 exitflag = Inf;
 
+% At least one third of solutions need to be close to the best
+TolClose = 1/3;
+
 if Nruns == 1 || numel(outputs) == 1
     error('vbmc_diagnostics:SingleInput', ...
             'In order to perform diagnostics, VPS and OUTPUTS need to be cell arrays resulting from multiple VBMC runs.');
@@ -53,7 +56,7 @@ fprintf('%d out of %d variational optimization runs have converged (%.1f%%).\n',
 if sum(idx_ok) == 0
     warning('No variational optimization run has converged, using potentially unstable solution.');
     idx_active = true(size(idx_ok));
-    exitflag = -2;
+    exitflag = -3;
     
 elseif sum(idx_ok) == 1
     warning('Only one variational optimization run has converged. You should perform more runs.');
@@ -92,19 +95,37 @@ for iRun = 1:Nruns
 end
 
 fprintf('\n');
-if sum(idx_active) > 1
-   elbo_ok = abs(elbo(idx_best) - elbo) < elbo_thresh;
-   elbo_ok(idx_best) = false;
-   if sum(elbo_ok) < (sum(idx_active)-1)/3
-       warning('Less than 33% of variational solutions are close to the best solution in terms of ELBO.');
+
+if Nruns > 1
+    % Check closeness of solutions in terms of ELBO
+    elbo_ok = abs(elbo(idx_best) - elbo) < elbo_thresh;
+    if sum(elbo_ok) > 1
+        fprintf('%d out of %d runs (%.1f%%) agree with the best ELBO (difference < %.2f).\n',...
+            sum(elbo_ok),Nruns,sum(elbo_ok)/Nruns*100,elbo_thresh);        
+    else
+        fprintf('Among %d runs, no agreement with the best ELBO (difference > %.2f).\n',...
+            Nruns,elbo_thresh);                
+    end
+    if sum(elbo_ok) < max(Nruns*TolClose,2)
+       warning('Not enough solutions agree with the best ELBO.');
+       exitflag = min(exitflag,-2);
+    end
+
+    % Check closeness of solutions in terms of symmetrized KL-divergence
+    sKL_ok = sKL_best < sKL_thresh;
+    if sum(sKL_ok) > 1
+        fprintf('%d out of %d runs (%.1f%%) agree with the best posterior (symmetrized KL-divergence < %.2f).\n',...
+            sum(sKL_ok),Nruns,sum(sKL_ok)/Nruns*100,sKL_thresh);
+    else
+        fprintf('Among %d runs, no agreement with the best posterior (symmetrized KL-divergence > %.2f).\n',...
+            Nruns,elbo_thresh);
+    end
+    if sum(sKL_ok) < max(Nruns*TolClose,2)
+       warning('Not enough solutions agree with the best posterior (symmetrized KL-divergence).');
        exitflag = min(exitflag,-1);
-   end
-   sKL_ok = sKL_best < sKL_thresh;
-   sKL_ok(idx_best) = false;
-   if sum(sKL_ok) < (sum(idx_active)-1)/3
-       warning('Less than 33% of variational solutions are close to the best solution in terms of symmetrized KL-divergence.');
-       exitflag = min(exitflag,-1);
-   end
+    end
+    
+    fprintf('\n');    
 end
 
 fprintf('Full KL-divergence matrix:');
@@ -116,8 +137,9 @@ if isinf(exitflag); exitflag = 1; end
 switch exitflag
     case 1; msg = 'Diagnostic test PASSED.';
     case 0; msg = 'Diagnostic test FAILED. Only one solution converged; cannot perform useful diagnostics.';
-    case -1; msg = 'Diagnostic test FAILED. Less than 33% of valid solutions are close to the best solution.';
-    case -2; msg = 'Diagnostic test FAILED. No solution has converged.';    
+    case -1; msg = 'Diagnostic test FAILED. Not enough solutions agree with the best posterior (symmetrized KL-divergence).';
+    case -2; msg = 'Diagnostic test FAILED. Not enough solutions agree with the best ELBO.';
+    case -3; msg = 'Diagnostic test FAILED. No solution has converged.';    
 end
 
 fprintf('\n%s\n',msg);
