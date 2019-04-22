@@ -1,6 +1,7 @@
 # Variational Bayesian Monte Carlo (VBMC) - v0.93 (beta)
 
 **News:** 
+- Apr/22/2019: Released a substantial update (v0.93), with a few stability fixes, added the options to automatically reattempt a failed variational optimization, and a new `vbmc_diagnostics` function to check convergence across multiple VBMC runs (see the updated [vbmc_examples.m](https://github.com/lacerbi/vbmc/blob/master/vbmc_examples.m) for an overview).
 - On Nov 26, 2018, I gave an invited talk about VBMC at the [Oxford Robotics Research Group Seminars](http://www.robots.ox.ac.uk/~seminars/seminars/). Slides are available [here](https://github.com/lacerbi/infbench/raw/master/presentations/acerbi-oxford2018nov.pdf).
 - A [workshop paper](http://approximateinference.org/2018/accepted/Acerbi2018.pdf) that empirically investigates some features of VBMC has been accepted for a poster presentation at the 1st [Symposium on Advances in Approximate Bayesian Inference (AABI)](http://approximateinference.org/).
 - The VBMC paper [[1](#reference)] has been accepted for a poster presentation at [NeurIPS 2018](https://neurips.cc/Conferences/2018/Schedule?showEvent=11786)! (20.8% acceptance rate this year, for a total of 4856 submissions) The poster is available [here](https://github.com/lacerbi/infbench/blob/master/presentations/Acerbi-NeurIPS18-poster.pdf).
