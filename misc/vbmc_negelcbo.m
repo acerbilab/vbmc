@@ -1,4 +1,4 @@
-function [F,dF,G,H,varF,dH,varGss] = vbmc_negelcbo(theta,beta,vp,gp,Ns,compute_grad,compute_var,altent_flag,thetabnd)
+function [F,dF,G,H,varF,dH,varGss,varG,varH] = vbmc_negelcbo(theta,beta,vp,gp,Ns,compute_grad,compute_var,altent_flag,thetabnd)
 %VBMC_NEGELCBO Negative evidence lower confidence bound objective
 %
 % Note that THETA is a vector of *transformed* variational parameters:

@@ -32,7 +32,7 @@ if ~isempty(idx_stable)
     elbo_list = stats.elbo;
 
     rindex_vec(1) = abs(elbo_list(iter) - elbo_list(iter-1))/options.TolSD;
-    rindex_vec(2) = stats.elboSD(iter) / options.TolSD;
+    rindex_vec(2) = stats.elbo_sd(iter) / options.TolSD;
     rindex_vec(3) = sKL_list(iter) / options.TolsKL;    % This should be fixed
 
     % Stop sampling after sample variance has stabilized below ToL
@@ -46,7 +46,7 @@ if ~isempty(idx_stable)
     % Compute average ELCBO improvement in the past few iterations
     idx0 = max(1,iter-TolStableIters+1);
     xx = stats.N(idx0:iter);
-    yy = stats.elbo(idx0:iter) - options.ELCBOImproWeight*stats.elboSD(idx0:iter);
+    yy = stats.elbo(idx0:iter) - options.ELCBOImproWeight*stats.elbo_sd(idx0:iter);
     p = polyfit(xx,yy,1);
     ELCBOimpro = p(1);
 

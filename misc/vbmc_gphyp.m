@@ -54,6 +54,7 @@ switch meanfun
     case 6
         hyp0(Ncov+2) = min(y);
         UB_gp(Ncov+2) = min(y_hpd);    % Lower maximum constant mean
+    case 8        
 end        
 
 % Set priors over hyperparameters (might want to double-check this)
@@ -101,6 +102,9 @@ if options.EmpiricalGPPrior
         case 6
             hypprior.mu(Ncov+2) = min(y) - std(y_hpd);
             hypprior.sigma(Ncov+2) = std(y_hpd);
+            
+        case 8
+            
     end
     
 else

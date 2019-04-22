@@ -17,7 +17,7 @@
 % Luigi Acerbi 2018
 
 fprintf('Running some examples usage for Variational Bayesian Monte Carlo (VBMC).\n');
-fprintf('Open ''vbmc_examples.m'' to read detailed comments and instructions.\n');
+fprintf('Open ''vbmc_examples.m'' in the editor to read detailed comments along the tutorial.\n');
 
 
 %% Example 1: Basic usage
@@ -288,7 +288,7 @@ fprintf('  In the OUTPUT struct:\n  - the ''convergencestatus'' field says ''%s'
 
 fprintf('  Our diagnostics tell that this run has not converged, suggesting to increase the budget.\n');
 fprintf('  Note that convergence to a solution does not mean that it is a *good* solution.\n');
-fprintf('  You should always check the returned variational posteriors (possibly with multiple runs of VBMC).\n\n');
+fprintf('  You should always check the returned variational posteriors (ideally with multiple runs of VBMC).\n\n');
 
 fprintf('  We can now rerun VBMC for longer and with a more informed initialization.\n');
 fprintf('  Press any key to continue.\n\n');
@@ -308,13 +308,26 @@ fprintf('  Thanks to a better initialization, this run converged quickly.\n');
 fprintf('  Press any key to continue.\n\n');
 pause;
 
-
 % Note that the fractional overhead of VBMC reported in OUTPUT is astronomical.
 % The reason is that the objective function we are using is analytical and 
 % extremely fast, which is not what VBMC is designed for. 
 % In a realistic scenario, the objective function will be moderately costly
 % (e.g., more than ~0.5 s per function evaluation), and the fractional 
 % overhead should of order 1 or less.
+
+fprintf('  Finally, note that you can tell VBMC to automatically retry a run which did not converge.\n');
+fprintf('  To do so, set the RetryMaxFunEvals options to a nonzero value (e.g., equal to MaxFunEvals).\n');
+fprintf('  Check this section in the vbmc_exmples.m file for more details.\n');
+
+% The following code snippet automatically reruns VBMC on the same problem
+% with a better initialization if the first run does not converge:
+%
+% options = vbmc('defaults');
+% options.RetryMaxFunEvals = options.MaxFunEvals;
+% [vp,elbo,elbo_sd,exitflag,output] = vbmc(fun,x0,LB,UB,PLB,PUB,options);
+
+fprintf('  Press any key to continue.\n\n');
+pause;
 
 
 %% Example 4: Multiple runs as validation
@@ -344,9 +357,9 @@ opt_options = [];               % Preliminary optimization options
 opt_options.MaxFunEvals = 50*D;
 opt_options.Display = 'final';
 
-Nruns = 3;      % Perform multiple runs (we suggest 2-4)
+Nruns = 3;      % Perform multiple runs (we suggest at least 3-4)
 
-fprintf('  For validation, we recommend to run VBMC multiple times (2-4) with different initializations.\n');
+fprintf('  For validation, we recommend to run VBMC multiple times (3-4) with different initializations.\n');
 
 vp = []; elbo = []; elbo_sd = []; exitflag = [];
 for iRun = 1:Nruns
@@ -388,19 +401,43 @@ end
 
 fprintf('  Note that the KL divergence is asymmetric, so we have an asymmetric matrix.\n');
 kl_mat
-fprintf('  We want all KL divergence matrix entries to be << 1.\n');
+fprintf('  Ideally, we want all KL divergence matrix entries to be << 1.\n');
 fprintf('  For a qualitative validation, we recommend to also visually inspect the variational posteriors.\n');
 
 fprintf('\n  We can also check that convergence was achieved in all runs (we want EXITFLAG = 1).\n');
 exitflag
-fprintf('  Finally, we pick the variational solution with highest ELCBO (lower confidence bound on the ELBO).\n');
+fprintf('  Finally, we can pick the variational solution with highest ELCBO (lower confidence bound on the ELBO).\n');
 
 beta_lcb = 3;       % Standard confidence parameter 
 % beta_lcb = 5;     % This is more conservative
 elcbo = elbo - beta_lcb*elbo_sd
-[~,best_idx] = max(elcbo);
-best_idx
+[~,idx_best] = max(elcbo);
+idx_best
+
+fprintf('  Press any key to continue.\n\n');
+pause;
+
+fprintf('  The function vbmc_diagnostics performs a battery of similar diagnostic checks\n  on a set of solutions returns by VBMC.\n');
+fprintf('  We run now vbmc_diagnostics on our previously obtained variational posteriors:\n\n');
+
+[exitflag,best,idx_best,stats] = vbmc_diagnostics(vp);
+
+fprintf('  Press any key to continue.\n\n');
+pause;
+
+fprintf('  In addition to the displayed information, vbmc_diagnostics returns an EXITFLAG representing\n');
+fprintf('  the outcome of the tests, a struct BEST with the "best" solution, its index IDX_BEST in the\n');
+fprintf('  solution array, and a struct of summary statistics STATS.\n');
+
+exitflag
+best
+idx_best
+stats
+
+fprintf('\n  Press any key to continue.\n\n');
+pause;
 
 fprintf('  This is all for this tutorial.\n');
+fprintf('  You can read more detailed comments by opening the file ''vbmc_examples.m'' in the editor.\n\n');
 fprintf('  Type ''help vbmc'' for additional documentation on VBMC, or consult the <a href="https://github.com/lacerbi/vbmc">Github page</a> or <a href="https://github.com/lacerbi/vbmc/wiki">online FAQ</a>.\n\n');
 

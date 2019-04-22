@@ -1,4 +1,4 @@
-function [vp,elbo,elbo_sd,H,varss,pruned] = vpoptimize(Nfastopts,Nslowopts,vp,gp,K,Xstar,ystar,optimState,stats,options,cmaes_opts,prnt)
+function [vp,elbo,elbo_sd,G,H,varG,varH,varss,pruned] = vpoptimize(Nfastopts,Nslowopts,vp,gp,K,Xstar,ystar,optimState,stats,options,cmaes_opts,prnt)
 %VPOPTIMIZE Optimize variational posterior.
 
 %% Set up optimization variables and options
@@ -188,11 +188,11 @@ for iOpt = 1:Nslowopts
         switch lower(options.StochasticOptimizer)
             case 'adam'
                 
-                master_stepsize.min = 0.001;
+                master_stepsize.min = min(options.SGDStepSize,0.001);
                 if optimState.Warmup || ~vp.optimize_weights
-                    scaling_factor = 0.1;         
+                    scaling_factor = min(0.1,options.SGDStepSize*10);
                 else
-                    scaling_factor = 0.01;
+                    scaling_factor = min(0.1,options.SGDStepSize);
                 end                    
                 
                 if options.GPStochasticStepsize
@@ -207,6 +207,10 @@ for iOpt = 1:Nslowopts
                             case 1; ll_mnf(:,iSample) = Inf(vp.D,1);
                             case 4; ll_mnf(:,iSample) = exp(gp.post(iSample).hyp(end-vp.D+1:end));
                             case 6; ll_mnf(:,iSample) = exp(gp.post(iSample).hyp(end-vp.D:end-1));
+                            case 8
+                                omega = exp(gp.post(iSample).hyp(end-3*vp.D:end-2*vp.D-1));
+                                omega_se = exp(gp.post(iSample).hyp(end-vp.D:end-1));
+                                ll_mnf(:,iSample) = min(omega,omega_se);
                         end
                     end                    
                     ll_ker = mean(ll_ker,2);   
@@ -267,8 +271,11 @@ end
 [~,idx] = min(elbostats.nelcbo);
 elbo = -elbostats.nelbo(idx);
 elbo_sd = sqrt(elbostats.varF(idx));
+G = elbostats.G(idx);
 H = elbostats.H(idx);
 varss = elbostats.varss(idx);
+varG = elbostats.varG(idx);
+varH = elbostats.varH(idx);
 vp = vp0_fine(idx);
 vp = rescale_params(vp,elbostats.theta(idx,:));
 
@@ -339,6 +346,8 @@ if nargin == 2
     elbostats.G = NaN(1,idx);
     elbostats.H = NaN(1,idx);
     elbostats.varF = NaN(1,idx);
+    elbostats.varG = NaN(1,idx);
+    elbostats.varH = NaN(1,idx);
     elbostats.varss = NaN(1,idx);
     elbostats.nelcbo = Inf(1,idx);
     elbostats.theta = NaN(idx,D);
@@ -353,7 +362,7 @@ else
     end
         
     theta = theta(:)';
-    [nelbo,~,G,H,varF,~,varss] = ...
+    [nelbo,~,G,H,varF,~,varss,varG,varH] = ...
         vbmc_negelcbo(theta,0,vp,gp,NSentFineK,0,1,options.AltMCEntropy,[]);
     nelcbo = nelbo + beta*sqrt(varF);
 
@@ -361,6 +370,8 @@ else
     elbostats.G(idx) = G;
     elbostats.H(idx) = H;
     elbostats.varF(idx) = varF;
+    elbostats.varG(idx) = varG;
+    elbostats.varH(idx) = varH;
     elbostats.varss(idx) = varss;
     elbostats.nelcbo(idx) = nelcbo;
     elbostats.theta(idx,1:numel(theta)) = theta;

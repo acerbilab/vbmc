@@ -60,6 +60,7 @@ else
     vp.optimize_weights = logical(options.VariableWeights);
 end
 vp.bounds = [];
+vp.stats = [];
 
 % Import prior function evaluations
 % if ~isempty(options.FunValues)

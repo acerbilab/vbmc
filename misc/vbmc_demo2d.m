@@ -78,9 +78,9 @@ for iPlot = 1:Npanels
     if elboflag
         iter = stats.iter;
         elbo = stats.elbo;
-        elbosd = stats.elboSD;
+        elbo_sd = stats.elbo_sd;
         beta = 1.96;
-        patch([iter,fliplr(iter)],[elbo + beta*elbosd, fliplr(elbo - beta*elbosd)],[1 0.8 0.8],'LineStyle','none'); hold on;
+        patch([iter,fliplr(iter)],[elbo + beta*elbo_sd, fliplr(elbo - beta*elbo_sd)],[1 0.8 0.8],'LineStyle','none'); hold on;
         hl(1) = plot(iter,elbo,'r','LineWidth',1); hold on;
         hl(2) = plot([iter(1),iter(end)],log(Z)*[1 1],'k','LineWidth',1);
         titlestr = 'Model evidence';

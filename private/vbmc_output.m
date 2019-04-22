@@ -24,6 +24,6 @@ output.algorithm = 'Variational Bayesian Monte Carlo';
 output.message = msg;
 
 output.elbo = elbo;
-output.elbosd = elbo_sd;
+output.elbo_sd = elbo_sd;
 
 end

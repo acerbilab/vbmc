@@ -26,7 +26,7 @@ if ~optimState.Warmup && optimState.iter > 1
     
     % Check if ELCBO has improved wrt recent iterations
     elbos = stats.elbo(max(1,end-RecentIters+1):end);
-    elboSDs = stats.elboSD(max(1,end-RecentIters+1):end);
+    elboSDs = stats.elbo_sd(max(1,end-RecentIters+1):end);
     elcbos = elbos - options.ELCBOImproWeight*elboSDs;
     warmups = stats.warmup(max(1,end-RecentIters+1):end);
     elcbo_max = max(elcbos(~warmups));

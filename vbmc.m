@@ -1,5 +1,5 @@
 function [vp,elbo,elbo_sd,exitflag,output,optimState,stats] = vbmc(fun,x0,LB,UB,PLB,PUB,options,varargin)
-%VBMC Posterior and model inference via Variational Bayesian Monte Carlo (v0.92)
+%VBMC Posterior and model inference via Variational Bayesian Monte Carlo (v0.93)
 %   VBMC computes a variational approximation of the full posterior and a 
 %   lower bound on the normalization constant (marginal likelhood or model
 %   evidence) for a provided unnormalized log posterior.
@@ -74,7 +74,8 @@ function [vp,elbo,elbo_sd,exitflag,output,optimState,stats] = vbmc(fun,x0,LB,UB,
 %         algorithm: <Variational Bayesian Monte Carlo>
 %           message: <VBMC termination message>
 %              elbo: <Estimated ELBO for returned solution>
-%            elbosd: <Estimated standard deviation of ELBO at returned solution>
+%           elbo_sd: <Estimated standard deviation of ELBO at returned solution>
+%           retried: <"yes", "no", or "failed" if a retry run was performed>
 %
 %   OPTIONS = VBMC('defaults') returns a basic default OPTIONS structure.
 %
@@ -115,7 +116,7 @@ function [vp,elbo,elbo_sd,exitflag,output,optimState,stats] = vbmc(fun,x0,LB,UB,
 %   Author (copyright): Luigi Acerbi, 2018
 %   e-mail: luigi.acerbi@{gmail.com,nyu.edu,unige.ch}
 %   URL: http://luigiacerbi.com
-%   Version: 0.92 (beta)
+%   Version: 0.93 (beta)
 %   Release date: Apr 12, 2019
 %   Code repository: https://github.com/lacerbi/vbmc
 %--------------------------------------------------------------------------
@@ -133,7 +134,7 @@ defopts.Display                 = 'iter         % Level of display ("iter", "not
 defopts.Plot                    = 'off          % Plot marginals of variational posterior at each iteration';
 defopts.MaxIter                 = '50*nvars     % Max number of iterations';
 defopts.MaxFunEvals             = '50*(2+nvars) % Max number of target fcn evals';
-defopts.TolStableIters          = '8            % Required stable iterations for termination';
+defopts.TolStableIters          = '10           % Required stable iterations for termination';
 defopts.RetryMaxFunEvals        = '0            % Max number of target fcn evals on retry (0 = no retry)';
 
 %% If called with no arguments or with 'defaults', return default options
@@ -155,8 +156,9 @@ end
 
 defopts.UncertaintyHandling     = 'no           % Explicit noise handling (only partially supported)';
 defopts.NoiseSize               = '[]           % Base observation noise magnitude';
-defopts.FunEvalStart       = 'max(D,10)         % Number of initial target fcn evals';
-defopts.FunEvalsPerIter    = '5                 % Number of target fcn evals per iteration';
+defopts.FunEvalStart            = 'max(D,10)    % Number of initial target fcn evals';
+defopts.FunEvalsPerIter         = '5            % Number of target fcn evals per iteration';
+defopts.SGDStepSize             = '0.01         % Base step size for stochastic gradient descent';
 defopts.SkipActiveSamplingAfterWarmup   = 'yes  % Skip active sampling the first iteration after warmup';
 defopts.TolStableEntropyIters   = '6            % Required stable iterations to switch entropy approximation';
 defopts.VariableMeans           = 'yes          % Use variable component means for variational posterior';
@@ -164,7 +166,7 @@ defopts.VariableWeights         = 'yes          % Use variable mixture weight fo
 defopts.WeightPenalty           = '0.1          % Penalty multiplier for small mixture weights';
 defopts.Diagnostics             = 'off          % Run in diagnostics mode, get additional info';
 defopts.OutputFcn               = '[]           % Output function';
-defopts.TolStableExceptions     = '1            % Allowed exceptions when computing iteration stability';
+defopts.TolStableExceptions     = '2            % Allowed exceptions when computing iteration stability';
 defopts.Fvals                   = '[]           % Evaluated fcn values at X0';
 defopts.OptimToolbox            = '[]           % Use Optimization Toolbox (if empty, determine at runtime)';
 defopts.ProposalFcn             = '[]           % Weighted proposal fcn for uncertainty search';
@@ -181,8 +183,8 @@ defopts.ElboStarts         = '2                 % Starting points to refine opti
 defopts.NSgpMax            = '80                % Max GP hyperparameter samples (decreases with training points)';
 defopts.NSgpMaxWarmup      = '8                 % Max GP hyperparameter samples during warmup';
 defopts.NSgpMaxMain        = 'Inf               % Max GP hyperparameter samples during main algorithm';
-defopts.WarmupNoImproThreshold = 'Inf           % Fcn evals without improvement before stopping warmup';
-defopts.WarmupCheckMax     = 'no                % Also check for max fcn value improvement before stopping warmup';
+defopts.WarmupNoImproThreshold = '20 + 5*nvars  % Fcn evals without improvement before stopping warmup';
+defopts.WarmupCheckMax     = 'yes               % Also check for max fcn value improvement before stopping warmup';
 defopts.StableGPSampling   = '200 + 10*nvars    % Force stable GP hyperparameter sampling (reduce samples or start optimizing)';
 defopts.StableGPSamples    = '0                 % Number of GP samples when GP is stable (0 = optimize)';
 defopts.GPSampleThin       = '5                 % Thinning for GP hyperparameter sampling';
@@ -365,7 +367,7 @@ end
 gp = [];    hyp = [];   hyp_warp = [];  hyp_logp = [];
 optimState.gpMeanfun = options.gpMeanFun;
 switch optimState.gpMeanfun
-    case {'zero','const','negquad','se'}
+    case {'zero','const','negquad','se','negquadse'}
     otherwise
         error('vbmc:UnknownGPmean', ...
             'Unknown/unsupported GP mean function. Supported mean functions are ''zero'', ''const'', ''negquad'', and ''se''.');
@@ -528,11 +530,20 @@ while ~isFinished_flag
     % Run optimization of variational parameters
     if optimState.Warmup && options.BOWarmup
         elbo = NaN;     elbo_sd = NaN;      varss = NaN;
-        pruned = 0;     H = NaN;
+        pruned = 0;     G = NaN;    H = NaN;    varG = NaN; VarH = NaN;
     else
-        [vp,elbo,elbo_sd,H,varss,pruned] = ...
+        [vp,elbo,elbo_sd,G,H,varG,varH,varss,pruned] =  ...
             vpoptimize(Nfastopts,Nslowopts,vp,gp,Knew,X_hpd,y_hpd,optimState,stats,options,cmaes_opts,prnt);
     end
+    % Save variational solution stats
+    vp.stats.elbo = elbo;               % ELBO
+    vp.stats.elbo_sd = elbo_sd;         % Error on the ELBO
+    vp.stats.elogjoint = G;             % Expected log joint
+    vp.stats.elogjoint_sd = sqrt(varG); % Error on expected log joint
+    vp.stats.entropy = H;               % Entropy
+    vp.stats.entropy_sd = sqrt(varH);   % Error on the entropy
+    vp.stats.stable = false;            % Unstable until proven otherwise
+    
     optimState.vpK = vp.K;
     optimState.H = H;   % Save current entropy
     
@@ -661,11 +672,7 @@ while ~isFinished_flag
             end
         end
     end
-    
-%     if optimState.iter > 10 && stats.elboSD(optimState.iter-1) < 0.1 && stats.elboSD(optimState.iter) > 10
-%         fprintf('\nmmmh\n');        
-%     end
-    
+        
 end
 
 % Pick "best" variational solution to return
@@ -713,7 +720,8 @@ if exitflag < 1 && options.RetryMaxFunEvals > 0
     
     options.FunEvalStart = Ninit;
     options.MaxFunEvals = options.RetryMaxFunEvals;
-    options.RetryMaxFunEvals = 0;   % Avoid infinite loop
+    options.RetryMaxFunEvals = 0;                   % Avoid infinite loop
+    options.SGDStepSize = 0.1*options.SGDStepSize;  % Increase stability
     
     try
         [vp,elbo,elbo_sd,exitflag,output2,optimState2,stats] = vbmc(fun,x0,LB,UB,PLB,PUB,options,varargin{:});
@@ -723,7 +731,7 @@ if exitflag < 1 && options.RetryMaxFunEvals > 0
             output2.overhead = optimState.totaltime / (optimState.totalfunevaltime + optimState2.totalfunevaltime) - 1;
             output2.iterations = output2.iterations + output.iterations;
             output2.funccount = output2.funccount + output.funccount;
-            output2.Retried = 'yes';
+            output2.retried = 'yes';
             output = output2;
             optimState = optimState2;
         end        
@@ -734,12 +742,12 @@ if exitflag < 1 && options.RetryMaxFunEvals > 0
             fprintf('Attempt of rerunning variational optimization FAILED. Keeping original results.\n');
         end
         if nargout > 4
-            output.Retried = 'error';
+            output.retried = 'error';
         end
     end
     
 else
-    if nargout > 4; output.Retried = 'no'; end
+    if nargout > 4; output.retried = 'no'; end
 end
 
 
@@ -760,7 +768,7 @@ stats.vpK(iter) = vp.K;
 stats.warmup(iter) = optimState.Warmup;
 stats.pruned(iter) = pruned;
 stats.elbo(iter) = elbo;
-stats.elboSD(iter) = elbo_sd;
+stats.elbo_sd(iter) = elbo_sd;
 stats.sKL(iter) = sKL;
 if ~isempty(sKL_true)
     stats.sKL_true = sKL_true;
@@ -851,6 +859,8 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % TO-DO list:
 % - Initialization with multiple (e.g., cell array of) variational posteriors.
+% - Combine multiple variational solutions?
+% - GP sampling at the very end?
 % - Quasi-random sampling from variational posterior (e.g., for initialization).
 % - Write a private quantile function to avoid calls to Stats Toolbox.
 % - Fix call to fmincon if Optimization Toolbox is not available.

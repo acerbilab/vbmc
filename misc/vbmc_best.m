@@ -25,7 +25,7 @@ else
         idx_start = laststable;
     end
     lnZ_iter = stats.elbo(idx_start:idx);
-    lnZsd_iter = stats.elboSD(idx_start:idx);        
+    lnZsd_iter = stats.elbo_sd(idx_start:idx);        
     elcbo = lnZ_iter - SafeSD*lnZsd_iter;
     [~,idx_best] = max(elcbo);
     idx_best = idx_start + idx_best - 1;
@@ -34,6 +34,7 @@ end
 % Return best variational posterior, its ELBO and SD
 vp = stats.vp(idx_best);
 elbo = stats.elbo(idx_best);
-elbo_sd = stats.elboSD(idx_best);
+elbo_sd = stats.elbo_sd(idx_best);
+vp.stats.stable = stats.stable(idx_best);
 
 end

@@ -1,54 +1,90 @@
-function [exitflag,output,best] = vbmc_diagnostics(vps,outputs,beta_lcb,thresh)
+function [exitflag,best,idx_best,stats] = vbmc_diagnostics(vp_array,beta_lcb,elbo_thresh,sKL_thresh)
 %VBMC_DIAGNOSTICS Convergence diagnostics between multiple VBMC runs.
-%   (Documentation to be written; work in progress.)
+%   EXITFLAG = VBMC_DIAGNOSTICS(VP_ARRAY) runs a series of diagnostic tests 
+%   on an array of variational posteriors. VP_ARRAY is a cell array or 
+%   struct array of variational posteriors obtained by separate runs of 
+%   VBMC on the same problem. EXITFLAG describes the result of the analysis.
+%   Possible values of EXITFLAG and the corresponding test results are
+%
+%    1  PASSED: All diagnostics tests passed.
+%    0  FAILED: Only one solution converged, cannot perform useful diagnostics.
+%   -1  FAILED: Not enough solutions agree with the best posterior (distance 
+%       measured in terms of symmetrized KL-divergence).
+%   -2  FAILED: Not enough solutions agree with the best ELBO.
+%   -3  FAILED: No solution has converged. No "best" solution.
+%
+%   A minimum of 2 separate runs of VBMC are required to perform diagnostic
+%   checks, and it is recommended to perform at least 3 or 4 runs.
+%
+%   [EXITFLAG,BEST] = VBMC_DIAGNOSTICS(...) returns a struct BEST that 
+%   contains the "best" solution, that is the solution with highest ELCBO 
+%   (lower confidence bound on the ELBO) among the solutions that have 
+%   converged. The fields of BEST are 'vp', which contains the variational 
+%   posterior, its associated ELBO ('elbo') and estimated error ('elbo_sd'). 
+%   You should be wary of using a solution which has not fully passed the 
+%   test diagnostics. BEST is returned empty if no solution has converged.
+%
+%   [EXITFLAG,BEST,IDX_BEST] = VBMC_DIAGNOSTICS(...) also returns the index
+%   within the array VP_ARRAY of the returned "best" solution. IDX_BEST
+%   is returned empty if no solution has converged.
+%
+%   [EXITFLAG,BEST,IDX_BEST,STATS] = VBMC_DIAGNOSTICS(...) returns a struct
+%   STATS with summary statistics of the diagnostic tests.
+%
+%   [...] = VBMC_DIAGNOSTICS(VP_ARRAY,BETA_LCB) uses lower confidence bound
+%   factor BETA_LCB to judge the best solution in terms of ELCBO (default
+%   BETA_LCB = 3).
+%
+%   [...] = VBMC_DIAGNOSTICS(VP_ARRAY,BETA_LCB,ELBO_THRESH) specifies the
+%   threshold on the ELBO difference to judge two variational solutions as 
+%   "close" (default ELBO_THRESH = 1).
+%
+%   [...] = VBMC_DIAGNOSTICS(VP_ARRAY,BETA_LCB,ELBO_THRESH,SKL_THRESH) 
+%   specifies the threshold on the symmetrized Kullback-Leibler divergence
+%   to judge two variational posteriors as "close" (default SKL_THRESH = 1).
 %
 %   See also VBMC, VBMC_EXAMPLES, VBMC_KLDIV.
 
 if nargin < 3 || isempty(beta_lcb); beta_lcb = 3; end
-if nargin < 4 || isempty(thresh); thresh = [1,1]; end
+if nargin < 4 || isempty(elbo_thresh); elbo_thresh = 1; end
+if nargin < 5 || isempty(sKL_thresh); sKL_thresh = 1; end
 
-% Tolerance threshold on ELBO and SKL differences
-elbo_thresh = thresh(1);
-if numel(thresh) > 1; sKL_thresh = thresh(2); else; sKL_thresh = thresh(1); end
-
-Nruns = numel(vps);
+Nruns = numel(vp_array);
 exitflag = Inf;
 
 % At least one third of solutions need to be close to the best
 TolClose = 1/3;
 
-if Nruns == 1 || numel(outputs) == 1
+if Nruns == 1
     error('vbmc_diagnostics:SingleInput', ...
-            'In order to perform diagnostics, VPS and OUTPUTS need to be cell arrays resulting from multiple VBMC runs.');
-end
-
-if numel(outputs) ~= Nruns
-    error('vbmc_diagnostics:InputMismatch', ...
-            'VPS and OUTPUTS should have the same number of runs.');    
+            'VP_ARRAY needs to be a cell or struct array of variational posteriors resulting from multiple VBMC runs.');
 end
     
 % Convert struct arrays to cell arrays
-if isstruct(vps)
-    for iRun = 1:numel(vps); temp{iRun} = vps(iRun); end
-    vps = temp;
+if isstruct(vp_array)
+    for iRun = 1:numel(vp_array); temp{iRun} = vp_array(iRun); end
+    vp_array = temp;
     clear temp;
 end
-if isstruct(outputs)
-    for iRun = 1:numel(outputs); temp{iRun} = outputs(iRun); end
-    outputs = temp;
-    clear temp;    
+
+D = vp_array{1}.D;
+rec_runs = max(2,ceil(log2(D)));
+
+if Nruns < rec_runs
+    % We give a warning but it does not affect diagnostic results
+    warning(['For a problem in D=' num2str(D) 'dimensions, it is recommended to perform at least ' num2str(rec_runs) ' VBMC runs.']);
 end
 
 % Get stats for each run
-elbo = NaN(1,Nruns);    elbo_sd = NaN(1,Nruns);     exitflags = NaN(1,Nruns);
+elbo = NaN(1,Nruns);    elbo_sd = NaN(1,Nruns);     stable_flag = false(1,Nruns);
 for iFit = 1:Nruns
-    elbo(iFit) = outputs{iFit}.elbo;
-    elbo_sd(iFit) = outputs{iFit}.elbosd;
-    exitflags(iFit) = strcmpi(outputs{iFit}.convergencestatus,'probable');
+    elbo(iFit) = vp_array{iFit}.stats.elbo;
+    elbo_sd(iFit) = vp_array{iFit}.stats.elbo_sd;
+    stable_flag(iFit) = vp_array{iFit}.stats.stable;
 end
 
 % Check which runs have converged
-idx_ok = (exitflags == 1);
+idx_ok = stable_flag;
 idx_active = idx_ok;
 
 fprintf('%d out of %d variational optimization runs have converged (%.1f%%).\n',sum(idx_ok),Nruns,sum(idx_ok)/Nruns*100);
@@ -75,7 +111,7 @@ elcbo_eff(~idx_active) = -Inf;
 kl_mat = zeros(Nruns,Nruns);
 for iRun = 1:Nruns
     for jRun = iRun+1:Nruns        
-        kl = vbmc_kldiv(vps{iRun},vps{jRun});
+        kl = vbmc_kldiv(vp_array{iRun},vp_array{jRun});
         kl_mat(iRun,jRun) = kl(1);
         kl_mat(jRun,iRun) = kl(2);        
     end
@@ -89,7 +125,7 @@ end
 
 fprintf('\n Run #     Mean[ELBO]    Std[ELBO]      ELCBO      Converged     sKL[best]\n');
 for iRun = 1:Nruns    
-    if exitflags(iRun) == 1; ctext = 'yes'; else ctext = 'no'; end
+    if stable_flag(iRun) == 1; ctext = 'yes'; else ctext = 'no'; end
     if idx_best == iRun; btext = 'best'; else btext = ''; end
     fprintf('%4d   %12.2f %12.2f %12.2f %12s %12.2f %8s\n',iRun,elbo(iRun),elbo_sd(iRun),elcbo(iRun),ctext,sKL_best(iRun),btext);
 end
@@ -144,28 +180,32 @@ end
 
 fprintf('\n%s\n',msg);
 
-% Create diagnostics OUTPUT struct
+% Return best solution, only if it has converged
 if nargout > 1
-    output.beta_lcb = beta_lcb;
-    output.elbo_thresh = elbo_thresh;
-    output.sKL_thresh = sKL_thresh;
-    output.elbo = elbo;
-    output.elbo_sd = elbo_sd;
-    output.elcbo = elcbo;
-    output.idx_best = idx_best;
-    output.sKL_best = sKL_best;
-    output.kl_mat = kl_mat;
-    output.exitflag = exitflag;
-    output.msg = msg;
+    if stable_flag(idx_best)
+        best.vp = vp_array{idx_best};    
+        best.elbo = elbo(idx_best);
+        best.elbo_sd = elbo_sd(idx_best);
+    else
+        best = [];
+        idx_best = [];
+    end
 end
 
-% Return best solution
-if nargout > 2
-    best.vp = vps{idx_best};    
-    best.elbo = elbo(idx_best);
-    best.elbo_sd = elbo_sd(idx_best);
-    best.exitflag = exitflags(idx_best);
-    best.output = outputs{idx_best};
+% Create diagnostics STATS struct
+if nargout > 3
+    stats.beta_lcb = beta_lcb;
+    stats.elbo_thresh = elbo_thresh;
+    stats.sKL_thresh = sKL_thresh;
+    stats.elbo = elbo;
+    stats.elbo_sd = elbo_sd;
+    stats.elcbo = elcbo;
+    stats.idx_best = idx_best;
+    stats.sKL_best = sKL_best;
+    stats.kl_mat = kl_mat;
+    stats.exitflag = exitflag;
+    stats.msg = msg;
 end
+
 
 end

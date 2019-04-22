@@ -4,7 +4,7 @@ function [optimState,action] = vbmc_warmup(optimState,stats,action,elbo,elbo_sd,
 iter = optimState.iter;
 
 elbo_old = stats.elbo(iter-1);
-elboSD_old = stats.elboSD(iter-1);
+elboSD_old = stats.elbo_sd(iter-1);
 
 % First requirement for stopping, no constant improvement of metric
 if options.BOWarmup
