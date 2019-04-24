@@ -1,24 +1,24 @@
-function [fval,optimState] = vbmc_funlogger(fun,x,optimState,state,varargin)
-%VBMC_FUNLOGGER Call objective function and do some bookkeeping.
-%   [~,OPTIMSTATE] = VBMC_FUNLOGGER(FUN,X,OPTIMSTATE,'init') starts logging
+function [fval,optimState] = funlogger_vbmc(fun,x,optimState,state,varargin)
+%FUNLOGGER_VBMC Call objective function and do some bookkeeping.
+%   [~,OPTIMSTATE] = FUNLOGGER_VBMC(FUN,X,OPTIMSTATE,'init') starts logging
 %   function FUN with starting point X and optimization struct OPTIMSTATE.
 %
-%   [~,OPTIMSTATE] = VBMC_FUNLOGGER(FUN,X,OPTIMSTATE,'init',NMAX) stores up 
+%   [~,OPTIMSTATE] = FUNLOGGER_VBMC(FUN,X,OPTIMSTATE,'init',NMAX) stores up 
 %   to NMAX function values (default NMAX=1e4).
 %
-%   [~,OPTIMSTATE] = VBMC_FUNLOGGER(FUN,X,OPTIMSTATE,'init',NMAX,1) also stores
+%   [~,OPTIMSTATE] = FUNLOGGER_VBMC(FUN,X,OPTIMSTATE,'init',NMAX,1) also stores
 %   heteroskedastic noise (second output argument) from the logged function.
 %
-%   [FVAL,OPTIMSTATE] = VBMC_FUNLOGGER(FUN,X,OPTIMSTATE,'iter') evaluates 
+%   [FVAL,OPTIMSTATE] = FUNLOGGER_VBMC(FUN,X,OPTIMSTATE,'iter') evaluates 
 %   function FUN at X with optimization struct OPTIMSTATE, returns function 
 %   value FVAL. FUN must take a vector input and return a scalar value and, 
 %   optionally, the (estimated) SD of the returned value (if heteroskedastic 
 %   noise handling is on).
 %
-%   [FVAL,OPTIMSTATE] = VBMC_FUNLOGGER(FUN,X,OPTIMSTATE,'single') as 'iter' 
+%   [FVAL,OPTIMSTATE] = FUNLOGGER_VBMC(FUN,X,OPTIMSTATE,'single') as 'iter' 
 %   but does not store function values in the cache.
 %
-%   [~,OPTIMSTATE] = VBMC_FUNLOGGER(FUN,X,OPTIMSTATE,'done') finalizes 
+%   [~,OPTIMSTATE] = FUNLOGGER_VBMC(FUN,X,OPTIMSTATE,'done') finalizes 
 %   stored function values.
 
 %   Luigi Acerbi 2018
@@ -111,22 +111,22 @@ switch lower(state)
             
             % Check returned function value
             if isscalar(fval_orig) && isreal(fval_orig) && fval_orig == -Inf
-                warning(['vbmc_funlogger:InfiniteFuncValue',...
+                warning(['funlogger_vbmc:InfiniteFuncValue',...
                     'The function returned -Inf as function value, which should not be allowed. Trying to continue, but results might be affected.'])
                 fval_orig = log(realmin);
             elseif ~isscalar(fval_orig) || ~isfinite(fval_orig) || ~isreal(fval_orig)
-                error(['vbmc_funlogger:InvalidFuncValue',...
+                error(['funlogger_vbmc:InvalidFuncValue',...
                     'The returned function value must be a finite real-valued scalar (returned value: ' mat2str(fval_orig) ').']);
             end
             
             % Check returned function SD
             if hescnoise && (~isscalar(fsd) || ~isfinite(fsd) || ~isreal(fsd) || fsd <= 0.0)
-                error(['vbmc_funlogger:InvalidNoiseValue',...
+                error(['funlogger_vbmc:InvalidNoiseValue',...
                     'The returned estimated SD (second function output) must be a finite, positive real-valued scalar (returned SD: ' mat2str(fsd) ').']);
             end            
             
         catch fun_error
-            warning(['vbmc_funlogger:FuncError',...
+            warning(['funlogger_vbmc:FuncError',...
                 'Error in executing the logged function ''' func2str(fun) ''' with input: ' mat2str(x)]);
             rethrow(fun_error);
         end
@@ -149,13 +149,13 @@ switch lower(state)
         
         % Check function value
         if ~isscalar(fval_orig) || ~isfinite(fval_orig) || ~isreal(fval_orig)
-            error(['vbmc_funlogger:InvalidFuncValue',...
+            error(['funlogger_vbmc:InvalidFuncValue',...
                 'The provided function value must be a finite real-valued scalar (provided value: ' mat2str(fval_orig) ').']);
         end
 
         % Check returned function SD
         if hescnoise && (~isscalar(fsd) || ~isfinite(fsd) || ~isreal(fsd) || fsd <= 0.0)
-            error(['vbmc_funlogger:InvalidNoiseValue',...
+            error(['funlogger_vbmc:InvalidNoiseValue',...
                 'The provided estimated SD (second function output) must be a finite, positive real-valued scalar (provided SD: ' mat2str(fsd) ').']);
         end
                     
@@ -184,7 +184,7 @@ switch lower(state)
         optimState = rmfield(optimState,'y');
         
     otherwise        
-        error('vbmc_funlogger:UnknownAction','Unknown FUNLOGGER action.');
+        error('funlogger_vbmc:UnknownAction','Unknown FUNLOGGER action.');
 end
 
 % Switch warnings off again

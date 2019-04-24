@@ -172,7 +172,7 @@ defopts.OptimToolbox            = '[]           % Use Optimization Toolbox (if e
 defopts.ProposalFcn             = '[]           % Weighted proposal fcn for uncertainty search';
 defopts.UncertaintyHandling     = '[]           % Explicit noise handling (if empty, determine at runtime)';
 defopts.NonlinearScaling   = 'on                % Automatic nonlinear rescaling of variables';
-defopts.SearchAcqFcn       = '@vbmc_acqfreg     % Fast search acquisition fcn(s)';
+defopts.SearchAcqFcn       = '@acqfreg_vbmc     % Fast search acquisition fcn(s)';
 defopts.NSsearch           = '2^13              % Samples for fast acquisition fcn eval per new point';
 defopts.NSent              = '@(K) 100*K        % Total samples for Monte Carlo approx. of the entropy';
 defopts.NSentFast          = '@(K) 100*K        % Total samples for preliminary Monte Carlo approx. of the entropy';
@@ -361,7 +361,7 @@ else
 end
 
 % Initialize function logger
-[~,optimState] = vbmc_funlogger([],x0(1,:),optimState,'init',options.CacheSize,options.NoiseObj);
+[~,optimState] = funlogger_vbmc([],x0(1,:),optimState,'init',options.CacheSize,options.NoiseObj);
 
 % GP struct and GP hyperparameters
 gp = [];    hyp = [];   hyp_warp = [];  hyp_logp = [];
@@ -426,10 +426,10 @@ while ~isFinished_flag
     else
         if options.VarActiveSample
             [optimState,vp,t_active(iter),t_func(iter)] = ...
-                vbmc_variationalactivesample(optimState,new_funevals,funwrapper,vp,vp_old,gp,options,cmaes_opts);            
+                variationalactivesample_vbmc(optimState,new_funevals,funwrapper,vp,vp_old,gp,options,cmaes_opts);            
         else
             [optimState,t_active(iter),t_func(iter)] = ...
-                vbmc_activesample(optimState,new_funevals,funwrapper,vp,vp_old,gp,options,cmaes_opts);
+                activesample_vbmc(optimState,new_funevals,funwrapper,vp,vp_old,gp,options,cmaes_opts);
         end
     end
     optimState.N = optimState.Xmax;  % Number of training inputs

@@ -1,5 +1,5 @@
-function [H,dH,gammasum] = vbmc_entlb(vp,grad_flags,jacobian_flag)
-%VBMC_ENTLB Entropy lower bound for variational posterior
+function [H,dH,gammasum] = entlb_vbmc(vp,grad_flags,jacobian_flag)
+%ENTLB_VBMC Entropy lower bound for variational posterior
 
 % Uses entropy lower bound of Gershman et al. (2012)
 

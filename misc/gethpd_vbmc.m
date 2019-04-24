@@ -1,5 +1,5 @@
-function [X_hpd,y_hpd,hpd_range] = vbmc_gethpd(optimState,options)
-%VBMC_GETHPD Get high-posterior density dataset.
+function [X_hpd,y_hpd,hpd_range] = gethpd_vbmc(optimState,options)
+%GETHPD_VBMC Get high-posterior density dataset.
 
 X = optimState.X(optimState.X_flag,:);
 y = optimState.y(optimState.X_flag);

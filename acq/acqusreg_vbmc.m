@@ -1,5 +1,5 @@
-function acq = vbmc_acqfreg(Xs,vp,gp,optimState,transpose_flag)
-%VBMC_ACQFREG Acquisition fcn. for prospective uncertainty search (regularized).
+function acq = acqusreg_vbmc(Xs,vp,gp,optimState,transpose_flag)
+%ACQUS_VBMC Acquisition fcn via vanilla uncertainty sampling (regularized).
 
 % Xs is in *transformed* coordinates
 
@@ -25,9 +25,7 @@ vbar = sum(fs2,2)/Ns;   % Average variance across samples
 if Ns > 1; vf = sum(bsxfun(@minus,fmu,fbar).^2,2)/(Ns-1); else; vf = 0; end  % Sample variance
 vtot = vf + vbar;       % Total variance
 
-z = optimState.ymax;
-
-acq = -vtot .* exp(fbar-z) .* p;
+acq = -vtot .* p.^2;
 
 % Regularization: penalize points where GP uncertainty is below threshold
 idx = vtot < TolVar;

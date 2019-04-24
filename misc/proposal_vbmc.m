@@ -1,5 +1,5 @@
-function y = vbmc_proposal(X,PLB,PUB,LB,UB)
-%VBMC_PROPOSAL Default proposal function.
+function y = proposal_vbmc(X,PLB,PUB,LB,UB)
+%PROPOSAL_VBMC Default proposal function.
 
 [N,D] = size(X);
 y = zeros(N,1);

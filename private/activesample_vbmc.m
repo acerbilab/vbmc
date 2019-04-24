@@ -1,6 +1,6 @@
 function [optimState,t_active,t_func] = ...
-    vbmc_activesample(optimState,Ns,funwrapper,vp,vp_old,gp,options,cmaes_opts)
-%VBMC_ACTIVESAMPLE Actively sample points iteratively based on acquisition function.
+    activesample_vbmc(optimState,Ns,funwrapper,vp,vp_old,gp,options,cmaes_opts)
+%ACTIVESAMPLE_VBMC Actively sample points iteratively based on acquisition function.
 
 NSsearch = options.NSsearch;    % Number of points for acquisition fcn
 t_func = 0;
@@ -11,7 +11,7 @@ if isempty(gp)
     
     % No GP yet, just use provided points or sample from plausible box
     [optimState,t_func] = ...
-        vbmc_initdesign(optimState,Ns,funwrapper,t_func,options);
+        initdesign_vbmc(optimState,Ns,funwrapper,t_func,options);
     
 else                    % Active uncertainty sampling
     
@@ -45,7 +45,7 @@ else                    % Active uncertainty sampling
             if options.SearchCMAESVPInit
                 [~,Sigma] = vbmc_moments(vp,0);       
             else
-                X_hpd = vbmc_gethpd(optimState,options);
+                X_hpd = gethpd_vbmc(optimState,options);
                 Sigma = cov(X_hpd,1);
             end
             insigma = sqrt(diag(Sigma));
@@ -78,12 +78,12 @@ else                    % Active uncertainty sampling
         timer_func = tic;
         if isnan(y_orig)    % Function value is not available, evaluate
             try
-                [ynew,optimState] = vbmc_funlogger(funwrapper,xnew,optimState,'iter');
+                [ynew,optimState] = funlogger_vbmc(funwrapper,xnew,optimState,'iter');
             catch func_error
                 pause
             end
         else
-            [ynew,optimState] = vbmc_funlogger(funwrapper,xnew,optimState,'add',y_orig);
+            [ynew,optimState] = funlogger_vbmc(funwrapper,xnew,optimState,'add',y_orig);
             % Remove point from starting cache
             optimState.Cache.X_orig(idx,:) = [];
             optimState.Cache.y_orig(idx) = [];            
@@ -135,7 +135,7 @@ if size(Xsearch,1) < NSsearch
     end
     Nhpd = round(options.HPDSearchFrac*Nrnd);
     if Nhpd > 0
-        X_hpd = vbmc_gethpd(optimState,options);
+        X_hpd = gethpd_vbmc(optimState,options);
         mubar = mean(X_hpd,1);
         Sigmabar = cov(X_hpd,1);
         Xrnd = [Xrnd; mvnrnd(mubar,Sigmabar,Nhpd)];

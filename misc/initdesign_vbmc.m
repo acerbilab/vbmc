@@ -1,5 +1,5 @@
-function [optimState,t_func] = vbmc_initdesign(optimState,Ns,funwrapper,t_func,options)
-%VBMC_INITDESIGN Initial sample design (provided or random box).
+function [optimState,t_func] = initdesign_vbmc(optimState,Ns,funwrapper,t_func,options)
+%INITDESIGN_VBMC Initial sample design (provided or random box).
 
 x0 = optimState.Cache.X_orig;
 [N0,D] = size(x0);
@@ -51,9 +51,9 @@ Xs = warpvars(Xs,'d',optimState.trinfo);
 for is = 1:Ns
     timer_func = tic;
     if isnan(ys(is))    % Function value is not available
-        [~,optimState] = vbmc_funlogger(funwrapper,Xs(is,:),optimState,'iter');
+        [~,optimState] = funlogger_vbmc(funwrapper,Xs(is,:),optimState,'iter');
     else
-        [~,optimState] = vbmc_funlogger(funwrapper,Xs(is,:),optimState,'add',ys(is));
+        [~,optimState] = funlogger_vbmc(funwrapper,Xs(is,:),optimState,'add',ys(is));
     end
     t_func = t_func + toc(timer_func);
 end

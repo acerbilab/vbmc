@@ -142,7 +142,7 @@ optimState.WarmupStableIter = 0;
 
 % Proposal function for search
 if isempty(options.ProposalFcn)
-    optimState.ProposalFcn = @(x) vbmc_proposal(x,optimState.PLB,optimState.PUB);
+    optimState.ProposalFcn = @(x) proposal_vbmc(x,optimState.PLB,optimState.PUB);
 else
     optimState.ProposalFcn = options.ProposalFcn;
 end

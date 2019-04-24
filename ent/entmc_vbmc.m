@@ -1,5 +1,5 @@
-function [H,dH] = vbmc_entmc(vp,Ns,grad_flags,jacobian_flag)
-%VBMC_ENTMC Monte Carlo estimate of entropy of variational posterior
+function [H,dH] = entmc_vbmc(vp,Ns,grad_flags,jacobian_flag)
+%ENTMC_VBMC Monte Carlo estimate of entropy of variational posterior
 
 if nargin < 2 || isempty(Ns); Ns = 10; end
 % Check if gradient computation is required
