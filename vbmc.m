@@ -158,7 +158,7 @@ defopts.UncertaintyHandling     = 'no           % Explicit noise handling (only 
 defopts.NoiseSize               = '[]           % Base observation noise magnitude';
 defopts.FunEvalStart            = 'max(D,10)    % Number of initial target fcn evals';
 defopts.FunEvalsPerIter         = '5            % Number of target fcn evals per iteration';
-defopts.SGDStepSize             = '0.01         % Base step size for stochastic gradient descent';
+defopts.SGDStepSize             = '0.005        % Base step size for stochastic gradient descent';
 defopts.SkipActiveSamplingAfterWarmup   = 'yes  % Skip active sampling the first iteration after warmup';
 defopts.TolStableEntropyIters   = '6            % Required stable iterations to switch entropy approximation';
 defopts.VariableMeans           = 'yes          % Use variable component means for variational posterior';
@@ -721,7 +721,7 @@ if exitflag < 1 && options.RetryMaxFunEvals > 0
     options.FunEvalStart = Ninit;
     options.MaxFunEvals = options.RetryMaxFunEvals;
     options.RetryMaxFunEvals = 0;                   % Avoid infinite loop
-    options.SGDStepSize = 0.1*options.SGDStepSize;  % Increase stability
+    options.SGDStepSize = 0.2*options.SGDStepSize;  % Increase stability
     
     try
         [vp,elbo,elbo_sd,exitflag,output2,optimState2,stats] = vbmc(fun,x0,LB,UB,PLB,PUB,options,varargin{:});
