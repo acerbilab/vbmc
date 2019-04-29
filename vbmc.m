@@ -677,7 +677,7 @@ end
 
 % Pick "best" variational solution to return
 [vp,elbo,elbo_sd,idx_best] = ...
-    vbmc_best(stats,iter,options.BestSafeSD,options.BestFracBack);
+    best_vbmc(stats,iter,options.BestSafeSD,options.BestFracBack);
 
 if ~stats.stable(idx_best); exitflag = 0; end
 

@@ -1,4 +1,4 @@
-function [vp,elbo,elbo_sd,idx_best] = vbmc_best(stats,idx,SafeSD,FracBack)
+function [vp,elbo,elbo_sd,idx_best] = best_vbmc(stats,idx,SafeSD,FracBack)
 %VBMC_BEST Return best variational posterior from stats structure.
 
 % Check up to this iteration (default, last)
