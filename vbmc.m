@@ -160,6 +160,7 @@ defopts.FunEvalStart            = 'max(D,10)    % Number of initial target fcn e
 defopts.FunEvalsPerIter         = '5            % Number of target fcn evals per iteration';
 defopts.SGDStepSize             = '0.005        % Base step size for stochastic gradient descent';
 defopts.SkipActiveSamplingAfterWarmup   = 'yes  % Skip active sampling the first iteration after warmup';
+defopts.RankCriterion           = 'no           % Use ranking criterion to pick best non-converged solution';
 defopts.TolStableEntropyIters   = '6            % Required stable iterations to switch entropy approximation';
 defopts.VariableMeans           = 'yes          % Use variable component means for variational posterior';
 defopts.VariableWeights         = 'yes          % Use variable mixture weight for variational posterior';
@@ -677,7 +678,7 @@ end
 
 % Pick "best" variational solution to return
 [vp,elbo,elbo_sd,idx_best] = ...
-    best_vbmc(stats,iter,options.BestSafeSD,options.BestFracBack);
+    best_vbmc(stats,iter,options.BestSafeSD,options.BestFracBack,options.RankCriterion);
 
 if ~stats.stable(idx_best); exitflag = 0; end
 
