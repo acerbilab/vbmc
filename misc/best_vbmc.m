@@ -34,12 +34,12 @@ else
         rank(:,2) = -ord(:) + idx + 1;
 
         % Rank by reliability index
-        [~,ord] = sort(stats.rindex,'descend');
+        [~,ord] = sort(stats.rindex(1:idx),'descend');
         rank(:,3) = -ord(:) + idx + 1;
         
         % Add rank penalty to warmup (and iteration immediately after)
-        last_warmup = find(stats.warmup,1,'last');        
-        rank(:,4) = 0;
+        last_warmup = find(stats.warmup(1:idx),1,'last');        
+        rank(:,4) = 1;
         rank(1:min(last_warmup+2,end),4) = idx;
         
         [~,idx_best] = min(sum(rank,2));
