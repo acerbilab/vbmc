@@ -56,8 +56,8 @@ exitflag = Inf;
 TolClose = 1/3;
 
 if Nruns == 1
-    error('vbmc_diagnostics:SingleInput', ...
-            'VP_ARRAY needs to be a cell or struct array of variational posteriors resulting from multiple VBMC runs.');
+    warning('vbmc_diagnostics:SingleInput', ...
+            'VP_ARRAY needs to be a cell or struct array of variational posteriors resulting from *multiple* VBMC runs.');
 end
     
 % Convert struct arrays to cell arrays
@@ -72,7 +72,7 @@ rec_runs = max(2,ceil(log2(D)));
 
 if Nruns < rec_runs
     % We give a warning but it does not affect diagnostic results
-    warning(['For a problem in D=' num2str(D) 'dimensions, it is recommended to perform at least ' num2str(rec_runs) ' VBMC runs.']);
+    warning(['For a problem in D=' num2str(D) ' dimensions, it is recommended to perform at least ' num2str(rec_runs) ' VBMC runs.']);
 end
 
 % Get stats for each run
