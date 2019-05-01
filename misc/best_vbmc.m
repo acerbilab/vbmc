@@ -31,16 +31,20 @@ else
         lnZsd_iter = stats.elbo_sd(1:idx);        
         elcbo = lnZ_iter - SafeSD*lnZsd_iter;        
         [~,ord] = sort(elcbo,'descend');
-        rank(:,2) = -ord(:) + idx + 1;
+        rank(ord,2) = 1:idx;
 
         % Rank by reliability index
-        [~,ord] = sort(stats.rindex(1:idx),'descend');
-        rank(:,3) = -ord(:) + idx + 1;
+        [~,ord] = sort(stats.rindex(1:idx),'ascend');
+        rank(ord,3) = 1:idx;
         
         % Add rank penalty to warmup (and iteration immediately after)
         last_warmup = find(stats.warmup(1:idx),1,'last');        
         rank(:,4) = 1;
         rank(1:min(last_warmup+2,end),4) = idx;
+        
+        % Penalty to all non-stable iterations
+        rank(:,5) = idx;
+        rank(stats.stable(1:idx),5) = 1;
         
         [~,idx_best] = min(sum(rank,2));
         
