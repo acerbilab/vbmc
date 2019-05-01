@@ -36,16 +36,16 @@ else
         % Rank by reliability index
         [~,ord] = sort(stats.rindex(1:idx),'ascend');
         rank(ord,3) = 1:idx;
+
+        % Rank penalty to all non-stable iterations
+        rank(:,4) = idx;
+        rank(stats.stable(1:idx),4) = 1;
         
-        % Add rank penalty to warmup (and iteration immediately after)
-        last_warmup = find(stats.warmup(1:idx),1,'last');        
-        rank(:,4) = 1;
-        rank(1:min(last_warmup+2,end),4) = idx;
-        
-        % Penalty to all non-stable iterations
-        rank(:,5) = idx;
-        rank(stats.stable(1:idx),5) = 1;
-        
+%         % Add rank penalty to warmup (and iteration immediately after)
+%         last_warmup = find(stats.warmup(1:idx),1,'last');        
+%         rank(:,5) = 1;
+%         rank(1:min(last_warmup+2,end),5) = idx;
+                
         [~,idx_best] = min(sum(rank,2));
         
     else
