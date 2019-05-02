@@ -1,4 +1,4 @@
-# Variational Bayesian Monte Carlo (VBMC) - v0.93 (beta)
+# Variational Bayesian Monte Carlo (VBMC) - v0.94 (beta)
 
 **News:** 
 - Apr/22/2019: Released a substantial update (v0.93) with a few stability fixes; added the feature to automatically reattempt a failed variational optimization (via `OPTIONS.RetryMaxFunEvals`) and a new `vbmc_diagnostics` function to check for convergence across multiple VBMC runs (see the updated [vbmc_examples.m](https://github.com/lacerbi/vbmc/blob/master/vbmc_examples.m) for an overview).
