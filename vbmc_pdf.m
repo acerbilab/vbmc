@@ -1,4 +1,4 @@
-function [y,dy] = vbmc_pdf(vp,X,origflag,logflag,transflag)
+function [y,dy] = vbmc_pdf(vp,X,origflag,logflag,transflag,df)
 %VBMC_PDF Probability density function of VBMC posterior approximation.
 %   Y = VBMC_PDF(VP,X) returns the probability density of the variational 
 %   posterior VP evaluated at each row of X.  Rows of the N-by-D matrix X 
@@ -13,15 +13,22 @@ function [y,dy] = vbmc_pdf(vp,X,origflag,logflag,transflag)
 %   posterior density if LOGFLAG=1, otherwise the posterior density for
 %   LOGFLAG=0 (default).
 %
-%   Y = VBMC_PDF(VP,X,ORIGFLAG,LOGFLAG,1) assumes that X is already
-%   specified in tranformed VBMC space. Otherwise, X is specified in the
-%   original parameter space.
+%   Y = VBMC_PDF(VP,X,ORIGFLAG,LOGFLAG,TRANSFLAG) for TRANSFLAG=1 assumes 
+%   that X is already specified in tranformed VBMC space. Otherwise, X is 
+%   specified in the original parameter space (default TRANSFLAG=0).
+%
+%   Y = VBMC_PDF(VP,X,ORIGFLAG,LOGFLAG,TRANSFLAG,DF) returns the probability 
+%   density of an heavy-tailed version of the variational posterior, 
+%   in which the multivariate normal components have been replaced by
+%   multivariate t-distributions with DF degrees of freedom. The default is
+%   DF=Inf, limit in which the t-distribution becomes a multivariate normal.
 %
 %   See also VBMC, VBMC_RND.
 
 if nargin < 3 || isempty(origflag); origflag = true; end
 if nargin < 4 || isempty(logflag); logflag = false; end
 if nargin < 5 || isempty(transflag); transflag = false; end
+if nargin < 6 || isempty(df); df = Inf; end
 
 gradflag = nargout > 1;     % Compute gradient
 
@@ -39,20 +46,42 @@ lambda = vp.lambda(:)';         % LAMBDA is a row vector
 mu_t(:,:) = vp.mu';             % MU transposed
 sigma(1,:) = vp.sigma;
 
-nf = 1/(2*pi)^(D/2)/prod(lambda);  % Common normalization factor
-
 y = zeros(N,1); % Allocate probability vector
 if gradflag; dy = zeros(N,D); end
     
-% Compute pdf
-for k = 1:K
-    d2 = sum(bsxfun(@rdivide,bsxfun(@minus, X, mu_t(k,:)),sigma(k)*lambda).^2,2);
-    nn = nf*w(k)/sigma(k)^D*exp(-0.5*d2);
-    y = y + nn;
-    if gradflag
-        dy = dy - bsxfun(@times,nn, ...
-            bsxfun(@rdivide,bsxfun(@minus,X,mu_t(k,:)),lambda.^2.*sigma(k)^2));
+if ~isfinite(df) || df == 0
+    % Compute pdf of variational posterior
+    
+    % Common normalization factor
+    nf = 1/(2*pi)^(D/2)/prod(lambda);
+    
+    for k = 1:K
+        d2 = sum(bsxfun(@rdivide,bsxfun(@minus, X, mu_t(k,:)),sigma(k)*lambda).^2,2);
+        nn = nf*w(k)/sigma(k)^D*exp(-0.5*d2);
+        y = y + nn;
+        if gradflag
+            dy = dy - bsxfun(@times,nn, ...
+                bsxfun(@rdivide,bsxfun(@minus,X,mu_t(k,:)),lambda.^2.*sigma(k)^2));
+        end
     end
+else
+    % Compute pdf of heavy-tailed variant of variational posterior
+    % (This uses a multivariate t-distribution which is not the same thing 
+    % as the product of D univariate t-distributions)
+    
+    % Common normalization factor
+    nf = exp(gammaln((df+D)/2) - gammaln(df/2))/(df*pi)^(D/2)/prod(lambda);
+    
+    for k = 1:K
+        d2 = sum(bsxfun(@rdivide,bsxfun(@minus, X, mu_t(k,:)),sigma(k)*lambda).^2,2);
+        nn = nf*w(k)/sigma(k)^D*(1+d2/df).^(-(df+D)/2);
+        y = y + nn;
+        if gradflag
+            error('Gradient of heavy-tailed pdf not supported yet.');
+            dy = dy - bsxfun(@times,nn, ...
+                bsxfun(@rdivide,bsxfun(@minus,X,mu_t(k,:)),lambda.^2.*sigma(k)^2));
+        end
+    end    
 end
 
 if logflag
