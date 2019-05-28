@@ -67,7 +67,7 @@ if sn2 < 1e-6   % Different representation depending on noise size
     sl = 1;
     if nargout > 2
         pL = -L\(L'\eye(N));    % L = -inv(K+inv(sW^2))
-        Lchol = 1;         % Tiny noise representation
+        Lchol = 0;         % Tiny noise representation
     end
 else
     for iter = 1:10
@@ -77,7 +77,7 @@ else
     sl = sn2*sn2_mult;
     if nargout > 2
         pL = L;
-        Lchol = 0;
+        Lchol = 1;
     end
 end
 alpha = L\(L'\(gp.y-m)) / sl;     % alpha = inv(K_mat + sn2.*eye(N)) * (y - m)  I
