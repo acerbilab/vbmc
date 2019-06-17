@@ -1,17 +1,43 @@
 %GPLITE_DEMO Demo script with example usage for the GPLITE toolbox.
 
 % Create example data in 1D
-x = linspace(-5,5,11)';
-y = sin(x);
- 
+N = 31;
+X = linspace(-5,5,N)';
+s2 = 0.001*0.1*exp(0.5*X);
+y = sin(X) + sqrt(s2).*randn(size(X));
+
+idx = N+1:N+3;
+X(idx) = linspace(6,7,numel(idx))';
+s2(idx) = 1e-4;
+y(idx(randperm(numel(idx)))) = -linspace(1000,1001,numel(idx))';
+
 hyp0 = [];          % Starting hyperparameter vector for optimization
-Ns = 8;             % Number of hyperparameter samples
-meanfun = 'const';  % GP mean function
+Ns = 10;            % Number of hyperparameter samples
+covfun = [3 3];     % GP covariance function
+meanfun = 4;        % GP mean function
+noisefun = [1 0 0]; % Constant plus user-provided noise
 hprior = [];        % Prior over hyperparameters
 options = [];       % Additional options
 
+% Set prior over noise hyperparameters
+gp = gplite_post([],X,y,covfun,meanfun,noisefun,s2);
+hprior = gplite_hypprior(gp);
+
+hprior.mu(gp.Ncov+1) = log(1e-3);
+hprior.sigma(gp.Ncov+1) = 0.5;
+
+if gp.Nnoise > 1
+    hprior.LB(gp.Ncov+2) = log(5);
+    hprior.mu(gp.Ncov+2) = log(10);
+    hprior.sigma(gp.Ncov+2) = 0.01;
+
+    hprior.mu(gp.Ncov+3) = log(0.3);
+    hprior.sigma(gp.Ncov+3) = 0.01;
+    hprior.df(gp.Ncov+3) = Inf;
+end
+
 % Train GP on data
-[gp,hyp,output] = gplite_train(hyp0,Ns,x,y,meanfun,hprior,options);
+[gp,hyp,output] = gplite_train(hyp0,Ns,X,y,covfun,meanfun,noisefun,s2,hprior,options);
 
 hyp             % Hyperparameter samples
 
@@ -23,16 +49,4 @@ xstar = linspace(-15,15,200)';   % Test points
 % Plot data and GP prediction
 close all;
 figure(1); hold on;
-plot(xstar,fmu+sqrt(fs2),'-','Color',0.8*[1 1 1],'LineWidth',1);
-plot(xstar,fmu-sqrt(fs2),'-','Color',0.8*[1 1 1],'LineWidth',1);
-plot(xstar,fmu,'k-','LineWidth',1);
-scatter(x,y,'ob','MarkerFaceColor','b');
-
-xlabel('x');
-ylabel('f(x)');
-set(gca,'TickDir','out');
-box off;
-set(gcf,'Color','w');
-
-
-
+gplite_plot(gp);

@@ -90,7 +90,7 @@ else                    % Active uncertainty sampling
         end                
         t_func = t_func + toc(timer_func);
             
-        gp = gplite_post(gp,xnew,ynew,[],1);   % Rank-1 update
+        gp = gplite_post(gp,xnew,ynew,[],[],[],[],1);   % Rank-1 update
     end
     
 end

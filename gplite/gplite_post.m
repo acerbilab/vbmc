@@ -1,6 +1,12 @@
-function gp = gplite_post(hyp,X,y,meanfun,update1)
+function gp = gplite_post(hyp,X,y,covfun,meanfun,noisefun,s2,update1)
 %GPLITE_POST Compute posterior GP for a given training set.
-%   GP = GPLITE_POST(HYP,X,Y,MEANFUN) computes the posterior GP for a vector
+%   GP = GPLITE_POST(HYP,X,Y,S2,MEANFUN) computes the posterior GP for a vector
+%   of hyperparameters HYP and a given training set. HYP is a column vector 
+%   of hyperparameters (see below). X is a N-by-D matrix of training inputs 
+%   and Y a N-by-1 vector of training targets (function values at X).
+%   MEANFUN is the GP mean function (see GPLITE_MEANFUN.M for a list).
+%
+%   GP = GPLITE_POST(HYP,X,Y,S2,MEANFUN) computes the posterior GP for a vector
 %   of hyperparameters HYP and a given training set. HYP is a column vector 
 %   of hyperparameters (see below). X is a N-by-D matrix of training inputs 
 %   and Y a N-by-1 vector of training targets (function values at X).
@@ -15,14 +21,21 @@ function gp = gplite_post(hyp,X,y,meanfun,update1)
 %
 %   See also GPLITE_CLEAN, GPLITE_MEANFUN.
 
-if nargin < 5 || isempty(update1); update1 = false; end
+if nargin < 4; covfun = []; end
+if nargin < 5; meanfun = []; end
+if nargin < 6; noisefun = []; end
+if nargin < 7; s2 = []; end
+if nargin < 8 || isempty(update1); update1 = false; end
 
 gp = [];
 if isstruct(hyp)
     gp = hyp;
     if nargin < 2; X = gp.X; end
     if nargin < 3; y = gp.y; end
-    if nargin < 4; meanfun = gp.meanfun; end
+    if nargin < 4; covfun = gp.covfun; end
+    if nargin < 5; meanfun = gp.meanfun; end
+    if nargin < 6; noisefun = gp.noisefun; end
+    if nargin < 7; s2 = gp.s2; end
 end
 
 if update1
@@ -34,9 +47,17 @@ if update1
         error('gplite_post:NoGP', ...
           'GPLITE_POST can perform rank-one update only with an existing GP struct.');        
     end
+    if ~isempty(covfun)
+        warning('gplite_post:RankOneCovFunction', ...
+            'No need to specify a GP covariance function when performing a rank-one update.');
+    end
     if ~isempty(meanfun)
         warning('gplite_post:RankOneMeanFunction', ...
-            'No need to specify a GP mean function when performin a rank-one update.');
+            'No need to specify a GP mean function when performing a rank-one update.');
+    end
+    if ~isempty(noisefun)
+        warning('gplite_post:RankOneNoiseFunction', ...
+            'No need to specify a GP noise function when performing a rank-one update.');
     end
 end
 
@@ -44,103 +65,85 @@ end
 if isempty(gp)
     gp.X = X;
     gp.y = y;
-    gp.post = [];
+    gp.s2 = s2;
     [N,D] = size(X);            % Number of training points and dimension
     [Nhyp,Ns] = size(hyp);      % Number of hyperparameters and samples
-    gp.meanfun = meanfun;    
-    for s = 1:size(hyp,2); gp.post(s).hyp = hyp(:,s); end
-    gp.Ncov = D+1;                 % Number of covariance function hyperparameters
-    gp.Nmean = gplite_meanfun([],X,meanfun);
-    if Nhyp ~= gp.Ncov+1+gp.Nmean
+    if isempty(covfun); covfun = 1; end
+    if isempty(meanfun); meanfun = 1; end
+    if isempty(noisefun)
+        if isempty(s2); noisefun = [1 0 0]; else; noisefun = [1 1 0]; end
+    end
+    % Get number and field of covariance / noise / mean function
+    [gp.Ncov,info] = gplite_covfun('info',X,covfun);
+    gp.covfun = info.covfun;
+    [gp.Nnoise,info] = gplite_noisefun('info',X,noisefun);
+    gp.noisefun = info.noisefun;
+    [gp.Nmean,info] = gplite_meanfun('info',X,meanfun);
+    gp.meanfun = info.meanfun;
+        
+    % Create posterior structure
+    postfields = {'hyp','alpha','sW','L','sn2_mult','Lchol'};
+    for i = 1:numel(postfields); post.(postfields{i}) = []; end    
+    for s = 1:size(hyp,2)
+        gp.post(s) = post;
+        gp.post(s).hyp = hyp(:,s);
+    end
+        
+    if isempty(hyp) || isempty(y); return; end
+    if Nhyp ~= gp.Ncov+gp.Nnoise+gp.Nmean
         error('gplite_post:dimmismatch', ...
-            'Number of hyperparameters mismatched with dimension of training inputs.');
+            'Number of hyperparameters mismatched with GP model specification.');
     end
 else
     [N,D] = size(gp.X);         % Number of training points and dimension
     Ns = numel(gp.post);        % Hyperparameter samples
 end
 
-Ncov = gp.Ncov;
-Nmean = gp.Nmean;
-
-
-if ~update1
-        
+if ~update1        
     % Loop over hyperparameter samples
     for s = 1:Ns
         hyp = gp.post(s).hyp;
-
-        % Extract GP hyperparameters from HYP
-        ell = exp(hyp(1:D));
-        sf2 = exp(2*hyp(D+1));
-        sn2 = exp(2*hyp(Ncov+1));
-        sn2_mult = 1;  % Effective noise variance multiplier
-        
-        % Evaluate mean function on training inputs
-        hyp_mean = hyp(Ncov+2:Ncov+1+Nmean); % Get mean function hyperparameters        
-        m = gplite_meanfun(hyp_mean,X,gp.meanfun);
-        
-        % Compute kernel matrix K_mat
-        K_mat = sq_dist(diag(1./ell)*X');
-        K_mat = sf2 * exp(-K_mat/2);
-
-        if sn2 < 1e-6   % Different representation depending on noise size
-            for iter = 1:10     % Cholesky decomposition until it works
-                [L,p] = chol(K_mat+sn2*sn2_mult*eye(N));
-                if p > 0; sn2_mult = sn2_mult*10; else; break; end
-            end
-            sl = 1;
-            pL = -L\(L'\eye(N));    % L = -inv(K+inv(sW^2))
-            Lchol = 0;         % Tiny noise representation
-        else
-            
-            for iter = 1:10
-                [L,p] = chol(K_mat/(sn2*sn2_mult)+eye(N));
-                if p > 0; sn2_mult = sn2_mult*10; else; break; end
-            end
-            sl = sn2*sn2_mult;
-            pL = L;                 % L = chol(eye(n)+sW*sW'.*K)
-            Lchol = 1;
-        end
-        
-        alpha = L\(L'\(y-m)) ./ sl;     % alpha = inv(K_mat + sn2.*eye(N)) * (y - m)
-        
-        % GP posterior parameters
-        gp.post(s).alpha = alpha;
-        gp.post(s).sW = ones(N,1)/sqrt(sn2*sn2_mult);   % sqrt of noise precision vector
-        gp.post(s).L = pL;
-        gp.post(s).sn2_mult = sn2_mult;
-        gp.post(s).Lchol = Lchol;
-    end
-    
+        [~,~,gp.post(s)] = gplite_core(hyp,gp,0,0);        
+    end    
 else
+    % Perform rank-1 update of the GP posterior    
+    Ncov = gp.Ncov;
+    Nnoise = gp.Nnoise;
+    
     % Added training input
     xstar = X;
     ystar = y;
+    s2star = s2;
     
-    % Rank-1 update for the same XSTAR but different ystars
+    % Rank-1 update for the same XSTAR but potentially different ystars
     Nstar = numel(ystar);
 
     if Nstar > 1; gp(2:Nstar) = gp(1); end
     
     % Compute prediction for all samples
-    [mstar,vstar] = gplite_pred(gp(1),xstar,[],1);
+    [mstar,vstar] = gplite_pred(gp(1),xstar,ystar,1,s2star);
         
     % Loop over hyperparameter samples
     for s = 1:Ns
         
         hyp = gp(1).post(s).hyp;
-
-        % Extract GP hyperparameters from HYP
-        ell = exp(hyp(1:D));
-        sf2 = exp(2*hyp(D+1));
-        sn2 = exp(2*hyp(Ncov+1));
+        
+        hyp_noise = hyp(Ncov+1:Ncov+Nnoise); % Get noise hyperparameters
+        sn2 = gplite_noisefun(hyp_noise,xstar,gp.noisefun,ystar,s2star);
         sn2_eff = sn2*gp(1).post(s).sn2_mult;            
         
         % Compute covariance and cross-covariance
-        K = sf2;
-        Ks_mat = sq_dist(diag(1./ell)*gp(1).X',diag(1./ell)*xstar');
-        Ks_mat = sf2 * exp(-Ks_mat/2);    
+        if gp.covfun(1) == 1    % Hard-coded SE-ard for speed
+            ell = exp(hyp(1:D));
+            sf2 = exp(2*hyp(D+1));        
+            K = sf2;
+            Ks_mat = sq_dist(diag(1./ell)*gp(1).X',diag(1./ell)*xstar');
+            Ks_mat = sf2 * exp(-Ks_mat/2);
+        else
+            hyp_cov = hyp(1:Ncov);
+            K = gplite_covfun(hyp_cov,xstar,gp.covfun,'diag');
+            Ks_mat = gplite_covfun(hyp_cov,gp.X,gp.covfun,xstar);            
+        end            
         
         L = gp(1).post(s).L;
         Lchol = gp(1).post(s).Lchol;
@@ -158,7 +161,7 @@ else
             gp(1).post(s).L = [L + v * alpha_update', -v; -v', -1 / vstar(:,s)];
         end
         
-        gp(1).post(s).sW = [gp(1).post(s).sW; gp(1).post(s).sW(1)];
+        gp(1).post(s).sW = [gp(1).post(s).sW; 1/sqrt(sn2_eff)];
 
         for iStar = 2:Nstar
             gp(iStar).post(s) = gp(1).post(s);
@@ -176,5 +179,8 @@ else
     for iStar = 1:Nstar
         gp(iStar).X = [gp(iStar).X; xstar];
         gp(iStar).y = [gp(iStar).y; ystar(iStar)];
+        if ~isempty(s2star)
+            gp(iStar).s2 = [gp(iStar).s2; s2star(iStar)];
+        end
     end
 end

@@ -4,6 +4,7 @@ function [hypprior,X_hpd,y_hpd,Nhyp,hyp0,meanfun,Ns_gp] = vbmc_gphyp(optimState,
 % Get high-posterior density dataset
 [X_hpd,y_hpd,hpd_range] = gethpd_vbmc(optimState,options);
 [N_hpd,D] = size(X_hpd);
+s2 = [];
 
 neff = optimState.Neff;
 
@@ -30,18 +31,20 @@ noisesize = max(noisesize,MinNoise);
 
 %% Set GP hyperparameters defaults for VBMC
 
-% Get number of hyperparameters
-Ncov = D+1;
-[Nmean,meaninfo] = gplite_meanfun([],X_hpd,meanfun,y_hpd);
+% Get number and info for hyperparameters
+[Ncov,covinfo] = gplite_covfun('info',X_hpd,optimState.gpCovfun,[],y_hpd);
+[Nnoise,noiseinfo] = gplite_noisefun('info',X_hpd,optimState.gpNoisefun,y_hpd,s2);
+[Nmean,meaninfo] = gplite_meanfun('info',X_hpd,meanfun,y_hpd);
+
 meanfun = meaninfo.meanfun;     % Switch to number
-Nhyp = Ncov+1+Nmean;
+Nhyp = Ncov+Nnoise+Nmean;
 
 % Initial GP hyperparameters
 hyp0 = zeros(Nhyp,1);
-hyp0(1:D) = log(std(X_hpd))';
-hyp0(D+1) = log(std(y_hpd));
+hyp0(1:Ncov) = covinfo.x0;
+hyp0(Ncov+(1:Nnoise)) = noiseinfo.x0;
 hyp0(Ncov+1) = log(noisesize);
-hyp0(Ncov+2:Ncov+1+Nmean) = meaninfo.x0;
+hyp0(Ncov+Nnoise+(1:Nmean)) = meaninfo.x0;
 
 % Change some of the default bounds over hyperparameters
 LB_gp = NaN(1,Nhyp);
@@ -50,12 +53,12 @@ LB_gp(Ncov+1) = log(MinNoise);     % Increase minimum noise
 
 switch meanfun
     case 1
-        UB_gp(Ncov+2) = min(y_hpd);    % Lower maximum constant mean
+        UB_gp(Ncov+Nnoise+1) = min(y_hpd);    % Lower maximum constant mean
     case 6
-        hyp0(Ncov+2) = min(y);
-        UB_gp(Ncov+2) = min(y_hpd);    % Lower maximum constant mean
-    case 8        
-end        
+        hyp0(Ncov+Nnoise+1) = min(y);
+        UB_gp(Ncov+Nnoise+1) = min(y_hpd);    % Lower maximum constant mean
+    case 8
+end
 
 % Set priors over hyperparameters (might want to double-check this)
 hypprior = [];
@@ -76,32 +79,32 @@ if options.EmpiricalGPPrior
     %hypprior.sigma(D+1) = log(10);
     switch meanfun
         case 1
-            hypprior.mu(Ncov+2) = quantile(y_hpd,0.25);
-            hypprior.sigma(Ncov+2) = 0.5*(max(y_hpd)-min(y_hpd));
+            hypprior.mu(Ncov+Nnoise+1) = quantile(y_hpd,0.25);
+            hypprior.sigma(Ncov+Nnoise+1) = 0.5*(max(y_hpd)-min(y_hpd));
         case 4
-            hypprior.mu(Ncov+2) = max(y_hpd);
-            hypprior.sigma(Ncov+2) = max(y_hpd)-min(y_hpd);
+            hypprior.mu(Ncov+Nnoise+1) = max(y_hpd);
+            hypprior.sigma(Ncov+Nnoise+1) = max(y_hpd)-min(y_hpd);
 
             sigma_omega = options.AnnealedGPMean(neff,optimState.MaxFunEvals);
             if sigma_omega > 0 && isfinite(sigma_omega)
-                hypprior.mu(Ncov+2+D+(1:D)) = log(hpd_range);
-                hypprior.sigma(Ncov+2+D+(1:D)) = sigma_omega;
+                hypprior.mu(Ncov+Nnoise+1+D+(1:D)) = log(hpd_range);
+                hypprior.sigma(Ncov+Nnoise+1+D+(1:D)) = sigma_omega;
             end
 
             if options.ConstrainedGPMean
-                hypprior.mu(Ncov+2) = NaN;
-                hypprior.sigma(Ncov+2) = NaN;
+                hypprior.mu(Ncov+Nnoise+1) = NaN;
+                hypprior.sigma(Ncov+Nnoise+1) = NaN;
 
-                hypprior.mu(Ncov+2+(1:D)) = 0.5*(optimState.PUB + optimState.PLB);
-                hypprior.sigma(Ncov+2+(1:D)) = 0.5*(optimState.PUB - optimState.PLB);
+                hypprior.mu(Ncov+Nnoise+1+(1:D)) = 0.5*(optimState.PUB + optimState.PLB);
+                hypprior.sigma(Ncov+Nnoise+1+(1:D)) = 0.5*(optimState.PUB - optimState.PLB);
 
-                hypprior.mu(Ncov+2+D+(1:D)) = log(0.5*(optimState.PUB - optimState.PLB));
-                hypprior.sigma(Ncov+2+D+(1:D)) = 0.01;            
+                hypprior.mu(Ncov+Nnoise+1+D+(1:D)) = log(0.5*(optimState.PUB - optimState.PLB));
+                hypprior.sigma(Ncov+Nnoise+1+D+(1:D)) = 0.01;            
             end                    
 
         case 6
-            hypprior.mu(Ncov+2) = min(y) - std(y_hpd);
-            hypprior.sigma(Ncov+2) = std(y_hpd);
+            hypprior.mu(Ncov+Nnoise+1) = min(y) - std(y_hpd);
+            hypprior.sigma(Ncov+Nnoise+1) = std(y_hpd);
             
         case 8
             
@@ -109,8 +112,14 @@ if options.EmpiricalGPPrior
     
 else
     
-    hypprior.mu(1:D) = log(0.5*(optimState.PUB - optimState.PLB));
+    hypprior.mu(1:D) = log(0.05*(optimState.PUB - optimState.PLB));
     hypprior.sigma(1:D) = log(10);
+    
+%     switch meanfun
+%         case {4,6}
+%             hypprior.mu(Ncov+Nnoise+1+D+(1:D)) = log(0.1*(optimState.PUB - optimState.PLB));
+%             hypprior.sigma(Ncov+Nnoise+1+D+(1:D)) = 2*log(10);            
+%     end
     
 end
 

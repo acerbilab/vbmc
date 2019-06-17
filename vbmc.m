@@ -366,6 +366,8 @@ end
 
 % GP struct and GP hyperparameters
 gp = [];    hyp = [];   hyp_warp = [];  hyp_logp = [];
+optimState.gpCovfun = 1;    % Squared exponential kernel with separate length scales
+optimState.gpNoisefun = 1;  % Constant noise
 optimState.gpMeanfun = options.gpMeanFun;
 switch optimState.gpMeanfun
     case {'zero','const','negquad','se','negquadse'}
@@ -471,7 +473,8 @@ while ~isFinished_flag
     
     % Fit GP to training set
     [gp,hyp,gpoutput] = gplite_train(hyp,Ns_gp,X_train,y_train, ...
-        optimState.gpMeanfun,hypprior,gptrain_options);
+        optimState.gpCovfun,optimState.gpMeanfun,optimState.gpNoisefun,...
+        [],hypprior,gptrain_options);
     hyp_full = gpoutput.hyp_prethin; % Pre-thinning GP hyperparameters
     hyp_logp = gpoutput.logp;
     

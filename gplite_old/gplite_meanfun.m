@@ -29,12 +29,10 @@ function [m,dm] = gplite_meanfun(hyp,X,meanfun,y)
 %   [NMEAN,MEANINFO] = GPLITE_MEANFUN([],X,MEANFUN,Y), where X is the matrix
 %   of training inputs and Y the matrix of training targets, also returns a 
 %   struct MEANINFO with additional information about mean function
-%   hyperparameters, with fields: LB (lower bounds); UB (upper bounds); PLB
-%   (plausible lower bounds); PUB (plausible upper bounds); x0 (starting
-%   point); meanfun (MEANFUN numerical identifier), meanfun_name (MEANFUN
-%   name).
-%
-%   See also GPLITE_COVFUN, GPLITE_NOISEFUN.
+%   hyperparameters, with fields
+% 
+%      LB  Hyperparameter lower bounds
+%      UB  Hyperparameter upper bounds
 
 if nargin < 4; y = []; end
 
@@ -88,7 +86,7 @@ switch meanfun
 end
 
 % Return number of mean function hyperparameters and additional info
-if ischar(hyp)
+if isempty(hyp)
     m = Nmean;
     if nargout > 1
         ToL = 1e-6;
@@ -97,9 +95,7 @@ if ischar(hyp)
         dm.UB = Inf(1,Nmean);
         dm.PLB = -Inf(1,Nmean);
         dm.PUB = Inf(1,Nmean);
-        dm.x0 = NaN(1,Nmean);
-        
-        if numel(y) <= 1; y = [0;1]; end
+        dm.x0 = zeros(1,Nmean);
         
         if meanfun >= 1                     % m0
             h = max(y) - min(y);    % Height
@@ -212,16 +208,26 @@ if ischar(hyp)
         
         dm.meanfun = meanfun;
         switch meanfun
-            case 0; dm.meanfun_name = 'zero';
-            case 1; dm.meanfun_name = 'const';
-            case 2; dm.meanfun_name = 'linear';
-            case 3; dm.meanfun_name = 'quad';
-            case 4; dm.meanfun_name = 'negquad';
-            case 5; dm.meanfun_name = 'posquad';
-            case 6; dm.meanfun_name = 'se';
-            case 7; dm.meanfun_name = 'negse';
-            case 8; dm.meanfun_name = 'negquadse';
-            case 9; dm.meanfun_name = 'posquadse';
+            case 0
+                dm.meanfun_name = 'zero';
+            case 1
+                dm.meanfun_name = 'const';
+            case 2
+                dm.meanfun_name = 'linear';
+            case 3
+                dm.meanfun_name = 'quad';
+            case 4
+                dm.meanfun_name = 'negquad';
+            case 5
+                dm.meanfun_name = 'posquad';
+            case 6
+                dm.meanfun_name = 'se';
+            case 7
+                dm.meanfun_name = 'negse';
+            case 8
+                dm.meanfun_name = 'negquadse';
+            case 9
+                dm.meanfun_name = 'posquadse';
         end
         
     end
@@ -260,17 +266,17 @@ switch meanfun
         if compute_grad; dm = ones(N,1); end
     case 2  % Linear
         m0 = hyp(1);
-        a = hyp(1+(1:D))';
-        m = m0 + sum(bsxfun(@times,a,X),2);
+        a = hyp(1+(1:D));
+        m = m0 + bsxfun(@times,a,X);
         if compute_grad
             dm(:,1) = ones(N,1); 
-            dm(:,2:D+1) = X; 
+            dm(:,2:D+1) = repmat(a,[N,1]); 
         end
     case 3  % Quadratic
         m0 = hyp(1);
-        a = hyp(1+(1:D))';
-        b = hyp(1+D+(1:D))';
-        m = m0 + sum(bsxfun(@times,a,X),2) + sum(bsxfun(@times,b,X.^2),2);
+        a = hyp(1+(1:D));
+        b = hyp(1+D+(1:D));
+        m = m0 + bsxfun(@times,a,X) + bsxfun(@times,b,X.^2);
         if compute_grad
             dm(:,1) = ones(N,1); 
             dm(:,2:D+1) = X; 
