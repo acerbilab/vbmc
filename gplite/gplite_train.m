@@ -149,10 +149,38 @@ end
 
 % First evaluate GP log posterior on an informed space-filling design
 if Ninit > 0
+    % tic
     optfill.FunEvals = Ninit;
     [~,~,~,output_fill] = fminfill(gpoptimize_fun,hyp0',LB,UB,PLB,PUB,hprior,optfill);
     hyp(:,:) = output_fill.X(1:Nopts,:)';
     widths_default = std(output_fill.X,[],1);
+    % toc
+    
+    if 0
+        tic
+        tprior = hprior;
+        for i = 1:4
+            optfill.FunEvals = ceil(Ninit/5);
+            [~,~,~,output_fill2] = fminfill(gpoptimize_fun,hyp0',LB,UB,PLB,PUB,tprior,optfill);            
+            hyp0 = output_fill2.X(1:Nopts,:)';
+            
+            % Compute vector weights
+            nmu = 0.5*size(output_fill2.X,1);
+            weights = log(nmu+1/2)-log(1:floor(nmu));
+            weights = weights'./sum(weights);
+
+            X_top = output_fill2.X(1:numel(weights),:);
+            
+            tprior.mu = sum(bsxfun(@times,weights,X_top),1);
+            tprior.sigma = sqrt(sum(bsxfun(@times,weights,bsxfun(@minus,X_top,tprior.mu).^2),1));
+            tprior.df = 7*ones(1,Nhyp);
+        end
+        hyp = output_fill2.X(1:Nopts,:)';
+        widths_default = std(output_fill2.X,[],1);
+        toc        
+        [output_fill.fvals(1),output_fill2.fvals(1)]
+    end
+    
 else
     if isempty(nll)
         nll = Inf(1,size(hyp0,2));

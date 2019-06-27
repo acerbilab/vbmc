@@ -6,14 +6,17 @@ function gp = gplite_clean(gp)
 %   See also GPLITE_POST.
 
 if ~isempty(gp) && isfield(gp,'post')
-    post0 = struct('hyp',[]);
+    copyfields = {'hyp'};
+    emptyfields = {'alpha','sW','L','sn2_mult','Lchol'};
+    for ff = copyfields; post0.(ff{:}) = []; end
+    for ff = emptyfields; post0.(ff{:}) = []; end
     
     for iG = 1:numel(gp)
         Ns = numel(gp(iG).post);
         postnew = post0;
         for iS = 1:Ns
             post_tmp = post0;
-            for ff = fieldnames(post0)
+            for ff = copyfields
                 post_tmp.(ff{:}) = gp(iG).post(iS).(ff{:});
             end
             postnew(iS) = post_tmp;            

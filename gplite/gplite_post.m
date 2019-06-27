@@ -96,7 +96,7 @@ if isempty(gp)
     end
 else
     [N,D] = size(gp.X);         % Number of training points and dimension
-    Ns = numel(gp.post);        % Hyperparameter samples
+    Ns = numel(gp.post);        % Hyperparameter samples    
 end
 
 if ~update1        
