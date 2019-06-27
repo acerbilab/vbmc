@@ -1,5 +1,5 @@
 function [vp,elbo,elbo_sd,exitflag,output,optimState,stats] = vbmc(fun,x0,LB,UB,PLB,PUB,options,varargin)
-%VBMC Posterior and model inference via Variational Bayesian Monte Carlo (v0.94)
+%VBMC Posterior and model inference via Variational Bayesian Monte Carlo (v0.95)
 %   VBMC computes a variational approximation of the full posterior and a 
 %   lower bound on the normalization constant (marginal likelhood or model
 %   evidence) for a provided unnormalized log posterior.
@@ -116,8 +116,8 @@ function [vp,elbo,elbo_sd,exitflag,output,optimState,stats] = vbmc(fun,x0,LB,UB,
 %   Author (copyright): Luigi Acerbi, 2018
 %   e-mail: luigi.acerbi@{gmail.com,nyu.edu,unige.ch}
 %   URL: http://luigiacerbi.com
-%   Version: 0.94 (beta)
-%   Release date: May 2, 2019
+%   Version: 0.95 (beta)
+%   Release date: Jun 27, 2019
 %   Code repository: https://github.com/lacerbi/vbmc
 %--------------------------------------------------------------------------
 
@@ -242,7 +242,7 @@ defopts.BestFracBack       = '0.25              % When computing best solution, 
 defopts.TolWeight          = '1e-2              % Threshold mixture component weight for pruning';
 defopts.AnnealedGPMean     = '@(N,NMAX) 0       % Annealing for hyperprior width of GP negative quadratic mean';
 defopts.ConstrainedGPMean  = 'no                % Strict hyperprior for GP negative quadratic mean';
-defopts.EmpiricalGPPrior   = 'yes               % Empirical Bayes prior over some GP hyperparameters';
+defopts.EmpiricalGPPrior   = 'no                % Empirical Bayes prior over some GP hyperparameters';
 defopts.InitDesign         = 'plausible         % Initial samples ("plausible" is uniform in the plausible box)';
 defopts.BOWarmup           = 'no                % Bayesian-optimization-like warmup stage';
 

@@ -36,6 +36,11 @@ sigma(1,:) = vp.sigma;
 lambda(:,1) = vp.lambda(:);
 w(1,:) = vp.w;
 
+% Number of GP hyperparameters
+Ncov = gp.Ncov;
+Nnoise = gp.Nnoise;
+Nmean = gp.Nmean;
+
 Ns = numel(gp.post);            % Hyperparameter samples
 
 if all(gp.meanfun ~= [0 1 4 6 8])
@@ -71,27 +76,28 @@ for s = 1:Ns
     % Extract GP hyperparameters from HYP
     ell = exp(hyp(1:D));
     ln_sf2 = 2*hyp(D+1);
-    sn2 = exp(2*hyp(D+2));
-    sum_lnell = sum(hyp(1:D));    
-    
+    sum_lnell = sum(hyp(1:D));
+        
     % GP mean function hyperparameters
-    if gp.meanfun > 0; m0 = hyp(D+3); else; m0 = 0; end
+    if gp.meanfun > 0; m0 = hyp(Ncov+Nnoise+1); else; m0 = 0; end
     if quadratic_meanfun || sqexp_meanfun || quadsqexp_meanfun
-        xm = hyp(D+3+(1:D));
-        omega = exp(hyp(2*D+3+(1:D)));
+        xm = hyp(Ncov+Nnoise+1+(1:D));
+        omega = exp(hyp(Ncov+Nnoise+D+1+(1:D)));
         if sqexp_meanfun
-            h = exp(hyp(3*D+4));
+            h = exp(hyp(Ncov+Nnoise+2*D+2));
         end
     end
     if quadsqexp_meanfun
-        xm_se = hyp(3*D+3+(1:D));
-        omega_se = exp(hyp(4*D+3+(1:D)));
-        h_se = hyp(5*D+4);        
+        xm_se = hyp(Ncov+Nnoise+2*D+1+(1:D));
+        omega_se = exp(hyp(Ncov+Nnoise+3*D+1+(1:D)));
+        h_se = hyp(Ncov+Nnoise+4*D+2);        
     end
     
     alpha = gp.post(s).alpha;
     L = gp.post(s).L;
     Lchol = gp.post(s).Lchol;
+    
+    sn2 = exp(2*hyp(Ncov+1));
     sn2_eff = sn2*gp.post(s).sn2_mult;
 
     for k = 1:K
