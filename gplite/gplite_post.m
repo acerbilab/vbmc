@@ -106,7 +106,7 @@ if ~update1
         [~,~,gp.post(s)] = gplite_core(hyp,gp,0,0);        
     end    
 else
-    % Perform rank-1 update of the GP posterior    
+    % Perform rank-1 update of the GP posterior        
     Ncov = gp.Ncov;
     Nnoise = gp.Nnoise;
     

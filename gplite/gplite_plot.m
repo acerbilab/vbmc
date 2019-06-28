@@ -1,9 +1,35 @@
-function gplite_plot(gp,x0)
-%GPLITE_PLOT Visualize GP.
+function gplite_plot(gp,x0,lb,ub)
+%GPLITE_PLOT Profile plot of GP for lite Gaussian process regression.
+%   GPLITE_PLOT(GP,X0) plot the Gaussian process GP profile centered around 
+%   a given point X0. The plot is a D-by-D panel matrix, in which panels on 
+%   the diagonal show the profile of the GP prediction (mean and +/- 1 SD) 
+%   by varying one dimension at a time, whereas off-diagonal panels show 
+%   2-D contour plots of the GP mean and standard deviation (respectively, 
+%   above and below diagonal). In each panel, black lines indicate the 
+%   location of the reference point X0. X0 can be a vector, or 'max' or 
+%   'min', in which case the maximum (resp., minimum) of the GP training 
+%   input is used as reference. If X0 is left empty, the default is 'max'.
+%
+%   GPLITE_PLOT(GP,X0,DELTAY) for each dimension, chooses the range of the 
+%   plot such that the plotted predictive GP mean approximately brackets 
+%   [Y0-DELTAY,Y0+DELTAY], where Y0 is the predictive GP mean at X0.
+%
+%   GPLITE_PLOT(GP,X0,LB,UB) for each dimension, sets lower bounds LB and
+%   upper bounds UB for the range of the plots.
+%
+%   See also GPLITE_PRED, GPLITE_TRAIN.
 
 % Luigi Acerbi 2019
 
 if nargin < 2; x0 = []; end
+if nargin < 3; lb = []; end
+if nargin < 4; ub = []; end
+
+deltay = [];
+if isscalar(lb) && isempty(ub)
+    deltay = lb;
+    lb = [];
+end
 
 [N,D] = size(gp.X);            % Number of training points and dimension
 Ns = numel(gp.post);           % Hyperparameter samples
@@ -17,24 +43,32 @@ for s = 1:Ns
 end
 ellbar = sqrt(mean(ell.^2,2))';      % Mean length scale
 
-lb = min(gp.X) - ellbar;
-ub = max(gp.X) + ellbar;
+if isempty(lb); lb = min(gp.X) - ellbar; end
+if isempty(ub); ub = max(gp.X) + ellbar; end
 
 gutter = [.05 .05];
 margins = [.1 .01 .12 .01];
 linewidth = 1;
 
-if isempty(x0) && D > 1
-    [~,idx] = max(gp.y);
-    x0 = gp.X(idx,:);
+if isempty(x0); x0 = 'max'; end
+if ischar(x0)
+    switch lower(x0)
+        case 'max'
+            [~,idx] = max(gp.y);
+            x0 = gp.X(idx,:);
+        case 'min'
+            [~,idx] = min(gp.y);
+            x0 = gp.X(idx,:);
+        otherwise
+            error('Unknown identifier for X0.');
+    end
 end
 
 for i = 1:D
     ax(i,i) = tight_subplot(D,D,i,i,gutter,margins);
     
     xx_vec = linspace(lb(i),ub(i),ceil(Nx^1.5))';
-    
-    if ~isempty(x0)
+    if D > 1
         xx = repmat(x0,[numel(xx_vec),1]);
         xx(:,i) = xx_vec;
     else
@@ -42,6 +76,29 @@ for i = 1:D
     end
     [~,~,fmu,fs2] = gplite_pred(gp,xx);
     
+    if ~isempty(deltay)
+        [~,~,fmu0] = gplite_pred(gp,x0);
+        dx = xx_vec(2)-xx_vec(1);
+        region = abs(fmu - fmu0) < deltay;
+        if any(region)
+            idx1 = find(region,1,'first');
+            idx2 = find(region,1,'last');
+            lb(i) = xx_vec(idx1) - 0.5*dx;
+            ub(i) = xx_vec(idx2) + 0.5*dx;
+        else
+            lb(i) = x0(i) - 0.5*dx;
+            ub(i) = x0(i) + 0.5*dx;
+        end        
+        xx_vec = linspace(lb(i),ub(i),ceil(Nx^1.5))';    
+        if D > 1
+            xx = repmat(x0,[numel(xx_vec),1]);
+            xx(:,i) = xx_vec;
+        else
+            xx = xx_vec;
+        end
+        [~,~,fmu,fs2] = gplite_pred(gp,xx);        
+    end
+            
     plot(xx_vec,fmu,'-k','LineWidth',1); hold on;
     plot(xx_vec,fmu+1.96*sqrt(fs2),'-','Color',0.8*[1 1 1],'LineWidth',1);
     plot(xx_vec,fmu-1.96*sqrt(fs2),'-','Color',0.8*[1 1 1],'LineWidth',1);
@@ -57,9 +114,7 @@ for i = 1:D
         if i == D; xlabel(['x_' num2str(i)]); end
     end
     
-    if ~isempty(x0)
-        plot([x0(i),x0(i)],get(gca,'ylim'),'k-','linewidth',linewidth);
-    end
+    plot([x0(i),x0(i)],get(gca,'ylim'),'k-','linewidth',linewidth);
 end
 
 for i = 1:D

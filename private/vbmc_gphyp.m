@@ -54,6 +54,8 @@ LB_gp(Ncov+1) = log(MinNoise);     % Increase minimum noise
 switch meanfun
     case 1
         UB_gp(Ncov+Nnoise+1) = min(y_hpd);    % Lower maximum constant mean
+    case 4
+        if options.gpQuadraticMeanBound; UB_gp(Ncov+Nnoise+1) = max(y_hpd)+1; end
     case 6
         hyp0(Ncov+Nnoise+1) = min(y);
         UB_gp(Ncov+Nnoise+1) = min(y_hpd);    % Lower maximum constant mean
@@ -69,6 +71,18 @@ hypprior.df = 3*ones(1,Nhyp);    % Broad Student's t prior
 % Hyperprior over observation noise
 hypprior.mu(Ncov+1) = log(noisesize);
 hypprior.sigma(Ncov+1) = noisestd;
+
+% Change bounds and hyperprior over output-dependent noise modulation
+if numel(optimState.gpNoisefun)>2 && optimState.gpNoisefun(3) == 1
+    UB_gp(Ncov+2) = max(y_hpd) - 10*D;
+    
+    %hypprior.mu(Ncov+2) = max(y_hpd) - 10*D;
+    %hypprior.sigma(Ncov+2) = 1;
+    
+    hypprior.mu(Ncov+3) = log(0.01);
+    hypprior.sigma(Ncov+3) = log(10);
+end
+
 
 % Empirical Bayes hyperprior on GP hyperparameters
 if options.EmpiricalGPPrior
@@ -114,13 +128,17 @@ else
     
     hypprior.mu(1:D) = log(0.05*(optimState.PUB - optimState.PLB));
     hypprior.sigma(1:D) = log(10);
+%     hypprior.mu(1:D) = log(0.001*(optimState.PUB - optimState.PLB));
+%     hypprior.sigma(1:D) = log(1e3);
     
-%     switch meanfun
-%         case {4,6}
-%             hypprior.mu(Ncov+Nnoise+1+D+(1:D)) = log(0.1*(optimState.PUB - optimState.PLB));
-%             hypprior.sigma(Ncov+Nnoise+1+D+(1:D)) = 2*log(10);            
-%     end
-    
+%     [~,idx] = max(y_hpd);
+%     xmax = X_hpd(idx,:);    
+%      switch meanfun
+%          case {4,6}
+%              hypprior.mu(Ncov+Nnoise+1+(1:D)) = xmax;
+%              hypprior.sigma(Ncov+Nnoise+1+(1:D)) = 1e-6*(optimState.PUB - optimState.PLB);            
+%      end
+          
 end
 
 hypprior.LB = LB_gp;

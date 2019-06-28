@@ -122,11 +122,13 @@ if ischar(hyp)
         
         switch noisefun(3)    % Output-dependent noise
             case 1
-                dsn2.LB(idx) = log(1e-6*D);
-                dsn2.UB(idx) = log(1e6*D);
-                dsn2.PLB(idx) = log(2*D);
-                dsn2.PUB(idx) = log(20*D);
-                dsn2.x0(idx) = log(5*D);
+                miny = min(y);
+                maxy = max(y);
+                dsn2.LB(idx) = miny;
+                dsn2.UB(idx) = maxy;
+                dsn2.PLB(idx) = miny;
+                dsn2.PUB(idx) = max(maxy-5*D,miny);
+                dsn2.x0(idx) = max(maxy-10*D,miny);
                 idx = idx + 1;
 
                 dsn2.LB(idx) = log(1e-3);
@@ -194,14 +196,13 @@ end
 switch noisefun(3)
     case 1
         if ~isempty(y)
-            ymax = max(y);
-            deltay = exp(hyp(idx));
+            ythresh = hyp(idx);
             w2 = exp(2*hyp(idx+1));
-            zz = max(0, ymax - y - deltay);
+            zz = max(0, ythresh - y);
 
             sn2 = sn2 + w2*zz.^2;
             if compute_grad
-                dsn2(:,idx) = -deltay*2*w2*(ymax - y - deltay).*(zz>0);
+                dsn2(:,idx) = 2*w2*(ythresh - y).*(zz>0);
                 dsn2(:,idx+1) = 2*w2*zz.^2;
             end
         end

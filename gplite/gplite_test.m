@@ -39,7 +39,6 @@ if isempty(y)   % Generate from the GP prior
     [~,y] = gplite_rnd(gp,X);
 end
     
-
 [N,D] = size(X);            % Number of training points and dimension
 [Nhyp,Ns] = size(hyp);      % Hyperparameters and samples
 
@@ -48,12 +47,17 @@ hyp0 = hyp(:,1);
 gp = gplite_post(hyp0,X,y,covfun,meanfun,noisefun,s2);
 
 fprintf('---------------------------------------------------------------------------------\n');
-fprintf('Check GP marginal likelihood computation...\n\n');
+fprintf('Print noise variance for every GP point...\n\n');
+
+sn2 = gplite_noisefun(hyp0(Ncov+1:Ncov+Nnoise),gp.X,gp.noisefun,gp.y,gp.s2)
+
+fprintf('---------------------------------------------------------------------------------\n');
+fprintf('Check GP marginal likelihood gradient computation...\n\n');
 f = @(x) gplite_nlZ(x,gp);
 derivcheck(f,hyp0.*exp(0.1*rand(size(hyp0))));
 
 fprintf('---------------------------------------------------------------------------------\n');
-fprintf('Check GP hyperparameters log prior computation...\n\n');
+fprintf('Check GP hyperparameters log prior gradient computation...\n\n');
 hprior.mu = randn(size(hyp0));
 hprior.sigma = exp(randn(size(hyp0)));
 hprior.df = exp(randn(size(hyp0))).*(randi(2,size(hyp0))-1);
@@ -74,7 +78,7 @@ end
 
 ff = fields(gp.post)';
 for i = 1:numel(ff)
-    update1_errs(i) = sum(gp.post.(ff{i})(:) - gp1.post.(ff{i})(:));
+    update1_errs(i) = sum(abs(gp.post.(ff{i})(:) - gp1.post.(ff{i})(:)));
 end
 update1_errs
 

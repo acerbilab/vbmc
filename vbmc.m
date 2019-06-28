@@ -244,8 +244,7 @@ defopts.AnnealedGPMean     = '@(N,NMAX) 0       % Annealing for hyperprior width
 defopts.ConstrainedGPMean  = 'no                % Strict hyperprior for GP negative quadratic mean';
 defopts.EmpiricalGPPrior   = 'no                % Empirical Bayes prior over some GP hyperparameters';
 defopts.InitDesign         = 'plausible         % Initial samples ("plausible" is uniform in the plausible box)';
-defopts.BOWarmup           = 'no                % Bayesian-optimization-like warmup stage';
-
+defopts.gpQuadraticMeanBound = 'no              % Stricter upper bound on GP negative quadratic mean function';
 
 %% Advanced options for unsupported/untested features (do *not* modify)
 defopts.WarpRotoScaling    = 'off               % Rotate and scale input';
@@ -261,6 +260,8 @@ defopts.VarParamsBack      = '0                 % Check variational posteriors b
 defopts.AltMCEntropy       = 'no                % Use alternative Monte Carlo computation for the entropy';
 defopts.VarActiveSample    = 'no                % Variational active sampling';
 defopts.FeatureTest        = 'no                % Test a new experimental feature';
+defopts.BOWarmup           = 'no                % Bayesian-optimization-like warmup stage';
+defopts.gpNoiseFun         = '1                 % GP default noise function';
 
 
 %% If called with 'all', return all default options
@@ -367,7 +368,7 @@ end
 % GP struct and GP hyperparameters
 gp = [];    hyp = [];   hyp_warp = [];  hyp_logp = [];
 optimState.gpCovfun = 1;    % Squared exponential kernel with separate length scales
-optimState.gpNoisefun = 1;  % Constant noise
+optimState.gpNoisefun = options.gpNoiseFun;
 optimState.gpMeanfun = options.gpMeanFun;
 switch optimState.gpMeanfun
     case {'zero','const','negquad','se','negquadse'}
