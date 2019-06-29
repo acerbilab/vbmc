@@ -244,7 +244,7 @@ defopts.AnnealedGPMean     = '@(N,NMAX) 0       % Annealing for hyperprior width
 defopts.ConstrainedGPMean  = 'no                % Strict hyperprior for GP negative quadratic mean';
 defopts.EmpiricalGPPrior   = 'no                % Empirical Bayes prior over some GP hyperparameters';
 defopts.InitDesign         = 'plausible         % Initial samples ("plausible" is uniform in the plausible box)';
-defopts.gpQuadraticMeanBound = 'no              % Stricter upper bound on GP negative quadratic mean function';
+defopts.gpQuadraticMeanBound = 'yes             % Stricter upper bound on GP negative quadratic mean function';
 
 %% Advanced options for unsupported/untested features (do *not* modify)
 defopts.WarpRotoScaling    = 'off               % Rotate and scale input';
