@@ -77,7 +77,10 @@ hypprior.sigma(Ncov+1) = noisestd;
 
 % Change bounds and hyperprior over output-dependent noise modulation
 if numel(optimState.gpNoisefun)>2 && optimState.gpNoisefun(3) == 1
-    UB_gp(Ncov+2) = max(y_hpd) - 10*D;
+    y_all = optimState.y(optimState.X_flag);
+    
+    UB_gp(Ncov+2) = max(y_all) - 10*D;
+    LB_gp(Ncov+2) = min(min(y_all),max(y_all) - 20*D);
     
     %hypprior.mu(Ncov+2) = max(y_hpd) - 10*D;
     %hypprior.sigma(Ncov+2) = 1;
