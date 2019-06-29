@@ -110,6 +110,9 @@ vp.stats = [];
 % Maximum value
 optimState.ymax = -Inf;
 
+% Estimate of GP observation noise around the high posterior density region
+optimState.sn2hpd = Inf;
+
 % Does the starting cache contain function values?
 optimState.Cache.active = any(isfinite(optimState.Cache.y_orig));
 

@@ -30,9 +30,13 @@ end
 if ~isempty(idx_stable)
     sKL_list = stats.sKL;
     elbo_list = stats.elbo;
+    
+    sn = sqrt(optimState.sn2hpd);
+    TolSN = sqrt(sn/options.TolSD)*options.TolSD;
+    TolSD = min(max(options.TolSD,TolSN),options.TolSD*10);
 
-    rindex_vec(1) = abs(elbo_list(iter) - elbo_list(iter-1))/options.TolSD;
-    rindex_vec(2) = stats.elbo_sd(iter) / options.TolSD;
+    rindex_vec(1) = abs(elbo_list(iter) - elbo_list(iter-1)) / TolSD;
+    rindex_vec(2) = stats.elbo_sd(iter) / TolSD;
     rindex_vec(3) = sKL_list(iter) / options.TolsKL;    % This should be fixed
 
     % Stop sampling after sample variance has stabilized below ToL

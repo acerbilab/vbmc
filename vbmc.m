@@ -504,6 +504,9 @@ while ~isFinished_flag
         cornerplot(Xgp);
     end
     
+    % Estimate of GP noise around the top high posterior density region
+    optimState.sn2hpd = estimate_GPnoise(gp);
+    
     timer.gpTrain = toc(t);
         
     %% Optimize variational parameters
@@ -644,7 +647,8 @@ while ~isFinished_flag
     
     % Record all useful stats
     stats = savestats(stats, ...
-        optimState,vp,elbo,elbo_sd,varss,sKL,sKL_true,gp,hyp_full,Ns_gp,pruned,timer,options.Diagnostics);
+        optimState,vp,elbo,elbo_sd,varss,sKL,sKL_true,gp,hyp_full,...
+        Ns_gp,pruned,timer,options.Diagnostics);
     
     %----------------------------------------------------------------------
     %% Check termination conditions    
@@ -778,6 +782,7 @@ stats.sKL(iter) = sKL;
 if ~isempty(sKL_true)
     stats.sKL_true = sKL_true;
 end
+stats.gpNoise_hpd(iter) = sqrt(optimState.sn2hpd);
 stats.gpSampleVar(iter) = varss;
 stats.gpNsamples(iter) = Ns_gp;
 stats.gpHypFull{iter} = hyp_full;
