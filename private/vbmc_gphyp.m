@@ -56,7 +56,7 @@ switch meanfun
         UB_gp(Ncov+Nnoise+1) = min(y_hpd);    % Lower maximum constant mean
     case 4
         if options.gpQuadraticMeanBound
-            deltay = min(D,max(y_hpd)-min(y_hpd));
+            deltay = max(options.TolSD,min(D,max(y_hpd)-min(y_hpd)));
             UB_gp(Ncov+Nnoise+1) = max(y_hpd)+deltay; 
         end
     case 6
