@@ -1,4 +1,4 @@
-function gplite_plot(gp,x0,lb,ub)
+function gplite_plot(gp,x0,lb,ub,sigma)
 %GPLITE_PLOT Profile plot of GP for lite Gaussian process regression.
 %   GPLITE_PLOT(GP,X0) plot the Gaussian process GP profile centered around 
 %   a given point X0. The plot is a D-by-D panel matrix, in which panels on 
@@ -24,6 +24,7 @@ function gplite_plot(gp,x0,lb,ub)
 if nargin < 2; x0 = []; end
 if nargin < 3; lb = []; end
 if nargin < 4; ub = []; end
+if nargin < 5; sigma = []; end
 
 deltay = [];
 if isscalar(lb) && isempty(ub)
@@ -74,7 +75,12 @@ for i = 1:D
     else
         xx = xx_vec;
     end
-    [~,~,fmu,fs2] = gplite_pred(gp,xx);
+    
+    if isempty(sigma)
+        [~,~,fmu,fs2] = gplite_pred(gp,xx);
+    else
+        [fmu,fs2] = gplite_quad(gp,xx,sigma);        
+    end
     
     if ~isempty(deltay)
         [~,~,fmu0] = gplite_pred(gp,x0);
@@ -126,7 +132,12 @@ for i = 1:D
         xx = repmat(x0,[numel(xx1_vec)*numel(xx2_vec),1]);
         xx(:,i) = xx_vec(:,1);
         xx(:,j) = xx_vec(:,2);
-        [~,~,fmu,fs2] = gplite_pred(gp,xx);
+        
+        if isempty(sigma)
+            [~,~,fmu,fs2] = gplite_pred(gp,xx);
+        else
+            [fmu,fs2] = gplite_quad(gp,xx,sigma);        
+        end
         
         for k = 1:2            
             switch k

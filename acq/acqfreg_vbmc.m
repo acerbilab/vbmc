@@ -16,8 +16,13 @@ TolVar = optimState.TolGPVar;
 % Probability density of variational posterior at test points
 p = max(vbmc_pdf(vp,Xs,0),realmin);
 
-% GP mean and variance for each hyperparameter sample
-[~,~,fmu,fs2] = gplite_pred(gp,Xs,[],1);
+if isfield(vp,'delta') && ~isempty(vp.delta) && any(vp.delta > 0)
+    % Quadrature mean and variance for each hyperparameter sample
+    [fmu,fs2] = gplite_quad(gp,Xs,vp.delta',1);    
+else
+    % GP mean and variance for each hyperparameter sample
+    [~,~,fmu,fs2] = gplite_pred(gp,Xs,[],1);
+end
 
 Ns = size(fmu,2);
 fbar = sum(fmu,2)/Ns;   % Mean across samples

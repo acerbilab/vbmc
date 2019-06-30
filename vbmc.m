@@ -245,6 +245,7 @@ defopts.ConstrainedGPMean  = 'no                % Strict hyperprior for GP negat
 defopts.EmpiricalGPPrior   = 'no                % Empirical Bayes prior over some GP hyperparameters';
 defopts.InitDesign         = 'plausible         % Initial samples ("plausible" is uniform in the plausible box)';
 defopts.gpQuadraticMeanBound = 'yes             % Stricter upper bound on GP negative quadratic mean function';
+defopts.Bandwidth          = '0                 % Bandwidth parameter for GP smoothing (in units of plausible box)';
 
 %% Advanced options for unsupported/untested features (do *not* modify)
 defopts.WarpRotoScaling    = 'off               % Rotate and scale input';

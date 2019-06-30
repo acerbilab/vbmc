@@ -3,6 +3,8 @@ function [vp,elbo,elbo_sd,G,H,varG,varH,varss,pruned] = vpoptimize(Nfastopts,Nsl
 
 %% Set up optimization variables and options
 
+vp.delta = optimState.delta(:);
+
 % Number of variational parameters
 Ntheta = K;
 if vp.optimize_mu; Ntheta = Ntheta + vp.D*K; end

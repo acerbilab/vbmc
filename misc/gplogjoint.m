@@ -69,6 +69,12 @@ end
 
 % varF_diag = zeros(1,Nhyp);
 
+if isfield(vp,'delta') && ~isempty(vp.delta)
+    delta = vp.delta;
+else
+    delta = 0;
+end
+
 % Loop over hyperparameter samples
 for s = 1:Ns
     hyp = gp.post(s).hyp;
@@ -102,7 +108,7 @@ for s = 1:Ns
 
     for k = 1:K
 
-        tau_k = sqrt(sigma(k)^2*lambda.^2 + ell.^2);
+        tau_k = sqrt(sigma(k)^2*lambda.^2 + ell.^2 + delta.^2);
         lnnf_k = ln_sf2 + sum_lnell - sum(log(tau_k));  % Covariance normalization factor
         delta_k = bsxfun(@rdivide,bsxfun(@minus, mu(:,k), gp.X'), tau_k);
         z_k = exp(lnnf_k -0.5 * sum(delta_k.^2,1));
@@ -110,16 +116,16 @@ for s = 1:Ns
 
         if quadratic_meanfun || quadsqexp_meanfun
             nu_k = -0.5*sum(1./omega.^2 .* ...
-                (mu(:,k).^2 + sigma(k)^2*lambda.^2 - 2*mu(:,k).*xm + xm.^2),1);            
+                (mu(:,k).^2 + sigma(k)^2*lambda.^2 - 2*mu(:,k).*xm + xm.^2 + delta.^2),1);            
             I_k = I_k + nu_k;        
         elseif sqexp_meanfun
-            tau2_mfun = sigma(k)^2*lambda.^2 + omega.^2;
+            tau2_mfun = sigma(k)^2*lambda.^2 + omega.^2 + delta.^2; % delta might be wrong here
             s2 = ((mu(:,k) - xm).^2)./tau2_mfun;
             nu_k_se = h*prod(omega./sqrt(tau2_mfun))*exp(-0.5*sum(s2,1));            
             I_k = I_k + nu_k_se;
         end
         if quadsqexp_meanfun
-            tau2_mfun = sigma(k)^2*lambda.^2 + omega_se.^2;
+            tau2_mfun = sigma(k)^2*lambda.^2 + omega_se.^2 + delta.^2; % delta might be wrong here
             s2 = ((mu(:,k) - xm_se).^2)./tau2_mfun;
             nu_k_se = h_se*prod(omega_se./sqrt(tau2_mfun))*exp(-0.5*sum(s2,1));
             I_k = I_k + nu_k_se;        
@@ -176,13 +182,13 @@ for s = 1:Ns
         end
         
         if compute_var == 2 % Compute only self-variance
-            tau_kk = sqrt(2*sigma(k)^2*lambda.^2 + ell.^2);                
+            tau_kk = sqrt(2*sigma(k)^2*lambda.^2 + ell.^2 + 2*delta.^2);                
             nf_kk = exp(ln_sf2 + sum_lnell - sum(log(tau_kk)));
             if Lchol
                 invKzk = (L\(L'\z_k'))/sn2_eff;
             else
                 invKzk = -L*z_k';                
-            end                
+            end
             J_kk = nf_kk - z_k*invKzk;
             varF(s) = varF(s) + w(k)^2*max(eps,J_kk);    % Correct for numerical error
             
@@ -208,12 +214,12 @@ for s = 1:Ns
                         
         elseif compute_var
             for j = 1:k
-                tau_j = sqrt(sigma(j)^2*lambda.^2 + ell.^2);
+                tau_j = sqrt(sigma(j)^2*lambda.^2 + ell.^2 + delta.^2);
                 lnnf_j = ln_sf2 + sum_lnell - sum(log(tau_j));
                 delta_j = bsxfun(@rdivide,bsxfun(@minus, mu(:,j), gp.X'), tau_j);
                 z_j = exp(lnnf_j -0.5 * sum(delta_j.^2,1));                    
                 
-                tau_jk = sqrt((sigma(j)^2 + sigma(k)^2)*lambda.^2 + ell.^2);                
+                tau_jk = sqrt((sigma(j)^2 + sigma(k)^2)*lambda.^2 + ell.^2 + 2*delta.^2);                
                 lnnf_jk = ln_sf2 + sum_lnell - sum(log(tau_jk));
                 delta_jk = (mu(:,j)-mu(:,k))./tau_jk;
                 

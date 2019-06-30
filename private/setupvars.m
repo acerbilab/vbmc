@@ -59,6 +59,7 @@ else
     vp.optimize_mu = logical(options.VariableMeans);
     vp.optimize_weights = logical(options.VariableWeights);
 end
+vp.delta = [];
 vp.bounds = [];
 vp.stats = [];
 
@@ -191,6 +192,8 @@ optimState.iterList.u = [];
 optimState.iterList.fval = [];
 optimState.iterList.fsd = [];
 optimState.iterList.fhyp = [];
+
+optimState.delta = options.Bandwidth*(optimState.PUB-optimState.PLB);
 
 %% Get warnings state
 
