@@ -448,7 +448,7 @@ while ~isFinished_flag
             vbmc_warp(optimState,vp,gp,hyp,hyp_warp,action,options,cmaes_opts);
         timer.warping = toc(t);        
     end
-        
+                
     %% Train GP
     t = tic;
         
@@ -472,6 +472,8 @@ while ~isFinished_flag
     
     % Get training dataset
     [X_train,y_train] = get_traindata(optimState,options);
+    optimState.warp_thresh = []; % max(y_train) - 10*D;    
+    y_train = outputwarp(y_train,optimState,options);   % Fitness shaping
     
     % Fit GP to training set
     [gp,hyp,gpoutput] = gplite_train(hyp,Ns_gp,X_train,y_train, ...

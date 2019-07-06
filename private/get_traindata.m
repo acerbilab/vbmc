@@ -6,14 +6,6 @@ nvars = size(optimState.X,2);
 X_train = optimState.X(optimState.X_flag,:);
 y_train = optimState.y(optimState.X_flag);
 
-% Fitness shaping (should play around with this)
-if 0
-     y_max = max(y_train);
-     sort(y_max - y_train)
-     y_thresh = y_max - 10*nvars;
-     idx = y_train < y_thresh;
-     y_train(idx) = y_thresh - sqrt(y_thresh - y_train(idx));        
-
 %         xxplot = (1:numel(y_train))';
 %         [yyplot,ord] = sort(log(y_max - y_train + 1));
 %         
