@@ -17,7 +17,11 @@ if D == 1
     drawnow;
 
 else
-    Xrnd = vbmc_rnd(vp,1e5,1,1);
+    if ~isempty(vp)
+        Xrnd = vbmc_rnd(vp,1e5,1,1);
+    else
+        Xrnd = gp.X;
+    end
     X_train = gp.X;
     
     if iter == 1

@@ -137,10 +137,30 @@ if size(Xsearch,1) < NSsearch
     end
     Nhpd = round(options.HPDSearchFrac*Nrnd);
     if Nhpd > 0
-        X_hpd = gethpd_vbmc(optimState,options);
-        mubar = mean(X_hpd,1);
-        Sigmabar = cov(X_hpd,1);
-        Xrnd = [Xrnd; mvnrnd(mubar,Sigmabar,Nhpd)];
+        hpd_min = options.HPDFrac/8;
+        hpd_max = options.HPDFrac;        
+        hpdfracs = sort([rand(1,4)*(hpd_max-hpd_min) + hpd_min,hpd_min,hpd_max]);
+        Nhpd_vec = diff(round(linspace(0,Nhpd,numel(hpdfracs)+1)));
+        X = optimState.X(optimState.X_flag,:);
+        y = optimState.y(optimState.X_flag);
+        D = size(X,2);
+        for ii = 1:numel(hpdfracs)
+            if Nhpd_vec(ii) == 0; continue; end            
+            [X_hpd,y_hpd] = gethpd_vbmc(optimState,struct('HPDFrac',hpdfracs(ii)));
+            if isempty(X_hpd)
+                [~,idxmax] = max(y);
+                mubar = X(idxmax,:);
+                Sigmabar = cov(X);
+            else
+                mubar = mean(X_hpd,1);
+                Sigmabar = cov(X_hpd,1);
+            end
+            if isscalar(Sigmabar); Sigmabar = Sigmabar*ones(D,D); end
+            %[~,idxmax] = max(y);
+            %x0 = optimState.X(idxmax,:);
+            %[Sigmabar,mubar] = covcma(X,y,x0,[],hpdfracs(ii));
+            Xrnd = [Xrnd; mvnrnd(mubar,Sigmabar,Nhpd_vec(ii))];
+        end
     end
     Nvp = max(0,Nrnd-Nsearchcache-Nheavy-Nmvn-Nhpd);
     if Nvp > 0

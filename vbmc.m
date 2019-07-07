@@ -454,8 +454,10 @@ while ~isFinished_flag
         
     % Get priors, starting hyperparameters, and number of samples
     if optimState.Warmup && options.BOWarmup
+%        [hypprior,X_hpd,y_hpd,~,hyp0,optimState.gpMeanfun,Ns_gp] = ...
+%            vbmc_gphyp(optimState,'const',0,options);
         [hypprior,X_hpd,y_hpd,~,hyp0,optimState.gpMeanfun,Ns_gp] = ...
-            vbmc_gphyp(optimState,'const',0,options);
+            vbmc_gphyp(optimState,optimState.gpMeanfun,0,options);
     else
         [hypprior,X_hpd,y_hpd,~,hyp0,optimState.gpMeanfun,Ns_gp] = ...
             vbmc_gphyp(optimState,optimState.gpMeanfun,0,options);
@@ -511,6 +513,16 @@ while ~isFinished_flag
     optimState.sn2hpd = estimate_GPnoise(gp);
     
     timer.gpTrain = toc(t);
+    
+%     if ~exist('wsabi_hyp','var'); wsabi_hyp = zeros(1,D+1); end    
+%     priorMu = (optimState.PLB + optimState.PUB)/2;
+%     priorVar = diag(optimState.PUB - optimState.PLB);
+%     kernelVar = diag(exp(wsabi_hyp(2:end)));
+%     lambda = exp(wsabi_hyp(1));
+%     hypVar = [1e4,4*ones(1,D)];    
+%     [log_mu,log_Var,~,~,~,wsabi_hyp] = wsabi_oneshot(...
+%         'L',priorMu,priorVar,kernelVar,lambda,0.8,gp.X,gp.y,hypVar);
+%     log_mu
         
     %% Optimize variational parameters
     t = tic;
@@ -541,7 +553,7 @@ while ~isFinished_flag
     % Run optimization of variational parameters
     if optimState.Warmup && options.BOWarmup
         elbo = NaN;     elbo_sd = NaN;      varss = NaN;
-        pruned = 0;     G = NaN;    H = NaN;    varG = NaN; VarH = NaN;
+        pruned = 0;     G = NaN;    H = NaN;    varG = NaN; varH = NaN;
     else
         [vp,elbo,elbo_sd,G,H,varG,varH,varss,pruned] =  ...
             vpoptimize(Nfastopts,Nslowopts,vp,gp,Knew,X_hpd,y_hpd,optimState,stats,options,cmaes_opts,prnt);
