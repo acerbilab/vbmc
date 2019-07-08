@@ -66,22 +66,42 @@ if ~isfinite(df) || df == 0
     end
 else
     % Compute pdf of heavy-tailed variant of variational posterior
-    % (This uses a multivariate t-distribution which is not the same thing 
-    % as the product of D univariate t-distributions)
     
-    % Common normalization factor
-    nf = exp(gammaln((df+D)/2) - gammaln(df/2))/(df*pi)^(D/2)/prod(lambda);
-    
-    for k = 1:K
-        d2 = sum(bsxfun(@rdivide,bsxfun(@minus, X, mu_t(k,:)),sigma(k)*lambda).^2,2);
-        nn = nf*w(k)/sigma(k)^D*(1+d2/df).^(-(df+D)/2);
-        y = y + nn;
-        if gradflag
-            error('Gradient of heavy-tailed pdf not supported yet.');
-            dy = dy - bsxfun(@times,nn, ...
-                bsxfun(@rdivide,bsxfun(@minus,X,mu_t(k,:)),lambda.^2.*sigma(k)^2));
-        end
-    end    
+    if df > 0    
+        % (This uses a multivariate t-distribution which is not the same thing 
+        % as the product of D univariate t-distributions)
+
+        % Common normalization factor
+        nf = exp(gammaln((df+D)/2) - gammaln(df/2))/(df*pi)^(D/2)/prod(lambda);
+
+        for k = 1:K
+            d2 = sum(bsxfun(@rdivide,bsxfun(@minus, X, mu_t(k,:)),sigma(k)*lambda).^2,2);
+            nn = nf*w(k)/sigma(k)^D*(1+d2/df).^(-(df+D)/2);
+            y = y + nn;
+            if gradflag
+                error('Gradient of heavy-tailed pdf not supported yet.');
+                dy = dy - bsxfun(@times,nn, ...
+                    bsxfun(@rdivide,bsxfun(@minus,X,mu_t(k,:)),lambda.^2.*sigma(k)^2));
+            end
+        end  
+    else
+        % (This uses a product of D univariate t-distributions)
+        
+        df = abs(df);
+
+        % Common normalization factor
+        nf = (exp(gammaln((df+1)/2) - gammaln(df/2))/sqrt(df*pi))^D/prod(lambda);
+
+        for k = 1:K            
+            d2 = bsxfun(@rdivide,bsxfun(@minus, X, mu_t(k,:)),sigma(k)*lambda).^2;            
+            nn = nf*w(k)/sigma(k)^D*prod((1+d2/df).^(-(df+1)/2),2);
+            y = y + nn;
+            if gradflag
+                error('Gradient of heavy-tailed pdf not supported yet.');
+            end
+        end    
+    end
+        
 end
 
 if logflag
