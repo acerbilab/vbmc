@@ -9,12 +9,32 @@ Ncov = gp.Ncov;
 Nnoise = gp.Nnoise;
 Nmean = gp.Nmean;
 
+% Output warping
+outwarp_flag = isfield(gp,'outwarpfun') && ~isempty(gp.outwarpfun);
+if outwarp_flag
+    Noutwarp = gp.Noutwarp;
+    hyp_outwarp = hyp(Ncov+Nnoise+Nmean+1:Ncov+Nnoise+Nmean+Noutwarp);
+    if compute_nlZ_grad
+        [y,dwarp_dt,dwarp_dtheta,d2warp_dthetadt] = gp.outwarpfun(hyp_outwarp,gp.y);
+    else
+        [y,dwarp_dt] = gp.outwarpfun(hyp_outwarp,gp.y);
+    end
+    if ~isempty(gp.s2)
+        s2 = gp.s2 .* dwarp_dt.^2;  % Warped noise
+    else
+        s2 = [];
+    end
+else
+    y = gp.y;
+    s2 = gp.s2;
+end
+
 % Evaluate observation noise on training inputs
 hyp_noise = hyp(Ncov+1:Ncov+Nnoise); % Get noise hyperparameters
 if compute_nlZ_grad
-    [sn2,dsn2] = gplite_noisefun(hyp_noise,gp.X,gp.noisefun,gp.y,gp.s2);
+    [sn2,dsn2] = gplite_noisefun(hyp_noise,gp.X,gp.noisefun,gp.y,s2);
 else
-    sn2 = gplite_noisefun(hyp_noise,gp.X,gp.noisefun,gp.y,gp.s2);
+    sn2 = gplite_noisefun(hyp_noise,gp.X,gp.noisefun,gp.y,s2);
 end
 sn2_mult = 1;  % Effective noise variance multiplier
 
@@ -71,7 +91,7 @@ else
     end
 end
 
-alpha = L\(L'\(gp.y-m)) / sl;     % alpha = inv(K_mat + diag(sn2)) * (y - m)  I
+alpha = L\(L'\(y-m)) / sl;     % alpha = inv(K_mat + diag(sn2)) * (y - m)  I
 
 
 %% Negative log marginal likelihood computation
@@ -81,7 +101,11 @@ if compute_nlZ
     Nhyp = size(hyp,1);    
     
     % Compute negative log marginal likelihood
-    nlZ = (gp.y-m)'*alpha/2 + sum(log(diag(L))) + N*log(2*pi*sl)/2;
+    nlZ = (y-m)'*alpha/2 + sum(log(diag(L))) + N*log(2*pi*sl)/2;
+    
+    if outwarp_flag     % Jacobian correction for output warping
+        nlZ = nlZ - sum(log(abs(dwarp_dt)));
+    end
 
     if compute_nlZ_grad
         % Compute gradient of negative log marginal likelihood
@@ -108,11 +132,22 @@ if compute_nlZ
         else
             dgQ = diag(Q);
             for i = 1:Nnoise; dnlZ(Ncov+i) = 0.5*sn2_mult*sum(dsn2(:,i).*dgQ); end
+            if outwarp_flag
+                error('Input-dependent noise not supported with output warping yet.');
+            end
         end
 
         % Gradient of mean function
         if Nmean > 0
             dnlZ(Ncov+Nnoise+(1:Nmean)) = -dm'*alpha;
+        end
+        
+        % Gradient of output warping function
+        if outwarp_flag && Noutwarp > 0
+            for i = 1:Noutwarp
+                dnlZ(Ncov+Nnoise+Nmean+i) = dwarp_dtheta(:,i)'*alpha ...
+                    - sum(d2warp_dthetadt(:,i)./dwarp_dt);
+            end
         end
 
     end

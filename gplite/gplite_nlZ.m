@@ -32,8 +32,9 @@ compute_grad = nargout > 1; % Compute gradient if required
 Ncov = gp.Ncov;
 Nnoise = gp.Nnoise;
 Nmean = gp.Nmean;
+if isfield(gp,'Noutwarp'); Noutwarp = gp.Noutwarp; else; Noutwarp = 0; end
 
-if Nhyp ~= (Ncov+Nnoise+Nmean)
+if Nhyp ~= (Ncov+Nnoise+Nmean+Noutwarp)
     error('gplite_nlZ:dimmismatch','Number of hyperparameters mismatched with dimension of training inputs.');
 end
 if compute_grad && Ns > 1

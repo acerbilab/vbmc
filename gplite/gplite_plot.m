@@ -1,4 +1,4 @@
-function gplite_plot(gp,x0,lb,ub,sigma)
+function gplite_plot(gp,x0,lb,ub,sigma,qflag)
 %GPLITE_PLOT Profile plot of GP for lite Gaussian process regression.
 %   GPLITE_PLOT(GP,X0) plot the Gaussian process GP profile centered around 
 %   a given point X0. The plot is a D-by-D panel matrix, in which panels on 
@@ -25,6 +25,7 @@ if nargin < 2; x0 = []; end
 if nargin < 3; lb = []; end
 if nargin < 4; ub = []; end
 if nargin < 5; sigma = []; end
+if nargin < 6 || isempty(qflag); qflag = false; end
 
 deltay = [];
 if isscalar(lb) && isempty(ub)
@@ -77,9 +78,19 @@ for i = 1:D
     end
     
     if isempty(sigma)
-        [~,~,fmu,fs2] = gplite_pred(gp,xx);
+        if qflag
+            qvec = [0.025 0.5 0.975];
+            qq = gplite_qpred(gp,qvec,'f',xx);
+            fmu = qq(:,2); flo = qq(:,1); fhi = qq(:,3);
+        else
+            [~,~,fmu,fs2] = gplite_pred(gp,xx);
+            flo = fmu - 1.96*sqrt(fs2);
+            fhi = fmu + 1.96*sqrt(fs2);
+        end
     else
         [fmu,fs2] = gplite_quad(gp,xx,sigma);        
+        flo = fmu - 1.96*sqrt(fs2);
+        fhi = fmu + 1.96*sqrt(fs2);
     end
     
     if ~isempty(deltay)
@@ -102,12 +113,21 @@ for i = 1:D
         else
             xx = xx_vec;
         end
-        [~,~,fmu,fs2] = gplite_pred(gp,xx);        
+        
+        if qflag
+            qvec = [0.025 0.5 0.975];
+            qq = gplite_qpred(gp,qvec,'f',xx);
+            fmu = qq(:,2); flo = qq(:,1); fhi = qq(:,3);
+        else
+            [~,~,fmu,fs2] = gplite_pred(gp,xx);
+            flo = fmu - 1.96*sqrt(fs2);
+            fhi = fmu + 1.96*sqrt(fs2);
+        end        
     end
             
     plot(xx_vec,fmu,'-k','LineWidth',1); hold on;
-    plot(xx_vec,fmu+1.96*sqrt(fs2),'-','Color',0.8*[1 1 1],'LineWidth',1);
-    plot(xx_vec,fmu-1.96*sqrt(fs2),'-','Color',0.8*[1 1 1],'LineWidth',1);
+    plot(xx_vec,fhi,'-','Color',0.8*[1 1 1],'LineWidth',1);
+    plot(xx_vec,flo,'-','Color',0.8*[1 1 1],'LineWidth',1);
         
     xlim([lb(i),ub(i)]);
     

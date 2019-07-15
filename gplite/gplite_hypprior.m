@@ -3,7 +3,8 @@ function [lp,dlp] = gplite_hypprior(hyp,hprior)
 
 if isstruct(hyp)
     % Return an empty hyperprior struct
-    Nhyp = hyp.Ncov + hyp.Nnoise + hyp.Nmean;    
+    if isfield(hyp,'Noutwarp'); Noutwarp = hyp.Noutwarp; else; Noutwarp = 0; end
+    Nhyp = hyp.Ncov + hyp.Nnoise + hyp.Nmean + Noutwarp;
     hprior.mu = NaN(Nhyp,1);
     hprior.sigma = NaN(Nhyp,1);
     hprior.df = NaN(Nhyp,1);    

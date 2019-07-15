@@ -1,14 +1,26 @@
-function [ymu,ys2,fmu,fs2,lp] = gplite_pred(gp,Xstar,ystar,ssflag,s2star)
+function [ymu,ys2,fmu,fs2,lp] = gplite_pred(gp,Xstar,ystar,s2star,ssflag,nowarpflag)
 %GPLITE_PRED Prediction for lite Gaussian Processes regression.
+% Should make GPLITE_QPRED for quantile prediction.
 
 % HYP is a column vector. Multiple columns correspond to multiple samples.
 if nargin < 3; ystar = []; end
-if nargin < 4 || isempty(ssflag); ssflag = false; end
-if nargin < 5; s2star = []; end
+if nargin < 4; s2star = []; end
+if nargin < 5 || isempty(ssflag); ssflag = false; end
+if nargin < 6 || isempty(nowarpflag); nowarpflag = false; end
 
 [N,D] = size(gp.X);            % Number of training points and dimension
 Ns = numel(gp.post);           % Hyperparameter samples
 Nstar = size(Xstar,1);         % Number of test inputs
+
+% Perform dimensionality checks
+if ~isempty(ystar) && size(ystar,1) ~= Nstar
+    error('gplite_pred:ydimmismatch', ...
+        'YSTAR should be empty or a column vector of NSTAR observations.');
+end
+if ~isempty(s2star) && size(s2star,1) ~= Nstar
+    error('gplite_pred:s2dimmismatch', ...
+        'S2STAR should be empty or a column vector of NSTAR estimated variances.');
+end
 
 % Preallocate space
 fmu = zeros(Nstar,Ns);
@@ -27,6 +39,15 @@ Ncov = gp.Ncov;
 Nnoise = gp.Nnoise;
 Nmean = gp.Nmean;
 
+% Output warping function
+outwarp_flag = isfield(gp,'outwarpfun') && ~isempty(gp.outwarpfun) && ~nowarpflag;
+if outwarp_flag
+    Noutwarp = gp.Noutwarp;
+    fmu_prewarp = zeros(Nstar,Ns);
+else
+    Noutwarp = 0;
+end
+
 % Loop over hyperparameter samples
 for s = 1:Ns
     hyp = gp.post(s).hyp;
@@ -44,7 +65,7 @@ for s = 1:Ns
     % Get mean function hyperpameters and evaluate GP mean at test points
     hyp_mean = hyp(Ncov+Nnoise+1:Ncov+Nnoise+Nmean);
     mstar = gplite_meanfun(hyp_mean,Xstar,gp.meanfun);
-
+    
     % Compute cross-kernel matrix Ks_mat
     if gp.covfun(1) == 1    % Hard-coded SE-ard for speed
         ell = exp(hyp(1:D));
@@ -81,7 +102,29 @@ for s = 1:Ns
 
         % Compute log probability of test inputs
         if ~isempty(ystar) && nargout > 4
-            lp(:,s) = -(ystar-ymu).^2./(sn2_star*sn2_mult)/2-log(2*pi*sn2_star*sn2_mult)/2;
+            if outwarp_flag; error('output warping unsupported'); end
+            lp(:,s) = -(ystar-ymu(:,s)).^2./(sn2_star*sn2_mult)/2-log(2*pi*sn2_star*sn2_mult)/2;
+        end
+    end
+    
+    % Adjust predictions for output-warped GP
+    if outwarp_flag
+        hyp_outwarp = hyp(Ncov+Nnoise+Nmean+1:Ncov+Nnoise+Nmean+Noutwarp);
+        
+        fmu_prewarp(:,s) = fmu(:,s);        
+        fmu(:,s) = gp.outwarpfun(hyp_outwarp,fmu_prewarp(:,s),'inv');
+        ymu(:,s) = fmu_prewarp(:,s);
+        if nargout > 1
+            
+            [~,dwarp_dt] = gp.outwarpfun(hyp_outwarp,fmu(:,s));            
+            fs2(:,s) = fs2(:,s)./dwarp_dt.^2;
+            ys2(:,s) = ys2(:,s)./dwarp_dt.^2;
+            % The problem is that the sample variance explodes for multiple
+            % samples (because the predictive means can be very far apart)
+                
+            if nargout > 4
+                lp(:,s) = lp(:,s) + log(abs(dwarp_dt));                
+            end
         end
     end
 

@@ -1,4 +1,4 @@
-function gp = gplite_post(hyp,X,y,covfun,meanfun,noisefun,s2,update1)
+function gp = gplite_post(hyp,X,y,covfun,meanfun,noisefun,s2,update1,outwarpfun)
 %GPLITE_POST Compute posterior GP for a given training set.
 %   GP = GPLITE_POST(HYP,X,Y,S2,MEANFUN) computes the posterior GP for a vector
 %   of hyperparameters HYP and a given training set. HYP is a column vector 
@@ -26,6 +26,7 @@ if nargin < 5; meanfun = []; end
 if nargin < 6; noisefun = []; end
 if nargin < 7; s2 = []; end
 if nargin < 8 || isempty(update1); update1 = false; end
+if nargin < 9; outwarpfun = []; end
 
 gp = [];
 if isstruct(hyp)
@@ -36,6 +37,9 @@ if isstruct(hyp)
     if nargin < 5; meanfun = gp.meanfun; end
     if nargin < 6; noisefun = gp.noisefun; end
     if nargin < 7; s2 = gp.s2; end
+    if nargin < 9
+        if isfield(gp,'outwarpfun'); outwarpfun = gp.outwarpfun; else; outwarpfun = []; end
+    end
 end
 
 if update1
@@ -80,6 +84,15 @@ if isempty(gp)
     gp.noisefun = info.noisefun;
     [gp.Nmean,info] = gplite_meanfun('info',X,meanfun);
     gp.meanfun = info.meanfun;
+    
+    % Output warping function (optional)
+    if ~isempty(outwarpfun)
+        [Noutwarp,info] = outwarpfun('info',y);
+        gp.Noutwarp = Noutwarp;
+        gp.outwarpfun = info.outwarpfun;
+    else
+        Noutwarp = 0;
+    end
         
     % Create posterior structure
     postfields = {'hyp','alpha','sW','L','sn2_mult','Lchol'};
@@ -90,7 +103,7 @@ if isempty(gp)
     end
         
     if isempty(hyp) || isempty(y); return; end
-    if Nhyp ~= gp.Ncov+gp.Nnoise+gp.Nmean
+    if Nhyp ~= gp.Ncov+gp.Nnoise+gp.Nmean+Noutwarp
         error('gplite_post:dimmismatch', ...
             'Number of hyperparameters mismatched with GP model specification.');
     end
@@ -99,7 +112,7 @@ else
     Ns = numel(gp.post);        % Hyperparameter samples    
 end
 
-if ~update1        
+if ~update1 || 1
     % Loop over hyperparameter samples
     for s = 1:Ns
         hyp = gp.post(s).hyp;
@@ -121,7 +134,7 @@ else
     if Nstar > 1; gp(2:Nstar) = gp(1); end
     
     % Compute prediction for all samples
-    [mstar,vstar] = gplite_pred(gp(1),xstar,ystar,1,s2star);
+    [mstar,vstar] = gplite_pred(gp(1),xstar,ystar,s2star,1);
         
     % Loop over hyperparameter samples
     for s = 1:Ns
