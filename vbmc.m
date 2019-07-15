@@ -602,6 +602,10 @@ while ~isFinished_flag
     Nkl = 1e5;
     sKL = max(0,0.5*sum(vbmc_kldiv(vp,vp_old,Nkl,options.KLgauss)));
     
+%     Xrnd = vbmc_rnd(vp,1e5);
+%     ymu = gplite_pred(gp,Xrnd,[],[],1,1);
+%     [optimState.ymax-min(ymu)]    
+    
     % Compare variational posterior's moments with ground truth
     if ~isempty(options.TrueMean) && ~isempty(options.TrueCov) ...
         && all(isfinite(options.TrueMean(:))) ...
@@ -644,22 +648,6 @@ while ~isFinished_flag
             options = options_main;
         end
     end
-
-%     if optimState.Warmup && iter >= floor(D/2)+3
-%         % Remove warm-up points from training set unless close to max
-%         ymax = max(optimState.y_orig(1:optimState.Xmax));
-%         D = numel(optimState.LB);
-%         NkeepMin = 2*D;
-%         idx_keep = (ymax - optimState.y_orig) < options.WarmupKeepThreshold;
-%         if sum(idx_keep) < NkeepMin
-%             y_temp = optimState.y_orig;
-%             y_temp(~isfinite(y_temp)) = -Inf;
-%             [~,ord] = sort(y_temp,'descend');
-%             idx_keep(ord(1:min(NkeepMin,optimState.Xmax))) = true;
-%         end
-%         optimState.X_flag = idx_keep & optimState.X_flag;
-%         if isempty(action); action = 'trim'; else; action = [action ', trim']; end
-%     end
     
     % t_fits(iter) = toc(timer_fits);    
     % dt = (t_active(iter)+t_fits(iter))/new_funevals;

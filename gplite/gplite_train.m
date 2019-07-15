@@ -217,6 +217,18 @@ else
     hyp = hyp0(:,ord);
     widths_default = PUB - PLB;
 end
+
+% Fix zero widths
+idx0 = widths_default == 0;
+if any(idx0)
+    if size(hyp,2) > 1
+        stdhyp = std(hyp,[],2);
+        widths_default(idx0) = stdhyp(idx0);
+    end
+    idx0 = widths_default == 0;    
+    if any(idx0); widths_default(idx0) = min(1,UB(idx0) - LB(idx0)); end    
+end
+
 t1 = toc(timer1);
 
 % Check that hyperparameters are within bounds
