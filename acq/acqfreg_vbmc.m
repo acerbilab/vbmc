@@ -21,7 +21,7 @@ if isfield(vp,'delta') && ~isempty(vp.delta) && any(vp.delta > 0)
     [fmu,fs2] = gplite_quad(gp,Xs,vp.delta',1);    
 else
     % GP mean and variance for each hyperparameter sample
-    [~,~,fmu,fs2] = gplite_pred(gp,Xs,[],1);
+    [~,~,fmu,fs2] = gplite_pred(gp,Xs,[],[],1,1);
 end
 
 Ns = size(fmu,2);

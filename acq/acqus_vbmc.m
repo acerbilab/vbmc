@@ -14,7 +14,7 @@ if transpose_flag; Xs = Xs'; end
 p = max(vbmc_pdf(vp,Xs,0),realmin);
 
 % GP mean and variance for each hyperparameter sample
-[~,~,fmu,fs2] = gplite_pred(gp,Xs,[],1);
+[~,~,fmu,fs2] = gplite_pred(gp,Xs,[],[],1);
 
 Ns = size(fmu,2);
 fbar = sum(fmu,2)/Ns;   % Mean across samples

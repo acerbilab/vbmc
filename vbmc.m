@@ -263,7 +263,7 @@ defopts.VarActiveSample    = 'no                % Variational active sampling';
 defopts.FeatureTest        = 'no                % Test a new experimental feature';
 defopts.BOWarmup           = 'no                % Bayesian-optimization-like warmup stage';
 defopts.gpNoiseFun         = '1                 % GP default noise function';
-
+defopts.gpOutwarpFun       = '[]                % GP default output warping function';
 
 %% If called with 'all', return all default options
 if strcmpi(fun,'all')
@@ -377,6 +377,14 @@ switch optimState.gpMeanfun
         error('vbmc:UnknownGPmean', ...
             'Unknown/unsupported GP mean function. Supported mean functions are ''zero'', ''const'', ''negquad'', and ''se''.');
 end
+optimState.gpOutwarpfun = options.gpOutwarpFun;
+if ischar(optimState.gpOutwarpfun)
+    switch lower(optimState.gpOutwarpfun)
+        case {'[]','off','no','none','0'}; optimState.gpOutwarpfun = [];
+        otherwise
+            optimState.gpOutwarpfun = str2func(optimState.gpOutwarpfun);
+    end
+end
 
 if optimState.Cache.active
     displayFormat = ' %5.0f     %5.0f  /%5.0f   %12.2f  %12.2f  %12.2f     %4.0f %10.3g       %s\n';
@@ -470,7 +478,7 @@ while ~isFinished_flag
     % Get GP training options
     gptrain_options = get_GPTrainOptions(Ns_gp,optimState,stats,options);    
     gptrain_options.LogP = hyp_logp;
-    if numel(gptrain_options.Widths) ~= numel(hyp0); gptrain_options.Widths = []; end
+    if numel(gptrain_options.Widths) ~= numel(hyp0); gptrain_options.Widths = []; end    
     
     % Get training dataset
     [X_train,y_train] = get_traindata(optimState,options);

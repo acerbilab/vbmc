@@ -35,9 +35,14 @@ noisesize = max(noisesize,MinNoise);
 [Ncov,covinfo] = gplite_covfun('info',X_hpd,optimState.gpCovfun,[],y_hpd);
 [Nnoise,noiseinfo] = gplite_noisefun('info',X_hpd,optimState.gpNoisefun,y_hpd,s2);
 [Nmean,meaninfo] = gplite_meanfun('info',X_hpd,meanfun,y_hpd);
+if ~isempty(optimState.gpOutwarpfun)
+    [Noutwarp,outwarpinfo] = optimState.gpOutwarpfun('info',y_hpd);
+else
+    Noutwarp = 0;
+end
 
 meanfun = meaninfo.meanfun;     % Switch to number
-Nhyp = Ncov+Nnoise+Nmean;
+Nhyp = Ncov+Nnoise+Nmean+Noutwarp;
 
 % Initial GP hyperparameters
 hyp0 = zeros(Nhyp,1);
@@ -45,6 +50,7 @@ hyp0(1:Ncov) = covinfo.x0;
 hyp0(Ncov+(1:Nnoise)) = noiseinfo.x0;
 hyp0(Ncov+1) = log(noisesize);
 hyp0(Ncov+Nnoise+(1:Nmean)) = meaninfo.x0;
+if Noutwarp > 0; hyp0(Ncov+Nnoise+Nmean+(1:Noutwarp)) = outwarpinfo.x0; end
 
 % Change some of the default bounds over hyperparameters
 LB_gp = NaN(1,Nhyp);
@@ -87,6 +93,21 @@ if numel(optimState.gpNoisefun)>2 && optimState.gpNoisefun(3) == 1
     
     hypprior.mu(Ncov+3) = log(0.01);
     hypprior.sigma(Ncov+3) = log(10);
+end
+
+if Noutwarp > 0
+    y_all = optimState.y(optimState.X_flag);
+    
+    UB_gp(Ncov+Nnoise+Nmean+1) = max(y_all) - 10*D;
+    LB_gp(Ncov+Nnoise+Nmean+1) = min(min(y_all),max(y_all) - 20*D);
+        
+    hypprior.mu(Ncov+Nnoise+Nmean+1) = max(y_all) - 10*D;
+    hypprior.sigma(Ncov+Nnoise+Nmean+1) = 10*D;
+    hypprior.mu(Ncov+Nnoise+Nmean+2) = 0;
+    hypprior.sigma(Ncov+Nnoise+Nmean+2) = 1;
+    hypprior.mu(Ncov+Nnoise+Nmean+3) = 0;
+    hypprior.sigma(Ncov+Nnoise+Nmean+3) = 1;
+    
 end
 
 

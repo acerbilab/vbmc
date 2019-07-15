@@ -4,6 +4,7 @@ function gptrain_options = get_GPTrainOptions(Ns_gp,optimState,stats,options)
 iter = optimState.iter;
 if iter > 1; rindex = stats.rindex(iter-1); else; rindex = Inf; end
 
+gptrain_options.OutwarpFun = optimState.gpOutwarpfun;
 gptrain_options.Thin = options.GPSampleThin;    % MCMC thinning
 
 % Get hyperparameter posterior covariance from previous iters
