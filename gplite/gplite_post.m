@@ -112,7 +112,7 @@ else
     Ns = numel(gp.post);        % Hyperparameter samples    
 end
 
-if ~update1 || 1
+if ~update1 || ~isempty(outwarpfun)
     % Loop over hyperparameter samples
     for s = 1:Ns
         hyp = gp.post(s).hyp;
