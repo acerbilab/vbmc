@@ -601,11 +601,7 @@ while ~isFinished_flag
     % Compute symmetrized KL-divergence between old and new posteriors
     Nkl = 1e5;
     sKL = max(0,0.5*sum(vbmc_kldiv(vp,vp_old,Nkl,options.KLgauss)));
-    
-%     Xrnd = vbmc_rnd(vp,1e5);
-%     ymu = gplite_pred(gp,Xrnd,[],[],1,1);
-%     [optimState.ymax-min(ymu)]    
-    
+        
     % Compare variational posterior's moments with ground truth
     if ~isempty(options.TrueMean) && ~isempty(options.TrueCov) ...
         && all(isfinite(options.TrueMean(:))) ...
@@ -666,6 +662,16 @@ while ~isFinished_flag
 
     [optimState,stats,isFinished_flag,exitflag,action,msg] = ...
         vbmc_termination(optimState,action,stats,options);
+    
+    % Check and update output warping threshold
+    if ~isempty(optimState.gpOutwarpfun) && optimState.R < 1
+        Xrnd = vbmc_rnd(vp,1e5);
+        ymu = gplite_pred(gp,Xrnd,[],[],1,1);
+        ydelta = min(max(0,optimState.ymax-min(ymu)));
+        if any(ydelta > optimState.OutwarpDelta*0.8)
+            optimState.OutwarpDelta = optimState.OutwarpDelta*1.25;
+        end        
+    end    
     
     %% Write iteration output
     

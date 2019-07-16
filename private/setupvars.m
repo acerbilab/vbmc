@@ -195,6 +195,10 @@ optimState.iterList.fhyp = [];
 
 optimState.delta = options.Bandwidth*(optimState.PUB-optimState.PLB);
 
+% Default threshold on y for output warping
+optimState.OutwarpDelta = 10*nvars;
+
+
 %% Get warnings state
 
 optimState.DefaultWarnings.singularMatrix = warning('query','MATLAB:singularMatrix');

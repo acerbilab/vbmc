@@ -21,13 +21,18 @@ if isfield(vp,'delta') && ~isempty(vp.delta) && any(vp.delta > 0)
     [fmu,fs2] = gplite_quad(gp,Xs,vp.delta',1);    
 else
     % GP mean and variance for each hyperparameter sample
-    [~,~,fmu,fs2] = gplite_pred(gp,Xs,[],[],1,1);
+    [~,~,fmu,fs2] = gplite_pred(gp,Xs,[],[],1,0);
 end
 
 Ns = size(fmu,2);
 fbar = sum(fmu,2)/Ns;   % Mean across samples
 vbar = sum(fs2,2)/Ns;   % Average variance across samples
-if Ns > 1; vf = sum(bsxfun(@minus,fmu,fbar).^2,2)/(Ns-1); else; vf = 0; end  % Sample variance
+if Ns > 1
+    vf = sum(bsxfun(@minus,fmu,fbar).^2,2)/(Ns-1);
+    % vf(fbar < optimState.ymax - optimState.OutwarpDelta) = 0;
+else
+    vf = 0; 
+end  % Sample variance
 vtot = vf + vbar;       % Total variance
 
 z = optimState.ymax;
