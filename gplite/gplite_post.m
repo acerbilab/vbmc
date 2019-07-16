@@ -112,7 +112,7 @@ else
     Ns = numel(gp.post);        % Hyperparameter samples    
 end
 
-if ~update1 || ~isempty(outwarpfun)
+if ~update1    
     % Loop over hyperparameter samples
     for s = 1:Ns
         hyp = gp.post(s).hyp;
@@ -122,35 +122,45 @@ else
     % Perform rank-1 update of the GP posterior        
     Ncov = gp.Ncov;
     Nnoise = gp.Nnoise;
+    Nmean = gp.Nmean;
+    
+    outwarp_flag = isfield(gp,'outwarpfun') && ~isempty(gp.outwarpfun);
+    
+    if outwarp_flag
+        Noutwarp = gp.Noutwarp;    
+        if ~isempty(s2); error('Heteroskedastic noise not supported with output warping yet.'); end
+    end
     
     % Added training input
     xstar = X;
-    ystar = y;
-    s2star = s2;
-    
-    % Rank-1 update for the same XSTAR but potentially different ystars
-    Nstar = numel(ystar);
-
-    if Nstar > 1; gp(2:Nstar) = gp(1); end
     
     % Compute prediction for all samples
-    [mstar,vstar] = gplite_pred(gp(1),xstar,ystar,s2star,1);
+    [mstar,vstar] = gplite_pred(gp,xstar,y,s2,1,1);
         
     % Loop over hyperparameter samples
     for s = 1:Ns
         
-        hyp = gp(1).post(s).hyp;
+        hyp = gp.post(s).hyp;
         
+        if outwarp_flag
+            hyp_outwarp = hyp(Ncov+Nnoise+Nmean+1:Ncov+Nnoise+Nmean+Noutwarp);
+            ystar = gp.outwarpfun(hyp_outwarp,y);
+            s2star = s2;
+        else
+            ystar = y;
+            s2star = s2;
+        end
+                
         hyp_noise = hyp(Ncov+1:Ncov+Nnoise); % Get noise hyperparameters
         sn2 = gplite_noisefun(hyp_noise,xstar,gp.noisefun,ystar,s2star);
-        sn2_eff = sn2*gp(1).post(s).sn2_mult;            
+        sn2_eff = sn2*gp.post(s).sn2_mult;            
         
         % Compute covariance and cross-covariance
         if gp.covfun(1) == 1    % Hard-coded SE-ard for speed
             ell = exp(hyp(1:D));
             sf2 = exp(2*hyp(D+1));        
             K = sf2;
-            Ks_mat = sq_dist(diag(1./ell)*gp(1).X',diag(1./ell)*xstar');
+            Ks_mat = sq_dist(diag(1./ell)*gp.X',diag(1./ell)*xstar');
             Ks_mat = sf2 * exp(-Ks_mat/2);
         else
             hyp_cov = hyp(1:Ncov);
@@ -158,42 +168,32 @@ else
             Ks_mat = gplite_covfun(hyp_cov,gp.X,gp.covfun,xstar);            
         end            
         
-        L = gp(1).post(s).L;
-        Lchol = gp(1).post(s).Lchol;
+        L = gp.post(s).L;
+        Lchol = gp.post(s).Lchol;
         
         if Lchol        % high-noise parameterization
             alpha_update = (L\(L'\Ks_mat)) / sn2_eff;
             new_L_column = linsolve(L, Ks_mat, ...
                                 struct('UT', true, 'TRANSA', true)) / sn2_eff;
-            gp(1).post(s).L = [L, new_L_column; ...
+            gp.post(s).L = [L, new_L_column; ...
                                zeros(1, size(L, 1)), ...
                                sqrt(1 + K / sn2_eff - new_L_column' * new_L_column)];
         else            % low-noise parameterization
             alpha_update = -L * Ks_mat;
             v = -alpha_update / vstar(:,s);
-            gp(1).post(s).L = [L + v * alpha_update', -v; -v', -1 / vstar(:,s)];
+            gp.post(s).L = [L + v * alpha_update', -v; -v', -1 / vstar(:,s)];
         end
         
-        gp(1).post(s).sW = [gp(1).post(s).sW; 1/sqrt(sn2_eff)];
-
-        for iStar = 2:Nstar
-            gp(iStar).post(s) = gp(1).post(s);
-        end
+        gp.post(s).sW = [gp.post(s).sW; 1/sqrt(sn2_eff)];
         
         % alpha_update now contains (K + \sigma^2 I) \ k*
-        for iStar = 1:Nstar
-            gp(iStar).post(s).alpha = ...
-                [gp(iStar).post(s).alpha; 0] + ...
-                (mstar(:,s) - ystar(iStar)) / vstar(:,s) * [alpha_update; -1];
-        end
+        gp.post(s).alpha = ...
+            [gp.post(s).alpha; 0] + ...
+            (mstar(:,s) - ystar) / vstar(:,s) * [alpha_update; -1];
     end
     
     % Add single input to training set
-    for iStar = 1:Nstar
-        gp(iStar).X = [gp(iStar).X; xstar];
-        gp(iStar).y = [gp(iStar).y; ystar(iStar)];
-        if ~isempty(s2star)
-            gp(iStar).s2 = [gp(iStar).s2; s2star(iStar)];
-        end
-    end
+    gp.X = [gp.X; xstar];
+    gp.y = [gp.y; y];
+    if ~isempty(s2); gp.s2 = [gp.s2; s2]; end
 end

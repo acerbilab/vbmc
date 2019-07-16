@@ -664,11 +664,11 @@ while ~isFinished_flag
         vbmc_termination(optimState,action,stats,options);
     
     % Check and update output warping threshold
-    if ~isempty(optimState.gpOutwarpfun) && optimState.R < 1
+    if ~isempty(optimState.gpOutwarpfun) && (optimState.R < 1)
         Xrnd = vbmc_rnd(vp,1e5);
         ymu = gplite_pred(gp,Xrnd,[],[],1,1);
-        ydelta = min(max(0,optimState.ymax-min(ymu)));
-        if any(ydelta > optimState.OutwarpDelta*0.8)
+        ydelta = max([0,optimState.ymax-min(ymu)])
+        if any(ydelta > optimState.OutwarpDelta*0.8) && (optimState.R < 1)
             optimState.OutwarpDelta = optimState.OutwarpDelta*1.25;
         end        
     end    

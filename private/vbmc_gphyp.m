@@ -105,27 +105,28 @@ if Noutwarp > 0
         case 2
             UB_gp(Ncov+Nnoise+Nmean+1) = max(y_all) - outwarp_delta;
             LB_gp(Ncov+Nnoise+Nmean+1) = min(min(y_all),max(y_all) - 2*outwarp_delta);
-
             hypprior.mu(Ncov+Nnoise+Nmean+1) = max(y_all) - outwarp_delta;
             hypprior.sigma(Ncov+Nnoise+Nmean+1) = 10*D;
             hypprior.df(Ncov+Nnoise+Nmean+1) = 1;   % Half-Cauchy prior
             
-            UB_gp(Ncov+Nnoise+Nmean+2) = 0;
+            % UB_gp(Ncov+Nnoise+Nmean+2) = 0;
             hypprior.mu(Ncov+Nnoise+Nmean+2) = 0;
-            hypprior.sigma(Ncov+Nnoise+Nmean+2) = 1;
+            hypprior.sigma(Ncov+Nnoise+Nmean+2) = log(2);
             
         case 3
     
             UB_gp(Ncov+Nnoise+Nmean+1) = max(y_all) - outwarp_delta;
             LB_gp(Ncov+Nnoise+Nmean+1) = min(min(y_all),max(y_all) - 2*outwarp_delta);
-            UB_gp(Ncov+Nnoise+Nmean+3) = 0;
-
             hypprior.mu(Ncov+Nnoise+Nmean+1) = max(y_all) - outwarp_delta;
             hypprior.sigma(Ncov+Nnoise+Nmean+1) = 10*D;
+            hypprior.df(Ncov+Nnoise+Nmean+1) = 1;   % Half-Cauchy prior
+
             hypprior.mu(Ncov+Nnoise+Nmean+2) = 0;
-            hypprior.sigma(Ncov+Nnoise+Nmean+2) = 1;
+            hypprior.sigma(Ncov+Nnoise+Nmean+2) = log(2);
+            
+            UB_gp(Ncov+Nnoise+Nmean+3) = 0;
             hypprior.mu(Ncov+Nnoise+Nmean+3) = 0;
-            hypprior.sigma(Ncov+Nnoise+Nmean+3) = 1;
+            hypprior.sigma(Ncov+Nnoise+Nmean+3) = log(2);
         
     end        
     
