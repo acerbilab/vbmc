@@ -246,6 +246,9 @@ defopts.EmpiricalGPPrior   = 'no                % Empirical Bayes prior over som
 defopts.InitDesign         = 'plausible         % Initial samples ("plausible" is uniform in the plausible box)';
 defopts.gpQuadraticMeanBound = 'yes             % Stricter upper bound on GP negative quadratic mean function';
 defopts.Bandwidth          = '0                 % Bandwidth parameter for GP smoothing (in units of plausible box)';
+defopts.OutwarpThreshBase  = '10*nvars          % Output warping starting threshold';
+defopts.OutwarpThreshMult  = '1.25              % Output warping threshold multiplier when failed sub-threshold check';
+defopts.OutwarpThreshTol   = '0.8               % Output warping base threshold tolerance (fraction of current threshold)';
 
 %% Advanced options for unsupported/untested features (do *not* modify)
 defopts.WarpRotoScaling    = 'off               % Rotate and scale input';
@@ -667,10 +670,10 @@ while ~isFinished_flag
     if ~isempty(optimState.gpOutwarpfun) && (optimState.R < 1)
         Xrnd = vbmc_rnd(vp,1e5);
         ymu = gplite_pred(gp,Xrnd,[],[],1,1);
-        ydelta = max([0,optimState.ymax-min(ymu)])
-        if any(ydelta > optimState.OutwarpDelta*0.8) && (optimState.R < 1)
-            optimState.OutwarpDelta = optimState.OutwarpDelta*1.25;
-        end        
+        ydelta = max([0,optimState.ymax-min(ymu)]);
+        if any(ydelta > optimState.OutwarpDelta*options.OutwarpThreshTol) && (optimState.R < 1)
+            optimState.OutwarpDelta = optimState.OutwarpDelta*options.OutwarpThreshMult;
+        end
     end    
     
     %% Write iteration output
@@ -806,6 +809,11 @@ stats.gpHypFull{iter} = hyp_full;
 stats.timer(iter) = timer;
 stats.vp(iter) = vp;
 stats.gp(iter) = gplite_clean(gp);
+if ~isempty(optimState.gpOutwarpfun)
+    stats.outwarp_threshold(iter) = optimState.OutwarpDelta;
+else
+    stats.outwarp_threshold(iter) = NaN;
+end
 
 end
 

@@ -95,7 +95,8 @@ if numel(optimState.gpNoisefun)>2 && optimState.gpNoisefun(3) == 1
     hypprior.sigma(Ncov+3) = log(10);
 end
 
-if Noutwarp > 0    
+% Priors and bounds for output warping hyperparameters
+if Noutwarp > 0
     outwarp_delta = optimState.OutwarpDelta;
     
     y_all = optimState.y(optimState.X_flag);
@@ -106,7 +107,7 @@ if Noutwarp > 0
             UB_gp(Ncov+Nnoise+Nmean+1) = max(y_all) - outwarp_delta;
             LB_gp(Ncov+Nnoise+Nmean+1) = min(min(y_all),max(y_all) - 2*outwarp_delta);
             hypprior.mu(Ncov+Nnoise+Nmean+1) = max(y_all) - outwarp_delta;
-            hypprior.sigma(Ncov+Nnoise+Nmean+1) = 10*D;
+            hypprior.sigma(Ncov+Nnoise+Nmean+1) = options.OutwarpThreshBase;
             hypprior.df(Ncov+Nnoise+Nmean+1) = 1;   % Half-Cauchy prior
             
             % UB_gp(Ncov+Nnoise+Nmean+2) = 0;
@@ -118,7 +119,7 @@ if Noutwarp > 0
             UB_gp(Ncov+Nnoise+Nmean+1) = max(y_all) - outwarp_delta;
             LB_gp(Ncov+Nnoise+Nmean+1) = min(min(y_all),max(y_all) - 2*outwarp_delta);
             hypprior.mu(Ncov+Nnoise+Nmean+1) = max(y_all) - outwarp_delta;
-            hypprior.sigma(Ncov+Nnoise+Nmean+1) = 10*D;
+            hypprior.sigma(Ncov+Nnoise+Nmean+1) = options.OutwarpThreshBase;
             hypprior.df(Ncov+Nnoise+Nmean+1) = 1;   % Half-Cauchy prior
 
             hypprior.mu(Ncov+Nnoise+Nmean+2) = 0;

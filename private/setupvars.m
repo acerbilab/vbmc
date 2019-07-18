@@ -195,8 +195,8 @@ optimState.iterList.fhyp = [];
 
 optimState.delta = options.Bandwidth*(optimState.PUB-optimState.PLB);
 
-% Default threshold on y for output warping
-optimState.OutwarpDelta = 10*nvars;
+% Starting threshold on y for output warping
+optimState.OutwarpDelta = options.OutwarpThreshBase;
 
 
 %% Get warnings state
