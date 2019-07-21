@@ -1,6 +1,8 @@
 function [H,dH,gammasum] = entlb_vbmc(vp,grad_flags,jacobian_flag)
 %ENTLB_VBMC Entropy lower bound for variational posterior
 
+BigK = 100; % Large number of components
+
 % Uses entropy lower bound of Gershman et al. (2012)
 
 % Check if gradient computation is required
@@ -43,7 +45,25 @@ if K == 1
     if grad_flags(4)
         w_grad = 0;
     end
-else    
+elseif K > BigK
+    % Large number of components, avoid vectorization
+
+    nconst = 1/(2*pi)^(D/2)/prod(lambda);
+    H = 0;
+    
+    for n = 1:K
+        sumsigma = sqrt(sigma(n)^2 + sigma.^2);
+        d2 = sum(bsxfun(@rdivide, bsxfun(@minus, mu, mu(:,n)), bsxfun(@times, sumsigma, lambda)).^2,1);
+        gamma(1,:) = bsxfun(@times, nconst./(sumsigma.^D), exp(-0.5*d2));
+        gammasum = sum(bsxfun(@times,w,gamma(1,:,:)),2);
+        H = H - w(n)*log(gammasum);
+    end
+    
+    if any(grad_flags)
+        error('Entropy gradient not supported yet for large number of components.');
+    end
+    
+else
     % Multiple components
 
     % Reshape in 3-D to allow vectorization
