@@ -56,7 +56,7 @@ if ~isfinite(df) || df == 0
     nf = 1/(2*pi)^(D/2)/prod(lambda);
     
     for k = 1:K
-        d2 = sum(bsxfun(@rdivide,bsxfun(@minus, X, mu_t(k,:)),sigma(k)*lambda).^2,2);
+        d2 = sum(bsxfun(@rdivide,bsxfun(@minus,X,mu_t(k,:)),sigma(k)*lambda).^2,2);
         nn = nf*w(k)/sigma(k)^D*exp(-0.5*d2);
         y = y + nn;
         if gradflag

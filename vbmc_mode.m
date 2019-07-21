@@ -1,4 +1,4 @@
-function [x,vp] = vbmc_mode(vp,origflag)
+function [x,vp] = vbmc_mode(vp,nmax,origflag)
 %VBMC_MODE Find mode of VBMC posterior approximation.
 %   X = VBMC_PDF(VP) returns the mode of the variational posterior VP. 
 %
@@ -12,32 +12,32 @@ function [x,vp] = vbmc_mode(vp,origflag)
 %
 %   See also VBMC, VBMC_MOMENTS, VBMC_PDF.
 
-if nargin < 2 || isempty(origflag); origflag = true; end
+if nargin < 2 || isempty(nmax); nmax = 20; end
+if nargin < 3 || isempty(origflag); origflag = true; end
 
 if origflag && isfield(vp,'mode') && ~isempty(vp.mode)
     x = vp.mode;
-else
+else    
+    x0_mat = vp.mu';
+    
+    if nmax < vp.K
+        y0_vec = nlnpdf(x0_mat);	% First, evaluate pdf at all modes        
+        % Start from first NMAX solutions
+        [~,ord] = sort(y0_vec,'ascend');
+        x0_mat = x0_mat(ord(1:nmax),:);
+    end
+        
+    xmin = zeros(size(x0_mat,1),vp.D);
+    ff = Inf(size(x0_mat,1),1);
 
-    xmin = zeros(vp.K,vp.D);
-    ff = Inf(vp.K,1);
-
-    for k = 1:vp.K
-        x0 = vp.mu(:,k)';
+    for k = 1:size(x0_mat,1)
+        x0 = x0_mat(k,:);
         if origflag; x0 = warpvars(x0,'inv',vp.trinfo); end
 
         if origflag
             opts = optimoptions('fmincon','GradObj','off','Display','off');
-
-    %         mu = vp.mu';
-    %         diam = (max(mu) - min(mu)) + 5*max(vp.sigma).*vp.lambda';
-    %         LB_vp = warpvars(min(mu) - diam,'inv',vp.trinfo);
-    %         UB_vp = warpvars(max(mu) + diam,'inv',vp.trinfo);     
-    %         LB = max(vp.trinfo.lb_orig + sqrt(eps),LB_vp);
-    %         UB = min(vp.trinfo.ub_orig - sqrt(eps),UB_vp);
-
-             LB = vp.trinfo.lb_orig + sqrt(eps);
-             UB = vp.trinfo.ub_orig - sqrt(eps);
-
+            LB = vp.trinfo.lb_orig + sqrt(eps);
+            UB = vp.trinfo.ub_orig - sqrt(eps);
             [xmin(k,:),ff(k)] = fmincon(@nlnpdf,x0,[],[],[],[],LB,UB,[],opts);        
         else
             opts = optimoptions('fminunc','GradObj','off','Display','off');

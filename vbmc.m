@@ -862,7 +862,7 @@ if prnt > 2
 end
 
 % Find mode in transformed space
-x0t = vbmc_mode(vp,0);
+x0t = vbmc_mode(vp,[],0);
 x0 = warpvars(x0t,'inv',vp.trinfo);
 
 % Sample from variational posterior and set plausible bounds accordingly
