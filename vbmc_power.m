@@ -37,7 +37,7 @@ switch n
                 sigmap(idx) = sigma(i)*sigma(j)/sqrt(sigma(i)^2+sigma(j)^2);
             end
         end
-                
+    
     otherwise        
         error('vbmc_power:UnsupportedPower',...
             'The power N should be a small positive integer. Currently supported values of N: 1 and 2.');

@@ -113,7 +113,7 @@ if Nel <= maxel
 else
     x = zeros(n,1);
     idx_min = 1;
-    while idx_min < n
+    while idx_min <= n
         idx_max = min(idx_min+stride-1,n);
         idx = idx_min:idx_max;
         x(idx) = sum(bsxfun(@lt, cdf, u(idx)),2) + 1;
