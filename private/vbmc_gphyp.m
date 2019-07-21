@@ -178,17 +178,14 @@ else
     
     hypprior.mu(1:D) = log(0.05*(optimState.PUB - optimState.PLB));
     hypprior.sigma(1:D) = log(10);
-%     hypprior.mu(1:D) = log(0.001*(optimState.PUB - optimState.PLB));
-%     hypprior.sigma(1:D) = log(1e3);
     
 %     [~,idx] = max(y_hpd);
 %     xmax = X_hpd(idx,:);    
-%      switch meanfun
-%          case {4,6}
-%              hypprior.mu(Ncov+Nnoise+1+(1:D)) = xmax;
-%              hypprior.sigma(Ncov+Nnoise+1+(1:D)) = 1e-6*(optimState.PUB - optimState.PLB);            
-%      end
-          
+%     switch meanfun
+%         case {4,6}
+%             hypprior.mu(Ncov+Nnoise+1+(1:D)) = xmax;
+%             hypprior.sigma(Ncov+Nnoise+1+(1:D)) = 1e-4*(optimState.PUB - optimState.PLB);            
+%     end
 end
 
 hypprior.LB = LB_gp;

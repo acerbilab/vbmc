@@ -11,6 +11,18 @@ if any(~isfinite(x0))   % Invalid/not provided starting point
     x0 = 0.5*(PLB + PUB);       % Midpoint
 end
 
+% Integer variables
+optimState.integervars = false(1, nvars);
+if ~isempty(options.IntegerVars)
+    optimState.integervars(options.IntegerVars) = true;    
+    for d = find(optimState.integervars)
+        if (~isfinite(LB(d)) && floor(LB(d)) ~= 0.5) || ...
+                (~isfinite(UB(d)) && floor(UB(d)) ~= 0.5)
+                error('Hard bounds of integer variables need to be set at +/- 0.5 points from their boundary values (e.g., -0.5 and 10.5 for a variable that takes values from 0 to 10).');
+        end
+    end
+end
+
 optimState.LB_orig = LB;
 optimState.UB_orig = UB;
 optimState.PLB_orig = PLB;
@@ -40,6 +52,15 @@ end
 
 x0 = warpvars(x0,'dir',trinfo);
 
+% Report variable transformation
+if any(optimState.integervars) && prnt > 0
+    if sum(optimState.integervars) == 1
+        fprintf('Index of variable restricted to integer values: %s.\n',mat2str(find(optimState.integervars)));        
+    else
+        fprintf('Indices of variables restricted to integer values: %s.\n',mat2str(find(optimState.integervars)));
+    end
+end
+
 %% Initialize variational posterior
 
 vp.D = nvars;
@@ -59,6 +80,7 @@ else
     vp.optimize_mu = logical(options.VariableMeans);
     vp.optimize_weights = logical(options.VariableWeights);
 end
+vp.temperature = NaN;
 vp.delta = [];
 vp.bounds = [];
 vp.stats = [];
@@ -197,6 +219,14 @@ optimState.delta = options.Bandwidth*(optimState.PUB-optimState.PLB);
 
 % Starting threshold on y for output warping
 optimState.OutwarpDelta = options.OutwarpThreshBase;
+
+% Posterior tempering temperature
+if ~isempty(options.Temperature); T = options.Temperature; else; T = 1; end
+if round(T) ~= T || T > 4 || T < 1
+    error('vbmc:PosterioTemperature',...
+        'OPTIONS.Temperature should be a small positive integer (allowed T = 1,2,3,4).');
+end
+optimState.temperature = T;
 
 
 %% Get warnings state

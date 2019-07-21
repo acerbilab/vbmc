@@ -8,6 +8,7 @@ if nargin < 5 || isempty(transpose_flag); transpose_flag = false; end
 % Transposed input (useful for CMAES)
 if transpose_flag; Xs = Xs'; end
 
+Xs = real2int_vbmc(Xs,vp.trinfo,optimState.integervars);
 [N,D] = size(Xs);    % Number of points and dimension
 
 % Threshold on GP variance, try not to go below this

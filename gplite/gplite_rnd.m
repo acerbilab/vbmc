@@ -1,4 +1,4 @@
-function [Fstar,Ystar] = gplite_rnd(gp,Xstar)
+function [Fstar,Ystar] = gplite_rnd(gp,Xstar,nowarpflag)
 %GPLITE_RND Draw a random function from Gaussian process.
 %   FSTAR = GPLITE_RND(GP,XSTAR) draws a random function from GP, evaluated 
 %   at XSTAR.
@@ -7,6 +7,8 @@ function [Fstar,Ystar] = gplite_rnd(gp,Xstar)
 %   drawn function.
 %
 %   See also GPLITE_POST, GPLITE_PRED.
+
+if nargin < 3 || isempty(nowarpflag); nowarpflag = false; end
 
 [N,D] = size(gp.X);            % Number of training points and dimension
 Ns = numel(gp.post);           % Hyperparameter samples
@@ -60,7 +62,7 @@ Fstar = T' * randn(size(T,1),1) + fmu;
 
 % Add observation noise
 if nargout > 1
-    % Get observation noise hyperpameters and evaluate noise at test points
+    % Get observation noise hyperparameters and evaluate noise at test points
     hyp_noise = hyp(Ncov+1:Ncov+Nnoise);
     sn2 = gplite_noisefun(hyp_noise,Xstar,gp.noisefun);
     sn2_mult = gp.post(s).sn2_mult;
@@ -68,6 +70,17 @@ if nargout > 1
     Ystar = Fstar + sqrt(sn2*sn2_mult).*randn(size(fmu));
 end
 
+% Apply output warping to map back to observation space
+if ~isempty(gp.outwarpfun) && ~nowarpflag
+    Noutwarp = gp.outwarpfun('info');
+    hyp = gp.post(s).hyp;
+    hyp_outwarp = hyp(Ncov+Nnoise+Nmean+1:Ncov+Nnoise+Nmean+Noutwarp);
+    Fstar = gp.outwarpfun(hyp_outwarp,Fstar,'inv');
+    if nargout > 1
+        Ystar = gp.outwarpfun(hyp_outwarp,Ystar,'inv');            
+    end
+end
+    
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

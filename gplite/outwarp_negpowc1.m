@@ -28,6 +28,8 @@ if ischar(hyp)
     ywarp = Noutwarp;
     if nargout > 1
         
+        if isempty(y); y = [0;1]; end
+        
         % Initialize bounds for all hyperparameters
         outwarp_info.LB = -Inf(1,Noutwarp);
         outwarp_info.UB = Inf(1,Noutwarp);

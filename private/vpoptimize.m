@@ -280,6 +280,7 @@ varG = elbostats.varG(idx);
 varH = elbostats.varH(idx);
 vp = vp0_fine(idx);
 vp = rescale_params(vp,elbostats.theta(idx,:));
+vp.temperature = optimState.temperature;
 
 %% Potentially prune mixture components
 

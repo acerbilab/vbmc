@@ -66,7 +66,7 @@ else
 end
 
 % Return best variational posterior, its ELBO and SD
-vp = stats.vp(idx_best);
+vp = vptrain2real(stats.vp(idx_best),1);
 elbo = stats.elbo(idx_best);
 elbo_sd = stats.elbo_sd(idx_best);
 vp.stats.stable = stats.stable(idx_best);

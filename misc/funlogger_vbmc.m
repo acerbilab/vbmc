@@ -123,6 +123,12 @@ switch lower(state)
             if hescnoise && (~isscalar(fsd) || ~isfinite(fsd) || ~isreal(fsd) || fsd <= 0.0)
                 error(['funlogger_vbmc:InvalidNoiseValue',...
                     'The returned estimated SD (second function output) must be a finite, positive real-valued scalar (returned SD: ' mat2str(fsd) ').']);
+            end
+            
+            % Tempered posterior
+            if isfield(optimState,'temperature') && ~isempty(optimState.temperature)
+                fval_orig = fval_orig / optimState.temperature;
+                fsd = fsd / optimState.temperature;
             end            
             
         catch fun_error
@@ -157,6 +163,12 @@ switch lower(state)
         if hescnoise && (~isscalar(fsd) || ~isfinite(fsd) || ~isreal(fsd) || fsd <= 0.0)
             error(['funlogger_vbmc:InvalidNoiseValue',...
                 'The provided estimated SD (second function output) must be a finite, positive real-valued scalar (provided SD: ' mat2str(fsd) ').']);
+        end
+        
+        % Tempered posterior
+        if isfield(optimState,'temperature') && ~isempty(optimState.temperature)
+            fval_orig = fval_orig / optimState.temperature;
+            fsd = fsd / optimState.temperature;
         end
                     
         % Update function records

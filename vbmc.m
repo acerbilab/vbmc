@@ -154,6 +154,7 @@ end
 
 %% Advanced options (do not modify unless you *know* what you are doing)
 
+defopts.IntegerVars             = '[]           % Array with indices of integer variables';
 defopts.UncertaintyHandling     = 'no           % Explicit noise handling (only partially supported)';
 defopts.NoiseSize               = '[]           % Base observation noise magnitude';
 defopts.FunEvalStart            = 'max(D,10)    % Number of initial target fcn evals';
@@ -249,6 +250,7 @@ defopts.Bandwidth          = '0                 % Bandwidth parameter for GP smo
 defopts.OutwarpThreshBase  = '10*nvars          % Output warping starting threshold';
 defopts.OutwarpThreshMult  = '1.25              % Output warping threshold multiplier when failed sub-threshold check';
 defopts.OutwarpThreshTol   = '0.8               % Output warping base threshold tolerance (fraction of current threshold)';
+defopts.Temperature        = '1                 % Temperature for posterior tempering (allowed values T = 1,2,3,4)';
 
 %% Advanced options for unsupported/untested features (do *not* modify)
 defopts.WarpRotoScaling    = 'off               % Rotate and scale input';
@@ -567,7 +569,7 @@ while ~isFinished_flag
         pruned = 0;     G = NaN;    H = NaN;    varG = NaN; varH = NaN;
     else
         [vp,elbo,elbo_sd,G,H,varG,varH,varss,pruned] =  ...
-            vpoptimize(Nfastopts,Nslowopts,vp,gp,Knew,X_hpd,y_hpd,optimState,stats,options,cmaes_opts,prnt);
+            vpoptimize(Nfastopts,Nslowopts,vp,gp,Knew,X_hpd,y_hpd,optimState,stats,options,cmaes_opts,prnt);        
     end
     % Save variational solution stats
     vp.stats.elbo = elbo;               % ELBO
@@ -580,6 +582,11 @@ while ~isFinished_flag
     
     optimState.vpK = vp.K;
     optimState.H = H;   % Save current entropy
+    
+    % Get real variational posterior (might differ from training posterior)
+    vp_real = vptrain2real(vp,0,options);
+    elbo = vp_real.stats.elbo;
+    elbo_sd = vp_real.stats.elbo_sd;
     
     timer.variationalFit = toc(t);
     
@@ -610,7 +617,7 @@ while ~isFinished_flag
         && all(isfinite(options.TrueMean(:))) ...
         && all(isfinite(options.TrueCov(:)))
     
-        [mubar_orig,Sigma_orig] = vbmc_moments(vp,1,1e6);
+        [mubar_orig,Sigma_orig] = vbmc_moments(vp_real,1,1e6);
         [kl(1),kl(2)] = mvnkl(mubar_orig,Sigma_orig,options.TrueMean,options.TrueCov);
         sKL_true = 0.5*sum(kl)
     else
@@ -743,9 +750,10 @@ if exitflag < 1 && options.RetryMaxFunEvals > 0
     end    
     
     % Get better VBMC parameters and initialization from current run
-    [x0,LB,UB,PLB,PUB,Xvp] = initFromVP(vp,LB,UB,PLB,PUB,0);
+    vp0 = stats.vp(idx_best);
+    [x0,LB,UB,PLB,PUB,Xvp] = initFromVP(vp0,LB,UB,PLB,PUB,0);
     Ninit = max(options.FunEvalStart,ceil(options.RetryMaxFunEvals/10));
-    x0 = [x0; robustSampleFromVP(vp,Ninit-1,Xvp)];
+    x0 = [x0; robustSampleFromVP(vp0,Ninit-1,Xvp)];
     
     options.FunEvalStart = Ninit;
     options.MaxFunEvals = options.RetryMaxFunEvals;

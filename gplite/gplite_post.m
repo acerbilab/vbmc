@@ -63,6 +63,10 @@ if update1
         warning('gplite_post:RankOneNoiseFunction', ...
             'No need to specify a GP noise function when performing a rank-one update.');
     end
+    if nargin > 8 && ~isempty(outwarpfun)
+        warning('gplite_post:RankOneNoiseFunction', ...
+            'No need to specify a GP output warping function when performing a rank-one update.');
+    end
 end
 
 % Create GP struct
@@ -92,6 +96,7 @@ if isempty(gp)
         gp.outwarpfun = info.outwarpfun;
     else
         Noutwarp = 0;
+        gp.outwarpfun = [];
     end
         
     % Create posterior structure

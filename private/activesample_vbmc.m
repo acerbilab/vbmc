@@ -21,6 +21,7 @@ else                    % Active uncertainty sampling
 
         % Create search set from cache and randomly generated
         [Xsearch,idx_cache] = getSearchPoints(NSsearch,optimState,vp,options);
+        Xsearch = real2int_vbmc(Xsearch,vp.trinfo,optimState.integervars);
         
         % Evaluate acquisition function
         acq_fast = SearchAcqFcn{1}(Xsearch,vp,gp,optimState,0);
@@ -53,9 +54,10 @@ else                    % Active uncertainty sampling
             % cmaes_opts.DispModulo = Inf;
             fval_old = SearchAcqFcn{1}(Xacq(1,:),vp,gp,optimState,0);
             cmaes_opts.TolFun = max(1e-12,abs(fval_old*1e-3));
-            [xsearch_cmaes,fval_cmaes] = cmaes_modded(func2str(SearchAcqFcn{1}),Xacq(1,:)',insigma,cmaes_opts,vp,gp,optimState,1);
+            x0 = real2int_vbmc(Xacq(1,:),vp.trinfo,optimState.integervars)';
+            [xsearch_cmaes,fval_cmaes] = cmaes_modded(func2str(SearchAcqFcn{1}),x0,insigma,cmaes_opts,vp,gp,optimState,1);
             if fval_cmaes < fval_old            
-                Xacq(1,:) = xsearch_cmaes';
+                Xacq(1,:) = real2int_vbmc(xsearch_cmaes',vp.trinfo,optimState.integervars);
                 idx_cache_acq(1) = 0;
                 % idx_cache = [idx_cache(:); 0];
                 % Double check if the cache indexing is correct
