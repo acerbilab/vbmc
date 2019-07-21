@@ -45,7 +45,7 @@ switch n
         wp_sorted = sort(wp);
         wp_cum = cumsum(wp_sorted);
         idx_cut = sum(wp_cum < cutoff);
-        w_cutoff = wp_sorted(idx_cut);
+        if idx_cut > 0; w_cutoff = wp_sorted(idx_cut); else; w_cutoff = 0; end
         wp(wp <= w_cutoff) = 0;
         wp = wp/sum(wp);
         
