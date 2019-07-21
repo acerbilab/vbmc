@@ -100,8 +100,25 @@ end
 function x = catrnd(p,n)
 %CATRND Sample from categorical distribution.
 
+maxel = 1e6;
+Nel = n*numel(p);
+stride = ceil(maxel/numel(p));
+
 cdf(1,:) = cumsum(p);
 u = rand(n,1)*cdf(end);
-x = sum(bsxfun(@lt, cdf, u),2) + 1;
+
+% Split for memory reasons
+if Nel <= maxel
+    x = sum(bsxfun(@lt, cdf, u),2) + 1;
+else
+    x = zeros(n,1);
+    idx_min = 1;
+    while idx_min < n
+        idx_max = min(idx_min+stride-1,n);
+        idx = idx_min:idx_max;
+        x(idx) = sum(bsxfun(@lt, cdf, u(idx)),2) + 1;
+        idx_min = idx_max+1;
+    end
+end
 
 end
