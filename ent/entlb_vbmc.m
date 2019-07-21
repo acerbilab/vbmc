@@ -54,8 +54,8 @@ elseif K > BigK
     for n = 1:K
         sumsigma = sqrt(sigma(n)^2 + sigma.^2);
         d2 = sum(bsxfun(@rdivide, bsxfun(@minus, mu, mu(:,n)), bsxfun(@times, sumsigma, lambda)).^2,1);
-        gamma(1,:) = bsxfun(@times, nconst./(sumsigma.^D), exp(-0.5*d2));
-        gammasum = sum(bsxfun(@times,w,gamma(1,:,:)),2);
+        gamma = nconst./sumsigma.^D .* exp(-0.5*d2);
+        gammasum = sum(w.*gamma,2);
         H = H - w(n)*log(gammasum);
     end
     
