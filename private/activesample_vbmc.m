@@ -19,6 +19,8 @@ else                    % Active uncertainty sampling
         
     for is = 1:Ns
 
+        optimState.acqrand = rand();    % Seed for random acquisition fcn
+        
         % Create search set from cache and randomly generated
         [Xsearch,idx_cache] = getSearchPoints(NSsearch,optimState,vp,options);
         Xsearch = real2int_vbmc(Xsearch,vp.trinfo,optimState.integervars);
