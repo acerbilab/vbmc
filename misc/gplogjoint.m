@@ -213,6 +213,7 @@ for s = 1:Ns
             end
                         
         elseif compute_var
+            
             for j = 1:k
                 tau_j = sqrt(sigma(j)^2*lambda.^2 + ell.^2 + delta.^2);
                 lnnf_j = ln_sf2 + sum_lnell - sum(log(tau_j));
@@ -222,13 +223,13 @@ for s = 1:Ns
                 tau_jk = sqrt((sigma(j)^2 + sigma(k)^2)*lambda.^2 + ell.^2 + 2*delta.^2);                
                 lnnf_jk = ln_sf2 + sum_lnell - sum(log(tau_jk));
                 delta_jk = (mu(:,j)-mu(:,k))./tau_jk;
-                
+                                
                 if Lchol
                     J_jk = exp(lnnf_jk -0.5*sum(delta_jk.^2,1)) ...
                      - z_k*(L\(L'\z_j'))/sn2_eff;
                 else
                     J_jk = exp(lnnf_jk -0.5*sum(delta_jk.^2,1)) ...
-                     + z_k*(L*z_j');                    
+                     + z_k*(L*z_j');
                 end
                 
 %                 J(j,k) = w(j)*w(k)*J_jk;
