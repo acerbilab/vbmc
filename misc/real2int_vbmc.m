@@ -3,9 +3,9 @@ function x = real2int_vbmc(x,trinfo,integervars)
 
 if ~any(integervars); return; end
 
-xtemp = warpvars(x,'inv',trinfo);
+xtemp = warpvars_vbmc(x,'inv',trinfo);
 xtemp(:,integervars) = round(xtemp(:,integervars));
-xtemp = warpvars(xtemp,'d',trinfo);
+xtemp = warpvars_vbmc(xtemp,'d',trinfo);
 
 x(:,integervars) = xtemp(:,integervars);
 

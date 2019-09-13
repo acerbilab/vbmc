@@ -103,12 +103,12 @@ for iPlot = 1:Npanels
 
         if vpflag
             % Plot component centers
-            mu = warpvars(vp.mu','inv',vp.trinfo);
+            mu = warpvars_vbmc(vp.mu','inv',vp.trinfo);
             hold on;
             plot(mu(:,1),mu(:,2),'xr','LineStyle','none');
 
             % Plot data
-            X = warpvars(stats.gp(idx(iPlot)).X,'inv',vp.trinfo);
+            X = warpvars_vbmc(stats.gp(idx(iPlot)).X,'inv',vp.trinfo);
             plot(X(:,1),X(:,2),'.k','LineStyle','none');
         end
 

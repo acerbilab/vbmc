@@ -13,13 +13,13 @@ if N0 <= Ns
                 % Uniform random samples in the plausible box (in transformed space)
                 Xrnd = bsxfun(@plus,bsxfun(@times,rand(Ns-N0,D),optimState.PUB-optimState.PLB),optimState.PLB);
             case 'narrow'
-                xstart = warpvars(x0(1,:),'dir',optimState.trinfo);
+                xstart = warpvars_vbmc(x0(1,:),'dir',optimState.trinfo);
                 Xrnd = bsxfun(@plus,bsxfun(@times,rand(Ns-N0,D)-0.5,0.1*(optimState.PUB-optimState.PLB)),xstart);
                 Xrnd = bsxfun(@min,bsxfun(@max,Xrnd,optimState.PLB),optimState.PUB);
             otherwise
                 error('Unknown initial design for VBMC.');
         end
-        Xrnd = warpvars(Xrnd,'inv',optimState.trinfo);  % Convert back to original space
+        Xrnd = warpvars_vbmc(Xrnd,'inv',optimState.trinfo);  % Convert back to original space
         Xs = [Xs; Xrnd];
         ys = [ys; NaN(Ns-N0,1)];
     end
@@ -46,7 +46,7 @@ end
 optimState.Cache.X_orig(idx_remove,:) = [];
 optimState.Cache.y_orig(idx_remove) = [];
 
-Xs = warpvars(Xs,'d',optimState.trinfo);
+Xs = warpvars_vbmc(Xs,'d',optimState.trinfo);
 
 for is = 1:Ns
     timer_func = tic;

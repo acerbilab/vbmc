@@ -1,4 +1,4 @@
-function varargout = warpvars(varargin)
+function varargout = warpvars_vbmc(varargin)
 %WARPVARS Linear and nonlinear transformation of variables.
 %
 %  TRINFO = PDFTRANS(NVARS,LB,UB) returns the transformation structure 

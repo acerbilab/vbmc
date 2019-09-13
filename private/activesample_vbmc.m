@@ -70,7 +70,7 @@ else                    % Active uncertainty sampling
         yacq = y_orig(idx_cache_acq+1);
         idx_nn = ~isnan(yacq);
         if any(idx_nn)
-            yacq(idx_nn) = yacq(idx_nn) + warpvars(Xacq(idx_nn,:),'logp',optimState.trinfo);
+            yacq(idx_nn) = yacq(idx_nn) + warpvars_vbmc(Xacq(idx_nn,:),'logp',optimState.trinfo);
         end
         
         xnew = Xacq(1,:);
@@ -116,7 +116,7 @@ if ~isempty(x0)
     cacheFrac = options.CacheFrac;  % Fraction of points from cache (if nonempty)
     Ncache = ceil(NSsearch*cacheFrac);            
     idx_cache = randperm(size(x0,1),min(Ncache,size(x0,1)));
-    Xsearch = warpvars(x0(idx_cache,:),'d',optimState.trinfo);        
+    Xsearch = warpvars_vbmc(x0(idx_cache,:),'d',optimState.trinfo);        
 else
     Xsearch = []; idx_cache = [];
 end

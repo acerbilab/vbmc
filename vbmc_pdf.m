@@ -35,7 +35,7 @@ gradflag = nargout > 1;     % Compute gradient
 % Convert points to transformed space
 if origflag && ~isempty(vp.trinfo) && ~transflag
     % Xold = X;
-    X = warpvars(X,'dir',vp.trinfo);
+    X = warpvars_vbmc(X,'dir',vp.trinfo);
 end
 
 [N,D] = size(X);
@@ -112,14 +112,14 @@ end
 % Apply Jacobian correction
 if origflag && ~isempty(vp.trinfo)
     if logflag
-        y = y - warpvars(X,'logprob',vp.trinfo);
+        y = y - warpvars_vbmc(X,'logprob',vp.trinfo);
         if gradflag
             error('vbmc_pdf:NoOriginalGrad',...
                 'Gradient computation in original space not supported yet.');
-            dy = dy - warpvars(X,'g',vp.trinfo);
+            dy = dy - warpvars_vbmc(X,'g',vp.trinfo);
         end
     else
-        y = y ./ warpvars(X,'prob',vp.trinfo);
+        y = y ./ warpvars_vbmc(X,'prob',vp.trinfo);
     end
 end
 

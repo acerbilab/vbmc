@@ -32,7 +32,7 @@ else
 
     for k = 1:size(x0_mat,1)
         x0 = x0_mat(k,:);
-        if origflag; x0 = warpvars(x0,'inv',vp.trinfo); end
+        if origflag; x0 = warpvars_vbmc(x0,'inv',vp.trinfo); end
 
         if origflag
             opts = optimoptions('fmincon','GradObj','off','Display','off');

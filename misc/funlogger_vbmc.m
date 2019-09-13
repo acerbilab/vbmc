@@ -1,12 +1,12 @@
 function [fval,optimState] = funlogger_vbmc(fun,x,optimState,state,varargin)
 %FUNLOGGER_VBMC Call objective function and do some bookkeeping.
-%   [~,OPTIMSTATE] = FUNLOGGER_VBMC(FUN,X,OPTIMSTATE,'init') starts logging
+%   [~,OPTIMSTATE] = FUNLOGGER_VBMC(FUN,NVARS,OPTIMSTATE,'init') starts logging
 %   function FUN with starting point X and optimization struct OPTIMSTATE.
 %
-%   [~,OPTIMSTATE] = FUNLOGGER_VBMC(FUN,X,OPTIMSTATE,'init',NMAX) stores up 
+%   [~,OPTIMSTATE] = FUNLOGGER_VBMC(FUN,NVARS,OPTIMSTATE,'init',NMAX) stores up 
 %   to NMAX function values (default NMAX=1e4).
 %
-%   [~,OPTIMSTATE] = FUNLOGGER_VBMC(FUN,X,OPTIMSTATE,'init',NMAX,1) also stores
+%   [~,OPTIMSTATE] = FUNLOGGER_VBMC(FUN,NVARS,OPTIMSTATE,'init',NMAX,1) also stores
 %   heteroskedastic noise (second output argument) from the logged function.
 %
 %   [FVAL,OPTIMSTATE] = FUNLOGGER_VBMC(FUN,X,OPTIMSTATE,'iter') evaluates 
@@ -21,7 +21,7 @@ function [fval,optimState] = funlogger_vbmc(fun,x,optimState,state,varargin)
 %   [~,OPTIMSTATE] = FUNLOGGER_VBMC(FUN,X,OPTIMSTATE,'done') finalizes 
 %   stored function values.
 
-%   Luigi Acerbi 2018
+%   Luigi Acerbi 2019
 
 fval = [];
 
@@ -33,15 +33,15 @@ end
 switch lower(state)
     case 'init' % Start new function logging session
     
-        nvars = numel(x);
+        nvars = x;
 
         % Number of stored function values
         if nargin > 4; nmax = varargin{1}; else; nmax = []; end
-        if isempty(nmax); nmax = 1e4; end
+        if isempty(nmax); nmax = 500; end
         
         % Heteroscedastic noise
-        if nargin > 5; hescnoise = varargin{2}; else; hescnoise = []; end
-        if isempty(hescnoise); hescnoise = false; end
+        if nargin > 5; hescnoise_flag = varargin{2}; else; hescnoise_flag = []; end
+        if isempty(hescnoise_flag); hescnoise_flag = false; end
 
         optimState.funccount = 0;
         optimState.cachecount = 0;
@@ -52,11 +52,12 @@ switch lower(state)
             optimState.y_orig = NaN(nmax,1);
             optimState.X = NaN(nmax,nvars);
             optimState.y = NaN(nmax,1);
-            if hescnoise; optimState.S = NaN(nmax,1); end
+            if hescnoise_flag; optimState.S = NaN(nmax,1); end
             optimState.Xn = 0;                    % Last filled entry
             optimState.Xmax = 0;                  % Maximum entry index
             optimState.X_flag = false(nmax,1);
-
+            optimState.ymax = -Inf;
+            
         else % Receiving previous evaluations (e.g. from previous run)
             
             error('Previous function evaluations not supported yet.');
@@ -74,7 +75,7 @@ switch lower(state)
                 optimState.X_orig = optimState.X_orig(end-nmax+1:end,:);
                 optimState.y_orig = circshift(optimState.y_orig,-optimState.Xn);
                 optimState.y_orig = optimState.y_orig(end-nmax+1:nmax,:);
-                if hescnoise
+                if hescnoise_flag
                     optimState.S = circshift(optimState.S,-optimState.Xn);
                     optimState.S = optimState.S(end-nmax+1:nmax,:);
                 end
@@ -84,24 +85,24 @@ switch lower(state)
                 offset = nmax - size(optimState.X_orig,1);
                 optimState.X_orig = [optimState.X_orig; NaN(offset,nvars)];
                 optimState.y_orig = [optimState.y_orig; NaN(offset,1)];
-                if hescnoise
+                if hescnoise_flag
                     optimState.S = [optimState.S; NaN(offset,1)];
                 end
             end
-            optimState.X = warpvars(optimState.X_orig,'d',optimState.trinfo);
+            optimState.X = warpvars_vbmc(optimState.X_orig,'d',optimState.trinfo);
         end
         optimState.funevaltime = NaN(nmax,1);
         optimState.totalfunevaltime = 0;
     
     case {'iter','single'} % Evaluate function (and store output for 'iter')
 
-        x_orig = warpvars(x,'inv',optimState.trinfo);    % Convert back to original space
+        x_orig = warpvars_vbmc(x,'inv',optimState.trinfo);    % Convert back to original space
         % Heteroscedastic noise?
-        if isfield(optimState,'S'); hescnoise = 1; else; hescnoise = 0; end
+        hescnoise_flag = isfield(optimState,'S');
         
         try
             funtime = tic;
-            if hescnoise
+            if hescnoise_flag
                 [fval_orig,fsd] = fun(x_orig);
             else
                 fval_orig = fun(x_orig);
@@ -120,7 +121,7 @@ switch lower(state)
             end
             
             % Check returned function SD
-            if hescnoise && (~isscalar(fsd) || ~isfinite(fsd) || ~isreal(fsd) || fsd <= 0.0)
+            if hescnoise_flag && (~isscalar(fsd) || ~isfinite(fsd) || ~isreal(fsd) || fsd <= 0.0)
                 error(['funlogger_vbmc:InvalidNoiseValue',...
                     'The returned estimated SD (second function output) must be a finite, positive real-valued scalar (returned SD: ' mat2str(fsd) ').']);
             end
@@ -148,10 +149,10 @@ switch lower(state)
     case {'add'} % Add previously evaluated function
 
         fval_orig = varargin{1};
-        x_orig = warpvars(x,'inv',optimState.trinfo);    % Convert back to original space
+        x_orig = warpvars_vbmc(x,'inv',optimState.trinfo);    % Convert back to original space
         % Heteroscedastic noise?
-        if isfield(optimState,'S'); hescnoise = 1; else; hescnoise = 0; end
-        if hescnoise; fsd = varargin{2}; else; fsd = []; end
+        if isfield(optimState,'S'); hescnoise_flag = 1; else; hescnoise_flag = 0; end
+        if hescnoise_flag; fsd = varargin{2}; else; fsd = []; end
         
         % Check function value
         if ~isscalar(fval_orig) || ~isfinite(fval_orig) || ~isreal(fval_orig)
@@ -160,7 +161,7 @@ switch lower(state)
         end
 
         % Check returned function SD
-        if hescnoise && (~isscalar(fsd) || ~isfinite(fsd) || ~isreal(fsd) || fsd <= 0.0)
+        if hescnoise_flag && (~isscalar(fsd) || ~isfinite(fsd) || ~isreal(fsd) || fsd <= 0.0)
             error(['funlogger_vbmc:InvalidNoiseValue',...
                 'The provided estimated SD (second function output) must be a finite, positive real-valued scalar (provided SD: ' mat2str(fsd) ').']);
         end
@@ -177,19 +178,19 @@ switch lower(state)
         
     case 'done' % Finalize stored table
         
-        if isfield(optimState,'S'); hescnoise = 1; else; hescnoise = 0; end
+        if isfield(optimState,'S'); hescnoise_flag = 1; else; hescnoise_flag = 0; end
         
         if optimState.Xmax < size(optimState.X,1)
             optimState.X_orig = optimState.X_orig(1:optimState.Xmax,:);
             optimState.y_orig = optimState.y_orig(1:optimState.Xmax);
             optimState.X_flag = optimState.X_flag(1:optimState.Xmax);
-            if hescnoise; optimState.S = optimState.S(1:optimState.Xmax); end
+            if hescnoise_flag; optimState.S = optimState.S(1:optimState.Xmax); end
             optimState.funevaltime = optimState.funevaltime(1:optimState.Xmax);
         else
             optimState.X_orig = circshift(optimState.X_orig,-optimState.Xn);
             optimState.y_orig = circshift(optimState.y_orig,-optimState.Xn);
             optimState.X_flag = circshift(optimState.X_flag,-optimState.Xn);
-            if hescnoise; optimState.S = circshift(optimState.S,-optimState.Xn); end
+            if hescnoise_flag; optimState.S = circshift(optimState.S,-optimState.Xn); end
             optimState.funevaltime = circshift(optimState.funevaltime,-optimState.Xn);        
         end
         optimState = rmfield(optimState,'X');
@@ -217,10 +218,11 @@ optimState.Xmax = min(optimState.Xmax+1, size(optimState.X_orig,1));
 optimState.X_orig(optimState.Xn,:) = x_orig;
 optimState.X(optimState.Xn,:) = x;
 optimState.y_orig(optimState.Xn) = fval_orig;
-fval = fval_orig + warpvars(x,'logp',optimState.trinfo);
+fval = fval_orig + warpvars_vbmc(x,'logp',optimState.trinfo);
 optimState.y(optimState.Xn) = fval;
 if ~isempty(fsd); optimState.S(optimState.Xn) = fsd; end
 optimState.X_flag(optimState.Xn) = true;
 optimState.funevaltime(optimState.Xn) = t;
+optimState.ymax = max(optimState.y(optimState.X_flag));
 
 end

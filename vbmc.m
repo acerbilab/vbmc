@@ -156,7 +156,8 @@ end
 
 defopts.IntegerVars             = '[]           % Array with indices of integer variables';
 defopts.UncertaintyHandling     = 'no           % Explicit noise handling (only partially supported)';
-defopts.NoiseSize               = '[]           % Base observation noise magnitude';
+defopts.NoiseSize               = '[]           % Base observation noise magnitude (standard deviation)';
+defopts.SpecifyTargetNoise      = 'no           % Target log joint function also returns an estimate of noise (standard deviation)';
 defopts.FunEvalStart            = 'max(D,10)    % Number of initial target fcn evals';
 defopts.FunEvalsPerIter         = '5            % Number of target fcn evals per iteration';
 defopts.SGDStepSize             = '0.005        % Base step size for stochastic gradient descent';
@@ -172,7 +173,6 @@ defopts.TolStableExceptions     = '2            % Allowed exceptions when comput
 defopts.Fvals                   = '[]           % Evaluated fcn values at X0';
 defopts.OptimToolbox            = '[]           % Use Optimization Toolbox (if empty, determine at runtime)';
 defopts.ProposalFcn             = '[]           % Weighted proposal fcn for uncertainty search';
-defopts.UncertaintyHandling     = '[]           % Explicit noise handling (if empty, determine at runtime)';
 defopts.NonlinearScaling   = 'on                % Automatic nonlinear rescaling of variables';
 defopts.SearchAcqFcn       = '@acqfreg_vbmc     % Fast search acquisition fcn(s)';
 defopts.NSsearch           = '2^13              % Samples for fast acquisition fcn eval per new point';
@@ -369,7 +369,7 @@ else
 end
 
 % Initialize function logger
-[~,optimState] = funlogger_vbmc([],x0(1,:),optimState,'init',options.CacheSize,options.NoiseObj);
+[~,optimState] = funlogger_vbmc([],D,optimState,'init',options.CacheSize,options.NoiseObj);
 
 % GP struct and GP hyperparameters
 gp = [];    hyp = [];   hyp_warp = [];  hyp_logp = [];
@@ -416,7 +416,7 @@ isFinished_flag = false;
 exitflag = 0;   output = [];    stats = [];     sKL = Inf;
 
 
-while ~isFinished_flag    
+while ~isFinished_flag
     iter = iter + 1;
     optimState.iter = iter;
     vp_old = vp;
@@ -863,7 +863,7 @@ end
 
 % Find mode in transformed space
 x0t = vbmc_mode(vp,[],0);
-x0 = warpvars(x0t,'inv',vp.trinfo);
+x0 = warpvars_vbmc(x0t,'inv',vp.trinfo);
 
 % Sample from variational posterior and set plausible bounds accordingly
 if isempty(PLB) && isempty(PUB)

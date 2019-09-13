@@ -90,7 +90,7 @@ else
 
     if origflag && ~isempty(vp.trinfo)
         % Convert generated points back to original space
-        X = warpvars(X,'inv',vp.trinfo);
+        X = warpvars_vbmc(X,'inv',vp.trinfo);
     end
 end
 

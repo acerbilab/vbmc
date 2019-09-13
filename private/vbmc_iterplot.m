@@ -34,7 +34,7 @@ else
     end
     idx_old = ~idx_new;
 
-    if ~isempty(vp.trinfo); X_train = warpvars(X_train,'inv',vp.trinfo); end
+    if ~isempty(vp.trinfo); X_train = warpvars_vbmc(X_train,'inv',vp.trinfo); end
     
     Pdelta = optimState.PUB_orig - optimState.PLB_orig;
     X_min = min(X_train,[],1) - Pdelta*0.1;

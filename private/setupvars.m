@@ -29,15 +29,15 @@ optimState.PLB_orig = PLB;
 optimState.PUB_orig = PUB;
 
 % Transform variables
-trinfo = warpvars(nvars,LB,UB,PLB,PUB);
+trinfo = warpvars_vbmc(nvars,LB,UB,PLB,PUB);
 trinfo.x0_orig = x0;
 if ~isfield(trinfo,'R_mat'); trinfo.R_mat = []; end
 if ~isfield(trinfo,'scale'); trinfo.scale = []; end
 
-optimState.LB = warpvars(LB,'dir',trinfo);
-optimState.UB = warpvars(UB,'dir',trinfo);
-optimState.PLB = warpvars(PLB,'dir',trinfo);
-optimState.PUB = warpvars(PUB,'dir',trinfo);
+optimState.LB = warpvars_vbmc(LB,'dir',trinfo);
+optimState.UB = warpvars_vbmc(UB,'dir',trinfo);
+optimState.PLB = warpvars_vbmc(PLB,'dir',trinfo);
+optimState.PUB = warpvars_vbmc(PUB,'dir',trinfo);
 
 % Record starting points (original coordinates)
 optimState.Cache.X_orig = x0;
@@ -50,7 +50,7 @@ if size(optimState.Cache.X_orig,1) ~= size(optimState.Cache.y_orig,1)
         'The number of points in X0 and of their function values as specified in OPTIONS.Fvals are not the same.');
 end
 
-x0 = warpvars(x0,'dir',trinfo);
+x0 = warpvars_vbmc(x0,'dir',trinfo);
 
 % Report variable transformation
 if any(optimState.integervars) && prnt > 0
@@ -129,9 +129,6 @@ vp.stats = [];
 % end
 
 %% Initialize OPTIMSTATE variables
-
-% Maximum value
-optimState.ymax = -Inf;
 
 % Estimate of GP observation noise around the high posterior density region
 optimState.sn2hpd = Inf;

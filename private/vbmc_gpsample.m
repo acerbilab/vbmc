@@ -17,7 +17,7 @@ end
 [Xs,gp] = gplite_sample(gp,Ns,x0,method);
 
 if origflag
-    Xs = warpvars(Xs,'inv',optimState.trinfo);
+    Xs = warpvars_vbmc(Xs,'inv',optimState.trinfo);
 end
 
 end

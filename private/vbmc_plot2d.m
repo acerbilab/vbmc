@@ -33,14 +33,14 @@ s = contour(x1,x2,reshape(yy',[Nx,Nx])');
 if vpflag
     % Plot component centers
     if plotflag
-        mu = warpvars(vp.mu','inv',vp.trinfo);
+        mu = warpvars_vbmc(vp.mu','inv',vp.trinfo);
         hold on;
         plot(mu(:,1),mu(:,2),'xr','LineStyle','none');
     end
 
     % Plot data
     if ~isempty(gp)
-        X = warpvars(gp.X,'inv',vp.trinfo);
+        X = warpvars_vbmc(gp.X,'inv',vp.trinfo);
         plot(X(:,1),X(:,2),'.k','LineStyle','none');
     end
 end
