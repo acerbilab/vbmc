@@ -18,10 +18,27 @@ else                    % Active uncertainty sampling
     SearchAcqFcn = options.SearchAcqFcn;
         
     for is = 1:Ns
+        
+        idxAcq = randi(numel(SearchAcqFcn));        
 
         % Re-evaluate variance of the log joint
         [~,~,varF] = gplogjoint(vp,gp,0,0,0,1);
         optimState.varlogjoint_samples = varF;
+        
+        % Evaluate noise at each training point
+        Ns_gp = numel(gp.post);
+        sn2new = zeros(size(gp.X,1),Ns_gp);
+        for s = 1:Ns_gp
+            hyp_noise = gp.post(s).hyp(gp.Ncov+1:gp.Ncov+gp.Nnoise); % Get noise hyperparameters 
+            if isfield(optimState,'S')
+                s2 = (optimState.S(optimState.X_flag).^2).*optimState.nevals(optimState.X_flag);
+            else
+                s2 = [];
+            end
+            s2 = noiseshaping_vbmc(s2,gp.y,options);
+            sn2new(:,s) = gplite_noisefun(hyp_noise,gp.X,gp.noisefun,gp.y,s2);
+        end
+        gp.sn2new = mean(sn2new,2);
         
         optimState.acqrand = rand();    % Seed for random acquisition fcn
         
@@ -30,7 +47,7 @@ else                    % Active uncertainty sampling
         Xsearch = real2int_vbmc(Xsearch,vp.trinfo,optimState.integervars);
         
         % Evaluate acquisition function
-        acq_fast = SearchAcqFcn{1}(Xsearch,vp,gp,optimState,0);
+        acq_fast = SearchAcqFcn{idxAcq}(Xsearch,vp,gp,optimState,0);
 
         if options.SearchCacheFrac > 0
             [~,ord] = sort(acq_fast,'ascend');
@@ -56,11 +73,11 @@ else                    % Active uncertainty sampling
                 Sigma = cov(X_hpd,1);
             end
             insigma = sqrt(diag(Sigma));
-            fval_old = SearchAcqFcn{1}(Xacq(1,:),vp,gp,optimState,0);
+            fval_old = SearchAcqFcn{idxAcq}(Xacq(1,:),vp,gp,optimState,0);
             cmaes_opts = options.CMAESopts;
             cmaes_opts.TolFun = max(1e-12,abs(fval_old*1e-3));
             x0 = real2int_vbmc(Xacq(1,:),vp.trinfo,optimState.integervars)';
-            [xsearch_cmaes,fval_cmaes] = cmaes_modded(func2str(SearchAcqFcn{1}),x0,insigma,cmaes_opts,vp,gp,optimState,1);
+            [xsearch_cmaes,fval_cmaes] = cmaes_modded(func2str(SearchAcqFcn{idxAcq}),x0,insigma,cmaes_opts,vp,gp,optimState,1);
             if fval_cmaes < fval_old            
                 Xacq(1,:) = real2int_vbmc(xsearch_cmaes',vp.trinfo,optimState.integervars);
                 idx_cache_acq(1) = 0;
@@ -76,11 +93,11 @@ else                    % Active uncertainty sampling
             % Disable variance-based regularization first
             oldflag = optimState.VarianceRegularizedAcqFcn;
             optimState.VarianceRegularizedAcqFcn = false;
-            acq_train = SearchAcqFcn{1}(X_train,vp,gp,optimState,0);
+            acq_train = SearchAcqFcn{idxAcq}(X_train,vp,gp,optimState,0);
             optimState.VarianceRegularizedAcqFcn = oldflag;
             
             [acq_train,idx_train] = min(acq_train);            
-            acq_now = SearchAcqFcn{1}(Xacq(1,:),vp,gp,optimState,0);
+            acq_now = SearchAcqFcn{idxAcq}(Xacq(1,:),vp,gp,optimState,0);
             
             % [acq_train,acq_now]
             

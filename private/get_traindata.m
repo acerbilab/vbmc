@@ -12,17 +12,7 @@ else
 end
 
 if options.NoiseShaping
-    TolScale = 1e12;
-    
-    if isempty(s2_train); s2_train = 1e-6*ones(size(y_train)); end
-    
-    deltay = max(0, max(y_train) - y_train - options.NoiseShapingThreshold); 
-    sn2extra = (options.NoiseShapingFactor*deltay).^2;
-    
-    s2_train = s2_train + sn2extra;
-    
-    maxs2 = min(s2_train)*TolScale;
-    s2_train = min(s2_train,maxs2);
+    s2_train = noiseshaping_vbmc(s2_train,y_train,options);
 end
 
 
