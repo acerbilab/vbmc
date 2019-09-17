@@ -25,20 +25,37 @@ else
     optimState.WarmupStableIter = 0;
 end
 
+% Vector of maximum lower confidence bounds (LCB) of fcn values
+lcbmax_vec = [stats.lcbmax(1:iter-1),optimState.lcbmax];
+
 % Second requirement, also no substantial improvement of max fcn value 
 % in recent iters (unless already performing BO-like warmup)
 if ~options.BOWarmup && options.WarmupCheckMax
-    y = optimState.y(optimState.X_flag);
-    idx_last = false(size(y));
-    idx_last(max(2,numel(y)-options.FunEvalsPerIter*options.TolStableWarmup+1):numel(y)) = true;
-    improFcn = max(0,max(y(idx_last)) - max(y(~idx_last)));
+    if 0
+        y = optimState.y(optimState.X_flag);
+        idx_last = false(size(y));
+        idx_last(max(2,numel(y)-options.FunEvalsPerIter*options.TolStableWarmup+1):numel(y)) = true;
+        improFcn = max(0,max(y(idx_last)) - max(y(~idx_last)));
+    else
+        idx_last = false(size(lcbmax_vec));
+        idx_last(max(2,iter-options.TolStableWarmup+1):end) = true;
+        improFcn = max(0,max(lcbmax_vec(idx_last)) - max(lcbmax_vec(~idx_last)));
+    end
 else
     improFcn = 0;
 end
 
 % Alternative criterion for stopping -- no improvement over max fcn value
-[y_max,pos] = max(optimState.y);
-currentpos = optimState.Xn;
+if 0
+    [y_max,pos] = max(optimState.y);
+    currentpos = optimState.Xn;
+else    
+    max_thresh = max(lcbmax_vec) - options.TolImprovement;
+    idx_1st = find(lcbmax_vec > max_thresh,1);
+    yy = [stats.funccount(1:iter-1),optimState.funccount];
+    pos = yy(idx_1st);
+    currentpos = optimState.funccount;
+end
 
 stopWarmup = (optimState.WarmupStableIter >= options.TolStableWarmup && ...
     improFcn < options.StopWarmupThresh) || ...
@@ -49,7 +66,7 @@ if stopWarmup
     if isempty(action); action = 'end warm-up'; else; action = [action ', end warm-up']; end
 
     % Remove warm-up points from training set unless close to max
-    ymax = max(optimState.y_orig(1:optimState.Xmax));
+    ymax = max(optimState.y_orig(1:optimState.Xn));
     D = numel(optimState.LB);
     NkeepMin = D+1; 
     idx_keep = (ymax - optimState.y_orig) < options.WarmupKeepThreshold;
@@ -57,7 +74,7 @@ if stopWarmup
         y_temp = optimState.y_orig;
         y_temp(~isfinite(y_temp)) = -Inf;
         [~,ord] = sort(y_temp,'descend');
-        idx_keep(ord(1:min(NkeepMin,optimState.Xmax))) = true;
+        idx_keep(ord(1:min(NkeepMin,optimState.Xn))) = true;
     end
     optimState.X_flag = idx_keep & optimState.X_flag;
 
@@ -70,7 +87,4 @@ if stopWarmup
 
     % Fully recompute variational posterior
     optimState.RecomputeVarPost = true;
-
-    % Reset GP hyperparameter covariance
-    optimState.RunHypCov = [];    
 end

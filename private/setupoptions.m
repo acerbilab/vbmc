@@ -1,12 +1,15 @@
-function [options,cmaes_opts] = setupoptions(nvars,defopts,options)
+function [options,updated] = setupoptions(nvars,defopts,options)
 %SETUPOPTIONS Initialize OPTIONS struct.
 
 D = nvars;  % Both D and NVARS are accepted as number of dimensions
 
-% Assign default values to OPTIONS struct
+% Assign default values to OPTIONS struct, keep track of the ones updated
+updated = [];
 for f = fieldnames(defopts)'
     if ~isfield(options,f{:}) || isempty(options.(f{:}))
         options.(f{:}) = defopts.(f{:});
+    else
+        updated{end+1} = f{:};
     end
 end
 
@@ -27,7 +30,7 @@ evalfields = {'MaxFunEvals','MaxIter','FunEvalStart','FunEvalsPerIter','SGDStepS
     'StableGPSampling','StableGPSamples','TolGPVar','KfunMax','Kwarmup','AdaptiveK',...
     'HPDFrac', 'WarpRotoScaling', 'WarpNonlinear', 'WarpEpoch', 'WarpCovReg', 'WarpMinFun', 'WarpNonlinearEpoch', 'WarpNonlinearMinFun', ...
     'ELCBOWeight','TolLength','Fvals','OptimToolbox','RankCriterion', ...
-    'NoiseObj','CacheSize','CacheFrac','TolFunStochastic','GPStochasticStepsize', ...
+    'CacheSize','CacheFrac','TolFunStochastic','GPStochasticStepsize', ...
     'TolSD','TolsKL','TolStableIters','TolStableEntropyIters','TolStableExceptions',...
     'KLgauss','TrueMean','TrueCov',...
     'MinFunEvals','MinIter','HeavyTailSearchFrac','MVNSearchFrac','HPDSearchFrac',...
@@ -39,9 +42,10 @@ evalfields = {'MaxFunEvals','MaxIter','FunEvalStart','FunEvalsPerIter','SGDStepS
     'TolConLoss','BestSafeSD','BestFracBack',...
     'UncertaintyHandling','NoiseSize','TolWeight','WeightPenalty',...
     'SkipActiveSamplingAfterWarmup','AnnealedGPMean','ConstrainedGPMean','EmpiricalGPPrior','FeatureTest','SearchCacheFrac',...
-    'VarActiveSample','BOWarmup','gpNoiseFun','gpQuadraticMeanBound','Bandwidth',...
+    'VarActiveSample','BOWarmup','gpQuadraticMeanBound','Bandwidth',...
     'OutwarpThreshBase','OutwarpThreshMult','OutwarpThreshTol','IntegerVars','Temperature', ...
-    'SpecifyTargetNoise' ...
+    'SpecifyTargetNoise','SeparateSearchGP','RepeatedObservations','RepeatedAcqDiscount',...
+    'NoiseShaping','NoiseShapingThreshold','NoiseShapingFactor' ...
     };
 
 % Evaluate string options
@@ -101,9 +105,28 @@ end
 if ~isempty(options.NoiseSize) && options.NoiseSize(1) <= 0
      error('vbmc:OptionsError','OPTIONS.NoiseSize, if specified, needs to be a positive scalar for numerical stability.');
 end
+
+if ~options.UncertaintyHandling && options.SpecifyTargetNoise
+    error('vbmc:SpecifiedNoise','If OPTIONS.SpecifyTargetNoise is active, OPTIONS.UncertaintyHandling should be activated too.');
+end
+
+if options.SpecifyTargetNoise && ~isempty(options.NoiseSize)
+    warning('vbmc:SpecifiedNoiseAndSize','If OPTIONS.SpecifyTargetNoise is active, OPTIONS.NoiseSize is ignored (leave OPTIONS.NoiseSize empty to suppress this warning).');
+end
+
+% Change default OPTIONS for UncertaintyHandling, if not specified
+if options.UncertaintyHandling    
+    if ~any(strcmp('MaxFunEvals',updated))
+        options.MaxFunEvals = ceil(options.MaxFunEvals*1.5);
+    end
+    if ~any(strcmp('TolStableIters',updated))
+        options.TolStableIters = ceil(options.TolStableIters*1.5);
+    end    
+end
    
 % Setup options for CMA-ES optimization
 cmaes_opts = cmaes_modded('defaults');
+% cmaes_opts.MaxFunEvals = 1000*D;
 cmaes_opts.TolX = '1e-11*max(insigma)';
 cmaes_opts.TolFun = 1e-12;
 cmaes_opts.TolHistFun = 1e-13;
@@ -113,4 +136,6 @@ cmaes_opts.SaveVariables = 'off';
 cmaes_opts.DispModulo = Inf;
 cmaes_opts.LogModulo = 0;
 cmaes_opts.CMA.active = 1;      % Use Active CMA (generally better)
+
+options.CMAESopts = cmaes_opts;
 

@@ -1,4 +1,4 @@
-function gptrain_options = get_GPTrainOptions(Ns_gp,optimState,stats,options)
+function gptrain_options = get_GPTrainOptions(Ns_gp,hypstruct,optimState,stats,options)
 %GETGPTRAINOPTIONS Get options for training GP hyperparameters.
 
 iter = optimState.iter;
@@ -8,7 +8,7 @@ gptrain_options.OutwarpFun = optimState.gpOutwarpfun;
 gptrain_options.Thin = options.GPSampleThin;    % MCMC thinning
 
 % Get hyperparameter posterior covariance from previous iters
-hypcov = GetHypCov(optimState,stats,options);    
+hypcov = GetHypCov(hypstruct,optimState,stats,options);    
 
 % Set up MCMC sampler
 switch lower(options.GPHypSampler)
@@ -98,7 +98,7 @@ end
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function hypcov = GetHypCov(optimState,stats,options)
+function hypcov = GetHypCov(hypstruct,optimState,stats,options)
 %GETHYPCOV Get hyperparameter posterior covariance
 
 if optimState.iter > 1
@@ -136,7 +136,7 @@ if optimState.iter > 1
         hypcov = hypcov/(1-sum(w_list.^2));
         
     else
-        hypcov = optimState.RunHypCov;
+        hypcov = hypstruct.runcov;
     end
 else
     hypcov = [];

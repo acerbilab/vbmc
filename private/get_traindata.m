@@ -1,10 +1,31 @@
-function [X_train,y_train] = get_traindata(optimState,options)
+function [X_train,y_train,s2_train] = get_traindata(optimState,options)
 %GETRAINDATA Get training data for building GP surrogate.
 
 nvars = size(optimState.X,2);
 
 X_train = optimState.X(optimState.X_flag,:);
 y_train = optimState.y(optimState.X_flag);
+if isfield(optimState,'S')
+    s2_train = optimState.S(optimState.X_flag).^2;
+else
+    s2_train = [];
+end
+
+if options.NoiseShaping
+    TolScale = 1e12;
+    
+    if isempty(s2_train); s2_train = 1e-6*ones(size(y_train)); end
+    
+    deltay = max(0, max(y_train) - y_train - options.NoiseShapingThreshold); 
+    sn2extra = (options.NoiseShapingFactor*deltay).^2;
+    
+    s2_train = s2_train + sn2extra;
+    
+    maxs2 = min(s2_train)*TolScale;
+    s2_train = min(s2_train,maxs2);
+end
+
+
 
 %         xxplot = (1:numel(y_train))';
 %         [yyplot,ord] = sort(log(y_max - y_train + 1));

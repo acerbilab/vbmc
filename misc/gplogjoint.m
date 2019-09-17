@@ -103,8 +103,7 @@ for s = 1:Ns
     L = gp.post(s).L;
     Lchol = gp.post(s).Lchol;
     
-    sn2 = exp(2*hyp(Ncov+1));
-    sn2_eff = sn2*gp.post(s).sn2_mult;
+    sn2_eff = 1/gp.post(s).sW(1)^2;
 
     for k = 1:K
 

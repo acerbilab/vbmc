@@ -67,6 +67,17 @@ if update1
         warning('gplite_post:RankOneNoiseFunction', ...
             'No need to specify a GP output warping function when performing a rank-one update.');
     end
+    if ~isempty(s2)
+        % Rank-1 update is not supported with heteroskedastic noise
+        update1 = false;
+    end
+    
+    if ~update1
+        % Perform standard update
+        gp.X = [gp.X; X];
+        gp.y = [gp.y; y];
+        if ~isempty(s2); gp.s2 = [gp.s2; s2]; end
+    end
 end
 
 % Create GP struct

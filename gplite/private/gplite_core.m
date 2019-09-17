@@ -63,15 +63,23 @@ else
     end
 end
 
-% Use Cholesky representation of posterior for non-small, scalar noise
-Lchol = isscalar(sn2) && sn2 >= 1e-6;
+% Use Cholesky representation of posterior for non-small noise
+Lchol = min(sn2) >= 1e-6;
 
 if Lchol
+    if isscalar(sn2)
+        sn2div = sn2;
+        sn2_mat = eye(N);
+    else
+        sn2div = min(sn2);
+        sn2_mat = diag(sn2/sn2div);
+    end
+    
     for iter = 1:10
-        [L,p] = chol(K_mat/(sn2*sn2_mult)+eye(N));
+        [L,p] = chol(K_mat/(sn2div*sn2_mult)+sn2_mat);
         if p > 0; sn2_mult = sn2_mult*10; else; break; end
     end
-    sl = sn2*sn2_mult;
+    sl = sn2div*sn2_mult;
     if nargout > 2
         pL = L;             % L = chol(eye(n)+sW*sW'.*K)
     end
@@ -157,7 +165,7 @@ end
 if nargout > 2
     post.hyp = hyp;
     post.alpha = alpha;
-    post.sW = ones(N,1)./sqrt(sn2*sn2_mult);   % sqrt of noise precision vector
+    post.sW = ones(N,1)./sqrt(min(sn2)*sn2_mult);   % sqrt of noise precision vector
     post.L = pL;
     post.sn2_mult = sn2_mult;
     post.Lchol = Lchol;

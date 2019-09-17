@@ -1,13 +1,10 @@
-function [fval,optimState] = funlogger_vbmc(fun,x,optimState,state,varargin)
+function [fval,optimState,idx] = funlogger_vbmc(fun,x,optimState,state,varargin)
 %FUNLOGGER_VBMC Call objective function and do some bookkeeping.
 %   [~,OPTIMSTATE] = FUNLOGGER_VBMC(FUN,NVARS,OPTIMSTATE,'init') starts logging
 %   function FUN with starting point X and optimization struct OPTIMSTATE.
 %
 %   [~,OPTIMSTATE] = FUNLOGGER_VBMC(FUN,NVARS,OPTIMSTATE,'init',NMAX) stores up 
 %   to NMAX function values (default NMAX=1e4).
-%
-%   [~,OPTIMSTATE] = FUNLOGGER_VBMC(FUN,NVARS,OPTIMSTATE,'init',NMAX,1) also stores
-%   heteroskedastic noise (second output argument) from the logged function.
 %
 %   [FVAL,OPTIMSTATE] = FUNLOGGER_VBMC(FUN,X,OPTIMSTATE,'iter') evaluates 
 %   function FUN at X with optimization struct OPTIMSTATE, returns function 
@@ -39,9 +36,8 @@ switch lower(state)
         if nargin > 4; nmax = varargin{1}; else; nmax = []; end
         if isempty(nmax); nmax = 500; end
         
-        % Heteroscedastic noise
-        if nargin > 5; hescnoise_flag = varargin{2}; else; hescnoise_flag = []; end
-        if isempty(hescnoise_flag); hescnoise_flag = false; end
+        % Read noise level
+        noise_flag = optimState.UncertaintyHandlingLevel > 0;
 
         optimState.funccount = 0;
         optimState.cachecount = 0;
@@ -52,9 +48,10 @@ switch lower(state)
             optimState.y_orig = NaN(nmax,1);
             optimState.X = NaN(nmax,nvars);
             optimState.y = NaN(nmax,1);
-            if hescnoise_flag; optimState.S = NaN(nmax,1); end
+            if noise_flag; optimState.S = NaN(nmax,1); end
+            optimState.nevals = zeros(nmax,1);
             optimState.Xn = 0;                    % Last filled entry
-            optimState.Xmax = 0;                  % Maximum entry index
+            optimState.Xmax = nmax;               % Maximum entry index
             optimState.X_flag = false(nmax,1);
             optimState.ymax = -Inf;
             
@@ -75,7 +72,7 @@ switch lower(state)
                 optimState.X_orig = optimState.X_orig(end-nmax+1:end,:);
                 optimState.y_orig = circshift(optimState.y_orig,-optimState.Xn);
                 optimState.y_orig = optimState.y_orig(end-nmax+1:nmax,:);
-                if hescnoise_flag
+                if noise_flag
                     optimState.S = circshift(optimState.S,-optimState.Xn);
                     optimState.S = optimState.S(end-nmax+1:nmax,:);
                 end
@@ -85,7 +82,7 @@ switch lower(state)
                 offset = nmax - size(optimState.X_orig,1);
                 optimState.X_orig = [optimState.X_orig; NaN(offset,nvars)];
                 optimState.y_orig = [optimState.y_orig; NaN(offset,1)];
-                if hescnoise_flag
+                if noise_flag
                     optimState.S = [optimState.S; NaN(offset,1)];
                 end
             end
@@ -98,15 +95,19 @@ switch lower(state)
 
         x_orig = warpvars_vbmc(x,'inv',optimState.trinfo);    % Convert back to original space
         % Heteroscedastic noise?
-        hescnoise_flag = isfield(optimState,'S');
+        noise_flag = optimState.UncertaintyHandlingLevel > 0;
         
         try
             funtime = tic;
-            if hescnoise_flag
+            if noise_flag && optimState.UncertaintyHandlingLevel == 2
                 [fval_orig,fsd] = fun(x_orig);
             else
                 fval_orig = fun(x_orig);
-                fsd = [];
+                if noise_flag
+                    fsd = 1;
+                else
+                    fsd = [];
+                end
             end
             t = toc(funtime);
             
@@ -121,7 +122,8 @@ switch lower(state)
             end
             
             % Check returned function SD
-            if hescnoise_flag && (~isscalar(fsd) || ~isfinite(fsd) || ~isreal(fsd) || fsd <= 0.0)
+            if noise_flag && ...
+                    (~isscalar(fsd) || ~isfinite(fsd) || ~isreal(fsd) || fsd <= 0.0)
                 error(['funlogger_vbmc:InvalidNoiseValue',...
                     'The returned estimated SD (second function output) must be a finite, positive real-valued scalar (returned SD: ' mat2str(fsd) ').']);
             end
@@ -141,7 +143,7 @@ switch lower(state)
         % Update function records
         optimState.funccount = optimState.funccount + 1;
         if strcmpi(state, 'iter')
-            [optimState,fval] = record(optimState,x_orig,x,fval_orig,t,fsd);
+            [optimState,fval,idx] = record(optimState,x_orig,x,fval_orig,t,fsd);
         end
         optimState.totalfunevaltime = optimState.totalfunevaltime + t;
 
@@ -151,8 +153,13 @@ switch lower(state)
         fval_orig = varargin{1};
         x_orig = warpvars_vbmc(x,'inv',optimState.trinfo);    % Convert back to original space
         % Heteroscedastic noise?
-        if isfield(optimState,'S'); hescnoise_flag = 1; else; hescnoise_flag = 0; end
-        if hescnoise_flag; fsd = varargin{2}; else; fsd = []; end
+        noise_flag = isfield(optimState,'S');
+        if noise_flag
+            fsd = varargin{2};
+            if isempty(fsd); fsd = 1; end
+        else
+            fsd = [];
+        end
         
         % Check function value
         if ~isscalar(fval_orig) || ~isfinite(fval_orig) || ~isreal(fval_orig)
@@ -161,7 +168,7 @@ switch lower(state)
         end
 
         % Check returned function SD
-        if hescnoise_flag && (~isscalar(fsd) || ~isfinite(fsd) || ~isreal(fsd) || fsd <= 0.0)
+        if noise_flag && (~isscalar(fsd) || ~isfinite(fsd) || ~isreal(fsd) || fsd <= 0.0)
             error(['funlogger_vbmc:InvalidNoiseValue',...
                 'The provided estimated SD (second function output) must be a finite, positive real-valued scalar (provided SD: ' mat2str(fsd) ').']);
         end
@@ -171,28 +178,22 @@ switch lower(state)
             fval_orig = fval_orig / optimState.temperature;
             fsd = fsd / optimState.temperature;
         end
-                    
+            
         % Update function records
         optimState.cachecount = optimState.cachecount + 1;
-        [optimState,fval] = record(optimState,x_orig,x,fval_orig,0,fsd);
+        [optimState,fval,idx] = record(optimState,x_orig,x,fval_orig,0,fsd);
         
     case 'done' % Finalize stored table
         
-        if isfield(optimState,'S'); hescnoise_flag = 1; else; hescnoise_flag = 0; end
+        noise_flag = isfield(optimState,'S');
         
-        if optimState.Xmax < size(optimState.X,1)
-            optimState.X_orig = optimState.X_orig(1:optimState.Xmax,:);
-            optimState.y_orig = optimState.y_orig(1:optimState.Xmax);
-            optimState.X_flag = optimState.X_flag(1:optimState.Xmax);
-            if hescnoise_flag; optimState.S = optimState.S(1:optimState.Xmax); end
-            optimState.funevaltime = optimState.funevaltime(1:optimState.Xmax);
-        else
-            optimState.X_orig = circshift(optimState.X_orig,-optimState.Xn);
-            optimState.y_orig = circshift(optimState.y_orig,-optimState.Xn);
-            optimState.X_flag = circshift(optimState.X_flag,-optimState.Xn);
-            if hescnoise_flag; optimState.S = circshift(optimState.S,-optimState.Xn); end
-            optimState.funevaltime = circshift(optimState.funevaltime,-optimState.Xn);        
-        end
+        optimState.X_orig = optimState.X_orig(1:optimState.Xn,:);
+        optimState.y_orig = optimState.y_orig(1:optimState.Xn);
+        optimState.X_flag = optimState.X_flag(1:optimState.Xn);
+        if noise_flag; optimState.S = optimState.S(1:optimState.Xn); end
+        optimState.funevaltime = optimState.funevaltime(1:optimState.Xn);
+        optimState.nevals = optimState.nevals(1:optimState.Xn);
+            
         optimState = rmfield(optimState,'X');
         optimState = rmfield(optimState,'y');
         
@@ -208,21 +209,70 @@ end
 end
 
 %--------------------------------------------------------------------------
-function [optimState,fval] = record(optimState,x_orig,x,fval_orig,t,fsd)
+function [optimState,fval,idx] = record(optimState,x_orig,x,fval_orig,t,fsd)
 %RECORD Record function evaluation.
 
 if nargin < 6; fsd = []; end
 
-optimState.Xn = max(1,mod(optimState.Xn+1, size(optimState.X_orig,1)));
-optimState.Xmax = min(optimState.Xmax+1, size(optimState.X_orig,1));
-optimState.X_orig(optimState.Xn,:) = x_orig;
-optimState.X(optimState.Xn,:) = x;
-optimState.y_orig(optimState.Xn) = fval_orig;
-fval = fval_orig + warpvars_vbmc(x,'logp',optimState.trinfo);
-optimState.y(optimState.Xn) = fval;
-if ~isempty(fsd); optimState.S(optimState.Xn) = fsd; end
-optimState.X_flag(optimState.Xn) = true;
-optimState.funevaltime(optimState.Xn) = t;
+duplicate_flag = all(bsxfun(@eq,x,optimState.X),2);
+
+if any(duplicate_flag)    
+    if sum(duplicate_flag) > 1; error('More than one match.'); end    
+    idx = find(duplicate_flag);    
+    N = optimState.nevals(idx);
+    
+    optimState.y_orig(idx) = (N*optimState.y_orig(idx) + fval_orig)/(N+1);
+    fval = optimState.y_orig(idx) + warpvars_vbmc(x,'logp',optimState.trinfo);
+    optimState.y(optimState.Xn) = fval;
+    if ~isempty(fsd); optimState.S(idx) = sqrt((N^2*optimState.S(idx)^2 + fsd^2)/(N+1)^2); end
+    optimState.funevaltime(idx) = (N*optimState.funevaltime(idx) + t)/(N+1);
+    optimState.nevals(idx) = optimState.nevals(idx) + 1;
+
+else
+    optimState.Xn = optimState.Xn+1;
+    idx = optimState.Xn;
+
+    % Expand storage by 50% at a time
+    if optimState.Xn > optimState.Xmax
+        optimState.Xmax = ceil(optimState.Xmax*1.5);
+        optimState.X_orig = expand(optimState.X_orig,optimState.Xmax);
+        optimState.X = expand(optimState.X,optimState.Xmax);
+        optimState.y_orig = expand(optimState.y_orig,optimState.Xmax);
+        optimState.y = expand(optimState.y,optimState.Xmax);
+        if ~isempty(fsd); optimState.S = expand(optimState.S,optimState.Xmax); end
+        optimState.X_flag = expand(optimState.X_flag,optimState.Xmax,false);
+        optimState.funevaltime = expand(optimState.funevaltime,optimState.Xmax);
+        optimState.nevals = expand(optimState.nevals,optimState.Xmax);
+    end
+
+    optimState.X_orig(optimState.Xn,:) = x_orig;
+    optimState.X(optimState.Xn,:) = x;
+    optimState.y_orig(optimState.Xn) = fval_orig;
+    fval = fval_orig + warpvars_vbmc(x,'logp',optimState.trinfo);
+    optimState.y(optimState.Xn) = fval;
+    if ~isempty(fsd); optimState.S(optimState.Xn) = fsd; end
+    optimState.X_flag(optimState.Xn) = true;
+    optimState.funevaltime(optimState.Xn) = t;
+    optimState.nevals(optimState.Xn) = max(1,optimState.nevals(optimState.Xn) + 1);
+end
+
 optimState.ymax = max(optimState.y(optimState.X_flag));
+
+end
+
+%--------------------------------------------------------------------------
+function x = expand(x,nmax,fill)
+%EXPAND Expand storage for given matrix
+if nargin < 3 || isempty(fill); fill = NaN; end
+
+if isnan(fill)
+    x = [x; NaN(nmax-size(x,1),size(x,2))];
+elseif islogical(fill) && fill
+    x = [x; true(nmax-size(x,1),size(x,2))];
+elseif islogical(fill) && ~fill
+    x = [x; false(nmax-size(x,1),size(x,2))];    
+else
+    x = [x; fill*ones(nmax-size(x,1),size(x,2))];    
+end
 
 end

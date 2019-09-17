@@ -28,9 +28,11 @@ vtot = vf + vbar;       % Total variance
 acq = -vtot .* p.^2;
 
 % Regularization: penalize points where GP uncertainty is below threshold
-idx = vtot < TolVar;
-if any(idx)
-    acq(idx) = acq(idx) .* exp(-(TolVar./vtot(idx)-1));
+if optimState.VarianceRegularizedAcqFcn
+    idx = vtot < TolVar;
+    if any(idx)
+        acq(idx) = acq(idx) .* exp(-(TolVar./vtot(idx)-1));
+    end
 end
 acq = max(acq,-realmax);
 

@@ -1,33 +1,11 @@
-function [hypprior,X_hpd,y_hpd,Nhyp,hyp0,meanfun,Ns_gp] = vbmc_gphyp(optimState,meanfun,warpflag,options)
+function [hypprior,X_hpd,y_hpd,Nhyp,hyp0,Ns_gp] = vbmc_gphyp(optimState,meanfun,warpflag,options)
 %VBMC_GPHYP Define bounds, priors and samples for GP hyperparameters.
 
 % Get high-posterior density dataset
 [X_hpd,y_hpd,hpd_range] = gethpd_vbmc(optimState,options);
 [N_hpd,D] = size(X_hpd);
 s2 = [];
-
 neff = optimState.Neff;
-
-%% GP observation noise
-
-MinNoise = 1e-3;
-if options.UncertaintyHandling
-    if isempty(options.NoiseSize)
-        noisesize = 1;
-        noisestd = 1;
-    else
-        noisesize = options.NoiseSize;
-        noisestd = 0.5;
-    end
-else
-    if isempty(options.NoiseSize)
-        noisesize = MinNoise; % This was 0.01
-    else
-        noisesize = options.NoiseSize;
-    end
-    noisestd = 0.5;
-end
-noisesize = max(noisesize,MinNoise);
 
 %% Set GP hyperparameters defaults for VBMC
 
@@ -45,14 +23,43 @@ meanfun = meaninfo.meanfun;     % Switch to number
 Nhyp = Ncov+Nnoise+Nmean+Noutwarp;
 
 % Initial GP hyperparameters
+
+% GP covariance hyperparameters
 hyp0 = zeros(Nhyp,1);
 hyp0(1:Ncov) = covinfo.x0;
+
+% GP noise hyperparameters
 hyp0(Ncov+(1:Nnoise)) = noiseinfo.x0;
+MinNoise = 1e-3;
+noisemult = [];
+switch optimState.UncertaintyHandlingLevel
+    case 0
+        noisesize = max(options.NoiseSize,MinNoise);
+        if isempty(noisesize); noisesize = MinNoise; end
+        noisestd = 0.5;
+    case 1
+        noisemult = max(options.NoiseSize,MinNoise);
+        if isempty(noisemult)
+            noisemult = 1;  noisemultstd = log(10);
+        else
+            noisemultstd = log(10)/2;
+        end
+        noisesize = MinNoise;
+        noisestd = log(10);
+    case 2
+        noisesize = MinNoise;
+        noisestd = log(10);
+end
 hyp0(Ncov+1) = log(noisesize);
+if ~isempty(noisemult); hyp0(Ncov+2) = log(noisemult); end
+
+% GP mean function hyperparameters
 hyp0(Ncov+Nnoise+(1:Nmean)) = meaninfo.x0;
+
+% GP output warping function hyperparameters
 if Noutwarp > 0; hyp0(Ncov+Nnoise+Nmean+(1:Noutwarp)) = outwarpinfo.x0; end
 
-% Change some of the default bounds over hyperparameters
+%% Change default bounds and set priors over hyperparameters
 LB_gp = NaN(1,Nhyp);
 UB_gp = NaN(1,Nhyp);
 LB_gp(Ncov+1) = log(MinNoise);     % Increase minimum noise
@@ -80,6 +87,10 @@ hypprior.df = 3*ones(1,Nhyp);    % Broad Student's t prior
 % Hyperprior over observation noise
 hypprior.mu(Ncov+1) = log(noisesize);
 hypprior.sigma(Ncov+1) = noisestd;
+if ~isempty(noisemult)
+    hypprior.mu(Ncov+2) = log(noisemult);
+    hypprior.sigma(Ncov+2) = noisemultstd;    
+end
 
 % Change bounds and hyperprior over output-dependent noise modulation
 if numel(optimState.gpNoisefun)>2 && optimState.gpNoisefun(3) == 1
@@ -178,6 +189,13 @@ else
     
     hypprior.mu(1:D) = log(0.05*(optimState.PUB - optimState.PLB));
     hypprior.sigma(1:D) = log(10);
+
+%      switch meanfun
+%          case {4,6}
+%              hypprior.mu(Ncov+Nnoise+1+D+(1:D)) = log(0.5*(optimState.PUB - optimState.PLB));
+%              hypprior.sigma(Ncov+Nnoise+1+D+(1:D)) = log(100);            
+%      end
+    
     
 %     [~,idx] = max(y_hpd);
 %     xmax = X_hpd(idx,:);    

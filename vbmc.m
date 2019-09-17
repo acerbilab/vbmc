@@ -157,7 +157,9 @@ end
 defopts.IntegerVars             = '[]           % Array with indices of integer variables';
 defopts.UncertaintyHandling     = 'no           % Explicit noise handling (only partially supported)';
 defopts.NoiseSize               = '[]           % Base observation noise magnitude (standard deviation)';
-defopts.SpecifyTargetNoise      = 'no           % Target log joint function also returns an estimate of noise (standard deviation)';
+defopts.SpecifyTargetNoise      = 'no           % Target log joint function returns noise estimate (SD) as second output';
+defopts.RepeatedObservations    = 'yes          % Allow for repeated measurements at the same location for noisy inputs';
+defopts.RepeatedAcqDiscount     = '0.9          % Multiplicative discount on acquisition fcn to repeat measurement at the same location';
 defopts.FunEvalStart            = 'max(D,10)    % Number of initial target fcn evals';
 defopts.FunEvalsPerIter         = '5            % Number of target fcn evals per iteration';
 defopts.SGDStepSize             = '0.005        % Base step size for stochastic gradient descent';
@@ -198,8 +200,7 @@ defopts.AdaptiveK          = '2                 % Added variational components f
 defopts.HPDFrac            = '0.8               % High Posterior Density region (fraction of training inputs)';
 defopts.ELCBOImproWeight   = '3                 % Uncertainty weight on ELCBO for computing lower bound improvement';
 defopts.TolLength          = '1e-6              % Minimum fractional length scale';
-defopts.NoiseObj           = 'off               % Objective fcn returns noise estimate as 2nd argument (unsupported)';
-defopts.CacheSize          = '1e4               % Size of cache for storing fcn evaluations';
+defopts.CacheSize          = '500               % Size of cache for storing fcn evaluations';
 defopts.CacheFrac          = '0.5               % Fraction of search points from starting cache (if nonempty)';
 defopts.StochasticOptimizer = 'adam             % Stochastic optimizer for varational parameters';
 defopts.TolFunStochastic   = '1e-3              % Stopping threshold for stochastic optimization';
@@ -251,6 +252,12 @@ defopts.OutwarpThreshBase  = '10*nvars          % Output warping starting thresh
 defopts.OutwarpThreshMult  = '1.25              % Output warping threshold multiplier when failed sub-threshold check';
 defopts.OutwarpThreshTol   = '0.8               % Output warping base threshold tolerance (fraction of current threshold)';
 defopts.Temperature        = '1                 % Temperature for posterior tempering (allowed values T = 1,2,3,4)';
+defopts.SeparateSearchGP   = 'no                % Use separate GP with constant mean for active search';
+defopts.NoiseShaping       = 'no                % Discount observations from from extremely low-density regions';
+defopts.NoiseShapingThreshold = '20*D           % Threshold from max observed value to start discounting';
+defopts.NoiseShapingFactor = '0.2               % Proportionality factor of added noise wrt distance from threshold';
+
+
 
 %% Advanced options for unsupported/untested features (do *not* modify)
 defopts.WarpRotoScaling    = 'off               % Rotate and scale input';
@@ -267,7 +274,6 @@ defopts.AltMCEntropy       = 'no                % Use alternative Monte Carlo co
 defopts.VarActiveSample    = 'no                % Variational active sampling';
 defopts.FeatureTest        = 'no                % Test a new experimental feature';
 defopts.BOWarmup           = 'no                % Bayesian-optimization-like warmup stage';
-defopts.gpNoiseFun         = '1                 % GP default noise function';
 defopts.gpOutwarpFun       = '[]                % GP default output warping function';
 
 %% If called with 'all', return all default options
@@ -335,7 +341,7 @@ D = size(x0,2);     % Number of variables
 optimState = [];
 
 % Setup algorithm options
-[options,cmaes_opts] = setupoptions(D,defopts,options);
+options = setupoptions(D,defopts,options);
 if options.Warmup
     options_main = options;
     % Use special options during Warmup
@@ -362,19 +368,20 @@ K = options.Kwarmup;
 
 % Store target density function
 optimState.fun = fun;
-if isempty(varargin)
-    funwrapper = fun;   % No additional function arguments passed
-else
-    funwrapper = @(u_) fun(u_,varargin{:});
-end
-
-% Initialize function logger
-[~,optimState] = funlogger_vbmc([],D,optimState,'init',options.CacheSize,options.NoiseObj);
+funwrapper = @(u_) fun(u_,varargin{:});
 
 % GP struct and GP hyperparameters
-gp = [];    hyp = [];   hyp_warp = [];  hyp_logp = [];
+gp = [];        hypstruct = [];     hypstruct_search = [];
+
 optimState.gpCovfun = 1;    % Squared exponential kernel with separate length scales
-optimState.gpNoisefun = options.gpNoiseFun;
+switch optimState.UncertaintyHandlingLevel
+    case 0; optimState.gpNoisefun = [1 0];  % Observation noise for stability
+    case 1; optimState.gpNoisefun = [1 2];  % Infer noise
+    case 2; optimState.gpNoisefun = [1 1];  % Provided heteroskedastic noise
+end
+if options.NoiseShaping && optimState.gpNoisefun(2) == 0
+    optimState.gpNoisefun(2) = 1;
+end
 optimState.gpMeanfun = options.gpMeanFun;
 switch optimState.gpMeanfun
     case {'zero','const','negquad','se','negquadse'}
@@ -390,6 +397,9 @@ if ischar(optimState.gpOutwarpfun)
             optimState.gpOutwarpfun = str2func(optimState.gpOutwarpfun);
     end
 end
+
+% Initialize function logger
+[~,optimState] = funlogger_vbmc([],D,optimState,'init',options.CacheSize);
 
 if optimState.Cache.active
     displayFormat = ' %5.0f     %5.0f  /%5.0f   %12.2f  %12.2f  %12.2f     %4.0f %10.3g       %s\n';
@@ -413,8 +423,7 @@ end
 %% Variational optimization loop
 iter = 0;
 isFinished_flag = false;
-exitflag = 0;   output = [];    stats = [];     sKL = Inf;
-
+exitflag = 0;   output = [];    stats = [];
 
 while ~isFinished_flag
     iter = iter + 1;
@@ -436,96 +445,61 @@ while ~isFinished_flag
     t = tic;
     optimState.trinfo = vp.trinfo;
     if iter == 1; new_funevals = options.FunEvalStart; else; new_funevals = options.FunEvalsPerIter; end
-    if optimState.Xmax > 0
+    if optimState.Xn > 0
         optimState.ymax = max(optimState.y(optimState.X_flag));
     end
     if optimState.SkipActiveSampling
         optimState.SkipActiveSampling = false;
-    else
+    else        
+        if ~isempty(gp) && options.SeparateSearchGP && ~options.VarActiveSample
+            % Train a distinct GP for active sampling
+            if mod(iter,2) == 0
+                meantemp = optimState.gpMeanfun;
+                optimState.gpMeanfun = 'const';
+                [gp_search,hypstruct_search] = gptrain_vbmc(hypstruct_search,optimState,stats,options);
+                optimState.gpMeanfun = meantemp;
+            else
+                gp_search = gp;                
+            end
+        else
+            gp_search = gp;
+        end
+        % Performe active sampling
         if options.VarActiveSample
             [optimState,vp,t_active(iter),t_func(iter)] = ...
-                variationalactivesample_vbmc(optimState,new_funevals,funwrapper,vp,vp_old,gp,options,cmaes_opts);            
+                variationalactivesample_vbmc(optimState,new_funevals,funwrapper,vp,vp_old,gp_search,options);
         else
             [optimState,t_active(iter),t_func(iter)] = ...
-                activesample_vbmc(optimState,new_funevals,funwrapper,vp,vp_old,gp,options,cmaes_opts);
+                activesample_vbmc(optimState,new_funevals,funwrapper,vp,vp_old,gp_search,options);
         end
     end
-    optimState.N = optimState.Xmax;  % Number of training inputs
-    optimState.Neff = sum(optimState.X_flag(1:optimState.Xmax));
+    optimState.N = optimState.Xn;  % Number of training inputs
+    optimState.Neff = sum(optimState.nevals(optimState.X_flag));
     timer.activeSampling = toc(t);
     
     %% Input warping / reparameterization (unsupported!)
     if options.WarpNonlinear || options.WarpRotoScaling
         t = tic;
-        [optimState,vp,hyp,hyp_warp,action] = ...
-            vbmc_warp(optimState,vp,gp,hyp,hyp_warp,action,options,cmaes_opts);
-        timer.warping = toc(t);        
+        [optimState,vp,hypstruct.hyp,hypstruct.warp,action] = ...
+            vbmc_warp(optimState,vp,gp,hypstruct.hyp,hypstruct.warp,action,options);
+        timer.warping = toc(t);
     end
                 
     %% Train GP
-    t = tic;
-        
-    % Get priors, starting hyperparameters, and number of samples
-    if optimState.Warmup && options.BOWarmup
-%        [hypprior,X_hpd,y_hpd,~,hyp0,optimState.gpMeanfun,Ns_gp] = ...
-%            vbmc_gphyp(optimState,'const',0,options);
-        [hypprior,X_hpd,y_hpd,~,hyp0,optimState.gpMeanfun,Ns_gp] = ...
-            vbmc_gphyp(optimState,optimState.gpMeanfun,0,options);
-    else
-        [hypprior,X_hpd,y_hpd,~,hyp0,optimState.gpMeanfun,Ns_gp] = ...
-            vbmc_gphyp(optimState,optimState.gpMeanfun,0,options);
-    end
-    if isempty(hyp); hyp = hyp0; end % Initial GP hyperparameters
+    t = tic;        
+    [gp,hypstruct,Ns_gp] = gptrain_vbmc(hypstruct,optimState,stats,options);    
+    timer.gpTrain = toc(t);
+    
+    % Check if reached stable sampling regime
     if Ns_gp == options.StableGPSamples && optimState.StopSampling == 0
-        optimState.StopSampling = optimState.N; % Reached stable sampling
+        optimState.StopSampling = optimState.N;
     end
     
-    % Get GP training options
-    gptrain_options = get_GPTrainOptions(Ns_gp,optimState,stats,options);    
-    gptrain_options.LogP = hyp_logp;
-    if numel(gptrain_options.Widths) ~= numel(hyp0); gptrain_options.Widths = []; end    
-    
-    % Get training dataset
-    [X_train,y_train] = get_traindata(optimState,options);
-    optimState.warp_thresh = []; % max(y_train) - 10*D;    
-    y_train = outputwarp(y_train,optimState,options);   % Fitness shaping
-    
-    % Fit GP to training set
-    [gp,hyp,gpoutput] = gplite_train(hyp,Ns_gp,X_train,y_train, ...
-        optimState.gpCovfun,optimState.gpMeanfun,optimState.gpNoisefun,...
-        [],hypprior,gptrain_options);
-    hyp_full = gpoutput.hyp_prethin; % Pre-thinning GP hyperparameters
-    hyp_logp = gpoutput.logp;
-    
-%      if iter > 10
-%          pause
-%      end
-    
-    % Update running average of GP hyperparameter covariance (coarse)
-    if size(hyp_full,2) > 1
-        hypcov = cov(hyp_full');
-        if isempty(optimState.RunHypCov) || options.HypRunWeight == 0
-            optimState.RunHypCov = hypcov;
-        else
-            weight = options.HypRunWeight^options.FunEvalsPerIter;
-            optimState.RunHypCov = (1-weight)*hypcov + ...
-                weight*optimState.RunHypCov;
-        end
-        % optimState.RunHypCov
-    else
-        optimState.RunHypCov = [];
-    end
-    
-    % Sample from GP (for debug)
-    if ~isempty(gp) && 0
-        Xgp = vbmc_gpsample(gp,1e3,optimState,1);
-        cornerplot(Xgp);
-    end
+    % Switch to numerical definition of GP mean function
+    optimState.gpMeanfun = gp.meanfun;
     
     % Estimate of GP noise around the top high posterior density region
     optimState.sn2hpd = estimate_GPnoise(gp);
-    
-    timer.gpTrain = toc(t);
     
 %     if ~exist('wsabi_hyp','var'); wsabi_hyp = zeros(1,D+1); end    
 %     priorMu = (optimState.PLB + optimState.PUB)/2;
@@ -568,8 +542,9 @@ while ~isFinished_flag
         elbo = NaN;     elbo_sd = NaN;      varss = NaN;
         pruned = 0;     G = NaN;    H = NaN;    varG = NaN; varH = NaN;
     else
+        [X_hpd,y_hpd] = gethpd_vbmc(optimState,options);
         [vp,elbo,elbo_sd,G,H,varG,varH,varss,pruned] =  ...
-            vpoptimize(Nfastopts,Nslowopts,vp,gp,Knew,X_hpd,y_hpd,optimState,stats,options,cmaes_opts,prnt);        
+            vpoptimize(Nfastopts,Nslowopts,vp,gp,Knew,X_hpd,y_hpd,optimState,stats,options,prnt);        
     end
     % Save variational solution stats
     vp.stats.elbo = elbo;               % ELBO
@@ -592,8 +567,8 @@ while ~isFinished_flag
     
     %% Recompute warpings at end iteration (unsupported)
     if options.WarpNonlinear || options.WarpRotoScaling    
-        [optimState,vp,hyp] = ...
-            vbmc_rewarp(optimState,vp,gp,hyp,options,cmaes_opts);
+        [optimState,vp,hypstruct.hyp] = ...
+            vbmc_rewarp(optimState,vp,gp,hypstruct.hyp,options);
     end
     
     %% Plot current iteration (to be improved)
@@ -611,6 +586,10 @@ while ~isFinished_flag
     % Compute symmetrized KL-divergence between old and new posteriors
     Nkl = 1e5;
     sKL = max(0,0.5*sum(vbmc_kldiv(vp,vp_old,Nkl,options.KLgauss)));
+    
+    % Evaluate max LCB of GP prediction on all training inputs
+    [~,~,fmu,fs2] = gplite_pred(gp,gp.X,gp.y,gp.s2);
+    optimState.lcbmax = max(fmu - options.ELCBOImproWeight*sqrt(fs2));    
         
     % Compare variational posterior's moments with ground truth
     if ~isempty(options.TrueMean) && ~isempty(options.TrueCov) ...
@@ -648,10 +627,11 @@ while ~isFinished_flag
             vp.optimize_weights = logical(options.VariableWeights);
             if options.BOWarmup
                 optimState.gpMeanfun = options.gpMeanFun;
-                hyp = [];
+                hypstruct.hyp = [];
             end
             % Switch to main algorithm options
             options = options_main;
+            hypstruct.runcov = [];    % Reset GP hyperparameter covariance            
         end
     end
     
@@ -664,7 +644,7 @@ while ~isFinished_flag
     
     % Record all useful stats
     stats = savestats(stats, ...
-        optimState,vp,elbo,elbo_sd,varss,sKL,sKL_true,gp,hyp_full,...
+        optimState,vp,elbo,elbo_sd,varss,sKL,sKL_true,gp,hypstruct.full,...
         Ns_gp,pruned,timer,options.Diagnostics);
     
     %----------------------------------------------------------------------
@@ -822,6 +802,7 @@ if ~isempty(optimState.gpOutwarpfun)
 else
     stats.outwarp_threshold(iter) = NaN;
 end
+stats.lcbmax(iter) = optimState.lcbmax;
 
 end
 

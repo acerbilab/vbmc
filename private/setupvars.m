@@ -181,9 +181,6 @@ optimState.RunMean = [];
 optimState.RunCov = [];
 optimState.LastRunAvg = NaN; % Last time running average was updated
 
-% Running covariance of GP hyperparameter posterior
-optimState.RunHypCov = [];
-
 % Current number of components for variational posterior
 optimState.vpK = K;
 
@@ -203,8 +200,21 @@ optimState.TolGPVar = options.TolGPVar;
 % Copy maximum number of fcn. evaluations, used by some acquisition fcns.
 optimState.MaxFunEvals = options.MaxFunEvals;
 
+% By default, apply variance-based regularization to acquisition functions
+optimState.VarianceRegularizedAcqFcn = true;
+
 % Setup search cache
 optimState.SearchCache = [];
+
+% Set uncertainty handling level
+% (0: none; 1: unknwon noise level; 2: user-provided noise)
+if options.SpecifyTargetNoise
+    optimState.UncertaintyHandlingLevel = 2;  % Provided noise
+elseif options.UncertaintyHandling
+    optimState.UncertaintyHandlingLevel = 1;  % Infer noise
+else
+    optimState.UncertaintyHandlingLevel = 0;  % No noise
+end
 
 % List of points at the end of each iteration
 optimState.iterList.u = [];

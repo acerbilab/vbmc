@@ -1,4 +1,4 @@
-function [vp,elbo,elbo_sd,G,H,varG,varH,varss,pruned] = vpoptimize(Nfastopts,Nslowopts,vp,gp,K,Xstar,ystar,optimState,stats,options,cmaes_opts,prnt)
+function [vp,elbo,elbo_sd,G,H,varG,varH,varss,pruned] = vpoptimize(Nfastopts,Nslowopts,vp,gp,K,Xstar,ystar,optimState,stats,options,prnt)
 %VPOPTIMIZE Optimize variational posterior.
 
 %% Set up optimization variables and options
@@ -174,6 +174,7 @@ for iOpt = 1:Nslowopts
             if vp.optimize_lambda; insigma_lambda = ones(vp.D,1); else; insigma_lambda = []; end
             if vp.optimize_weights; insigma_eta = ones(vp.K,1); else; insigma_eta = []; end
             insigma = [insigma_mu(:); insigma_sigma(:); insigma_lambda; insigma_eta];
+            cmaes_opts = options.CMAESopts;
             cmaes_opts.EvalParallel = 'off';
             cmaes_opts.TolX = '1e-8*max(insigma)';
             cmaes_opts.TolFun = 1e-6;

@@ -47,9 +47,9 @@ if ~isempty(idx_stable)
         end
     end
 
-    % Compute average ELCBO improvement in the past few iterations
+    % Compute average ELCBO improvement per fcn eval in the past few iters
     idx0 = max(1,iter-TolStableIters+1);
-    xx = stats.N(idx0:iter);
+    xx = stats.funccount(idx0:iter);
     yy = stats.elbo(idx0:iter) - options.ELCBOImproWeight*stats.elbo_sd(idx0:iter);
     p = polyfit(xx,yy,1);
     ELCBOimpro = p(1);
@@ -92,7 +92,7 @@ end
 stats.stable(iter) = stableflag;        % Store stability flag    
 
 % Prevent early termination
-if optimState.N < options.MinFunEvals || ...
+if optimState.funccount < options.MinFunEvals || ...
         optimState.iter < options.MinIter
     isFinished_flag = false;
 end

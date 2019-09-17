@@ -2,7 +2,7 @@ function [Xs,gp] = gplite_sample(gp,Ns,x0,method,logprior)
 %GPLITE_SAMPLE Draw random samples from log pdf represented by GP.
 
 if nargin < 3; x0 = []; end
-if nargin < 4 || isempty(method); method = 'parallel'; end
+if nargin < 4 || isempty(method); method = 'slicesample'; end
 if nargin < 5 || isempty(logprior); logprior = []; end
 
 MaxBnd = 10;

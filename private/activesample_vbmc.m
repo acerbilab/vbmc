@@ -1,5 +1,5 @@
 function [optimState,t_active,t_func] = ...
-    activesample_vbmc(optimState,Ns,funwrapper,vp,vp_old,gp,options,cmaes_opts)
+    activesample_vbmc(optimState,Ns,funwrapper,vp,vp_old,gp,options)
 %ACTIVESAMPLE_VBMC Actively sample points iteratively based on acquisition function.
 
 NSsearch = options.NSsearch;    % Number of points for acquisition fcn
@@ -19,6 +19,10 @@ else                    % Active uncertainty sampling
         
     for is = 1:Ns
 
+        % Re-evaluate variance of the log joint
+        [~,~,varF] = gplogjoint(vp,gp,0,0,0,1);
+        optimState.varlogjoint_samples = varF;
+        
         optimState.acqrand = rand();    % Seed for random acquisition fcn
         
         % Create search set from cache and randomly generated
@@ -52,9 +56,8 @@ else                    % Active uncertainty sampling
                 Sigma = cov(X_hpd,1);
             end
             insigma = sqrt(diag(Sigma));
-            % cmaes_opts.PopSize = 16 + 3*vp.D;   % Large population size
-            % cmaes_opts.DispModulo = Inf;
             fval_old = SearchAcqFcn{1}(Xacq(1,:),vp,gp,optimState,0);
+            cmaes_opts = options.CMAESopts;
             cmaes_opts.TolFun = max(1e-12,abs(fval_old*1e-3));
             x0 = real2int_vbmc(Xacq(1,:),vp.trinfo,optimState.integervars)';
             [xsearch_cmaes,fval_cmaes] = cmaes_modded(func2str(SearchAcqFcn{1}),x0,insigma,cmaes_opts,vp,gp,optimState,1);
@@ -64,6 +67,26 @@ else                    % Active uncertainty sampling
                 % idx_cache = [idx_cache(:); 0];
                 % Double check if the cache indexing is correct
             end
+        end
+        
+        if options.UncertaintyHandling && options.RepeatedObservations
+            % Re-evaluate acquisition function on training set
+            X_train = get_traindata(optimState,options);
+            
+            % Disable variance-based regularization first
+            oldflag = optimState.VarianceRegularizedAcqFcn;
+            optimState.VarianceRegularizedAcqFcn = false;
+            acq_train = SearchAcqFcn{1}(X_train,vp,gp,optimState,0);
+            optimState.VarianceRegularizedAcqFcn = oldflag;
+            
+            [acq_train,idx_train] = min(acq_train);            
+            acq_now = SearchAcqFcn{1}(Xacq(1,:),vp,gp,optimState,0);
+            
+            % [acq_train,acq_now]
+            
+            if acq_train < options.RepeatedAcqDiscount*acq_now
+                Xacq(1,:) = X_train(idx_train,:);                
+            end            
         end
         
         y_orig = [NaN; optimState.Cache.y_orig(:)]; % First position is NaN (not from cache)
@@ -82,21 +105,36 @@ else                    % Active uncertainty sampling
         timer_func = tic;
         if isnan(y_orig)    % Function value is not available, evaluate
             try
-                [ynew,optimState] = funlogger_vbmc(funwrapper,xnew,optimState,'iter');
+                [ynew,optimState,idx_new] = funlogger_vbmc(funwrapper,xnew,optimState,'iter');
             catch func_error
                 pause
             end
         else
-            [ynew,optimState] = funlogger_vbmc(funwrapper,xnew,optimState,'add',y_orig);
+            [ynew,optimState,idx_new] = funlogger_vbmc(funwrapper,xnew,optimState,'add',y_orig);
             % Remove point from starting cache
             optimState.Cache.X_orig(idx,:) = [];
-            optimState.Cache.y_orig(idx) = [];            
-        end                
+            optimState.Cache.y_orig(idx) = [];
+        end
         t_func = t_func + toc(timer_func);
             
-        ynew = outputwarp(ynew,optimState,options);
+        % ynew = outputwarp(ynew,optimState,options);
+        if isfield(optimState,'S')
+            s2new = optimState.S(idx_new)^2;
+        else
+            s2new = [];
+        end
         
-        gp = gplite_post(gp,xnew,ynew,[],[],[],[],1);   % Rank-1 update
+        % Perform simple rank-1 update if no noise and first sample
+        update1 = (isempty(s2new) || optimState.nevals(idx_new) == 1) && ~options.NoiseShaping;
+        if update1
+            gp = gplite_post(gp,xnew,ynew,[],[],[],s2new,1);
+        else
+            [X_train,y_train,s2_train] = get_traindata(optimState,options);
+            gp.X = X_train;
+            gp.y = y_train;
+            gp.s2 = s2_train;
+            gp = gplite_post(gp);            
+        end
     end
     
 end
