@@ -21,6 +21,8 @@ else                    % Active uncertainty sampling
         
         idxAcq = randi(numel(SearchAcqFcn));        
 
+        %% Pre-computation for mutual-information based acquisition function
+        
         % Re-evaluate variance of the log joint
         [~,~,varF] = gplogjoint(vp,gp,0,0,0,1);
         optimState.varlogjoint_samples = varF;
@@ -39,6 +41,18 @@ else                    % Active uncertainty sampling
             sn2new(:,s) = gplite_noisefun(hyp_noise,gp.X,gp.noisefun,gp.y,s2);
         end
         gp.sn2new = mean(sn2new,2);
+        
+        % Evaluate GP input length scale (use geometric mean)
+        D = size(gp.X,2);
+        ln_ell = zeros(D,Ns_gp);
+        for s = 1:Ns_gp; ln_ell(:,s) = gp.post(s).hyp(1:D); end
+        optimState.gplengthscale = exp(mean(ln_ell,2))';
+        
+        % Rescale GP training inputs by GP length scale
+        gp.X_rescaled = bsxfun(@rdivide,gp.X,optimState.gplengthscale);
+        
+        
+        %% Start active search
         
         optimState.acqrand = rand();    % Seed for random acquisition fcn
         
@@ -158,6 +172,11 @@ end
 
 t_active = toc(timer_active) - t_func;
     
+% Remove temporary fields (unnecessary here because GP is not returned)
+% if isfield(gp,'sn2new'); gp = rmfield(gp,'sn2new'); end
+% if isfield(gp,'X_rescaled'); gp = rmfield(gp,'X_rescaled'); end
+
+
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

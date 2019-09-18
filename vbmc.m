@@ -479,6 +479,7 @@ while ~isFinished_flag
     
     %% Input warping / reparameterization (unsupported!)
     if options.WarpNonlinear || options.WarpRotoScaling
+        % Beware that the GP here is not updated from active sampling
         t = tic;
         [optimState,vp,hypstruct.hyp,hypstruct.warp,action] = ...
             vbmc_warp(optimState,vp,gp,hypstruct.hyp,hypstruct.warp,action,options);
