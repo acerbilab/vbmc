@@ -26,7 +26,8 @@ else                    % Active uncertainty sampling
     for is = 1:Ns
         
         if ~options.AcqHedge
-            idxAcq = randi(numel(SearchAcqFcn));
+            % idxAcq = randi(numel(SearchAcqFcn));
+            idxAcq = min(is,numel(SearchAcqFcn));
         end
 
         %% Pre-computation for mutual-information based acquisition function
@@ -107,6 +108,22 @@ else                    % Active uncertainty sampling
                 % Double check if the cache indexing is correct
             end
         end
+        
+%         % Finish search with a few MCMC iterations
+%         if 1 || options.SearchMCMC                
+%             mcmc_fun = @(x) log(-SearchAcqFcn{idxAcq}(x,vp,gp,optimState,0)/0.01);
+%             Widths = max(max(sqrt(diag(Sigma)'),0.1),optimState.gplengthscale);
+%             Ns = 1;
+%             sampleopts.Thin = 1;
+%             sampleopts.Burnin = 10;
+%             sampleopts.Display = 'off';
+%             sampleopts.Diagnostics = false;
+%             LB = -Inf; UB = Inf;
+%             [samples,fvals,exitflag,output] = ...
+%                 slicesamplebnd(mcmc_fun,Xacq(1,:),Ns,Widths,LB,UB,sampleopts);
+%             Xacq(1,:) = samples;
+%             fval_mcmc = SearchAcqFcn{idxAcq}(Xacq(1,:),vp,gp,optimState,0);
+%         end        
         
         if options.UncertaintyHandling && options.RepeatedObservations
             % Re-evaluate acquisition function on training set
