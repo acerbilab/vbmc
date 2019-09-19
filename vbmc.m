@@ -649,10 +649,6 @@ while ~isFinished_flag
     stats = savestats(stats, ...
         optimState,vp,elbo,elbo_sd,varss,sKL,sKL_true,gp,hypstruct.full,...
         Ns_gp,pruned,timer,options.Diagnostics);
-
-    if options.AcqHedge         % Update hedge values        
-        optimState.hedge = acqhedge_vbmc('upd',optimState.hedge,stats,options);        
-    end    
     
     
     %----------------------------------------------------------------------
@@ -669,6 +665,10 @@ while ~isFinished_flag
         if any(ydelta > optimState.OutwarpDelta*options.OutwarpThreshTol) && (optimState.R < 1)
             optimState.OutwarpDelta = optimState.OutwarpDelta*options.OutwarpThreshMult;
         end
+    end    
+    
+    if options.AcqHedge         % Update hedge values        
+        optimState.hedge = acqhedge_vbmc('upd',optimState.hedge,stats,options);        
     end    
     
     %% Write iteration output

@@ -40,7 +40,11 @@ switch lower(action(1:3))
             er_elcbo = max(0,elcbo(iter) - max_elcbo)/options.TolImprovement;
             if er_elcbo > 1; er_elcbo = 1 + log(er_elcbo); end
 
-            er = 0.5*er_sd + 0.5*er_elcbo;  % Reward
+            min_r = min(stats.rindex(min_iter:iter-1));
+            er_r = max(0, log(min_r / stats.rindex(iter)));
+                        
+            % er = 0.5*er_sd + 0.5*er_elcbo;  % Reward
+            er = er_r;
             
             for iHedge = 1:hedge.n
                 hedge.g(iHedge) = hedge.decay*hedge.g(iHedge) + er/hedge.phat(iHedge);
