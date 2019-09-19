@@ -216,6 +216,9 @@ else
     optimState.UncertaintyHandlingLevel = 0;  % No noise
 end
 
+% Empty hedge struct for acquisition functions
+if options.AcqHedge; optimState.hedge = []; end
+
 % List of points at the end of each iteration
 optimState.iterList.u = [];
 optimState.iterList.fval = [];

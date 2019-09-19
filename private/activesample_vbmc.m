@@ -16,10 +16,18 @@ if isempty(gp)
 else                    % Active uncertainty sampling
     
     SearchAcqFcn = options.SearchAcqFcn;
+    
+    if options.AcqHedge && numel(SearchAcqFcn) > 1        
+        % Choose acquisition function via hedge strategy
+        optimState.hedge = acqhedge_vbmc('acq',optimState.hedge,[],options);
+        idxAcq = optimState.hedge.chosen;        
+    end
         
     for is = 1:Ns
         
-        idxAcq = randi(numel(SearchAcqFcn));        
+        if ~options.AcqHedge
+            idxAcq = randi(numel(SearchAcqFcn));
+        end
 
         %% Pre-computation for mutual-information based acquisition function
         
@@ -153,6 +161,13 @@ else                    % Active uncertainty sampling
             s2new = optimState.S(idx_new)^2;
         else
             s2new = [];
+        end
+        
+        if 1
+            if ~isfield(optimState,'acqtable'); optimState.acqtable = []; end
+            [~,~,fmu,fs2] = gplite_pred(gp,xnew);
+            v = [idxAcq,ynew,fmu,sqrt(fs2)];
+            optimState.acqtable = [optimState.acqtable; v];
         end
         
         % Perform simple rank-1 update if no noise and first sample

@@ -256,8 +256,9 @@ defopts.SeparateSearchGP   = 'no                % Use separate GP with constant 
 defopts.NoiseShaping       = 'no                % Discount observations from from extremely low-density regions';
 defopts.NoiseShapingThreshold = '20*nvars       % Threshold from max observed value to start discounting';
 defopts.NoiseShapingFactor = '0.2               % Proportionality factor of added noise wrt distance from threshold';
-
-
+defopts.AcqHedge           = 'no                % Hedge on multiple acquisition functions';
+defopts.AcqHedgeIterWindow = '4                 % Past iterations window to judge acquisition fcn improvement';
+defopts.AcqHedgeDecay      = '0.9               % Portfolio value decay per function evaluation';
 
 %% Advanced options for unsupported/untested features (do *not* modify)
 defopts.WarpRotoScaling    = 'off               % Rotate and scale input';
@@ -643,10 +644,16 @@ while ~isFinished_flag
     
     % timer
     
+    
     % Record all useful stats
     stats = savestats(stats, ...
         optimState,vp,elbo,elbo_sd,varss,sKL,sKL_true,gp,hypstruct.full,...
         Ns_gp,pruned,timer,options.Diagnostics);
+
+    if options.AcqHedge         % Update hedge values        
+        optimState.hedge = acqhedge_vbmc('upd',optimState.hedge,stats,options);        
+    end    
+    
     
     %----------------------------------------------------------------------
     %% Check termination conditions    
