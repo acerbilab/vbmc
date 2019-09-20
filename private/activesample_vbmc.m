@@ -26,8 +26,7 @@ else                    % Active uncertainty sampling
     for is = 1:Ns
         
         if ~options.AcqHedge
-            % idxAcq = randi(numel(SearchAcqFcn));
-            idxAcq = min(is,numel(SearchAcqFcn));
+            idxAcq = randi(numel(SearchAcqFcn));
         end
 
         %% Pre-computation for mutual-information based acquisition function
@@ -187,16 +186,18 @@ else                    % Active uncertainty sampling
             optimState.acqtable = [optimState.acqtable; v];
         end
         
-        % Perform simple rank-1 update if no noise and first sample
-        update1 = (isempty(s2new) || optimState.nevals(idx_new) == 1) && ~options.NoiseShaping;
-        if update1
-            gp = gplite_post(gp,xnew,ynew,[],[],[],s2new,1);
-        else
-            [X_train,y_train,s2_train] = get_traindata(optimState,options);
-            gp.X = X_train;
-            gp.y = y_train;
-            gp.s2 = s2_train;
-            gp = gplite_post(gp);            
+        if is < Ns
+            % Perform simple rank-1 update if no noise and first sample
+            update1 = (isempty(s2new) || optimState.nevals(idx_new) == 1) && ~options.NoiseShaping;
+            if update1
+                gp = gplite_post(gp,xnew,ynew,[],[],[],s2new,1);
+            else
+                [X_train,y_train,s2_train] = get_traindata(optimState,options);
+                gp.X = X_train;
+                gp.y = y_train;
+                gp.s2 = s2_train;
+                gp = gplite_post(gp);            
+            end
         end
     end
     

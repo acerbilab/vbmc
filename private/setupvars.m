@@ -160,8 +160,8 @@ optimState.RecomputeVarPost = true;
 % Start with warm-up?
 optimState.Warmup = options.Warmup;
 
-% Number of stable iteration of small increment
-optimState.WarmupStableIter = 0;
+% Number of stable function evaluations during warmup with small increment
+optimState.WarmupStableCount = 0;
 
 % Proposal function for search
 if isempty(options.ProposalFcn)

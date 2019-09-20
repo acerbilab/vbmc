@@ -22,7 +22,7 @@ end
 if optimState.EntropySwitch
     TolStableIters = options.TolStableEntropyIters;
 else
-    TolStableIters = options.TolStableIters;
+    TolStableIters = ceil(options.TolStableCount/options.FunEvalsPerIter);
 end
 
 % Reached stable variational posterior with stable ELBO and low uncertainty
@@ -48,7 +48,7 @@ if ~isempty(idx_stable)
     end
 
     % Compute average ELCBO improvement per fcn eval in the past few iters
-    idx0 = max(1,iter-TolStableIters+1);
+    idx0 = max(1,iter-ceil(0.5*TolStableIters)+1);
     xx = stats.funccount(idx0:iter);
     yy = stats.elbo(idx0:iter) - options.ELCBOImproWeight*stats.elbo_sd(idx0:iter);
     p = polyfit(xx,yy,1);
@@ -75,7 +75,7 @@ if iter >= TolStableIters && ...
     stablecount = sum(stats.rindex(iter-TolStableIters+1:iter-1) < 1);
     
     % Iteration is stable if almost all recent iterations are stable
-    if stablecount >= TolStableIters - options.TolStableExceptions - 1
+    if stablecount >= TolStableIters - floor(TolStableIters*options.TolStableExcptFrac) - 1
         % If stable but entropy switch is ON, turn it off and continue
         if optimState.EntropySwitch && isfinite(options.EntropyForceSwitch)
             optimState.EntropySwitch = false;
@@ -83,7 +83,7 @@ if iter >= TolStableIters && ...
         else
             isFinished_flag = true;
             exitflag = 1;
-            msg = 'Inference terminated: variational solution stable for OPTIONS.TolStableIters iterations.';
+            msg = 'Inference terminated: variational solution stable for OPTIONS.TolStableCount fcn evaluations.';
             stableflag = true;
             if isempty(action); action = 'stable'; else; action = [action ', stable']; end     
         end

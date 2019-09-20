@@ -7,22 +7,37 @@ elbo_old = stats.elbo(iter-1);
 elboSD_old = stats.elbo_sd(iter-1);
 
 % First requirement for stopping, no constant improvement of metric
-if options.BOWarmup
-    % Bayesian optimization like warmup - criterion is improvement over max
-    y = optimState.y(optimState.X_flag);
-    idx_last = false(size(y));
-    idx_last(max(2,numel(y)-options.FunEvalsPerIter+1):numel(y)) = true;
-    improCriterion = max(y(idx_last)) - max(y(~idx_last));
-else
-    % Variational posterior like warmup - criterion is ELCBO
-    improCriterion = (elbo - options.ELCBOImproWeight*elbo_sd) - ...
-        (elbo_old - options.ELCBOImproWeight*elboSD_old);
-end
+StableCountFlag = false;
+StopWarmupThresh = options.StopWarmupThresh*options.FunEvalsPerIter;
+TolStableWarmupIters = ceil(options.TolStableWarmup/options.FunEvalsPerIter);
 
-if improCriterion < options.StopWarmupThresh
-    optimState.WarmupStableIter = optimState.WarmupStableIter + 1;
-else
-    optimState.WarmupStableIter = 0;
+if 0
+    if options.BOWarmup
+        % Bayesian optimization like warmup - criterion is improvement over max
+        y = optimState.y(optimState.X_flag);
+        idx_last = false(size(y));
+        idx_last(max(2,numel(y)-options.FunEvalsPerIter+1):numel(y)) = true;
+        improCriterion = max(y(idx_last)) - max(y(~idx_last));
+    else
+        % Variational posterior like warmup - criterion is ELCBO
+        improCriterion = (elbo - options.ELCBOImproWeight*elbo_sd) - ...
+            (elbo_old - options.ELCBOImproWeight*elboSD_old);
+    end
+
+    if improCriterion < StopWarmupThresh
+        % Increase warmup stability counter
+        optimState.WarmupStableCount = optimState.WarmupStableCount + options.FunEvalsPerIter;
+    else
+        optimState.WarmupStableCount = 0;
+    end
+    StableCountFlag = optimState.WarmupStableCount >= options.TolStableWarmup;
+elseif iter > TolStableWarmupIters + 1
+    % Vector of ELCBO (ignore first two iterations, ELCBO is unreliable)
+    elcbo_vec = [stats.elbo,elbo] - options.ELCBOImproWeight*[stats.elbo_sd,elbo_sd];    
+    max_now = max(elcbo_vec(max(4,end-TolStableWarmupIters+1):end));
+    max_before = max(elcbo_vec(3:max(3,end-TolStableWarmupIters)));
+    
+    StableCountFlag = (max_now - max_before) < StopWarmupThresh;
 end
 
 % Vector of maximum lower confidence bounds (LCB) of fcn values
@@ -34,11 +49,12 @@ if ~options.BOWarmup && options.WarmupCheckMax
     if 0
         y = optimState.y(optimState.X_flag);
         idx_last = false(size(y));
-        idx_last(max(2,numel(y)-options.FunEvalsPerIter*options.TolStableWarmup+1):numel(y)) = true;
+        idx_last(max(2,numel(y)-options.TolStableWarmup+1):numel(y)) = true;
         improFcn = max(0,max(y(idx_last)) - max(y(~idx_last)));
     else
         idx_last = false(size(lcbmax_vec));
-        idx_last(max(2,iter-options.TolStableWarmup+1):end) = true;
+        RecentPast = iter-ceil(options.TolStableWarmup/options.FunEvalsPerIter)+1;
+        idx_last(max(2,RecentPast):end) = true;
         improFcn = max(0,max(lcbmax_vec(idx_last)) - max(lcbmax_vec(~idx_last)));
     end
 else
@@ -57,8 +73,7 @@ else
     currentpos = optimState.funccount;
 end
 
-stopWarmup = (optimState.WarmupStableIter >= options.TolStableWarmup && ...
-    improFcn < options.StopWarmupThresh) || ...
+stopWarmup = (StableCountFlag && improFcn < StopWarmupThresh) || ...
     (currentpos - pos) > options.WarmupNoImproThreshold;
     
 if stopWarmup

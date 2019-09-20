@@ -313,7 +313,7 @@ if vp.optimize_weights
             - (elbo - options.ELCBOImproWeight*elbo_sd));
         
         % Prune component if it has negligible influence on ELCBO
-        if delta_elcbo < options.TolImprovement
+        if delta_elcbo < options.TolImprovement/sqrt(vp.K)
             vp = vp_pruned;
             elbo = elbo_pruned;
             elbo_sd = elbo_pruned_sd;

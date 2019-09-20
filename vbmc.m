@@ -134,7 +134,7 @@ defopts.Display                 = 'iter         % Level of display ("iter", "not
 defopts.Plot                    = 'off          % Plot marginals of variational posterior at each iteration';
 defopts.MaxIter                 = '50*nvars     % Max number of iterations';
 defopts.MaxFunEvals             = '50*(2+nvars) % Max number of target fcn evals';
-defopts.TolStableIters          = '10           % Required stable iterations for termination';
+defopts.TolStableCount          = '50           % Required stable fcn evals for termination';
 defopts.RetryMaxFunEvals        = '0            % Max number of target fcn evals on retry (0 = no retry)';
 
 %% If called with no arguments or with 'defaults', return default options
@@ -171,7 +171,7 @@ defopts.VariableWeights         = 'yes          % Use variable mixture weight fo
 defopts.WeightPenalty           = '0.1          % Penalty multiplier for small mixture weights';
 defopts.Diagnostics             = 'off          % Run in diagnostics mode, get additional info';
 defopts.OutputFcn               = '[]           % Output function';
-defopts.TolStableExceptions     = '2            % Allowed exceptions when computing iteration stability';
+defopts.TolStableExcptFrac      = '0.2          % Fraction of allowed exceptions when computing iteration stability';
 defopts.Fvals                   = '[]           % Evaluated fcn values at X0';
 defopts.OptimToolbox            = '[]           % Use Optimization Toolbox (if empty, determine at runtime)';
 defopts.ProposalFcn             = '[]           % Weighted proposal fcn for uncertainty search';
@@ -207,7 +207,7 @@ defopts.TolFunStochastic   = '1e-3              % Stopping threshold for stochas
 defopts.GPStochasticStepsize = 'off               % Set stochastic optimization stepsize via GP hyperparameters';
 defopts.TolSD              = '0.1               % Tolerance on ELBO uncertainty for stopping (iff variational posterior is stable)';
 defopts.TolsKL             = '0.01*sqrt(nvars)  % Stopping threshold on change of variational posterior per training point';
-defopts.TolStableWarmup    = '3                 % Number of stable iterations for stopping warmup';
+defopts.TolStableWarmup    = '15                % Number of stable fcn evals for stopping warmup';
 defopts.TolImprovement     = '0.01              % Required ELCBO improvement per fcn eval before termination';
 defopts.KLgauss            = 'yes               % Use Gaussian approximation for symmetrized KL-divergence b\w iters';
 defopts.TrueMean           = '[]                % True mean of the target density (for debugging)';
@@ -221,7 +221,7 @@ defopts.SearchCacheFrac    = '0                 % Fraction of search points from
 defopts.AlwaysRefitVarPost = 'no                % Always fully refit variational posterior';
 defopts.Warmup             = 'on                % Perform warm-up stage';
 defopts.WarmupOptions      = '[]                % Special OPTIONS struct for warmup stage';
-defopts.StopWarmupThresh   = '1                 % Stop warm-up when increase in ELBO is confidently below threshold';
+defopts.StopWarmupThresh   = '0.2               % Stop warm-up when ELCBO increase below threshold (per fcn eval)';
 defopts.WarmupKeepThreshold = '10*nvars         % Max log-likelihood difference for points kept after warmup';
 defopts.SearchCMAES        = 'on                % Use CMA-ES for search';
 defopts.SearchCMAESVPInit  = 'yes               % Initialize CMA-ES search SIGMA from variational posterior';
