@@ -54,7 +54,7 @@ for j = 1:K
     epsilon(:,1,Ns/2+1:end) = -epsilon(:,1,1:Ns/2);
     xi = bsxfun(@plus, bsxfun(@times, bsxfun(@times, epsilon, lambda), sigma(j)), mu_4(:,1,1,j));
     
-    Xs = reshape(xi,[D,Ns])'; 
+    Xs = reshape(xi,[D,Ns])';
 
     % Compute pdf -- this block is equivalent to: ys = vbmc_pdf(vp,Xs,0);
     ys = zeros(Ns,1);

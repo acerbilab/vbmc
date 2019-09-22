@@ -91,7 +91,7 @@ else                    % Active uncertainty sampling
             if options.SearchCMAESVPInit
                 [~,Sigma] = vbmc_moments(vp,0);       
             else
-                X_hpd = gethpd_vbmc(optimState,options);
+                X_hpd = gethpd_vbmc(gp.X,gp.y,options.HPDFrac);
                 Sigma = cov(X_hpd,1);
             end
             insigma = sqrt(diag(Sigma));
@@ -257,7 +257,7 @@ if size(Xsearch,1) < NSsearch
         D = size(X,2);
         for ii = 1:numel(hpdfracs)
             if Nhpd_vec(ii) == 0; continue; end            
-            [X_hpd,y_hpd] = gethpd_vbmc(optimState,struct('HPDFrac',hpdfracs(ii)));
+            X_hpd = gethpd_vbmc(X,y,hpdfracs(ii));
             if isempty(X_hpd)
                 [~,idxmax] = max(y);
                 mubar = X(idxmax,:);

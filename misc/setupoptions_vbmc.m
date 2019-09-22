@@ -1,5 +1,5 @@
-function [options,updated] = setupoptions(nvars,defopts,options)
-%SETUPOPTIONS Initialize OPTIONS struct.
+function [options,updated] = setupoptions_vbmc(nvars,defopts,options)
+%SETUPOPTIONS_VBMC Initialize OPTIONS struct for VBMC.
 
 D = nvars;  % Both D and NVARS are accepted as number of dimensions
 
@@ -46,7 +46,7 @@ evalfields = {'MaxFunEvals','MaxIter','FunEvalStart','FunEvalsPerIter','SGDStepS
     'OutwarpThreshBase','OutwarpThreshMult','OutwarpThreshTol','IntegerVars','Temperature', ...
     'SpecifyTargetNoise','SeparateSearchGP','RepeatedObservations','RepeatedAcqDiscount',...
     'NoiseShaping','NoiseShapingThreshold','NoiseShapingFactor',...
-    'AcqHedge','AcqHedgeIterWindow','AcqHedgeDecay' ...
+    'AcqHedge','AcqHedgeIterWindow','AcqHedgeDecay','MinFinalComponents' ...
     };
 
 % Evaluate string options

@@ -1,4 +1,4 @@
-function [vp0_vec,type_vec] = vbinit(type,Nopts,vp,Knew,Xstar,ystar)
+function [vp0_vec,type_vec] = vbinit_vbmc(type,Nopts,vp,Knew,Xstar,ystar)
 %VBINIT Generate array of random starting parameters for variational posterior
 
 % XSTAR and YSTAR are usually HPD regions

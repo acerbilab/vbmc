@@ -132,8 +132,9 @@ t0 = tic;
 %% Basic default options
 defopts.Display                 = 'iter         % Level of display ("iter", "notify", "final", or "off")';
 defopts.Plot                    = 'off          % Plot marginals of variational posterior at each iteration';
-defopts.MaxIter                 = '50*nvars     % Max number of iterations';
+defopts.MaxIter                 = '50*(2+nvars) % Max number of iterations';
 defopts.MaxFunEvals             = '50*(2+nvars) % Max number of target fcn evals';
+defopts.FunEvalsPerIter         = '5            % Number of target fcn evals per iteration';
 defopts.TolStableCount          = '50           % Required stable fcn evals for termination';
 defopts.RetryMaxFunEvals        = '0            % Max number of target fcn evals on retry (0 = no retry)';
 
@@ -154,6 +155,7 @@ end
 
 %% Advanced options (do not modify unless you *know* what you are doing)
 
+defopts.MinFinalComponents      = '0            % Min number of variational components used at termination';
 defopts.IntegerVars             = '[]           % Array with indices of integer variables';
 defopts.UncertaintyHandling     = 'no           % Explicit noise handling (only partially supported)';
 defopts.NoiseSize               = '[]           % Base observation noise magnitude (standard deviation)';
@@ -161,7 +163,6 @@ defopts.SpecifyTargetNoise      = 'no           % Target log joint function retu
 defopts.RepeatedObservations    = 'yes          % Allow for repeated measurements at the same location for noisy inputs';
 defopts.RepeatedAcqDiscount     = '0.9          % Multiplicative discount on acquisition fcn to repeat measurement at the same location';
 defopts.FunEvalStart            = 'max(D,10)    % Number of initial target fcn evals';
-defopts.FunEvalsPerIter         = '5            % Number of target fcn evals per iteration';
 defopts.SGDStepSize             = '0.005        % Base step size for stochastic gradient descent';
 defopts.SkipActiveSamplingAfterWarmup   = 'yes  % Skip active sampling the first iteration after warmup';
 defopts.RankCriterion           = 'yes          % Use ranking criterion to pick best non-converged solution';
@@ -342,12 +343,12 @@ D = size(x0,2);     % Number of variables
 optimState = [];
 
 % Setup algorithm options
-options = setupoptions(D,defopts,options);
+options = setupoptions_vbmc(D,defopts,options);
 if options.Warmup
     options_main = options;
     % Use special options during Warmup
     if isfield(options,'WarmupOptions')
-        options = setupoptions(D,options,options.WarmupOptions);
+        options = setupoptions_vbmc(D,options,options.WarmupOptions);
     end
 end
 
@@ -544,9 +545,8 @@ while ~isFinished_flag
         elbo = NaN;     elbo_sd = NaN;      varss = NaN;
         pruned = 0;     G = NaN;    H = NaN;    varG = NaN; varH = NaN;
     else
-        [X_hpd,y_hpd] = gethpd_vbmc(optimState,options);
         [vp,elbo,elbo_sd,G,H,varG,varH,varss,pruned] =  ...
-            vpoptimize(Nfastopts,Nslowopts,vp,gp,Knew,X_hpd,y_hpd,optimState,stats,options,prnt);        
+            vpoptimize_vbmc(Nfastopts,Nslowopts,vp,gp,Knew,optimState,options,prnt);        
     end
     % Save variational solution stats
     vp.stats.elbo = elbo;               % ELBO
@@ -699,9 +699,24 @@ while ~isFinished_flag
         
 end
 
+vp_old = vp;
+
 % Pick "best" variational solution to return
 [vp,elbo,elbo_sd,idx_best] = ...
     best_vbmc(stats,iter,options.BestSafeSD,options.BestFracBack,options.RankCriterion);
+new_final_vp_flag = idx_best ~= iter;
+
+% Last variational optimization with large number of components
+[vp,elbo,elbo_sd,changedflag] = finalboost_vbmc(vp,idx_best,optimState,stats,options);
+if changedflag; new_final_vp_flag = true; end
+
+if new_final_vp_flag
+    if prnt > 2
+        % Recompute symmetrized KL-divergence
+        sKL = max(0,0.5*sum(vbmc_kldiv(vp,vp_old,Nkl,options.KLgauss)));
+        fprintf(displayFormat,Inf,optimState.funccount,elbo,elbo_sd,sKL,vp.K,stats.rindex(idx_best),'finalize');
+    end
+end
 
 if ~stats.stable(idx_best); exitflag = 0; end
 
@@ -716,7 +731,7 @@ if prnt > 1
 end
 
 if nargout > 4
-    output = vbmc_output(elbo,elbo_sd,optimState,msg,stats,idx_best);
+    output = vbmc_output(vp,optimState,msg,stats,idx_best);
     
     % Compute total running time and fractional overhead
     optimState.totaltime = toc(t0);    

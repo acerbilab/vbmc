@@ -1,5 +1,13 @@
-function [vp,elbo,elbo_sd,G,H,varG,varH,varss,pruned] = vpoptimize(Nfastopts,Nslowopts,vp,gp,K,Xstar,ystar,optimState,stats,options,prnt)
+function [vp,elbo,elbo_sd,G,H,varG,varH,varss,pruned] = vpoptimize_vbmc(Nfastopts,Nslowopts,vp,gp,K,optimState,options,prnt)
 %VPOPTIMIZE Optimize variational posterior.
+
+if nargin < 8 || isempty(prnt); prnt = 0; end
+
+% Assign default values to OPTIMSTATE
+if ~isfield(optimState,'delta'); optimState.delta = 0; end
+if ~isfield(optimState,'EntropySwitch'); optimState.EntropySwitch = false; end
+if ~isfield(optimState,'Warmup'); optimState.Warmup = ~vp.optimize_weights; end
+if ~isfield(optimState,'temperature'); optimState.temperature = 1; end
 
 %% Set up optimization variables and options
 
@@ -107,14 +115,17 @@ end
 
 %% Perform quick shotgun evaluation of many candidate parameters
 
+% Get high-posterior density points
+[Xstar,ystar] = gethpd_vbmc(gp.X,gp.y,options.HPDFrac);
+
 % Generate a bunch of random candidate variational parameters
 switch Nslowopts
     case 1
-        [vp0_vec,vp0_type] = vbinit(1,Nfastopts,vp,K,Xstar,ystar);
+        [vp0_vec,vp0_type] = vbinit_vbmc(1,Nfastopts,vp,K,Xstar,ystar);
     otherwise
-        [vp0_vec1,vp0_type1] = vbinit(1,ceil(Nfastopts/3),vp,K,Xstar,ystar);
-        [vp0_vec2,vp0_type2] = vbinit(2,ceil(Nfastopts/3),vp,K,Xstar,ystar);
-        [vp0_vec3,vp0_type3] = vbinit(3,Nfastopts-2*ceil(Nfastopts/3),vp,K,Xstar,ystar);
+        [vp0_vec1,vp0_type1] = vbinit_vbmc(1,ceil(Nfastopts/3),vp,K,Xstar,ystar);
+        [vp0_vec2,vp0_type2] = vbinit_vbmc(2,ceil(Nfastopts/3),vp,K,Xstar,ystar);
+        [vp0_vec3,vp0_type3] = vbinit_vbmc(3,Nfastopts-2*ceil(Nfastopts/3),vp,K,Xstar,ystar);
         vp0_vec = [vp0_vec1,vp0_vec2,vp0_vec3];
         vp0_type = [vp0_type1;vp0_type2;vp0_type3];
 end

@@ -63,7 +63,7 @@ if Ns > 0   % Use Monte Carlo approximation
         [H,dH] = entmcub_vbmc(vp,Ns,grad_flags,jacobian_flag);        
     else
         [H,dH] = entmc_vbmc(vp,Ns,grad_flags,jacobian_flag);
-    end    
+    end
 else
     % Deterministic approximation via lower bound on the entropy
     [H,dH] = entlb_vbmc(vp,grad_flags,jacobian_flag);

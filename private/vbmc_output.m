@@ -1,4 +1,4 @@
-function output = vbmc_output(elbo,elbo_sd,optimState,msg,stats,idx_best)
+function output = vbmc_output(vp,optimState,msg,stats,idx_best)
 %VBMC_OUTPUT Create OUTPUT struct for VBMC.
 
 output.function = func2str(optimState.fun);
@@ -11,7 +11,7 @@ output.iterations = optimState.iter;
 output.funccount = optimState.funccount;
 output.bestiter = idx_best;
 output.trainsetsize = stats.Neff(idx_best);
-output.components = stats.vpK(idx_best);
+output.components = vp.K;
 output.rindex = stats.rindex(idx_best);
 if stats.stable(idx_best)
     output.convergencestatus = 'probable';
@@ -23,7 +23,7 @@ output.rngstate = rng;
 output.algorithm = 'Variational Bayesian Monte Carlo';
 output.message = msg;
 
-output.elbo = elbo;
-output.elbo_sd = elbo_sd;
+output.elbo = vp.stats.elbo;
+output.elbo_sd = vp.stats.elbo_sd;
 
 end

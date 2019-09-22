@@ -2,7 +2,9 @@ function [hypprior,X_hpd,y_hpd,Nhyp,hyp0,Ns_gp] = vbmc_gphyp(optimState,meanfun,
 %VBMC_GPHYP Define bounds, priors and samples for GP hyperparameters.
 
 % Get high-posterior density dataset
-[X_hpd,y_hpd,hpd_range] = gethpd_vbmc(optimState,options);
+X = optimState.X(optimState.X_flag,:);
+y = optimState.y(optimState.X_flag);
+[X_hpd,y_hpd,hpd_range] = gethpd_vbmc(X,y,options.HPDFrac);
 [N_hpd,D] = size(X_hpd);
 s2 = [];
 neff = optimState.Neff;
