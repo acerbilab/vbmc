@@ -13,9 +13,14 @@ if vp.K < options.MinFinalComponents
     end
     Nfastopts = ceil(Nfastopts * options.NSelboIncr);    
     Nslowopts = 1;
-    options_temp = options;
     gp_idx = gplite_post(stats.gp(idx_best));
-    options_temp.TolWeight = 0; % No pruning of components
+    options.TolWeight = 0; % No pruning of components
+    
+    % End warmup
+    optimState.Warmup = false;
+    vp.optimize_mu = logical(options.VariableMeans);
+    vp.optimize_weights = logical(options.VariableWeights);
+    
     vp = vpoptimize_vbmc(Nfastopts,Nslowopts,vp,gp_idx,Knew,optimState,options_temp);
     changedflag = true; 
 end
