@@ -21,7 +21,7 @@ if vp.K < options.MinFinalComponents
     vp.optimize_mu = logical(options.VariableMeans);
     vp.optimize_weights = logical(options.VariableWeights);
     
-    vp = vpoptimize_vbmc(Nfastopts,Nslowopts,vp,gp_idx,Knew,optimState,options_temp);
+    vp = vpoptimize_vbmc(Nfastopts,Nslowopts,vp,gp_idx,Knew,optimState,options);
     changedflag = true; 
 end
 
