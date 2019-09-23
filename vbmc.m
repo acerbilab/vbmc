@@ -137,6 +137,7 @@ defopts.MaxFunEvals             = '50*(2+nvars) % Max number of target fcn evals
 defopts.FunEvalsPerIter         = '5            % Number of target fcn evals per iteration';
 defopts.TolStableCount          = '50           % Required stable fcn evals for termination';
 defopts.RetryMaxFunEvals        = '0            % Max number of target fcn evals on retry (0 = no retry)';
+defopts.MinFinalComponents      = '50           % Number of variational components to refine posterior at termination';
 
 %% If called with no arguments or with 'defaults', return default options
 if nargout <= 1 && (nargin == 0 || (nargin == 1 && ischar(fun) && strcmpi(fun,'defaults')))
@@ -155,7 +156,6 @@ end
 
 %% Advanced options (do not modify unless you *know* what you are doing)
 
-defopts.MinFinalComponents      = '0            % Min number of variational components used at termination';
 defopts.IntegerVars             = '[]           % Array with indices of integer variables';
 defopts.UncertaintyHandling     = 'no           % Explicit noise handling (only partially supported)';
 defopts.NoiseSize               = '[]           % Base observation noise magnitude (standard deviation)';
@@ -223,7 +223,7 @@ defopts.AlwaysRefitVarPost = 'no                % Always fully refit variational
 defopts.Warmup             = 'on                % Perform warm-up stage';
 defopts.WarmupOptions      = '[]                % Special OPTIONS struct for warmup stage';
 defopts.StopWarmupThresh   = '0.2               % Stop warm-up when ELCBO increase below threshold (per fcn eval)';
-defopts.WarmupKeepThreshold = '10*nvars         % Max log-likelihood difference for points kept after warmup';
+defopts.WarmupKeepThreshold = '20*nvars         % Max log-likelihood difference for points kept after warmup';
 defopts.SearchCMAES        = 'on                % Use CMA-ES for search';
 defopts.SearchCMAESVPInit  = 'yes               % Initialize CMA-ES search SIGMA from variational posterior';
 defopts.MomentsRunWeight   = '0.9               % Weight of previous trials (per trial) for running avg of variational posterior moments';
@@ -243,6 +243,7 @@ defopts.TolConLoss         = '0.01              % Fractional tolerance for const
 defopts.BestSafeSD         = '5                 % SD multiplier of ELCBO for computing best variational solution';
 defopts.BestFracBack       = '0.25              % When computing best solution, lacking stability go back up to this fraction of iterations';
 defopts.TolWeight          = '1e-2              % Threshold mixture component weight for pruning';
+defopts.PruningThresholdMultiplier = '@(K) 1/sqrt(K)   % Multiplier to threshold for pruning mixture weights';
 defopts.AnnealedGPMean     = '@(N,NMAX) 0       % Annealing for hyperprior width of GP negative quadratic mean';
 defopts.ConstrainedGPMean  = 'no                % Strict hyperprior for GP negative quadratic mean';
 defopts.EmpiricalGPPrior   = 'no                % Empirical Bayes prior over some GP hyperparameters';

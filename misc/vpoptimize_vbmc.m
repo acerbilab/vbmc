@@ -324,7 +324,13 @@ if vp.optimize_weights
             - (elbo - options.ELCBOImproWeight*elbo_sd));
         
         % Prune component if it has negligible influence on ELCBO
-        if delta_elcbo < options.TolImprovement/sqrt(vp.K)
+        if isa(options.PruningThresholdMultiplier,'function_handle')
+            PruningThreshold = options.TolImprovement*options.PruningThresholdMultiplier(vp.K);
+        else
+            PruningThreshold = options.TolImprovement*options.PruningThresholdMultiplier;
+        end
+        
+        if delta_elcbo < PruningThreshold
             vp = vp_pruned;
             elbo = elbo_pruned;
             elbo_sd = elbo_pruned_sd;
