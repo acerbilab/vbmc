@@ -723,7 +723,11 @@ if new_final_vp_flag
     if prnt > 2
         % Recompute symmetrized KL-divergence
         sKL = max(0,0.5*sum(vbmc_kldiv(vp,vp_old,Nkl,options.KLgauss)));
-        fprintf(displayFormat,Inf,optimState.funccount,elbo,elbo_sd,sKL,vp.K,stats.rindex(idx_best),'finalize');
+        if optimState.UncertaintyHandlingLevel > 0
+            fprintf(displayFormat,Inf,optimState.funccount,optimState.N,elbo,elbo_sd,sKL,vp.K,stats.rindex(idx_best),'finalize');
+        else
+            fprintf(displayFormat,Inf,optimState.funccount,elbo,elbo_sd,sKL,vp.K,stats.rindex(idx_best),'finalize');
+        end
     end
 end
 
