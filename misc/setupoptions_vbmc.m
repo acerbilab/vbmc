@@ -123,6 +123,9 @@ if options.UncertaintyHandling
     if ~any(strcmp('TolStableCount',updated))
         options.TolStableCount = ceil(options.TolStableCount*1.5);
     end    
+    if ~any(strcmp('TolStableWarmup',updated))
+        options.TolStableWarmup = options.TolStableWarmup*2;
+    end    
 end
    
 % Setup options for CMA-ES optimization

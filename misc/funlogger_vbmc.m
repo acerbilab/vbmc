@@ -221,10 +221,17 @@ if any(duplicate_flag)
     idx = find(duplicate_flag);    
     N = optimState.nevals(idx);
     
-    optimState.y_orig(idx) = (N*optimState.y_orig(idx) + fval_orig)/(N+1);
+    if ~isempty(fsd)
+        tau_n = 1/optimState.S(idx)^2;
+        tau_1 = 1/fsd^2;
+        optimState.y_orig(idx) = (tau_n*optimState.y_orig(idx) + tau_1*fval_orig)/(tau_n + tau_1);
+        optimState.S(idx) = 1/sqrt(tau_n + tau_1);
+    else
+        optimState.y_orig(idx) = (N*optimState.y_orig(idx) + fval_orig)/(N+1);
+    end
     fval = optimState.y_orig(idx) + warpvars_vbmc(x,'logp',optimState.trinfo);
     optimState.y(optimState.Xn) = fval;
-    if ~isempty(fsd); optimState.S(idx) = sqrt((N^2*optimState.S(idx)^2 + fsd^2)/(N+1)^2); end
+    % if ~isempty(fsd); optimState.S(idx) = sqrt((N^2*optimState.S(idx)^2 + fsd^2)/(N+1)^2); end
     optimState.funevaltime(idx) = (N*optimState.funevaltime(idx) + t)/(N+1);
     optimState.nevals(idx) = optimState.nevals(idx) + 1;
 

@@ -1,4 +1,4 @@
-function [samples,fvals,exitflag,output] = slicesamplebnd(logf,x0,N,widths,LB,UB,options,varargin)
+function [samples,fvals,exitflag,output] = slicesample_vbmc(logf,x0,N,widths,LB,UB,options,varargin)
 %SLICESAMPLEBND Slice sampling method with bounds.
 %
 %   SAMPLES = SLICESAMPLEBND(LOGF,X0,N) draws N random samples from a 
@@ -305,10 +305,11 @@ for ii = 1:(effN+burn)
                 elseif xprime(dd) < xx(dd)
                     x_l(dd) = xprime(dd);
                 else
-                    errorstr = ['Shrunk to current position and proposal still not acceptable. ' ...
-                        'Current position: ' num2str(xx,' %g') '. ' ...
-                        'Log f: (new value) ' num2str(log_Px), ', (target value) ' num2str(log_uprime) '.'];
-                    error(errorstr);                    
+                    %errorstr = ['Shrunk to current position and proposal still not acceptable. ' ...
+                    %    'Current position: ' num2str(xx,' %g') '. ' ...
+                    %    'Log f: (new value) ' num2str(log_Px), ', (target value) ' num2str(log_uprime) '.'];
+                    %error(errorstr);
+                    break;
                 end
             end
         end
@@ -333,6 +334,7 @@ for ii = 1:(effN+burn)
         end
                 
         xx(dd) = xprime(dd);
+        shrink
     end
 
     %% Record samples and miscellaneous bookkeeping    

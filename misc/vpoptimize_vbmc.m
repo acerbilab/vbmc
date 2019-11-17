@@ -59,8 +59,7 @@ if K == 1
 end
 
 % Confidence weight
-elcbo_beta = options.ELCBOWeight; % * sqrt(vp.D) / sqrt(optimState.N);
-   
+elcbo_beta = options.ELCBOWeight; % * sqrt(vp.D) / sqrt(optimState.N);   
 if elcbo_beta ~= 0
     compute_var = 2;    % Use diagonal-only approximation
 else
@@ -71,47 +70,7 @@ end
 vbtrain_options = optimoptions('fminunc','GradObj','on','Display','off');
 
 % Compute soft bounds for variational parameters optimization
-
-% Soft-bound loss is computed on MU and SCALE (which is SIGMA times LAMBDA)
-
-% Start with reversed bounds (see below)
-if ~isfield(vp,'bounds') || isempty(vp.bounds)
-    vp.bounds.mu_lb = Inf(1,vp.D);
-    vp.bounds.mu_ub = -Inf(1,vp.D);
-    vp.bounds.lnscale_lb = Inf(1,vp.D);
-    vp.bounds.lnscale_ub = -Inf(1,vp.D);
-    % vp.bounds
-end
-
-% Set bounds for mean parameters of variational components
-vp.bounds.mu_lb = min(min(gp.X),vp.bounds.mu_lb);
-vp.bounds.mu_ub = max(max(gp.X),vp.bounds.mu_ub);    
-    
-% Set bounds for log scale parameters of variational components
-lnrange = log(max(gp.X) - min(gp.X));
-vp.bounds.lnscale_lb = min(vp.bounds.lnscale_lb,lnrange + log(options.TolLength));
-vp.bounds.lnscale_ub = max(vp.bounds.lnscale_ub,lnrange);
-
-% Set bounds for log weight parameters of variational components
-if vp.optimize_weights
-    vp.bounds.eta_lb = log(0.5*options.TolWeight);
-    vp.bounds.eta_ub = 0;
-end
-
-thetabnd.lb = [repmat(vp.bounds.mu_lb,[1,K]),repmat(vp.bounds.lnscale_lb,[1,K])];
-thetabnd.ub = [repmat(vp.bounds.mu_ub,[1,K]),repmat(vp.bounds.lnscale_ub,[1,K])];
-if vp.optimize_weights
-    thetabnd.lb = [thetabnd.lb,repmat(vp.bounds.eta_lb,[1,K])];
-    thetabnd.ub = [thetabnd.ub,repmat(vp.bounds.eta_ub,[1,K])];
-end
-
-thetabnd.TolCon = options.TolConLoss;
-
-% Weights below a certain threshold are penalized
-if vp.optimize_weights
-    thetabnd.WeightThreshold = max(1/(4*K),options.TolWeight);
-    thetabnd.WeightPenalty = options.WeightPenalty;
-end
+[vp,thetabnd] = vpbounds(vp,gp,options,K);
 
 %% Perform quick shotgun evaluation of many candidate parameters
 
@@ -132,7 +91,7 @@ end
 
 % Quickly estimate ELCBO at each candidate variational posterior
 for iOpt = 1:Nfastopts
-    [theta0,vp0_vec(iOpt)] = get_theta(vp0_vec(iOpt),vp.optimize_mu,vp.optimize_lambda,vp.optimize_weights);        
+    [theta0,vp0_vec(iOpt)] = get_vptheta(vp0_vec(iOpt),vp.optimize_mu,vp.optimize_lambda,vp.optimize_weights);        
     [nelbo_tmp,~,~,~,varF_tmp] = negelcbo_vbmc(theta0,0,vp0_vec(iOpt),gp,NSentKFast,0,compute_var,options.AltMCEntropy,thetabnd);
     nelcbo_fill(iOpt) = nelbo_tmp + elcbo_beta*sqrt(varF_tmp);
 end
@@ -312,7 +271,7 @@ if vp.optimize_weights
         vp_pruned.sigma(idx) = [];
         vp_pruned.mu(:,idx) = [];
         vp_pruned.K = vp_pruned.K - 1;
-        [theta_pruned,vp_pruned] = get_theta(vp_pruned,vp_pruned.optimize_mu,vp_pruned.optimize_lambda,vp_pruned.optimize_weights);
+        [theta_pruned,vp_pruned] = get_vptheta(vp_pruned,vp_pruned.optimize_mu,vp_pruned.optimize_lambda,vp_pruned.optimize_weights);
         
         % Recompute ELCBO
         elbostats = eval_fullelcbo(1,theta_pruned,vp_pruned,gp,elbostats,elcbo_beta,options);        
@@ -397,16 +356,5 @@ else
     elbostats.nelcbo(idx) = nelcbo;
     elbostats.theta(idx,1:numel(theta)) = theta;
 end
-
-end
-
-function [theta,vp] = get_theta(vp,optimize_mu,optimize_lambda,optimize_weights)
-%GET_THETA Get vector of variational parameters from variational posterior.
-
-vp = rescale_params(vp);
-if optimize_mu; theta = vp.mu(:); else; theta = []; end
-theta = [theta; log(vp.sigma(:))];
-if optimize_lambda; theta = [theta; log(vp.lambda(:))]; end
-if optimize_weights; theta = [theta; log(vp.w(:))]; end
 
 end

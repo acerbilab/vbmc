@@ -27,7 +27,7 @@ gptrain_options.LogP = hypstruct.logp;
 if numel(gptrain_options.Widths) ~= numel(hyp0); gptrain_options.Widths = []; end    
 
 % Get training dataset
-[X_train,y_train,s2_train] = get_traindata(optimState,options);
+[X_train,y_train,s2_train,t_train] = get_traindata(optimState,options);
 % optimState.warp_thresh = []; % max(y_train) - 10*D;    
 % y_train = outputwarp(y_train,optimState,options);   % Fitness shaping
 
@@ -38,6 +38,8 @@ if numel(gptrain_options.Widths) ~= numel(hyp0); gptrain_options.Widths = []; en
     s2_train,hypprior,gptrain_options);
 hypstruct.full = gpoutput.hyp_prethin; % Pre-thinning GP hyperparameters
 hypstruct.logp = gpoutput.logp;
+
+gp.t = t_train;
 
 %      if iter > 10
 %          pause

@@ -161,7 +161,7 @@ defopts.UncertaintyHandling     = 'no           % Explicit noise handling (only 
 defopts.NoiseSize               = '[]           % Base observation noise magnitude (standard deviation)';
 defopts.SpecifyTargetNoise      = 'no           % Target log joint function returns noise estimate (SD) as second output';
 defopts.RepeatedObservations    = 'yes          % Allow for repeated measurements at the same location for noisy inputs';
-defopts.RepeatedAcqDiscount     = '0.9          % Multiplicative discount on acquisition fcn to repeat measurement at the same location';
+defopts.RepeatedAcqDiscount     = '0.95         % Multiplicative discount on acquisition fcn to repeat measurement at the same location';
 defopts.FunEvalStart            = 'max(D,10)    % Number of initial target fcn evals';
 defopts.SGDStepSize             = '0.005        % Base step size for stochastic gradient descent';
 defopts.SkipActiveSamplingAfterWarmup   = 'yes  % Skip active sampling the first iteration after warmup';
@@ -407,6 +407,9 @@ end
 if optimState.Cache.active
     displayFormat = ' %5.0f     %5.0f  /%5.0f   %12.2f  %12.2f  %12.2f     %4.0f %10.3g       %s\n';
     displayFormat_warmup = ' %5.0f     %5.0f  /%5.0f   %s\n';
+elseif optimState.UncertaintyHandlingLevel > 0
+    displayFormat = ' %5.0f       %5.0f %5.0f %12.2f  %12.2f  %12.2f     %4.0f %10.3g     %s\n';
+    displayFormat_warmup = ' %5.0f       %5.0f    %12.2f  %s\n';    
 else
     displayFormat = ' %5.0f       %5.0f    %12.2f  %12.2f  %12.2f     %4.0f %10.3g     %s\n';
     displayFormat_warmup = ' %5.0f       %5.0f    %12.2f  %s\n';
@@ -417,6 +420,8 @@ if prnt > 2
     else
         if options.BOWarmup
             fprintf(' Iteration   f-count     Max[f]     Action\n');
+        elseif optimState.UncertaintyHandlingLevel > 0
+            fprintf(' Iteration   f-count (x-count)   Mean[ELBO]     Std[ELBO]     sKL-iter[q]   K[q]  Convergence  Action\n');
         else
             fprintf(' Iteration   f-count     Mean[ELBO]     Std[ELBO]     sKL-iter[q]   K[q]  Convergence  Action\n');            
         end
@@ -429,11 +434,12 @@ isFinished_flag = false;
 exitflag = 0;   output = [];    stats = [];
 
 while ~isFinished_flag
+    t_iter = tic;
     iter = iter + 1;
     optimState.iter = iter;
     vp_old = vp;
     action = '';
-    optimState.redoRotoscaling = false;    
+    optimState.redoRotoscaling = false;
     
     if iter == 1 && optimState.Warmup; action = 'start warm-up'; end
     
@@ -469,16 +475,17 @@ while ~isFinished_flag
         end
         % Performe active sampling
         if options.VarActiveSample
-            [optimState,vp,t_active(iter),t_func(iter)] = ...
+            [optimState,vp,t_active,t_func] = ...
                 variationalactivesample_vbmc(optimState,new_funevals,funwrapper,vp,vp_old,gp_search,options);
         else
-            [optimState,t_active(iter),t_func(iter)] = ...
-                activesample_vbmc(optimState,new_funevals,funwrapper,vp,vp_old,gp_search,options);
+            [optimState,t_active,t_func] = ...
+                activesample_vbmc(optimState,new_funevals,funwrapper,vp,vp_old,gp_search,stats,options);
         end
     end
     optimState.N = optimState.Xn;  % Number of training inputs
     optimState.Neff = sum(optimState.nevals(optimState.X_flag));
-    timer.activeSampling = toc(t);
+    timer.activeSampling = toc(t) - t_func;
+    timer.funEvals = t_func;
     
     %% Input warping / reparameterization (unsupported!)
     if options.WarpNonlinear || options.WarpRotoScaling
@@ -645,7 +652,6 @@ while ~isFinished_flag
     
     % timer
     
-    
     % Record all useful stats
     stats = savestats(stats, ...
         optimState,vp,elbo,elbo_sd,varss,sKL,sKL_true,gp,hypstruct.full,...
@@ -692,12 +698,14 @@ while ~isFinished_flag
         else
             if optimState.Cache.active
                 fprintf(displayFormat,iter,optimState.funccount,optimState.cachecount,elbo,elbo_sd,sKL,vp.K,optimState.R,action);
+            elseif optimState.UncertaintyHandlingLevel > 0
+                fprintf(displayFormat,iter,optimState.funccount,optimState.N,elbo,elbo_sd,sKL,vp.K,optimState.R,action);                
             else
                 fprintf(displayFormat,iter,optimState.funccount,elbo,elbo_sd,sKL,vp.K,optimState.R,action);
             end
         end
     end
-        
+            
 end
 
 vp_old = vp;
@@ -827,6 +835,7 @@ else
     stats.outwarp_threshold(iter) = NaN;
 end
 stats.lcbmax(iter) = optimState.lcbmax;
+stats.t(iter) = NaN;    % Fill it at the end of the iteration
 
 end
 

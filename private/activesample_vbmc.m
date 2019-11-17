@@ -1,5 +1,5 @@
 function [optimState,t_active,t_func] = ...
-    activesample_vbmc(optimState,Ns,funwrapper,vp,vp_old,gp,options)
+    activesample_vbmc(optimState,Ns,funwrapper,vp,vp_old,gp,stats,options)
 %ACTIVESAMPLE_VBMC Actively sample points iteratively based on acquisition function.
 
 NSsearch = options.NSsearch;    % Number of points for acquisition fcn
@@ -22,8 +22,27 @@ else                    % Active uncertainty sampling
         optimState.hedge = acqhedge_vbmc('acq',optimState.hedge,[],options);
         idxAcq = optimState.hedge.chosen;        
     end
+    
+    % Compute time cost (used by some acquisition functions)
+    if optimState.iter > 2
+        deltaNeff = max(1,stats.Neff(optimState.iter-1) - stats.Neff(optimState.iter-2));
+    else
+        deltaNeff = stats.Neff(1);
+    end
+    timer = stats.timer(optimState.iter-1);
+    t_base = timer.activeSampling + timer.variationalFit + timer.finalize;
+    gpTrain_vec = [stats.timer.gpTrain];
         
     for is = 1:Ns
+        
+        if 0
+            vp_old = vp;
+            vp = vpsample_vbmc(10,vp,gp,optimState,options,1);
+            
+            %vbmc_iterplot(vp,gp,optimState,stats,stats.elbo(end));
+            %vbmc_iterplot(vp_old,gp,optimState,stats,stats.elbo(end));
+            %            vp.sigma = vp.sigma.*max(1,exp(randn(size(vp.sigma))));
+        end
         
         if ~options.AcqHedge
             idxAcq = randi(numel(SearchAcqFcn));
@@ -58,6 +77,28 @@ else                    % Active uncertainty sampling
         
         % Rescale GP training inputs by GP length scale
         gp.X_rescaled = bsxfun(@rdivide,gp.X,optimState.gplengthscale);
+        
+        % Algorithmic time per iteration (from last iteration)
+        t_base = timer.activeSampling + timer.variationalFit + timer.finalize + timer.gpTrain;
+        
+        % Estimated increase in cost for a new training input
+        if optimState.iter > 3
+            len = 10;
+            xx = log(stats.N(max(end-len,ceil(end/2)):end));
+            yy = log(gpTrain_vec(max(end-len,ceil(end/2)):end));
+            if numel(unique(xx)) > 1
+                p = polyfit(xx,yy,1);
+                gpTrain_diff = diff(exp(polyval(p,log([stats.N(end),stats.N(end)+1]))));
+            else
+                gpTrain_diff = 0;
+            end
+        else
+            gpTrain_diff = 0;
+        end
+        
+        % Algorithmic cost per function evaluation
+        optimState.t_algoperfuneval = t_base/deltaNeff + max(0,gpTrain_diff);
+        % [t_base/deltaNeff,gpTrain_diff]
         
         
         %% Start active search
@@ -119,7 +160,7 @@ else                    % Active uncertainty sampling
 %             sampleopts.Diagnostics = false;
 %             LB = -Inf; UB = Inf;
 %             [samples,fvals,exitflag,output] = ...
-%                 slicesamplebnd(mcmc_fun,Xacq(1,:),Ns,Widths,LB,UB,sampleopts);
+%                 slicesamplebnd_vbmc(mcmc_fun,Xacq(1,:),Ns,Widths,LB,UB,sampleopts);
 %             Xacq(1,:) = samples;
 %             fval_mcmc = SearchAcqFcn{idxAcq}(Xacq(1,:),vp,gp,optimState,0);
 %         end        
@@ -131,16 +172,20 @@ else                    % Active uncertainty sampling
             % Disable variance-based regularization first
             oldflag = optimState.VarianceRegularizedAcqFcn;
             optimState.VarianceRegularizedAcqFcn = false;
+            % Use current cost of GP instead of future cost
+            old_t_algoperfuneval = optimState.t_algoperfuneval;
+            optimState.t_algoperfuneval = t_base/deltaNeff;
             acq_train = SearchAcqFcn{idxAcq}(X_train,vp,gp,optimState,0);
             optimState.VarianceRegularizedAcqFcn = oldflag;
-            
+            optimState.t_algoperfuneval = old_t_algoperfuneval;            
             [acq_train,idx_train] = min(acq_train);            
+            
             acq_now = SearchAcqFcn{idxAcq}(Xacq(1,:),vp,gp,optimState,0);
             
             % [acq_train,acq_now]
             
             if acq_train < options.RepeatedAcqDiscount*acq_now
-                Xacq(1,:) = X_train(idx_train,:);                
+                Xacq(1,:) = X_train(idx_train,:);              
             end            
         end
         
@@ -192,10 +237,11 @@ else                    % Active uncertainty sampling
             if update1
                 gp = gplite_post(gp,xnew,ynew,[],[],[],s2new,1);
             else
-                [X_train,y_train,s2_train] = get_traindata(optimState,options);
+                [X_train,y_train,s2_train,t_train] = get_traindata(optimState,options);
                 gp.X = X_train;
                 gp.y = y_train;
                 gp.s2 = s2_train;
+                gp.t = t_train;
                 gp = gplite_post(gp);            
             end
         end

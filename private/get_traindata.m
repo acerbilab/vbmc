@@ -1,4 +1,4 @@
-function [X_train,y_train,s2_train] = get_traindata(optimState,options)
+function [X_train,y_train,s2_train,t_train] = get_traindata(optimState,options)
 %GETRAINDATA Get training data for building GP surrogate.
 
 nvars = size(optimState.X,2);
@@ -13,6 +13,10 @@ end
 
 if options.NoiseShaping
     s2_train = noiseshaping_vbmc(s2_train,y_train,options);
+end
+
+if nargout > 3
+    t_train = optimState.funevaltime(optimState.X_flag);
 end
 
 
