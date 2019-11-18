@@ -334,7 +334,7 @@ for ii = 1:(effN+burn)
         end
                 
         xx(dd) = xprime(dd);
-        shrink
+%        shrink
     end
 
     %% Record samples and miscellaneous bookkeeping    

@@ -35,9 +35,15 @@ else                    % Active uncertainty sampling
         
     for is = 1:Ns
         
+        optimState.N = optimState.Xn;  % Number of training inputs
+        optimState.Neff = sum(optimState.nevals(optimState.X_flag));
+        
         if 0
             vp_old = vp;
-            vp = vpsample_vbmc(10,vp,gp,optimState,options,1);
+            elcbo_weight_old = options.ELCBOWeight;            
+            % options.ELCBOWeight = @(N) sqrt(0.2*2*log(vp.D*N^2*pi^2/(6*0.1)));
+            vp = vpsample_vbmc(10,0,vp,gp,optimState,options,1);
+            options.ELCBOWeight = elcbo_weight_old;
             
             %vbmc_iterplot(vp,gp,optimState,stats,stats.elbo(end));
             %vbmc_iterplot(vp_old,gp,optimState,stats,stats.elbo(end));

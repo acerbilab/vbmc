@@ -550,23 +550,26 @@ while ~isFinished_flag
     
     % Run optimization of variational parameters
     if optimState.Warmup && options.BOWarmup
-        elbo = NaN;     elbo_sd = NaN;      varss = NaN;
-        pruned = 0;     G = NaN;    H = NaN;    varG = NaN; varH = NaN;
+        vp_fields = {'elbo','elbo_sd','G','H','varG','varH'};
+        for i = 1:numel(vp_fields); vp.stats.(vp_fields{i}) = NaN; end
+        varss = NaN;
+        pruned = 0;
     else
-        [vp,elbo,elbo_sd,G,H,varG,varH,varss,pruned] =  ...
+        [vp,varss,pruned] =  ...
             vpoptimize_vbmc(Nfastopts,Nslowopts,vp,gp,Knew,optimState,options,prnt);        
     end
-    % Save variational solution stats
-    vp.stats.elbo = elbo;               % ELBO
-    vp.stats.elbo_sd = elbo_sd;         % Error on the ELBO
-    vp.stats.elogjoint = G;             % Expected log joint
-    vp.stats.elogjoint_sd = sqrt(varG); % Error on expected log joint
-    vp.stats.entropy = H;               % Entropy
-    vp.stats.entropy_sd = sqrt(varH);   % Error on the entropy
-    vp.stats.stable = false;            % Unstable until proven otherwise
+        
+%     % Save variational solution stats
+%     vp.stats.elbo = elbo;               % ELBO
+%     vp.stats.elbo_sd = elbo_sd;         % Error on the ELBO
+%     vp.stats.elogjoint = G;             % Expected log joint
+%     vp.stats.elogjoint_sd = sqrt(varG); % Error on expected log joint
+%     vp.stats.entropy = H;               % Entropy
+%     vp.stats.entropy_sd = sqrt(varH);   % Error on the entropy
+%     vp.stats.stable = false;            % Unstable until proven otherwise
     
     optimState.vpK = vp.K;
-    optimState.H = H;   % Save current entropy
+    optimState.H = vp.stats.entropy;   % Save current entropy
     
     % Get real variational posterior (might differ from training posterior)
     vp_real = vptrain2real(vp,0,options);

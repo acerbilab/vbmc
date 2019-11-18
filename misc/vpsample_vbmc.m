@@ -1,6 +1,6 @@
-function [vp,samples] = vpsample_vbmc(Ns,vp,gp,optimState,options,wide_flag)
+function [vp,samples] = vpsample_vbmc(Ns,Ninit,vp,gp,optimState,options,wide_flag)
 
-if nargin < 5 || isempty(wide_flag); wide_flag = false; end
+if nargin < 7 || isempty(wide_flag); wide_flag = false; end
 
 % Assign default values to OPTIMSTATE
 if ~isfield(optimState,'delta'); optimState.delta = 0; end
@@ -10,32 +10,15 @@ if ~isfield(optimState,'temperature'); optimState.temperature = 1; end
 
 %% Set up sampling variables and options
 
-% It is assumed that VP was already optimized
+% Perform quick sieve to determine good starting point
+[vp,~,elcbo_beta,compute_var,NSentK] = ...
+    vpsieve_vbmc(Ninit,1,vp,gp,optimState,options);
+
 K = vp.K;
 D = vp.D;
 
-% Number of samples per component for MC approximation of the entropy
-if isa(options.NSent,'function_handle')
-    NSentK = ceil(options.NSent(K)/K);
-else
-    NSentK = ceil(options.NSent/K);
-end
-
-% Deterministic entropy switch or only one component -- be deterministic
-if optimState.EntropySwitch || K == 1
-    NSentK = 0;
-end
-
-% Confidence weight
-elcbo_beta = options.ELCBOWeight; % * sqrt(vp.D) / sqrt(optimState.N);   
-if elcbo_beta ~= 0
-    compute_var = 2;    % Use diagonal-only approximation
-else
-    compute_var = 0;    % No beta, skip variance
-end
-
 % Compute soft bounds for variational parameters optimization
-[vp,thetabnd] = vpbounds(vp,gp,options);
+[vp,thetabnd] = vpbounds(vp,gp,options,K);
 
 % Move lower bound on scale - we want *wider* distributions
 if wide_flag
@@ -60,12 +43,11 @@ sampleopts.Diagnostics = false;
 LB = -Inf(1,Ntheta);
 UB = Inf(1,Ntheta);
 
-if optimState.Warmup
-    idx_fixed = false(size(theta0));
-else
-    if vp.optimize_mu; idx = D*K; else; idx = 0; end
-    idx_fixed = true(size(theta0));
-    idx_fixed(idx+1:idx+K) = false;
+idx_fixed = false(size(theta0));
+if ~optimState.Warmup && 0
+    if vp.optimize_mu; idx_fixed(1:D*K) = true; end
+%    idx_fixed = true(size(theta0));
+%    idx_fixed(idx+1:idx+K) = false;
 end
 
 LB(idx_fixed) = theta0(idx_fixed);

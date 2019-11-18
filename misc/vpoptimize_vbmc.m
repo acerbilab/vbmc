@@ -1,4 +1,4 @@
-function [vp,elbo,elbo_sd,G,H,varG,varH,varss,pruned] = vpoptimize_vbmc(Nfastopts,Nslowopts,vp,gp,K,optimState,options,prnt)
+function [vp,varss,pruned] = vpoptimize_vbmc(Nfastopts,Nslowopts,vp,gp,K,optimState,options,prnt)
 %VPOPTIMIZE Optimize variational posterior.
 
 if nargin < 8 || isempty(prnt); prnt = 0; end
@@ -9,99 +9,25 @@ if ~isfield(optimState,'EntropySwitch'); optimState.EntropySwitch = false; end
 if ~isfield(optimState,'Warmup'); optimState.Warmup = ~vp.optimize_weights; end
 if ~isfield(optimState,'temperature'); optimState.temperature = 1; end
 
-%% Set up optimization variables and options
-
-vp.delta = optimState.delta(:);
-
-% Number of variational parameters
-Ntheta = K;
-if vp.optimize_mu; Ntheta = Ntheta + vp.D*K; end
-if vp.optimize_lambda; Ntheta = Ntheta + vp.D; end
-if vp.optimize_weights; Ntheta = Ntheta + vp.K; end
-
-if isempty(Nfastopts) % Number of initial starting points
-    if isa(options.NSelbo,'function_handle')
-        Nfastopts = ceil(options.NSelbo(K));
-    else
-        Nfastopts = ceil(options.NSelbo);
-    end
+% Quick sieve optimization to determine starting point(s)
+[vp0_vec,vp0_type,elcbo_beta,compute_var,NSentK] = ...
+    vpsieve_vbmc(Nfastopts,Nslowopts,vp,gp,optimState,options,K);
+    
+if compute_var == 1     % For the moment no gradient available for variance
+    options.StochasticOptimizer = 'cmaes';
 end
-if isempty(Nslowopts); Nslowopts = 1; end
-nelcbo_fill = zeros(Nfastopts,1);
-
-% Set up empty stats structs for optimization
-elbostats = eval_fullelcbo(Nslowopts*2,Ntheta);
-
-% Number of samples per component for MC approximation of the entropy
-if isa(options.NSent,'function_handle')
-    NSentK = ceil(options.NSent(K)/K);
-else
-    NSentK = ceil(options.NSent/K);
-end
-
-% Number of samples per component for preliminary MC approximation of the entropy
-if isa(options.NSentFast,'function_handle')
-    NSentKFast = ceil(options.NSentFast(K)/K);
-else
-    NSentKFast = ceil(options.NSentFast/K);
-end
-
-% If the entropy switch is on, it means we are still using the deterministic entropy
-if optimState.EntropySwitch
-    NSentK = 0;
-    NSentKFast = 0;
-end
-
-% If only one component, use analytical expression for the entropy
-if K == 1
-    NSentK = 0;
-    NSentKFast = 0;    
-end
-
-% Confidence weight
-elcbo_beta = options.ELCBOWeight; % * sqrt(vp.D) / sqrt(optimState.N);   
-if elcbo_beta ~= 0
-    compute_var = 2;    % Use diagonal-only approximation
-else
-    compute_var = 0;    % No beta, skip variance
-end
-
-% Set basic options for deterministic optimizer (FMINUNC)
-vbtrain_options = optimoptions('fminunc','GradObj','on','Display','off');
 
 % Compute soft bounds for variational parameters optimization
 [vp,thetabnd] = vpbounds(vp,gp,options,K);
 
-%% Perform quick shotgun evaluation of many candidate parameters
-
-% Get high-posterior density points
-[Xstar,ystar] = gethpd_vbmc(gp.X,gp.y,options.HPDFrac);
-
-% Generate a bunch of random candidate variational parameters
-switch Nslowopts
-    case 1
-        [vp0_vec,vp0_type] = vbinit_vbmc(1,Nfastopts,vp,K,Xstar,ystar);
-    otherwise
-        [vp0_vec1,vp0_type1] = vbinit_vbmc(1,ceil(Nfastopts/3),vp,K,Xstar,ystar);
-        [vp0_vec2,vp0_type2] = vbinit_vbmc(2,ceil(Nfastopts/3),vp,K,Xstar,ystar);
-        [vp0_vec3,vp0_type3] = vbinit_vbmc(3,Nfastopts-2*ceil(Nfastopts/3),vp,K,Xstar,ystar);
-        vp0_vec = [vp0_vec1,vp0_vec2,vp0_vec3];
-        vp0_type = [vp0_type1;vp0_type2;vp0_type3];
-end
-
-% Quickly estimate ELCBO at each candidate variational posterior
-for iOpt = 1:Nfastopts
-    [theta0,vp0_vec(iOpt)] = get_vptheta(vp0_vec(iOpt),vp.optimize_mu,vp.optimize_lambda,vp.optimize_weights);        
-    [nelbo_tmp,~,~,~,varF_tmp] = negelcbo_vbmc(theta0,0,vp0_vec(iOpt),gp,NSentKFast,0,compute_var,options.AltMCEntropy,thetabnd);
-    nelcbo_fill(iOpt) = nelbo_tmp + elcbo_beta*sqrt(varF_tmp);
-end
-
-% Sort by negative ELCBO
-[~,vp0_ord] = sort(nelcbo_fill,'ascend');
-vp0_vec = vp0_vec(vp0_ord);
-vp0_type = vp0_type(vp0_ord);
-
 %% Perform optimization starting from one or few selected points
+
+% Set up empty stats structs for optimization
+Ntheta = numel(get_vptheta(vp0_vec(1)));
+elbostats = eval_fullelcbo(Nslowopts*2,Ntheta);
+
+% Set basic options for deterministic optimizer (FMINUNC)
+vbtrain_options = optimoptions('fminunc','GradObj','on','Display','off');
 
 for iOpt = 1:Nslowopts
     iOpt_mid = iOpt*2-1;
@@ -139,10 +65,10 @@ for iOpt = 1:Nslowopts
             if prnt > 0
                 fprintf('Cannot optimize variational parameters with FMINUNC. Trying with CMA-ES (slower).\n');
             end
-            if vp.optimize_mu; insigma_mu = repmat(vp.bounds.mu_ub(:) - vp.bounds.mu_lb(:),[vp.K,1]); else; insigma_mu = []; end
+            if vp.optimize_mu; insigma_mu = repmat(vp.bounds.mu_ub(:) - vp.bounds.mu_lb(:),[K,1]); else; insigma_mu = []; end
             insigma_sigma = ones(K,1);
             if vp.optimize_lambda; insigma_lambda = ones(vp.D,1); else; insigma_lambda = []; end
-            if vp.optimize_weights; insigma_eta = ones(vp.K,1); else; insigma_eta = []; end
+            if vp.optimize_weights; insigma_eta = ones(K,1); else; insigma_eta = []; end
             insigma = [insigma_mu(:); insigma_sigma(:); insigma_lambda; insigma_eta];
             cmaes_opts = options.CMAESopts;
             cmaes_opts.EvalParallel = 'off';
@@ -157,7 +83,7 @@ for iOpt = 1:Nslowopts
     else
         % Optimization via unbiased stochastic entropy approximation
         thetaopt = theta0(:)';
-        
+                
         switch lower(options.StochasticOptimizer)
             case 'adam'
                 
@@ -166,7 +92,7 @@ for iOpt = 1:Nslowopts
                     scaling_factor = min(0.1,options.SGDStepSize*10);
                 else
                     scaling_factor = min(0.1,options.SGDStepSize);
-                end                    
+                end
                 
                 if options.GPStochasticStepsize
                     % Set Adam master stepsizes from GP hyperparameters
@@ -223,6 +149,27 @@ for iOpt = 1:Nslowopts
 %                 vbtrain_options.TolFun = options.TolFunStochastic;
 %                 [thetaopt,~,~,output] = ...
 %                     fmincon(vbtrainmc_fun,thetaopt,[],[],[],[],vp.LB_theta,vp.UB_theta,[],vbtrain_options);
+
+            case 'cmaes'
+                
+                if vp.optimize_mu; insigma_mu = repmat(vp.bounds.mu_ub(:) - vp.bounds.mu_lb(:),[K,1]); else; insigma_mu = []; end
+                insigma_sigma = ones(K,1);
+                if vp.optimize_lambda; insigma_lambda = ones(vp.D,1); else; insigma_lambda = []; end
+                if vp.optimize_weights; insigma_eta = ones(K,1); else; insigma_eta = []; end
+                insigma = [insigma_mu(:); insigma_sigma(:); insigma_lambda; insigma_eta];
+                cmaes_opts = options.CMAESopts;
+                cmaes_opts.EvalParallel = 'off';
+                cmaes_opts.TolX = '1e-6*max(insigma)';
+                cmaes_opts.TolFun = 1e-4;
+                cmaes_opts.TolHistFun = 1e-5;
+                cmaes_opts.Noise.on = 1;    % Noisy evaluations
+                try
+                    thetaopt = cmaes_modded('negelcbo_vbmc',theta0(:),insigma,cmaes_opts, ...
+                        elcbo_beta,vp0,gp,NSentK,0,compute_var,options.AltMCEntropy,thetabnd); 
+                catch
+                    pause
+                end
+                thetaopt = thetaopt(:)';
                 
             otherwise
                 error('vbmc:VPoptimize','Unknown stochastic optimizer.');
@@ -293,7 +240,11 @@ if vp.optimize_weights
             vp = vp_pruned;
             elbo = elbo_pruned;
             elbo_sd = elbo_pruned_sd;
+            G = elbostats.G(1);
+            H = elbostats.H(1);
             varss = elbostats.varss(1);
+            varG = elbostats.varG(1);
+            varH = elbostats.varH(1);
             pruned = pruned + 1;
             alreadychecked(idx) = [];
         else
@@ -301,6 +252,15 @@ if vp.optimize_weights
         end
     end
 end
+
+vp.stats.elbo = elbo;               % ELBO
+vp.stats.elbo_sd = elbo_sd;         % Error on the ELBO
+vp.stats.elogjoint = G;             % Expected log joint
+vp.stats.elogjoint_sd = sqrt(varG); % Error on expected log joint
+vp.stats.entropy = H;               % Entropy
+vp.stats.entropy_sd = sqrt(varH);   % Error on the entropy
+vp.stats.stable = false;            % Unstable until proven otherwise
+
 
 % L = vpbndloss(elbostats.theta(idx,:),vp,thetabnd,thetabnd.TolCon)
 % if L > 0
