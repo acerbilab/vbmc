@@ -32,7 +32,9 @@ else                    % Active uncertainty sampling
     timer = stats.timer(optimState.iter-1);
     t_base = timer.activeSampling + timer.variationalFit + timer.finalize;
     gpTrain_vec = [stats.timer.gpTrain];
-        
+
+            
+    
     for is = 1:Ns
         
         optimState.N = optimState.Xn;  % Number of training inputs
@@ -40,14 +42,21 @@ else                    % Active uncertainty sampling
         
         if 0
             vp_old = vp;
-            elcbo_weight_old = options.ELCBOWeight;            
-            % options.ELCBOWeight = @(N) sqrt(0.2*2*log(vp.D*N^2*pi^2/(6*0.1)));
-            vp = vpsample_vbmc(10,0,vp,gp,optimState,options,1);
-            options.ELCBOWeight = elcbo_weight_old;
             
-            %vbmc_iterplot(vp,gp,optimState,stats,stats.elbo(end));
-            %vbmc_iterplot(vp_old,gp,optimState,stats,stats.elbo(end));
+            options_temp = options;
+            options_temp.TolWeight = 0;
+            options_temp.NSentFine = options.NSent;
+            options_temp.ELCBOmidpoint = false;
+%            ELCBOWeight = sqrt(0.2*2*log(vp.D*optimState.Neff^2*pi^2/(6*0.1)));
+%            options_temp.ELCBOWeight = -log(rand())*ELCBOWeight;
+            [vp,~,output] = vpsample_vbmc(1e2,0,vp,gp,optimState,options_temp,0);
+%            vp = vpoptimize_vbmc(0,1,vp,gp,vp.K,optimState,options_temp,0);
+            vbmc_iterplot(vp,gp,optimState,stats,stats.elbo(end));
+            vbmc_iterplot(vp_old,gp,optimState,stats,stats.elbo(end));
             %            vp.sigma = vp.sigma.*max(1,exp(randn(size(vp.sigma))));
+            
+            if isfield(output,'stepsize'); optimState.mcmc_stepsize = output.stepsize; end
+            
         end
         
         if ~options.AcqHedge

@@ -21,6 +21,16 @@ switch lower(options.GPHypSampler)
         else
             gptrain_options.Widths = [];
         end
+    case {'mala'}
+        gptrain_options.Sampler = 'mala';        
+        if ~isempty(hypcov)
+            gptrain_options.Widths = sqrt(diag(hypcov)');
+        else
+            gptrain_options.Widths = [];
+        end
+        if isfield(optimState,'gpmala_stepsize')
+            gptrain_options.Stepsize = optimState.gpmala_stepsize;
+        end
     case {'slicelite'}
         gptrain_options.Sampler = 'slicelite';        
         if options.GPSampleWidths > 0 && ~isempty(hypcov)

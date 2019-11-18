@@ -1,4 +1,4 @@
-function [vp,samples] = vpsample_vbmc(Ns,Ninit,vp,gp,optimState,options,wide_flag)
+function [vp,samples,output] = vpsample_vbmc(Ns,Ninit,vp,gp,optimState,options,wide_flag)
 
 if nargin < 7 || isempty(wide_flag); wide_flag = false; end
 
@@ -32,8 +32,6 @@ end
 theta0 = get_vptheta(vp)';
 Ntheta = numel(theta0);
 
-vpmcmc_fun = @(theta_) -negelcbo_vbmc(theta_,elcbo_beta,vp,gp,NSentK,0,compute_var,0,thetabnd);
-
 % MCMC parameters
 Widths = 0.5;
 sampleopts.Thin = 1;
@@ -55,9 +53,32 @@ UB(idx_fixed) = theta0(idx_fixed);
 
 % Perform sampling
 try
-    [samples,fvals,exitflag,output] = ...
-        slicesample_vbmc(vpmcmc_fun,theta0,Ns,Widths,LB,UB,sampleopts);
+    switch lower(options.VariationalSampler)
+        case 'slicesample'
+            vpmcmc_fun = @(theta_) -negelcbo_vbmc(theta_,elcbo_beta,vp,gp,NSentK,0,compute_var,0,thetabnd);
+            [samples,fvals,exitflag,output] = ...
+                slicesample_vbmc(vpmcmc_fun,theta0,Ns,Widths,LB,UB,sampleopts);
+        case 'malasample'
+            if isfield(optimState,'mcmc_stepsize')
+                sampleopts.Stepsize = optimState.mcmc_stepsize; 
+                output.stepsize = sampleopts.Stepsize;
+            end
+            vpmcmc_fun = @(theta_) vpmcmcgrad_fun(theta_,elcbo_beta,vp,gp,NSentK,compute_var,thetabnd);
+            [samples,fvals,exitflag,output] = ...
+                malasample_vbmc(vpmcmc_fun,theta0,Ns,Widths,LB,UB,sampleopts);
+            output.accept_rate
+    end
 catch
     samples = repmat(theta0,[Ns,1]);
 end
 vp = rescale_params(vp,samples(end,:));
+
+end
+
+function [logp,dlogp] = vpmcmcgrad_fun(theta,elcbo_beta,vp,gp,NSentK,compute_var,thetabnd)
+    [nlogp,ndlogp] = negelcbo_vbmc(theta,elcbo_beta,vp,gp,NSentK,1,compute_var,0,thetabnd);
+    logp = -nlogp;
+    dlogp = -ndlogp;
+end
+
+

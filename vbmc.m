@@ -209,6 +209,7 @@ defopts.GPStochasticStepsize = 'off               % Set stochastic optimization 
 defopts.TolSD              = '0.1               % Tolerance on ELBO uncertainty for stopping (iff variational posterior is stable)';
 defopts.TolsKL             = '0.01*sqrt(nvars)  % Stopping threshold on change of variational posterior per training point';
 defopts.TolStableWarmup    = '15                % Number of stable fcn evals for stopping warmup';
+defopts.VariationalSampler = 'malasample        % MCMC sampler for variational posteriors';
 defopts.TolImprovement     = '0.01              % Required ELCBO improvement per fcn eval before termination';
 defopts.KLgauss            = 'yes               % Use Gaussian approximation for symmetrized KL-divergence b\w iters';
 defopts.TrueMean           = '[]                % True mean of the target density (for debugging)';
@@ -498,7 +499,8 @@ while ~isFinished_flag
                 
     %% Train GP
     t = tic;        
-    [gp,hypstruct,Ns_gp] = gptrain_vbmc(hypstruct,optimState,stats,options);    
+    [gp,hypstruct,Ns_gp,optimState] = ...
+        gptrain_vbmc(hypstruct,optimState,stats,options);    
     timer.gpTrain = toc(t);
     
     % Check if reached stable sampling regime
