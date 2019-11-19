@@ -63,11 +63,14 @@ else                    % Active uncertainty sampling
             idxAcq = randi(numel(SearchAcqFcn));
         end
 
-        %% Pre-computation for mutual-information based acquisition function
+        %% Pre-computations for acquisition functions
         
-        % Re-evaluate variance of the log joint
-        [~,~,varF] = gplogjoint(vp,gp,0,0,0,1);
-        optimState.varlogjoint_samples = varF;
+        % Re-evaluate variance of the log joint if requested
+        if isfield(optimState.acqInfo{idxAcq},'compute_varlogjoint') ...
+                && optimState.acqInfo{idxAcq}.compute_varlogjoint
+            [~,~,varF] = gplogjoint(vp,gp,0,0,0,1);
+            optimState.varlogjoint_samples = varF;
+        end
         
         % Evaluate noise at each training point
         Ns_gp = numel(gp.post);

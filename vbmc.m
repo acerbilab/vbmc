@@ -182,6 +182,9 @@ defopts.NSsearch           = '2^13              % Samples for fast acquisition f
 defopts.NSent              = '@(K) 100*K        % Total samples for Monte Carlo approx. of the entropy';
 defopts.NSentFast          = '@(K) 100*K        % Total samples for preliminary Monte Carlo approx. of the entropy';
 defopts.NSentFine          = '@(K) 2^15*K       % Total samples for refined Monte Carlo approx. of the entropy';
+defopts.NSentBoost         = '[]                % Total samples for Monte Carlo approx. of the entropy (final boost)';
+defopts.NSentFastBoost     = '[]                % Total samples for preliminary Monte Carlo approx. of the entropy (final boost)';
+defopts.NSentFineBoost     = '[]                % Total samples for refined Monte Carlo approx. of the entropy (final boost)';
 defopts.NSelbo             = '@(K) 50*K         % Samples for fast approximation of the ELBO';
 defopts.NSelboIncr         = '0.1               % Multiplier to samples for fast approx. of ELBO for incremental iterations';
 defopts.ElboStarts         = '2                 % Starting points to refine optimization of the ELBO';
@@ -373,6 +376,17 @@ K = options.Kwarmup;
 % Store target density function
 optimState.fun = fun;
 funwrapper = @(u_) fun(u_,varargin{:});
+
+% Get information from acquisition function(s)
+SearchAcqFcn = options.SearchAcqFcn;
+for iAcq = 1:numel(SearchAcqFcn)
+    try
+        % Called with first empty input should return infos
+        optimState.acqInfo{iAcq} = SearchAcqFcn{idxAcq}([]);
+    catch
+        optimState.acqInfo{iAcq} = [];
+    end
+end
 
 % GP struct and GP hyperparameters
 gp = [];        hypstruct = [];     hypstruct_search = [];

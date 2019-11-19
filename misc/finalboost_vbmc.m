@@ -21,6 +21,16 @@ if vp.K < options.MinFinalComponents
     vp.optimize_mu = logical(options.VariableMeans);
     vp.optimize_weights = logical(options.VariableWeights);
     
+    if isfield(options,'NSentBoost') && ~isempty(options.NSentBoost)
+        options.NSent = options.NSentBoost;
+    end
+    if isfield(options,'NSentFastBoost') && ~isempty(options.NSentFastBoost)
+        options.NSentFast = options.NSentFastBoost;
+    end
+    if isfield(options,'NSentFineBoost') && ~isempty(options.NSentFineBoost)
+        options.NSentFine = options.NSentFineBoost;
+    end
+    
     stable_flag = vp.stats.stable;
     vp = vpoptimize_vbmc(Nfastopts,Nslowopts,vp,gp_idx,Knew,optimState,options);
     vp.stable = stable_flag;
