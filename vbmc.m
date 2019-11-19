@@ -265,6 +265,7 @@ defopts.NoiseShapingFactor = '0.2               % Proportionality factor of adde
 defopts.AcqHedge           = 'no                % Hedge on multiple acquisition functions';
 defopts.AcqHedgeIterWindow = '4                 % Past iterations window to judge acquisition fcn improvement';
 defopts.AcqHedgeDecay      = '0.9               % Portfolio value decay per function evaluation';
+defopts.ActiveVariationalSamples = '0           % MCMC variational steps before each active sampling';
 
 %% Advanced options for unsupported/untested features (do *not* modify)
 defopts.WarpRotoScaling    = 'off               % Rotate and scale input';

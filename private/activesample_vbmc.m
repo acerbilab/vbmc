@@ -33,30 +33,28 @@ else                    % Active uncertainty sampling
     t_base = timer.activeSampling + timer.variationalFit + timer.finalize;
     gpTrain_vec = [stats.timer.gpTrain];
 
-            
+    if options.ActiveVariationalSamples > 0
+            options_activevar = options;
+            options_activevar.TolWeight = 0;
+            options_activevar.NSentFine = options.NSent;
+            options_activevar.ELCBOmidpoint = false;
+            Ns_activevar = options.ActiveVariationalSamples;
+            vp_old = vp;
+    end
     
     for is = 1:Ns
         
         optimState.N = optimState.Xn;  % Number of training inputs
         optimState.Neff = sum(optimState.nevals(optimState.X_flag));
         
-        if 0
-            vp_old = vp;
-            
-            options_temp = options;
-            options_temp.TolWeight = 0;
-            options_temp.NSentFine = options.NSent;
-            options_temp.ELCBOmidpoint = false;
+        if options.ActiveVariationalSamples > 0
+            [vp,~,output] = vpsample_vbmc(Ns_activevar,0,vp,gp,optimState,options_activevar,0);
+            if isfield(output,'stepsize'); optimState.mcmc_stepsize = output.stepsize; end            
 %            ELCBOWeight = sqrt(0.2*2*log(vp.D*optimState.Neff^2*pi^2/(6*0.1)));
 %            options_temp.ELCBOWeight = -log(rand())*ELCBOWeight;
-            [vp,~,output] = vpsample_vbmc(1e2,0,vp,gp,optimState,options_temp,0);
 %            vp = vpoptimize_vbmc(0,1,vp,gp,vp.K,optimState,options_temp,0);
-            vbmc_iterplot(vp,gp,optimState,stats,stats.elbo(end));
-            vbmc_iterplot(vp_old,gp,optimState,stats,stats.elbo(end));
-            %            vp.sigma = vp.sigma.*max(1,exp(randn(size(vp.sigma))));
-            
-            if isfield(output,'stepsize'); optimState.mcmc_stepsize = output.stepsize; end
-            
+%            vbmc_iterplot(vp,gp,optimState,stats,stats.elbo(end));
+%            vbmc_iterplot(vp_old,gp,optimState,stats,stats.elbo(end));            
         end
         
         if ~options.AcqHedge

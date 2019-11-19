@@ -66,7 +66,7 @@ try
             vpmcmc_fun = @(theta_) vpmcmcgrad_fun(theta_,elcbo_beta,vp,gp,NSentK,compute_var,thetabnd);
             [samples,fvals,exitflag,output] = ...
                 malasample_vbmc(vpmcmc_fun,theta0,Ns,Widths,LB,UB,sampleopts);
-            output.accept_rate
+            % output.accept_rate
     end
 catch
     samples = repmat(theta0,[Ns,1]);
