@@ -1,5 +1,5 @@
 function [vp,elbo,elbo_sd,exitflag,output,optimState,stats] = vbmc(fun,x0,LB,UB,PLB,PUB,options,varargin)
-%VBMC Posterior and model inference via Variational Bayesian Monte Carlo (v0.95)
+%VBMC Posterior and model inference via Variational Bayesian Monte Carlo (v0.96)
 %   VBMC computes a variational approximation of the full posterior and a 
 %   lower bound on the normalization constant (marginal likelhood or model
 %   evidence) for a provided unnormalized log posterior.
@@ -101,9 +101,15 @@ function [vp,elbo,elbo_sd,exitflag,output,optimState,stats] = vbmc(fun,x0,LB,UB,
 %   can be found here: https://github.com/lacerbi/vbmc
 %   Also, check out the FAQ: https://github.com/lacerbi/vbmc/wiki
 %
-%   Reference: Acerbi, L. (2018). "Variational Bayesian Monte Carlo". 
-%   In Advances in Neural Information Processing Systems 31 (NeurIPS 2018), 
-%   pp. 8213-8223.
+%   References: 
+%   
+%   Acerbi, L. (2018). "Variational Bayesian Monte Carlo". In Advances in 
+%   Neural Information Processing Systems 31 (NeurIPS 2018), pp. 8213-8223.
+%
+%   Acerbi, L. (2019). "An Exploration of Acquisition and Mean Functions in 
+%   Variational Bayesian Monte Carlo". In Proc. Machine Learning Research 
+%   96: 1-10. 1st Symposium on Advances in Approximate Bayesian Inference, 
+%   Montréal, Canada.
 %
 %   See also VBMC_EXAMPLES, VBMC_KLDIV, VBMC_MODE, VBMC_MOMENTS, VBMC_PDF, 
 %   VBMC_RND, VBMC_DIAGNOSTICS, @.
@@ -116,8 +122,8 @@ function [vp,elbo,elbo_sd,exitflag,output,optimState,stats] = vbmc(fun,x0,LB,UB,
 %   Author (copyright): Luigi Acerbi, 2018
 %   e-mail: luigi.acerbi@{gmail.com,nyu.edu,unige.ch}
 %   URL: http://luigiacerbi.com
-%   Version: 0.95 (beta)
-%   Release date: Jun 27, 2019
+%   Version: 0.96 (beta)
+%   Release date: Nov 20, 2019
 %   Code repository: https://github.com/lacerbi/vbmc
 %--------------------------------------------------------------------------
 
