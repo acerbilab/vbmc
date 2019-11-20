@@ -1,10 +1,10 @@
-# Variational Bayesian Monte Carlo (VBMC) - v0.95 (beta)
+# Variational Bayesian Monte Carlo (VBMC) - v0.96 (beta)
 
 **News:** 
 - A [new paper](http://proceedings.mlr.press/v96/acerbi19a.html) that empirically investigates some features of VBMC has been published in PMLR. This paper extends a previous workshop paper presented at the 1st [Symposium on Advances in Approximate Bayesian Inference (AABI)](http://approximateinference.org/).
 - Apr/22/2019: Released a substantial update (v0.93) with a few stability fixes; added the feature to automatically reattempt a failed variational optimization (via `OPTIONS.RetryMaxFunEvals`) and a new `vbmc_diagnostics` function to check for convergence across multiple VBMC runs (see the updated [vbmc_examples.m](https://github.com/lacerbi/vbmc/blob/master/vbmc_examples.m) for an overview).
 - I gave invited talks about VBMC at the [Oxford Robotics Research Group Seminars](http://www.robots.ox.ac.uk/~seminars/seminars/) and at a joint [ISL/CS/CNU seminar](http://www.bristol.ac.uk/neuroscience/events/diary/2019/cnu-8may.html) in Bristol. Slides are available [here](https://github.com/lacerbi/infbench/raw/master/presentations/acerbi-oxford2018nov.pdf).
-- The VBMC paper [[1](#reference)] has been accepted for a poster presentation at [NeurIPS 2018](https://neurips.cc/Conferences/2018/Schedule?showEvent=11786)! (20.8% acceptance rate this year, for a total of 4856 submissions) The poster is available [here](https://github.com/lacerbi/infbench/blob/master/presentations/Acerbi-NeurIPS18-poster.pdf).
+- The VBMC paper [[1](#references)] has been accepted for a poster presentation at [NeurIPS 2018](https://neurips.cc/Conferences/2018/Schedule?showEvent=11786)! (20.8% acceptance rate this year, for a total of 4856 submissions) The poster is available [here](https://github.com/lacerbi/infbench/blob/master/presentations/Acerbi-NeurIPS18-poster.pdf).
 
 ## What is it
 
@@ -14,7 +14,7 @@ VBMC is a novel approximate inference method designed to fit and evaluate comput
 - an approximate posterior distribution of the model parameters; 
 - an approximation — technically, an approximate lower bound — of the log model evidence (also known as log marginal likelihood or log Bayes factor), a metric used for [Bayesian model selection](https://en.wikipedia.org/wiki/Bayes_factor).
 
-Our first benchmark using an array of meaningful artificial test problems and a real neuronal model shows that, with the exception of the easiest cases, VBMC vastly outperforms existing inference methods for expensive models [[1](#reference)]. We are currently validating the algorithm on several other real model-fitting problems, as we previously did for our model-fitting algorithm based on Bayesian optimization, [BADS](https://github.com/lacerbi/bads).
+Our first benchmark using an array of meaningful artificial test problems and a real neuronal model shows that, with the exception of the easiest cases, VBMC vastly outperforms existing inference methods for expensive models [[1](#references)]. We are currently validating the algorithm on several other real model-fitting problems, as we previously did for our model-fitting algorithm based on Bayesian optimization, [BADS](https://github.com/lacerbi/bads).
 
 VBMC runs with virtually no tuning and it is very easy to set up for your problem (especially if you are already familiar with `bads`).
 
@@ -84,7 +84,7 @@ In the figure below, we show another example VBMC run on a "lumpy" distribution.
 
 ![Another VBMC demo](https://github.com/lacerbi/vbmc/blob/master/docs/vbmc-demo-2.gif "Fig 2: Another VBMC demo")
 
-See the VBMC paper for more details [[1](#reference)].
+See the VBMC paper for more details [[1](#references)].
 
 ## Troubleshooting
 
@@ -100,15 +100,16 @@ If you have trouble doing something with VBMC, spot bugs or strange behavior, or
 VBMC is currently available only for MATLAB. A Python version is being planned.
 
 If you are interested in porting VBMC to Python or another language (R, [Julia](https://julialang.org/)), please get in touch at <luigi.acerbi@gmail.com> (putting  'VBMC' in the subject of the email); I'd be willing to help.
-However, before contacting me for this reason, please have a good look at the codebase here on GitHub, and at the paper [[1](#reference)]. VBMC is a fairly complex piece of software, so be aware that porting it will require considerable effort and programming/computing skills.
+However, before contacting me for this reason, please have a good look at the codebase here on GitHub, and at the paper [[1](#references)]. VBMC is a fairly complex piece of software, so be aware that porting it will require considerable effort and programming/computing skills.
 
-## Reference
+## References
 
-1. Acerbi, L. (2018). Variational Bayesian Monte Carlo. In *Advances in Neural Information Processing Systems 31*. pp. 8222-8232. ([paper + supplement on arXiv](https://arxiv.org/abs/1810.05558), [NeurIPS Proceedings](https://papers.nips.cc/paper/8043-variational-bayesian-monte-carlo))
+1. Acerbi, L. (2018). Variational Bayesian Monte Carlo. In *Advances in Neural Information Processing Systems 31*: 8222-8232. ([paper + supplement on arXiv](https://arxiv.org/abs/1810.05558), [NeurIPS Proceedings](https://papers.nips.cc/paper/8043-variational-bayesian-monte-carlo))
+2. Acerbi, L. (2019). An Exploration of Acquisition and Mean Functions in Variational Bayesian Monte Carlo. In *Proc. Machine Learning Research* 96: 1-10. 1st Symposium on Advances in Approximate Bayesian Inference, Montréal, Canada. ([paper in PMLR](http://proceedings.mlr.press/v96/acerbi19a.html))
 
 You can cite VBMC in your work with something along the lines of
 
-> We estimated approximate posterior distibutions and approximate lower bounds to the model evidence of our models using Variational Bayesian Monte Carlo (VBMC; Acerbi, 2018). VBMC combines variational inference and active-sampling Bayesian quadrature to perform approximate Bayesian inference in a sample-efficient manner.
+> We estimated approximate posterior distibutions and approximate lower bounds to the model evidence of our models using Variational Bayesian Monte Carlo (VBMC; Acerbi, 2018, 2019). VBMC combines variational inference and active-sampling Bayesian quadrature to perform approximate Bayesian inference in a sample-efficient manner.
 
 Besides formal citations, you can demonstrate your appreciation for VBMC in the following ways:
 
