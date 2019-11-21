@@ -389,7 +389,7 @@ SearchAcqFcn = options.SearchAcqFcn;
 for iAcq = 1:numel(SearchAcqFcn)
     try
         % Called with first empty input should return infos
-        optimState.acqInfo{iAcq} = SearchAcqFcn{idxAcq}([]);
+        optimState.acqInfo{iAcq} = SearchAcqFcn{iAcq}([]);
     catch
         optimState.acqInfo{iAcq} = [];
     end

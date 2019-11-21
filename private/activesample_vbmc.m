@@ -34,12 +34,12 @@ else                    % Active uncertainty sampling
     gpTrain_vec = [stats.timer.gpTrain];
 
     if options.ActiveVariationalSamples > 0
-            options_activevar = options;
-            options_activevar.TolWeight = 0;
-            options_activevar.NSentFine = options.NSent;
-            options_activevar.ELCBOmidpoint = false;
-            Ns_activevar = options.ActiveVariationalSamples;
-            vp_old = vp;
+        options_activevar = options;
+        options_activevar.TolWeight = 0;
+        options_activevar.NSentFine = options.NSent;
+        options_activevar.ELCBOmidpoint = false;
+        Ns_activevar = options.ActiveVariationalSamples;
+        vp_old = vp;
     end
     
     for is = 1:Ns
@@ -239,6 +239,7 @@ else                    % Active uncertainty sampling
         else
             s2new = [];
         end
+        tnew = optimState.funevaltime(idx_new);
         
         if 1
             if ~isfield(optimState,'acqtable'); optimState.acqtable = []; end
@@ -252,6 +253,7 @@ else                    % Active uncertainty sampling
             update1 = (isempty(s2new) || optimState.nevals(idx_new) == 1) && ~options.NoiseShaping;
             if update1
                 gp = gplite_post(gp,xnew,ynew,[],[],[],s2new,1);
+                gp.t(end+1) = tnew;
             else
                 [X_train,y_train,s2_train,t_train] = get_traindata(optimState,options);
                 gp.X = X_train;
