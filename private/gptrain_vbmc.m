@@ -66,6 +66,6 @@ end
 
 % Sample from GP (for debug)
 if ~isempty(gp) && 0
-    Xgp = vbmc_gpsample(gp,1e3,optimState,1);
+    Xgp = vbmc_gpsample(gp,1e3,vp,optimState,1);
     cornerplot(Xgp);
 end

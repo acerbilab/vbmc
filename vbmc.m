@@ -167,7 +167,7 @@ defopts.UncertaintyHandling     = 'no           % Explicit noise handling (only 
 defopts.NoiseSize               = '[]           % Base observation noise magnitude (standard deviation)';
 defopts.SpecifyTargetNoise      = 'no           % Target log joint function returns noise estimate (SD) as second output';
 defopts.RepeatedObservations    = 'yes          % Allow for repeated measurements at the same location for noisy inputs';
-defopts.RepeatedAcqDiscount     = '0.95         % Multiplicative discount on acquisition fcn to repeat measurement at the same location';
+defopts.RepeatedAcqDiscount     = '1            % Multiplicative discount on acquisition fcn to repeat measurement at the same location';
 defopts.FunEvalStart            = 'max(D,10)    % Number of initial target fcn evals';
 defopts.SGDStepSize             = '0.005        % Base step size for stochastic gradient descent';
 defopts.SkipActiveSamplingAfterWarmup   = 'yes  % Skip active sampling the first iteration after warmup';
@@ -272,6 +272,7 @@ defopts.AcqHedge           = 'no                % Hedge on multiple acquisition 
 defopts.AcqHedgeIterWindow = '4                 % Past iterations window to judge acquisition fcn improvement';
 defopts.AcqHedgeDecay      = '0.9               % Portfolio value decay per function evaluation';
 defopts.ActiveVariationalSamples = '0           % MCMC variational steps before each active sampling';
+defopts.ActiveSampleFullUpdate = 'no            % Perform GP and variational updates in-between active samples';
 
 %% Advanced options for unsupported/untested features (do *not* modify)
 defopts.WarpRotoScaling    = 'off               % Rotate and scale input';
@@ -457,6 +458,8 @@ exitflag = 0;   output = [];    stats = [];
 
 while ~isFinished_flag
     t_iter = tic;
+    timer = timer_init();   % Initialize iteration timer
+    
     iter = iter + 1;
     optimState.iter = iter;
     vp_old = vp;
@@ -497,17 +500,17 @@ while ~isFinished_flag
         end
         % Performe active sampling
         if options.VarActiveSample
+            % FIX TIMER HERE IF USING THIS
             [optimState,vp,t_active,t_func] = ...
                 variationalactivesample_vbmc(optimState,new_funevals,funwrapper,vp,vp_old,gp_search,options);
         else
-            [optimState,t_active,t_func] = ...
-                activesample_vbmc(optimState,new_funevals,funwrapper,vp,vp_old,gp_search,stats,options);
+            optimState.hypstruct = hypstruct;
+            [optimState,gp,timer] = ...
+                activesample_vbmc(optimState,new_funevals,funwrapper,vp,vp_old,gp_search,stats,timer,options);
         end
     end
     optimState.N = optimState.Xn;  % Number of training inputs
     optimState.Neff = sum(optimState.nevals(optimState.X_flag));
-    timer.activeSampling = toc(t) - t_func;
-    timer.funEvals = t_func;
     
     %% Input warping / reparameterization (unsupported!)
     if options.WarpNonlinear || options.WarpRotoScaling
@@ -515,14 +518,14 @@ while ~isFinished_flag
         t = tic;
         [optimState,vp,hypstruct.hyp,hypstruct.warp,action] = ...
             vbmc_warp(optimState,vp,gp,hypstruct.hyp,hypstruct.warp,action,options);
-        timer.warping = toc(t);
+        timer.warping = timer.warping + toc(t);
     end
                 
     %% Train GP
     t = tic;        
     [gp,hypstruct,Ns_gp,optimState] = ...
         gptrain_vbmc(hypstruct,optimState,stats,options);    
-    timer.gpTrain = toc(t);
+    timer.gpTrain = timer.gpTrain + toc(t);
     
     % Check if reached stable sampling regime
     if Ns_gp == options.StableGPSamples && optimState.StopSampling == 0
@@ -599,12 +602,14 @@ while ~isFinished_flag
     elbo = vp_real.stats.elbo;
     elbo_sd = vp_real.stats.elbo_sd;
     
-    timer.variationalFit = toc(t);
+    timer.variationalFit = timer.variationalFit + toc(t);
     
     %% Recompute warpings at end iteration (unsupported)
-    if options.WarpNonlinear || options.WarpRotoScaling    
+    if options.WarpNonlinear || options.WarpRotoScaling
+        t = tic;
         [optimState,vp,hypstruct.hyp] = ...
             vbmc_rewarp(optimState,vp,gp,hypstruct.hyp,options);
+        timer.warping = timer.warping + toc(t);
     end
     
     %% Plot current iteration (to be improved)
@@ -941,7 +946,18 @@ Xrnd = Xrnd(1:Ns,:);
 
 end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function timer = timer_init()
+%TIMER_INIT Initialize iteration timer.
 
+timer.activeSampling = 0;
+timer.funEvals = 0;
+timer.gpTrain = 0;
+timer.variationalFit = 0;
+timer.warping = 0;
+timer.finalize = 0;
+
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % TO-DO list:

@@ -1,11 +1,11 @@
-function [optimState,t_active,t_func] = ...
-    activesample_vbmc(optimState,Ns,funwrapper,vp,vp_old,gp,stats,options)
+function [optimState,gp,timer] = ...
+    activesample_vbmc(optimState,Ns,funwrapper,vp,vp_old,gp,stats,timer,options)
 %ACTIVESAMPLE_VBMC Actively sample points iteratively based on acquisition function.
 
 NSsearch = options.NSsearch;    % Number of points for acquisition fcn
 t_func = 0;
 
-timer_active = tic;
+time_active = tic;
 
 if isempty(gp)
     
@@ -29,8 +29,8 @@ else                    % Active uncertainty sampling
     else
         deltaNeff = stats.Neff(1);
     end
-    timer = stats.timer(optimState.iter-1);
-    t_base = timer.activeSampling + timer.variationalFit + timer.finalize;
+    timer_iter = stats.timer(optimState.iter-1);
+    % t_base = timer_iter.activeSampling + timer_iter.variationalFit + timer_iter.finalize;
     gpTrain_vec = [stats.timer.gpTrain];
 
     if options.ActiveVariationalSamples > 0
@@ -42,13 +42,29 @@ else                    % Active uncertainty sampling
         vp_old = vp;
     end
     
+    if options.ActiveSampleFullUpdate && Ns > 1
+        options_update = options;
+        optimState.RecomputeVarPost = false;
+        options_update.GPRetrainThreshold = Inf;
+        options_update.TolWeight = 0;
+        options_update.NSentFine = options.NSent;
+        options_update.ELCBOmidpoint = false;
+%        options_update.TolFunStochastic = 3*options.TolFunStochastic;
+%        options_update.DetEntTolOpt = 3*options.DetEntTolOpt;
+%        options_update.NSgpMaxMain = 3;
+%        options_update.NSgpMaxWarmup = 3;
+        RecomputeVarPost_old = optimState.RecomputeVarPost;
+        hypstruct = [];
+    end
+
+    
     for is = 1:Ns
         
         optimState.N = optimState.Xn;  % Number of training inputs
-        optimState.Neff = sum(optimState.nevals(optimState.X_flag));
+        optimState.Neff = sum(optimState.nevals(optimState.X_flag));        
         
         if options.ActiveVariationalSamples > 0
-            [vp,~,output] = vpsample_vbmc(Ns_activevar,0,vp,gp,optimState,options_activevar,0);
+            [vp,~,output] = vpsample_vbmc(Ns_activevar,0,vp,gp,optimState,options_activevar,1);
             if isfield(output,'stepsize'); optimState.mcmc_stepsize = output.stepsize; end            
 %            ELCBOWeight = sqrt(0.2*2*log(vp.D*optimState.Neff^2*pi^2/(6*0.1)));
 %            options_temp.ELCBOWeight = -log(rand())*ELCBOWeight;
@@ -95,7 +111,7 @@ else                    % Active uncertainty sampling
         gp.X_rescaled = bsxfun(@rdivide,gp.X,optimState.gplengthscale);
         
         % Algorithmic time per iteration (from last iteration)
-        t_base = timer.activeSampling + timer.variationalFit + timer.finalize + timer.gpTrain;
+        t_base = timer_iter.activeSampling + timer_iter.variationalFit + timer_iter.finalize + timer_iter.gpTrain;
         
         % Estimated increase in cost for a new training input
         if optimState.iter > 3
@@ -249,26 +265,49 @@ else                    % Active uncertainty sampling
         end
         
         if is < Ns
-            % Perform simple rank-1 update if no noise and first sample
-            update1 = (isempty(s2new) || optimState.nevals(idx_new) == 1) && ~options.NoiseShaping;
-            if update1
-                gp = gplite_post(gp,xnew,ynew,[],[],[],s2new,1);
-                gp.t(end+1) = tnew;
+            
+            if options.ActiveSampleFullUpdate
+                % Quick GP update                
+                t = tic;
+                if isempty(hypstruct); hypstruct = optimState.hypstruct; end
+                [gp,hypstruct,Ns_gp,optimState] = ...
+                    gptrain_vbmc(hypstruct,optimState,stats,options_update);    
+                timer.gpTrain = timer.gpTrain + toc(t);
+                
+                % Quick variational optimization
+                t = tic;
+                vp = vpoptimize_vbmc(0,1,vp,gp,[],optimState,options_update,0);
+                timer.variationalFit = timer.variationalFit + toc(t);
+                
             else
-                [X_train,y_train,s2_train,t_train] = get_traindata(optimState,options);
-                gp.X = X_train;
-                gp.y = y_train;
-                gp.s2 = s2_train;
-                gp.t = t_train;
-                gp = gplite_post(gp);            
+                % Perform simple rank-1 update if no noise and first sample
+                t = tic;
+                update1 = (isempty(s2new) || optimState.nevals(idx_new) == 1) && ~options.NoiseShaping;
+                if update1
+                    gp = gplite_post(gp,xnew,ynew,[],[],[],s2new,1);
+                    gp.t(end+1) = tnew;
+                else
+                    [X_train,y_train,s2_train,t_train] = get_traindata(optimState,options);
+                    gp.X = X_train;
+                    gp.y = y_train;
+                    gp.s2 = s2_train;
+                    gp.t = t_train;
+                    gp = gplite_post(gp);            
+                end
+                timer.gpTrain = timer.gpTrain + toc(t);
             end
         end
     end
     
+    if options.ActiveSampleFullUpdate && Ns > 1
+        optimState.RecomputeVarPost = RecomputeVarPost_old;
+    end
 end
 
-t_active = toc(timer_active) - t_func;
-    
+timer.activeSampling = timer.activeSampling + toc(time_active) ...
+    - t_func - timer.gpTrain - timer.variationalFit;
+timer.funEvals = timer.funEvals + t_func;
+
 % Remove temporary fields (unnecessary here because GP is not returned)
 % if isfield(gp,'sn2new'); gp = rmfield(gp,'sn2new'); end
 % if isfield(gp,'X_rescaled'); gp = rmfield(gp,'X_rescaled'); end
