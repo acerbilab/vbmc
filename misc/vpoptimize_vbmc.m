@@ -230,12 +230,9 @@ if vp.optimize_weights
             - (elbo - options.ELCBOImproWeight*elbo_sd));
         
         % Prune component if it has negligible influence on ELCBO
-        if isa(options.PruningThresholdMultiplier,'function_handle')
-            PruningThreshold = options.TolImprovement*options.PruningThresholdMultiplier(vp.K);
-        else
-            PruningThreshold = options.TolImprovement*options.PruningThresholdMultiplier;
-        end
-        
+        PruningThreshold = options.TolImprovement * ...
+            evaloption_vbmc(options.PruningThresholdMultiplier,K);
+                
         if delta_elcbo < PruningThreshold
             vp = vp_pruned;
             elbo = elbo_pruned;
@@ -295,11 +292,7 @@ else
     
     % Number of samples per component for MC approximation of the entropy
     K = vp.K;
-    if isa(options.NSentFine,'function_handle')
-        NSentFineK = ceil(options.NSentFine(K)/K);
-    else
-        NSentFineK = ceil(options.NSentFine/K);
-    end
+    NSentFineK = ceil(evaloption_vbmc(options.NSentFine,K)/K);
         
     theta = theta(:)';
     [nelbo,~,G,H,varF,~,varss,varG,varH] = ...

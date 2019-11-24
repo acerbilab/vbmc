@@ -1,23 +1,14 @@
 function Knew = updateK(optimState,stats,options)
 %UPDATEK Update number of variational mixture components.
 
+Knew = optimState.vpK;
+
 % Compute maximum number of components
-Kfun_max = options.KfunMax;
-Neff = optimState.Neff;
-if isnumeric(Kfun_max)
-    Kmax = ceil(Kfun_max);
-elseif isa(Kfun_max,'function_handle')
-    Kmax = ceil(Kfun_max(Neff));
-end
+Kmax = ceil(evaloption_vbmc(options.KfunMax,optimState.Neff));
 
 % Evaluate bonus for stable solution
-if isa(options.AdaptiveK,'function_handle')
-    Kbonus = round(options.AdaptiveK(optimState.vpK));
-else
-    Kbonus = round(double(options.AdaptiveK));
-end
+Kbonus = round(double(evaloption_vbmc(options.AdaptiveK,Knew)));
 
-Knew = optimState.vpK;
 
 % If not warming up, check if number of components gets to be increased
 if ~optimState.Warmup && optimState.iter > 1

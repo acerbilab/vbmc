@@ -6,6 +6,7 @@ if ~isfield(optimState,'delta'); optimState.delta = 0; end
 if ~isfield(optimState,'EntropySwitch'); optimState.EntropySwitch = false; end
 if ~isfield(optimState,'Warmup'); optimState.Warmup = ~vp.optimize_weights; end
 if ~isfield(optimState,'temperature'); optimState.temperature = 1; end
+if ~isfield(optimState,'Neff'); optimState.Neff = size(gp.X,1); end
 
 if isempty(Nbest); Nbest = 1; end
 if nargin < 7 || isempty(K); K = vp.K; end
@@ -15,27 +16,15 @@ if nargin < 7 || isempty(K); K = vp.K; end
 vp.delta = optimState.delta(:);
 
 if isempty(Ninit) % Number of initial starting points
-    if isa(options.NSelbo,'function_handle')
-        Ninit = ceil(options.NSelbo(K));
-    else
-        Ninit = ceil(options.NSelbo);
-    end
+    Ninit = ceil(evaloption_vbmc(options.NSelbo,K));
 end
 nelcbo_fill = zeros(Ninit,1);
 
 % Number of samples per component for MC approximation of the entropy
-if isa(options.NSent,'function_handle')
-    NSentK = ceil(options.NSent(K)/K);
-else
-    NSentK = ceil(options.NSent/K);
-end
+NSentK = ceil(evaloption_vbmc(options.NSent,K)/K);
 
 % Number of samples per component for preliminary MC approximation of the entropy
-if isa(options.NSentFast,'function_handle')
-    NSentKFast = ceil(options.NSentFast(K)/K);
-else
-    NSentKFast = ceil(options.NSentFast/K);
-end
+NSentKFast = ceil(evaloption_vbmc(options.NSentFast,K)/K);
 
 % Deterministic entropy if entropy switch is on or only one component
 if optimState.EntropySwitch || K == 1
@@ -44,11 +33,7 @@ if optimState.EntropySwitch || K == 1
 end
 
 % Confidence weight
-if isa(options.ELCBOWeight,'function_handle')
-    elcbo_beta = options.ELCBOWeight(optimState.Neff);
-else
-    elcbo_beta = options.ELCBOWeight;
-end
+elcbo_beta = evaloption_vbmc(options.ELCBOWeight,optimState.Neff);
 compute_var = elcbo_beta ~= 0;
 
 % Compute soft bounds for variational parameters optimization

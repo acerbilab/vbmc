@@ -560,11 +560,8 @@ while ~isFinished_flag
     end
     
     % Decide number of fast/slow optimizations
-    if isa(options.NSelbo,'function_handle')
-        Nfastopts = ceil(options.NSelbo(K));
-    else
-        Nfastopts = ceil(options.NSelbo);
-    end
+    Nfastopts = ceil(evaloption_vbmc(options.NSelbo,K));
+    
     if optimState.RecomputeVarPost || options.AlwaysRefitVarPost
         Nslowopts = options.ElboStarts; % Full optimizations
         optimState.RecomputeVarPost = false;
