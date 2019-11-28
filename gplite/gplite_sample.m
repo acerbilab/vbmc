@@ -26,8 +26,9 @@ if ~isfield(gp,'post') || isempty(gp.post)
     else
         options.Nopts = 1;  % Do only one optimization
     end
+    if isfield(gp,'s2'); s2 = gp.s2; else; s2 = []; end
     gp = gplite_train(...
-        [],Ns_gp,gp.X,gp.y,gp.covfun,gp.meanfun,gp.noisefun,[],[],options);
+        [],Ns_gp,gp.X,gp.y,gp.covfun,gp.meanfun,gp.noisefun,s2,[],options);
 end
 
 % Recompute posterior auxiliary info if needed

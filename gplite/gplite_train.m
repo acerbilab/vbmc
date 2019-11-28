@@ -33,9 +33,10 @@ defopts.Thin            = 5;        % Thinning for hyperparameter sampling
 defopts.Burnin          = [];       % Initial burn-in for hyperparameter sampling
 defopts.DfBase          = 7;        % Default degrees of freedom for Student's t prior
 defopts.Sampler         = 'slicesample';    % Default MCMC sampler for hyperparameters
-defopts.Widths          = [];        % Default widths (used only for HMC sampler)
+defopts.Widths          = [];        % Default widths
 defopts.LogP            = [];        % Old log probability associated to starting points
 defopts.OutwarpFun      = [];        % Output warping function
+defopts.Stepsize        = [];        % Default step size for MALA sampler
 
 for f = fields(defopts)'
     if ~isfield(options,f{:}) || isempty(options.(f{:}))
@@ -54,6 +55,7 @@ DfBase = options.DfBase;
 Widths = options.Widths;
 LogP = options.LogP;
 outwarpfun = options.OutwarpFun;
+Stepsize = options.Stepsize;
 
 %% Initialize inference of GP hyperparameters (bounds, priors, etc.)
 
@@ -253,6 +255,8 @@ t2 = toc(timer2);
 
 % Check that starting point is inside current bounds
 hyp_start = min(max(hyp_start',LB+eps(LB)),UB-eps(UB))';
+idx_fixed = (LB == UB);
+hyp_start(idx_fixed) = LB(idx_fixed);
 
 logp_prethin = [];  % Log posterior of samples
 
@@ -293,8 +297,6 @@ if Ns > 0
                 % [Widths; widths_default]
             end
             
-            
-            
             try
             if Nopts == 0
                 sampleopts.Adaptive = false;
@@ -331,8 +333,32 @@ if Ns > 0
             samples = ...
                 eissample_lite(gpsample_fun,hyp_start',Ns_eff,W,Widths,LB,UB,sampleopts);
             hyp_prethin = samples';            
+
+        case 'mala'
+            gpsample_fun = @(hyp_) gp_objfun(hyp_(:),gp,hprior,0,1);
             
-        case 'hmc'            
+            sampleopts.Thin = 1;
+            sampleopts.Burnin = Burnin*Nhyp;
+            sampleopts.Display = 'off';
+            sampleopts.Diagnostics = false;
+            sampleopts.Stepsize = Stepsize;
+            if isempty(Widths)
+                Widths = widths_default; 
+            else
+                Widths = min(Widths(:)',widths_default);
+                % [Widths; widths_default]
+            end
+            
+            Ns_eff = Ns_eff*Nhyp;
+            
+            [samples,fvals,exitflag,output] = ...
+                malasample_vbmc(gpsample_fun,hyp_start',Ns_eff,Widths,-Inf,Inf,sampleopts);
+            hyp_prethin = samples';
+            logp_prethin = fvals;  
+            
+            Thin = Thin*Nhyp;
+            
+        case 'hmc'
             gpsample_fun = @(hyp_) gp_objfun(hyp_(:),gp,hprior,0,0);
             sampleopts.display = 0;
             sampleopts.checkgrad = 0;
