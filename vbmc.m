@@ -273,6 +273,7 @@ defopts.AcqHedgeIterWindow = '4                 % Past iterations window to judg
 defopts.AcqHedgeDecay      = '0.9               % Portfolio value decay per function evaluation';
 defopts.ActiveVariationalSamples = '0           % MCMC variational steps before each active sampling';
 defopts.ActiveSampleFullUpdate = 'no            % Perform GP and variational updates in-between active samples';
+defopts.FixedMaxMeanGP     = 'no                % Fix GP quadratic mean function location to max training input';
 
 %% Advanced options for unsupported/untested features (do *not* modify)
 defopts.WarpRotoScaling    = 'off               % Rotate and scale input';

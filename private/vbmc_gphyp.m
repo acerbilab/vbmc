@@ -198,14 +198,20 @@ else
 %              hypprior.sigma(Ncov+Nnoise+1+D+(1:D)) = log(100);            
 %      end
     
-    
-%     [~,idx] = max(y_hpd);
-%     xmax = X_hpd(idx,:);    
-%     switch meanfun
-%         case {4,6}
-%             hypprior.mu(Ncov+Nnoise+1+(1:D)) = xmax;
-%             hypprior.sigma(Ncov+Nnoise+1+(1:D)) = 1e-4*(optimState.PUB - optimState.PLB);            
-%     end
+    if options.FixedMaxMeanGP
+        % Location of GP mean quadratic component fixed at max training input
+         [~,idx] = max(y_hpd);
+         xmax = X_hpd(idx,:);    
+         switch meanfun
+             case {4,6}
+                 hypprior.mu(Ncov+Nnoise+1+(1:D)) = xmax;
+                 hypprior.sigma(Ncov+Nnoise+1+(1:D)) = 1;
+                 LB_gp(Ncov+Nnoise+1+(1:D)) = xmax;
+                 UB_gp(Ncov+Nnoise+1+(1:D)) = xmax;
+                 hyp0(Ncov+Nnoise+1+(1:D)) = xmax;
+         end
+    end
+
 end
 
 hypprior.LB = LB_gp;
