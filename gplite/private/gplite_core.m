@@ -41,9 +41,9 @@ sn2_mult = 1;  % Effective noise variance multiplier
 % Evaluate mean function on training inputs
 hyp_mean = hyp(Ncov+Nnoise+1:Ncov+Nnoise+Nmean); % Get mean function hyperparameters
 if compute_nlZ_grad
-    [m,dm] = gplite_meanfun(hyp_mean,gp.X,gp.meanfun);
+    [m,dm] = gplite_meanfun(hyp_mean,gp.X,gp.meanfun,[],gp.meanfun_extras);
 else
-    m = gplite_meanfun(hyp_mean,gp.X,gp.meanfun);
+    m = gplite_meanfun(hyp_mean,gp.X,gp.meanfun,[],gp.meanfun_extras);
 end
 
 %% Observed covariance matrix inversion
