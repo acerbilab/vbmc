@@ -43,14 +43,15 @@ Nmean = gp.Nmean;
 
 Ns = numel(gp.post);            % Hyperparameter samples
 
-if all(gp.meanfun ~= [0,1,4,6,8,10])
+if all(gp.meanfun ~= [0,1,4,6,8,10,12])
     error('gplogjoint:UnsupportedMeanFun', ...
-        'Log joint computation currently only supports zero, constant, negative quadratic, negative quadratic (fixed, isotropic), or squared exponential mean functions.');
+        'Log joint computation currently only supports zero, constant, negative quadratic, negative quadratic (fixed/isotropic), or squared exponential mean functions.');
 end
 
 % Which mean function is being used?
-quadratic_meanfun = gp.meanfun == 4 || gp.meanfun == 10;
+quadratic_meanfun = gp.meanfun == 4 || gp.meanfun == 10 || gp.meanfun == 12;
 fixediso_meanfun = gp.meanfun == 10;
+fixed_meanfun = gp.meanfun == 12;
 sqexp_meanfun = gp.meanfun == 6;
 quadsqexp_meanfun = gp.meanfun == 8;
 
@@ -91,6 +92,9 @@ for s = 1:Ns
         if fixediso_meanfun
             xm(:,1) = gp.meanfun_extras(1:D)';
             omega = exp(hyp(Ncov+Nnoise+2));
+        elseif fixed_meanfun
+            xm(:,1) = gp.meanfun_extras(1:D)';
+            omega = exp(hyp(Ncov+Nnoise+1+(1:D)));
         else
             xm = hyp(Ncov+Nnoise+1+(1:D));
             omega = exp(hyp(Ncov+Nnoise+D+1+(1:D)));            

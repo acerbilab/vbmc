@@ -88,6 +88,12 @@ switch meanfun
     case {11,'11','posquadfixiso'}
         Nmean = 2;
         meanfun = 11;        
+    case {12,'12','negquadfix'}
+        Nmean = 1 + D;
+        meanfun = 12;
+    case {13,'13','posquadfix'}
+        Nmean = 1 + D;
+        meanfun = 13;        
     otherwise
         if isnumeric(meanfun); meanfun = num2str(meanfun); end
         error('gplite_meanfun:UnknownMeanFun',...
@@ -132,7 +138,7 @@ if ischar(hyp)
                 dm.PUB(D+2:2*D+1) = delta.^2;                
             end
             
-        elseif meanfun >= 4 && meanfun <= 11
+        elseif meanfun >= 4 && meanfun <= 13
             
             % Redefine limits for m0 (meaning depends on mean func type)
             h = max(y) - min(y);    % Height
@@ -171,7 +177,7 @@ if ischar(hyp)
             
             w = max(X) - min(X);                    % Width
 
-            if meanfun >= 4 && meanfun <= 9            
+            if meanfun >= 4 && meanfun <= 9
                 dm.LB(2:D+1) = min(X) - 0.5*w;          % xm
                 dm.UB(2:D+1) = max(X) + 0.5*w;
                 dm.PLB(2:D+1) = min(X);
@@ -219,16 +225,25 @@ if ischar(hyp)
                 dm.UB(2) = max(log(w)) + log(Big);
                 dm.PLB(2) = min(log(w)) + 0.5*log(ToL);
                 dm.PUB(2) = max(log(w));
-                dm.x0(2) = mean(log(std(X)));
-                
-                if meanfun == 10                    % find max/min
+                dm.x0(2) = mean(log(std(X)));                
+            end
+            
+            if meanfun == 12 || meanfun == 13
+                dm.LB(2:D+1) = log(w) + log(ToL);   % omega
+                dm.UB(2:D+1) = log(w) + log(Big);
+                dm.PLB(2:D+1) = log(w) + 0.5*log(ToL);
+                dm.PUB(2:D+1) = log(w);
+                dm.x0(2:D+1) = log(std(X));
+            end
+            
+            if meanfun >= 10 && meanfun <= 13
+                if meanfun == 10 || meanfun == 12   % find max/min
                     [~,idx] = max(y);
                 else
                     [~,idx] = min(y);
                 end                
                 dm.extras = X(idx,:);
             end
-
         end
         
         % Plausible starting point
@@ -249,6 +264,8 @@ if ischar(hyp)
             case 9; dm.meanfun_name = 'posquadse';
             case 10; dm.meanfun_name = 'negquadsefixiso';
             case 11; dm.meanfun_name = 'posquadsefixiso';
+            case 12; dm.meanfun_name = 'negquadsefix';
+            case 13; dm.meanfun_name = 'posquadsefix';
         end
         
     end
@@ -367,6 +384,17 @@ switch meanfun
             dm(:,1) = ones(N,1);
             dm(:,2) = (-sgn)*sum(z2,2);        
         end        
+    case {12,13}  % Negative (12) and positive (13) quadratic, fixed-location
+        if meanfun == 12; sgn = -1; else; sgn = 1; end
+        m0 = hyp(1);
+        xm = extras(1:D);
+        omega = exp(hyp(2:D+1))';
+        z2 = bsxfun(@rdivide,bsxfun(@minus,X,xm),omega).^2;
+        m = m0 + (sgn*0.5)*sum(z2,2);
+        if compute_grad
+            dm(:,1) = ones(N,1);
+            dm(:,2:D+1) = (-sgn)*z2;        
+        end
         
 end
 

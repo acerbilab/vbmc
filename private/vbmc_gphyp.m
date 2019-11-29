@@ -69,7 +69,7 @@ LB_gp(Ncov+1) = log(MinNoise);     % Increase minimum noise
 switch meanfun
     case 1
         UB_gp(Ncov+Nnoise+1) = min(y_hpd);    % Lower maximum constant mean
-    case {4,10}
+    case {4,10,12}
         if options.gpQuadraticMeanBound
             deltay = max(options.TolSD,min(D,max(y_hpd)-min(y_hpd)));
             UB_gp(Ncov+Nnoise+1) = max(y_hpd)+deltay; 
