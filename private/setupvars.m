@@ -72,6 +72,7 @@ vp.sigma = 1e-3*ones(1,K);
 vp.lambda = ones(vp.D,1);
 vp.trinfo = trinfo;
 optimState.trinfo = vp.trinfo;
+vp.optimize_sigma = true;
 vp.optimize_lambda = true;
 if options.Warmup
     vp.optimize_mu = true;

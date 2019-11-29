@@ -46,7 +46,7 @@ for iOpt = 1:Nslowopts
     vp0_type(idx) = []; vp0_vec(idx) = [];
 
     if vp.optimize_mu; theta0 = vp0.mu(:); else theta0 = []; end
-    theta0 = [theta0; log(vp0.sigma(:))];
+    if vp.optimize_sigma; theta0 = [theta0; log(vp0.sigma(:))]; end
     if vp.optimize_lambda; theta0 = [theta0; log(vp0.lambda(:))]; end
     if vp.optimize_weights; theta0 = [theta0; log(vp0.w(:))]; end
     % theta0 = min(vp.UB_theta',max(vp.LB_theta', theta0));
@@ -66,7 +66,7 @@ for iOpt = 1:Nslowopts
                 fprintf('Cannot optimize variational parameters with FMINUNC. Trying with CMA-ES (slower).\n');
             end
             if vp.optimize_mu; insigma_mu = repmat(vp.bounds.mu_ub(:) - vp.bounds.mu_lb(:),[K,1]); else; insigma_mu = []; end
-            insigma_sigma = ones(K,1);
+            if vp.optimize_sigma; insigma_sigma = ones(K,1); else; insigma_sigma = []; end
             if vp.optimize_lambda; insigma_lambda = ones(vp.D,1); else; insigma_lambda = []; end
             if vp.optimize_weights; insigma_eta = ones(K,1); else; insigma_eta = []; end
             insigma = [insigma_mu(:); insigma_sigma(:); insigma_lambda; insigma_eta];
@@ -123,8 +123,8 @@ for iOpt = 1:Nslowopts
                     % Compute stepsize for variational optimization
                     ssize = [];
                     if vp.optimize_mu; ssize = repmat(ll,[K,1]); end
-                    % ssize = [ssize; scaling_factor*ones(K,1)];
-                    ssize = [ssize; min(min(ll),scaling_factor)*ones(K,1)];
+                    % if vp.optimize_sigma; ssize = [ssize; scaling_factor*ones(K,1)]; end
+                    if vp.optimize_sigma; ssize = [ssize; min(min(ll),scaling_factor)*ones(K,1)]; end
                     if vp.optimize_lambda; ssize = [ssize; ll]; end
                     % if vp.optimize_weights; ssize = [ssize; min(min(ll),scaling_factor)*ones(K,1)]; end
                     if vp.optimize_weights; ssize = [ssize; scaling_factor*ones(K,1)]; end
@@ -154,10 +154,10 @@ for iOpt = 1:Nslowopts
             case 'cmaes'
                 
                 if vp.optimize_mu; insigma_mu = repmat(vp.bounds.mu_ub(:) - vp.bounds.mu_lb(:),[K,1]); else; insigma_mu = []; end
-                insigma_sigma = ones(K,1);
+                if vp.optimize_sigma; insigma_sigma = ones(K,1); else; insigma_sigma = []; end
                 if vp.optimize_lambda; insigma_lambda = ones(vp.D,1); else; insigma_lambda = []; end
                 if vp.optimize_weights; insigma_eta = ones(K,1); else; insigma_eta = []; end
-                insigma = [insigma_mu(:); insigma_sigma(:); insigma_lambda; insigma_eta];
+                insigma = [insigma_mu(:); insigma_sigma; insigma_lambda; insigma_eta];
                 cmaes_opts = options.CMAESopts;
                 cmaes_opts.EvalParallel = 'off';
                 cmaes_opts.TolX = '1e-6*max(insigma)';
@@ -219,7 +219,7 @@ if vp.optimize_weights
         vp_pruned.sigma(idx) = [];
         vp_pruned.mu(:,idx) = [];
         vp_pruned.K = vp_pruned.K - 1;
-        [theta_pruned,vp_pruned] = get_vptheta(vp_pruned,vp_pruned.optimize_mu,vp_pruned.optimize_lambda,vp_pruned.optimize_weights);
+        [theta_pruned,vp_pruned] = get_vptheta(vp_pruned,vp_pruned.optimize_mu,vp_pruned.optimize_sigma,vp_pruned.optimize_lambda,vp_pruned.optimize_weights);
         
         % Recompute ELCBO
         elbostats = eval_fullelcbo(1,theta_pruned,vp_pruned,gp,elbostats,elcbo_beta,options);        

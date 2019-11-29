@@ -11,7 +11,7 @@ if isstruct(vp)
     
     % Required fields for variational posterior
     vpfields = {'D','K','w','mu','sigma','lambda','trinfo', ...
-        'optimize_mu','optimize_lambda','optimize_weights','bounds'};
+        'optimize_mu','optimize_sigma','optimize_lambda','optimize_weights','bounds'};
     
     % Check that VP has all the required fields, otherwise quit
     ff = fields(vp);        

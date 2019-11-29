@@ -59,7 +59,9 @@ for iOpt = 1:Nopts
                     mu(:,iNew) = mu(:,idx);
                     sigma(iNew) = sigma(idx);
                     mu(:,iNew) = mu(:,iNew) + 0.5*sigma(iNew)*lambda.*randn(D,1);
-                    sigma(iNew) = sigma(iNew)*exp(0.2*randn());
+                    if vp.optimize_sigma
+                        sigma(iNew) = sigma(iNew)*exp(0.2*randn());
+                    end
                     if vp.optimize_weights
                         xi = 0.25 + 0.25*rand();
                         w(iNew) = xi*w(idx);
@@ -91,7 +93,9 @@ for iOpt = 1:Nopts
             end
             if K > 1; V = var(mu,[],2); else; V = var(Xstar)'; end
 
-            sigma = sqrt(mean(V)/Knew)*exp(0.2*randn(1,Knew));
+            if vp.optimize_sigma
+                sigma = sqrt(mean(V)/Knew)*exp(0.2*randn(1,Knew));
+            end
             if vp.optimize_lambda
                 lambda = std(Xstar,[],1)';
                 lambda = lambda*sqrt(D/sum(lambda.^2));
@@ -109,7 +113,9 @@ for iOpt = 1:Nopts
         if vp.optimize_mu
             mu = mu + bsxfun(@times,sigma,bsxfun(@times,lambda,randn(size(mu))));
         end
-        sigma = sigma.*exp(0.2*randn(1,Knew));
+        if vp.optimize_sigma
+            sigma = sigma.*exp(0.2*randn(1,Knew));
+        end
         if vp.optimize_lambda
             lambda = lambda.*exp(0.2*randn(D,1));
         end

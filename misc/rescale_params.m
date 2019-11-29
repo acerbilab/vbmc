@@ -11,9 +11,12 @@ if nargin > 1 && ~isempty(theta)
     else
         idx_start = 0;
     end
-    vp.sigma = exp(theta(idx_start+(1:K)));
+    if vp.optimize_sigma
+        vp.sigma = exp(theta(idx_start+(1:K)));
+        idx_start = idx_start + K;
+    end
     if vp.optimize_lambda
-        vp.lambda = exp(theta(idx_start+K+(1:D)))';
+        vp.lambda = exp(theta(idx_start+(1:D)))';
     end
     if vp.optimize_weights
         eta = theta(end-K+1:end);

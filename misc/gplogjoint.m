@@ -1,4 +1,4 @@
-function [F,dF,varF,dvarF,varss] = gplogjoint(vp,gp,grad_flags,avg_flag,jacobian_flag,compute_var)
+function [F,dF,varF,dvarF,varss] = gplogjoint(vp,gp,grad_flags,avg_flag,jacobian_flag,compute_var,separate_K)
 %GPLOGJOINT Expected variational log joint probability via GP approximation
 
 % VP is a struct with the variational posterior
@@ -11,6 +11,7 @@ if nargin < 3; grad_flags = []; end
 if nargin < 4 || isempty(avg_flag); avg_flag = true; end
 if nargin < 5 || isempty(jacobian_flag); jacobian_flag = true; end
 if nargin < 6; compute_var = []; end
+if nargin < 7 || isempty(separate_K); separate_K = false; end
 if isempty(compute_var); compute_var = nargout > 2; end
 
 % Check if gradient computation is required
@@ -67,6 +68,12 @@ if compute_vargrad      % Compute gradient of variance?
     if grad_flags(2); sigma_vargrad = zeros(K,Ns); else, sigma_vargrad = []; end
     if grad_flags(3); lambda_vargrad = zeros(D,Ns); else, lambda_vargrad = []; end    
     if grad_flags(4); w_vargrad = zeros(K,Ns); else, w_vargrad = []; end    
+end
+
+% Store contribution to the log joint separately for each component?
+if separate_K
+    I_sk = zeros(Ns,K);
+    if compute_var; J_sjk = zeros(Ns,K,K); end    
 end
 
 % varF_diag = zeros(1,Nhyp);
@@ -139,8 +146,9 @@ for s = 1:Ns
             nu_k_se = h_se*prod(omega_se./sqrt(tau2_mfun))*exp(-0.5*sum(s2,1));
             I_k = I_k + nu_k_se;        
         end
-        
+                
         F(s) = F(s) + w(k)*I_k;
+        if separate_K; I_sk(s,k) = I_k; end
 
         if grad_flags(1)
             dz_dmu = bsxfun(@times, -bsxfun(@rdivide, delta_k, tau_k), z_k);
@@ -200,6 +208,7 @@ for s = 1:Ns
             end
             J_kk = nf_kk - z_k*invKzk;
             varF(s) = varF(s) + w(k)^2*max(eps,J_kk);    % Correct for numerical error
+            if separate_K; J_sjk(s,k,k) = J_kk; end            
             
             if compute_vargrad
 
@@ -246,9 +255,12 @@ for s = 1:Ns
                 % Off-diagonal elements are symmetric (count twice)
                 if j == k
                     varF(s) = varF(s) + w(k)^2*max(eps,J_jk);                                        
+                    if separate_K; J_sjk(k,k) = J_jk; end            
                 else
-                    varF(s) = varF(s) + 2*w(j)*w(k)*J_jk;                    
+                    varF(s) = varF(s) + 2*w(j)*w(k)*J_jk;
+                    if separate_K; J_sjk(s,j,k) = J_jk; J_sjk(s,k,j) = J_jk; end            
                 end
+                
             end
             
         end

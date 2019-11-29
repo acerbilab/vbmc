@@ -32,8 +32,11 @@ if vp.optimize_mu
 else
     idx_start = 0;
 end
-vp.sigma(1,:) = exp(theta(idx_start+(1:K)));
-if vp.optimize_lambda; vp.lambda(:,1) = exp(theta(idx_start+K+(1:D))); end
+if vp.optimize_sigma
+    vp.sigma(1,:) = exp(theta(idx_start+(1:K)));
+    idx_start = idx_start + K;
+end
+if vp.optimize_lambda; vp.lambda(:,1) = exp(theta(idx_start+(1:D))); end
 if vp.optimize_weights
     vp.eta(1,:) = theta(end-K+1:end);
     vp.w(1,:) = exp(vp.eta);

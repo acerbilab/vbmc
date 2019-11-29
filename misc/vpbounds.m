@@ -29,8 +29,16 @@ if vp.optimize_weights
     vp.bounds.eta_ub = 0;
 end
 
-thetabnd.lb = [repmat(vp.bounds.mu_lb,[1,K]),repmat(vp.bounds.lnscale_lb,[1,K])];
-thetabnd.ub = [repmat(vp.bounds.mu_ub,[1,K]),repmat(vp.bounds.lnscale_ub,[1,K])];
+thetabnd.lb = [];
+thetabnd.ub = [];
+if vp.optimize_mu
+    thetabnd.lb = [thetabnd.lb,repmat(vp.bounds.mu_lb,[1,K])];
+    thetabnd.ub = [thetabnd.ub,repmat(vp.bounds.mu_ub,[1,K])];
+end
+if vp.optimize_sigma || vp.optimize_lambda
+    thetabnd.lb = [thetabnd.lb,repmat(vp.bounds.lnscale_lb,[1,K])];
+    thetabnd.ub = [thetabnd.ub,repmat(vp.bounds.lnscale_ub,[1,K])];
+end
 if vp.optimize_weights
     thetabnd.lb = [thetabnd.lb,repmat(vp.bounds.eta_lb,[1,K])];
     thetabnd.ub = [thetabnd.ub,repmat(vp.bounds.eta_ub,[1,K])];
