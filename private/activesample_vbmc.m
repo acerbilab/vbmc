@@ -172,7 +172,11 @@ else                    % Active uncertainty sampling
             cmaes_opts = options.CMAESopts;
             cmaes_opts.TolFun = max(1e-12,abs(fval_old*1e-3));
             x0 = real2int_vbmc(Xacq(1,:),vp.trinfo,optimState.integervars)';
-            [xsearch_cmaes,fval_cmaes] = cmaes_modded(func2str(SearchAcqFcn{idxAcq}),x0,insigma,cmaes_opts,vp,gp,optimState,1);
+            [xsearch_cmaes,fval_cmaes,~,~,~,bestever_cmaes] = cmaes_modded(func2str(SearchAcqFcn{idxAcq}),x0,insigma,cmaes_opts,vp,gp,optimState,1);
+            if options.SearchCMAESbest
+                xsearch_cmaes = bestever_cmaes.x;
+                fval_cmaes = bestever_cmaes.f;
+            end
             if fval_cmaes < fval_old            
                 Xacq(1,:) = real2int_vbmc(xsearch_cmaes',vp.trinfo,optimState.integervars);
                 idx_cache_acq(1) = 0;

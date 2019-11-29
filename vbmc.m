@@ -238,6 +238,7 @@ defopts.StopWarmupThresh   = '0.2               % Stop warm-up when ELCBO increa
 defopts.WarmupKeepThreshold = '20*nvars         % Max log-likelihood difference for points kept after warmup';
 defopts.SearchCMAES        = 'on                % Use CMA-ES for search';
 defopts.SearchCMAESVPInit  = 'yes               % Initialize CMA-ES search SIGMA from variational posterior';
+defopts.SearchCMAESbest    = 'no                % Take bestever solution from CMA-ES search';
 defopts.MomentsRunWeight   = '0.9               % Weight of previous trials (per trial) for running avg of variational posterior moments';
 defopts.GPRetrainThreshold = '1                 % Upper threshold on reliability index for full retraining of GP hyperparameters';
 defopts.ELCBOmidpoint      = 'on                % Compute full ELCBO also at best midpoint';
