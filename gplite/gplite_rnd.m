@@ -30,7 +30,7 @@ sW = gp.post(s).sW;
 
 % Compute GP mean function at test points
 hyp_mean = hyp(Ncov+Nnoise+1:Ncov+Nnoise+Nmean);
-mstar = gplite_meanfun(hyp_mean,Xstar,gp.meanfun);
+mstar = gplite_meanfun(hyp_mean,Xstar,gp.meanfun,[],gp.meanfun_extras);
 
 % Compute kernel matrix
 hyp_cov = hyp(1:Ncov); 

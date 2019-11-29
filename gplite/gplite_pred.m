@@ -64,7 +64,7 @@ for s = 1:Ns
     
     % Get mean function hyperpameters and evaluate GP mean at test points
     hyp_mean = hyp(Ncov+Nnoise+1:Ncov+Nnoise+Nmean);
-    mstar = gplite_meanfun(hyp_mean,Xstar,gp.meanfun);
+    mstar = gplite_meanfun(hyp_mean,Xstar,gp.meanfun,[],gp.meanfun_extras);
     
     % Compute cross-kernel matrix Ks_mat
     if gp.covfun(1) == 1    % Hard-coded SE-ard for speed

@@ -97,8 +97,9 @@ if isempty(gp)
     gp.covfun = info.covfun;
     [gp.Nnoise,info] = gplite_noisefun('info',X,noisefun);
     gp.noisefun = info.noisefun;
-    [gp.Nmean,info] = gplite_meanfun('info',X,meanfun);
+    [gp.Nmean,info] = gplite_meanfun('info',X,meanfun,y);
     gp.meanfun = info.meanfun;
+    gp.meanfun_extras = info.extras;
     
     % Output warping function (optional)
     if ~isempty(outwarpfun)
@@ -126,6 +127,10 @@ if isempty(gp)
 else
     [N,D] = size(gp.X);         % Number of training points and dimension
     Ns = numel(gp.post);        % Hyperparameter samples    
+    if ~isfield(gp,'meanfun_extras')
+        [~,info] = gplite_meanfun('info',gp.X,gp.meanfun,gp.y);
+        gp.meanfun_extras = info.extras;        
+    end
 end
 
 if ~update1    

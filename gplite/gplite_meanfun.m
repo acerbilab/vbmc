@@ -1,4 +1,4 @@
-function [m,dm] = gplite_meanfun(hyp,X,meanfun,y)
+function [m,dm] = gplite_meanfun(hyp,X,meanfun,y,extras)
 %GPLITE_MEANFUN Mean function for lite Gaussian Process regression.
 %   M = GPLITE_MEANFUN(HYP,X,MEANFUN) computes the GP mean function
 %   MEANFUN evaluated at test points X. HYP is a single column vector of mean 
@@ -37,12 +37,13 @@ function [m,dm] = gplite_meanfun(hyp,X,meanfun,y)
 %   See also GPLITE_COVFUN, GPLITE_NOISEFUN.
 
 if nargin < 4; y = []; end
+if nargin < 5; extras = []; end
 
 if isa(meanfun,'function_handle')
     if nargout > 1
-        [m,dm] = meanfun(hyp,X);
+        [m,dm] = meanfun(hyp,X,y,extras);
     else
-        m = meanfun(hyp,X);
+        m = meanfun(hyp,X,y,extras);
     end
     return;
 end
@@ -81,6 +82,12 @@ switch meanfun
     case {9,'9','posquadse'}
         Nmean = 2 + 4*D;
         meanfun = 9;
+    case {10,'10','negquadfixiso'}
+        Nmean = 2;
+        meanfun = 10;
+    case {11,'11','posquadfixiso'}
+        Nmean = 2;
+        meanfun = 11;        
     otherwise
         if isnumeric(meanfun); meanfun = num2str(meanfun); end
         error('gplite_meanfun:UnknownMeanFun',...
@@ -98,6 +105,7 @@ if ischar(hyp)
         dm.PLB = -Inf(1,Nmean);
         dm.PUB = Inf(1,Nmean);
         dm.x0 = NaN(1,Nmean);
+        dm.extras = [];
         
         if numel(y) <= 1; y = [0;1]; end
         
@@ -124,18 +132,18 @@ if ischar(hyp)
                 dm.PUB(D+2:2*D+1) = delta.^2;                
             end
             
-        elseif meanfun >= 4 && meanfun <= 9
+        elseif meanfun >= 4 && meanfun <= 11
             
             % Redefine limits for m0 (meaning depends on mean func type)
             h = max(y) - min(y);    % Height
             switch meanfun
-                case 4
+                case {4,10}
                     dm.LB(1) = min(y);
                     dm.UB(1) = max(y) + h;
                     dm.PLB(1) = median(y);
                     dm.PUB(1) = max(y);
                     dm.x0(1) = quantile1(y,0.9);
-                case 5
+                case {5,11}
                     dm.LB(1) = min(y) - h;
                     dm.UB(1) = max(y);
                     dm.PLB(1) = min(y);
@@ -163,17 +171,19 @@ if ischar(hyp)
             
             w = max(X) - min(X);                    % Width
 
-            dm.LB(2:D+1) = min(X) - 0.5*w;          % xm
-            dm.UB(2:D+1) = max(X) + 0.5*w;
-            dm.PLB(2:D+1) = min(X);
-            dm.PUB(2:D+1) = max(X);
-            dm.x0(2:D+1) = median(X);
+            if meanfun >= 4 && meanfun <= 9            
+                dm.LB(2:D+1) = min(X) - 0.5*w;          % xm
+                dm.UB(2:D+1) = max(X) + 0.5*w;
+                dm.PLB(2:D+1) = min(X);
+                dm.PUB(2:D+1) = max(X);
+                dm.x0(2:D+1) = median(X);
 
-            dm.LB(D+2:2*D+1) = log(w) + log(ToL);   % omega
-            dm.UB(D+2:2*D+1) = log(w) + log(Big);
-            dm.PLB(D+2:2*D+1) = log(w) + 0.5*log(ToL);
-            dm.PUB(D+2:2*D+1) = log(w);
-            dm.x0(D+2:2*D+1) = log(std(X));
+                dm.LB(D+2:2*D+1) = log(w) + log(ToL);   % omega
+                dm.UB(D+2:2*D+1) = log(w) + log(Big);
+                dm.PLB(D+2:2*D+1) = log(w) + 0.5*log(ToL);
+                dm.PUB(D+2:2*D+1) = log(w);
+                dm.x0(D+2:2*D+1) = log(std(X));
+            end
             
             if meanfun == 6 || meanfun == 7                
                 dm.LB(2*D+2) = log(h) + log(ToL);   % h
@@ -204,6 +214,21 @@ if ischar(hyp)
                 dm.x0(4*D+2) = min(std(y),h);   
             end
             
+            if meanfun == 10 || meanfun == 11
+                dm.LB(2) = min(log(w)) + log(ToL);  % omega isotropic
+                dm.UB(2) = max(log(w)) + log(Big);
+                dm.PLB(2) = min(log(w)) + 0.5*log(ToL);
+                dm.PUB(2) = max(log(w));
+                dm.x0(2) = mean(log(std(X)));
+                
+                if meanfun == 10                    % find max/min
+                    [~,idx] = max(y);
+                else
+                    [~,idx] = min(y);
+                end                
+                dm.extras = X(idx,:);
+            end
+
         end
         
         % Plausible starting point
@@ -222,6 +247,8 @@ if ischar(hyp)
             case 7; dm.meanfun_name = 'negse';
             case 8; dm.meanfun_name = 'negquadse';
             case 9; dm.meanfun_name = 'posquadse';
+            case 10; dm.meanfun_name = 'negquadsefixiso';
+            case 11; dm.meanfun_name = 'posquadsefixiso';
         end
         
     end
@@ -329,6 +356,17 @@ switch meanfun
             dm(:,3*D+1+(1:D)) = bsxfun(@times, z2_se, se);
             dm(:,4*D+2) = se0;
         end
+    case {10,11}    % Negative (10) and positive (11) quadratic, fixed-location and isotropic
+        if meanfun == 10; sgn = -1; else; sgn = 1; end
+        m0 = hyp(1);
+        xm = extras(1:D);
+        omega = exp(hyp(2));
+        z2 = bsxfun(@minus,X/omega,xm/omega).^2;
+        m = m0 + (sgn*0.5)*sum(z2,2);
+        if compute_grad
+            dm(:,1) = ones(N,1);
+            dm(:,2) = (-sgn)*sum(z2,2);        
+        end        
         
 end
 

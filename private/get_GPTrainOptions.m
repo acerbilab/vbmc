@@ -87,7 +87,7 @@ end
 % Set other hyperparameter fitting parameters
 if optimState.RecomputeVarPost
     gptrain_options.Burnin = gptrain_options.Thin*Ns_gp;
-    gptrain_options.Ninit = 2^10;
+    gptrain_options.Ninit = options.GPTrainNinit;
     if Ns_gp > 0; gptrain_options.Nopts = 1; else; gptrain_options.Nopts = 2; end
 else
     gptrain_options.Burnin = gptrain_options.Thin*3;
@@ -99,7 +99,7 @@ else
         end
         if Ns_gp > 0; gptrain_options.Nopts = 0; else; gptrain_options.Nopts = 1; end            
     else
-        gptrain_options.Ninit = 2^10;
+        gptrain_options.Ninit = options.GPTrainNinit;
         if Ns_gp > 0; gptrain_options.Nopts = 1; else; gptrain_options.Nopts = 2; end
     end
 end

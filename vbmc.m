@@ -202,6 +202,7 @@ defopts.WarmupCheckMax     = 'yes               % Also check for max fcn value i
 defopts.StableGPSampling   = '200 + 10*nvars    % Force stable GP hyperparameter sampling (reduce samples or start optimizing)';
 defopts.StableGPSamples    = '0                 % Number of GP samples when GP is stable (0 = optimize)';
 defopts.GPSampleThin       = '5                 % Thinning for GP hyperparameter sampling';
+defopts.GPTrainNinit       = '1024              % Initial design points for GP hyperparameter training';
 defopts.TolGPVar           = '1e-4              % Threshold on GP variance, used to stabilize sampling and by some acquisition fcns';
 defopts.gpMeanFun          = 'negquad           % GP mean function';
 defopts.KfunMax            = '@(N) N.^(2/3)     % Max variational components as a function of training points';
@@ -411,7 +412,7 @@ if options.NoiseShaping && optimState.gpNoisefun(2) == 0
 end
 optimState.gpMeanfun = options.gpMeanFun;
 switch optimState.gpMeanfun
-    case {'zero','const','negquad','se','negquadse'}
+    case {'zero','const','negquad','se','negquadse','negquadfixiso'}
     otherwise
         error('vbmc:UnknownGPmean', ...
             'Unknown/unsupported GP mean function. Supported mean functions are ''zero'', ''const'', ''negquad'', and ''se''.');
