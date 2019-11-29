@@ -203,6 +203,7 @@ defopts.StableGPSampling   = '200 + 10*nvars    % Force stable GP hyperparameter
 defopts.StableGPSamples    = '0                 % Number of GP samples when GP is stable (0 = optimize)';
 defopts.GPSampleThin       = '5                 % Thinning for GP hyperparameter sampling';
 defopts.GPTrainNinit       = '1024              % Initial design points for GP hyperparameter training';
+defopts.GPTrainInitMethod  = 'sobol             % Initial design method for GP hyperparameter training';
 defopts.TolGPVar           = '1e-4              % Threshold on GP variance, used to stabilize sampling and by some acquisition fcns';
 defopts.gpMeanFun          = 'negquad           % GP mean function';
 defopts.KfunMax            = '@(N) N.^(2/3)     % Max variational components as a function of training points';

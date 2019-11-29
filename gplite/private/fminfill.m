@@ -12,6 +12,9 @@ if nargin < 8; options = []; end
 N0 = size(x0,1);
 N = options.FunEvals;
 
+if isfield(options,'Method'); Method = options.Method; else; Method = []; end
+if isempty(Method); Method = 'sobol'; end
+
 nvars = max([size(x0,2),numel(LB),numel(UB),numel(PLB),numel(PUB)]);
 
 if isempty(tprior)
@@ -44,14 +47,16 @@ end
 if N > N0
     % First test hyperparameters on a space-filling initial design
     S = [];
-    if nvars <= 40   % Sobol generator handles up to 40 variables
-        MaxSeed = 997;
-        seed = randi(MaxSeed);                  % Random seed
-        try
-            S = (sobol_generate(nvars,N-N0,seed))';
-            S = S(:,randperm(nvars));   % Randomly permute columns
-        catch
-            % Failed to generate Sobol sequence
+    if strcmpi(Method,'sobol')
+        if nvars <= 40   % Sobol generator handles up to 40 variables
+            MaxSeed = 997;
+            seed = randi(MaxSeed);                  % Random seed
+            try
+                S = (sobol_generate(nvars,N-N0,seed))';
+                S = S(:,randperm(nvars));   % Randomly permute columns
+            catch
+                % Failed to generate Sobol sequence
+            end
         end
     end
     if isempty(S)       % Just use random sampling

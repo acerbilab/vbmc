@@ -27,11 +27,12 @@ if isempty(noisefun)
 end
 
 % Default options
-defopts.Nopts           = 3;        % # hyperparameter optimization runs
-defopts.Ninit           = 2^10;     % Initial design size for hyperparameter optimization
-defopts.Thin            = 5;        % Thinning for hyperparameter sampling
-defopts.Burnin          = [];       % Initial burn-in for hyperparameter sampling
-defopts.DfBase          = 7;        % Default degrees of freedom for Student's t prior
+defopts.Nopts           = 3;         % # hyperparameter optimization runs
+defopts.Ninit           = 2^10;      % Initial design size for hyperparameter optimization
+defopts.InitMethod      = 'sobol';   % Default initial design method
+defopts.Thin            = 5;         % Thinning for hyperparameter sampling
+defopts.Burnin          = [];        % Initial burn-in for hyperparameter sampling
+defopts.DfBase          = 7;         % Default degrees of freedom for Student's t prior
 defopts.Sampler         = 'slicesample';    % Default MCMC sampler for hyperparameters
 defopts.Widths          = [];        % Default widths
 defopts.LogP            = [];        % Old log probability associated to starting points
@@ -49,6 +50,7 @@ if isempty(options.Burnin); options.Burnin = options.Thin*Ns; end
 
 Nopts = options.Nopts;
 Ninit = options.Ninit;
+InitMethod = options.InitMethod;
 Thin = options.Thin;
 Burnin = options.Burnin;
 DfBase = options.DfBase;
@@ -181,6 +183,7 @@ end
 timer1 = tic;
 if Ninit > 0
     optfill.FunEvals = Ninit;
+    optfill.Method = InitMethod;
     [~,~,~,output_fill] = fminfill(gpoptimize_fun,hyp0',LB,UB,PLB,PUB,hprior,optfill);
     hyp(:,:) = output_fill.X(1:Nopts,:)';
     widths_default = std(output_fill.X,[],1);
