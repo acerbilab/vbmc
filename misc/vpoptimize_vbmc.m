@@ -74,7 +74,8 @@ for iOpt = 1:Nslowopts
             cmaes_opts.EvalParallel = 'off';
             cmaes_opts.TolX = '1e-8*max(insigma)';
             cmaes_opts.TolFun = 1e-6;
-            cmaes_opts.TolHistFun = 1e-7;           
+            cmaes_opts.TolHistFun = 1e-7;
+            cmaes_opts.MaxFunEvals = 200*vp.D;            
             thetaopt = cmaes_modded('negelcbo_vbmc',theta0(:),insigma,cmaes_opts, ...
                 elcbo_beta,vp0,gp,0,1,compute_var,0,thetabnd); 
             thetaopt = thetaopt(:)';
