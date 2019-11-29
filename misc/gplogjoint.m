@@ -339,5 +339,10 @@ if Ns > 1 && avg_flag
     if any(grad_flags); dF = sum(dF,2)/Ns; end
 end
 
+% Return log joint contributions separately if requested
+if separate_K
+    F = I_sk;
+    if compute_var; varF = J_sjk; end
+end
 
 end

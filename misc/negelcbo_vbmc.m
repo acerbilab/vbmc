@@ -44,19 +44,35 @@ if vp.optimize_weights
 end
 
 % Which gradients should be computed, if any?
-grad_flags = compute_grad*[vp.optimize_mu,1,vp.optimize_lambda,vp.optimize_weights];
+grad_flags = compute_grad*[vp.optimize_mu,vp.optimize_sigma,vp.optimize_lambda,vp.optimize_weights];
 
-if compute_var
-    if compute_grad
-        [G,dG,varG,dvarG,varGss] = gplogjoint(vp,gp,grad_flags,avg_flag,jacobian_flag,compute_var);
-    elseif numel(gp) > 1
-        [G,varG] = gplogjoint_multi(vp,gp,avg_flag,compute_var);
-        varGss = [];
+% Only weight optimization?
+onlyweights_flag = vp.optimize_weights && ~vp.optimize_mu && ~vp.optimize_sigma && ~vp.optimize_lambda;
+
+if onlyweights_flag
+    if compute_var
+        if compute_grad
+            [G,dG,varG,dvarG] = gplogjoint_weights(vp,1,avg_flag,jacobian_flag,compute_var);
+        else
+            [G,~,varG] = gplogjoint_weights(vp,0,avg_flag,jacobian_flag,compute_var);        
+        end
     else
-        [G,~,varG,~,varGss] = gplogjoint(vp,gp,grad_flags,avg_flag,jacobian_flag,compute_var);        
+        [G,dG] = gplogjoint_weights(vp,compute_grad,avg_flag,jacobian_flag,0);                
     end
+    varGss = [];
 else
-    [G,dG] = gplogjoint(vp,gp,grad_flags,avg_flag,jacobian_flag,0);
+    if compute_var
+        if compute_grad
+            [G,dG,varG,dvarG,varGss] = gplogjoint(vp,gp,grad_flags,avg_flag,jacobian_flag,compute_var);
+        elseif numel(gp) > 1
+            [G,varG] = gplogjoint_multi(vp,gp,avg_flag,compute_var);
+            varGss = [];
+        else
+            [G,~,varG,~,varGss] = gplogjoint(vp,gp,grad_flags,avg_flag,jacobian_flag,compute_var);        
+        end
+    else
+        [G,dG] = gplogjoint(vp,gp,grad_flags,avg_flag,jacobian_flag,0);
+    end
 end
 
 % Entropy term

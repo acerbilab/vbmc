@@ -1,7 +1,7 @@
-function [vp,varss,pruned] = vpoptimizeweights_vbmc(Nfastopts,Nslowopts,vp,gp,optimState,options,prnt)
+function [vp,varss] = vpoptimizeweights_vbmc(vp,gp,optimState,options,prnt)
 %VPOPTIMIZEWEIGHTS Optimize weights of variational posterior.
 
-if nargin < 7 || isempty(prnt); prnt = 0; end
+if nargin < 5 || isempty(prnt); prnt = 0; end
 
 % Assign default values to OPTIMSTATE
 if ~isfield(optimState,'delta'); optimState.delta = 0; end
@@ -33,17 +33,16 @@ end
 
 % Set up empty stats structs for optimization
 Ntheta = numel(get_vptheta(vp));
-elbostats = eval_fullelcbo(2,Ntheta);
+elbostats = eval_fullelcbo(1,Ntheta);
 
 % Set basic options for deterministic optimizer (FMINUNC)
 vbtrain_options = optimoptions('fminunc','GradObj','on','Display','off');
 
+% Compute separate contributions to the log joint
+[vp.I_sk,~,vp.J_sjk] = gplogjoint(vp,gp,0,0,0,1,1);
 
 vp0 = rescale_params(vp);
 theta0 = log(vp0.w(:));
-
-[I_sk,~,J_sjk] = gplogjoint(vp,gp,0,0,0,compute_var,1);
-
 
 vbtrainmc_fun = @(theta_) negelcbo_vbmc(theta_,elcbo_beta,vp0,gp,NSentK,1,compute_var,options.AltMCEntropy,thetabnd);
 
@@ -59,7 +58,7 @@ if NSentK == 0
         if prnt > 0
             fprintf('Cannot optimize variational parameters with FMINUNC. Trying with CMA-ES (slower).\n');
         end
-        insigma = ones(K,1);
+        insigma = ones(vp.K,1);
         cmaes_opts = options.CMAESopts;
         cmaes_opts.EvalParallel = 'off';
         cmaes_opts.TolX = '1e-8*max(insigma)';
@@ -80,25 +79,14 @@ else
 
             master_stepsize.min = min(options.SGDStepSize,0.001);
             scaling_factor = min(0.1,options.SGDStepSize);
-
-            % Fixed master stepsize
-            master_stepsize.max = scaling_factor;         
-
-            master_stepsize.max = max(master_stepsize.min,master_stepsize.max);
+            master_stepsize.max = max(master_stepsize.min,scaling_factor);
             master_stepsize.decay = 200;
             [thetaopt,~,theta_lst,fval_lst] = ...
                 fminadam(vbtrainmc_fun,thetaopt,[],[],options.TolFunStochastic,[],master_stepsize);
 
-            if options.ELCBOmidpoint
-                % Recompute ELCBO at best midpoint with full variance and more precision
-                [~,idx_mid] = min(fval_lst);
-                elbostats = eval_fullelcbo(1,theta_lst(idx_mid,:),vp0,gp,elbostats,elcbo_beta,options);
-                % [idx_mid,numel(fval_lst)]
-            end
-
         case 'cmaes'
 
-            insigma = ones(K,1);
+            insigma = ones(vp.K,1);
             cmaes_opts = options.CMAESopts;
             cmaes_opts.EvalParallel = 'off';
             cmaes_opts.TolX = '1e-6*max(insigma)';
@@ -118,14 +106,17 @@ else
     end
 end
 
+vp0 = rmfield(vp0,{'I_sk','J_sjk'});
+vp0 = rescale_params(vp0,thetaopt);
+vp0.optimize_mu = optimize_mu;
+vp0.optimize_sigma = optimize_sigma;
+vp0.optimize_lambda = optimize_lambda;
+
+thetaopt = get_vptheta(vp0,vp0.optimize_mu,vp0.optimize_sigma,vp0.optimize_lambda,vp0.optimize_weights);
+
 % Recompute ELCBO at endpoint with full variance and more precision
-elbostats = eval_fullelcbo(2,thetaopt,vp0,gp,elbostats,elcbo_beta,options);
-% toc
 
-vp0_fine(1) = vp0;
-vp0_fine(2) = vp0;   % Parameters get assigned later
-
-% [nelbo,nelcbo,sqrt(varF),G,H]
+elbostats = eval_fullelcbo(1,thetaopt,vp0,gp,elbostats,elcbo_beta,options);
 
 
 %% Finalize optimization by taking variational parameters with best ELCBO
@@ -138,8 +129,7 @@ H = elbostats.H(idx);
 varss = elbostats.varss(idx);
 varG = elbostats.varG(idx);
 varH = elbostats.varH(idx);
-vp = vp0_fine(idx);
-vp = rescale_params(vp,elbostats.theta(idx,:));
+vp = vp0;
 vp.temperature = optimState.temperature;
 
 vp.stats.elbo = elbo;               % ELBO
@@ -149,6 +139,8 @@ vp.stats.elogjoint_sd = sqrt(varG); % Error on expected log joint
 vp.stats.entropy = H;               % Entropy
 vp.stats.entropy_sd = sqrt(varH);   % Error on the entropy
 vp.stats.stable = false;            % Unstable until proven otherwise
+
+
 
 % idx
 % elbostats

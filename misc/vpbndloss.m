@@ -56,7 +56,9 @@ if compute_grad
             dlambda = sum(dlnscale,2);
         else
             dlambda = [];
-        end        
+        end
+    else
+        dsigma = []; dlambda = [];
     end
     if vp.optimize_weights
         deta = dL(end-K+1:end);   

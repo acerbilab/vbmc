@@ -582,6 +582,9 @@ while ~isFinished_flag
         for i = 1:numel(vp_fields); vp.stats.(vp_fields{i}) = NaN; end
         varss = NaN;
         pruned = 0;
+%     elseif Knew == vp.K && ~optimState.Warmup && vp.K >= 10
+%         [vp,varss] = vpoptimizeweights_vbmc(vp,gp,optimState,options,prnt);
+%         pruned = 0;
     else
         [vp,varss,pruned] =  ...
             vpoptimize_vbmc(Nfastopts,Nslowopts,vp,gp,Knew,optimState,options,prnt);        
