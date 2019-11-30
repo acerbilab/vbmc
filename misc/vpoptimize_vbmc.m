@@ -3,6 +3,8 @@ function [vp,varss,pruned] = vpoptimize_vbmc(Nfastopts,Nslowopts,vp,gp,K,optimSt
 
 if nargin < 8 || isempty(prnt); prnt = 0; end
 
+if isempty(K); K = vp.K; end
+
 % Assign default values to OPTIMSTATE
 if ~isfield(optimState,'delta'); optimState.delta = 0; end
 if ~isfield(optimState,'EntropySwitch'); optimState.EntropySwitch = false; end
@@ -51,13 +53,14 @@ for iOpt = 1:Nslowopts
     if vp.optimize_weights; theta0 = [theta0; log(vp0.w(:))]; end
     % theta0 = min(vp.UB_theta',max(vp.LB_theta', theta0));
 
-    vbtrainmc_fun = @(theta_) negelcbo_vbmc(theta_,elcbo_beta,vp0,gp,NSentK,1,compute_var,options.AltMCEntropy,thetabnd);
+    vbtrainmc_fun = @(theta_) negelcbo_vbmc(theta_,elcbo_beta,vp0,gp,NSentK,1,compute_var,options.AltMCEntropy,thetabnd,optimState.entropy_alpha);
 
     if NSentK == 0
         % Fast optimization via deterministic entropy approximation
         TolOpt = options.DetEntTolOpt;
         vbtrain_options.TolFun = TolOpt;
-        vbtrain_fun = @(theta_) negelcbo_vbmc(theta_,elcbo_beta,vp0,gp,0,1,compute_var,0,thetabnd);
+        vbtrain_options.MaxFunEvals = 500*vp.D;
+        vbtrain_fun = @(theta_) negelcbo_vbmc(theta_,elcbo_beta,vp0,gp,0,1,compute_var,0,thetabnd,optimState.entropy_alpha);
         try
             [thetaopt,~,~,output] = fminunc(vbtrain_fun,theta0(:)',vbtrain_options);
         catch
@@ -77,7 +80,7 @@ for iOpt = 1:Nslowopts
             cmaes_opts.TolHistFun = 1e-7;
             cmaes_opts.MaxFunEvals = 200*vp.D;            
             thetaopt = cmaes_modded('negelcbo_vbmc',theta0(:),insigma,cmaes_opts, ...
-                elcbo_beta,vp0,gp,0,1,compute_var,0,thetabnd); 
+                elcbo_beta,vp0,gp,0,1,compute_var,0,thetabnd,optimState.entropy_alpha); 
             thetaopt = thetaopt(:)';
         end
         % output, % pause
@@ -143,7 +146,7 @@ for iOpt = 1:Nslowopts
                 if options.ELCBOmidpoint
                     % Recompute ELCBO at best midpoint with full variance and more precision
                     [~,idx_mid] = min(fval_lst);
-                    elbostats = eval_fullelcbo(iOpt_mid,theta_lst(idx_mid,:),vp0,gp,elbostats,elcbo_beta,options);
+                    elbostats = eval_fullelcbo(iOpt_mid,theta_lst(idx_mid,:),vp0,gp,elbostats,elcbo_beta,options,optimState.entropy_alpha);
                     % [idx_mid,numel(fval_lst)]
                 end
 %             case 'fmincon'
@@ -166,7 +169,7 @@ for iOpt = 1:Nslowopts
                 cmaes_opts.Noise.on = 1;    % Noisy evaluations
                 try
                     thetaopt = cmaes_modded('negelcbo_vbmc',theta0(:),insigma,cmaes_opts, ...
-                        elcbo_beta,vp0,gp,NSentK,0,compute_var,options.AltMCEntropy,thetabnd); 
+                        elcbo_beta,vp0,gp,NSentK,0,compute_var,options.AltMCEntropy,thetabnd,optimState.entropy_alpha); 
                 catch
                     pause
                 end
@@ -178,7 +181,7 @@ for iOpt = 1:Nslowopts
     end
         
 	% Recompute ELCBO at endpoint with full variance and more precision
-    elbostats = eval_fullelcbo(iOpt_end,thetaopt,vp0,gp,elbostats,elcbo_beta,options);
+    elbostats = eval_fullelcbo(iOpt_end,thetaopt,vp0,gp,elbostats,elcbo_beta,options,optimState.entropy_alpha);
     % toc
     
     vp0_fine(iOpt_mid) = vp0;
@@ -222,7 +225,7 @@ if vp.optimize_weights
         [theta_pruned,vp_pruned] = get_vptheta(vp_pruned,vp_pruned.optimize_mu,vp_pruned.optimize_sigma,vp_pruned.optimize_lambda,vp_pruned.optimize_weights);
         
         % Recompute ELCBO
-        elbostats = eval_fullelcbo(1,theta_pruned,vp_pruned,gp,elbostats,elcbo_beta,options);        
+        elbostats = eval_fullelcbo(1,theta_pruned,vp_pruned,gp,elbostats,elcbo_beta,options,optimState.entropy_alpha);        
         elbo_pruned = -elbostats.nelbo(1);
         elbo_pruned_sd = sqrt(elbostats.varF(1));
         
@@ -275,7 +278,7 @@ vp.stats.stable = false;            % Unstable until proven otherwise
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function elbostats = eval_fullelcbo(idx,theta,vp,gp,elbostats,beta,options)
+function elbostats = eval_fullelcbo(idx,theta,vp,gp,elbostats,beta,options,entropy_alpha)
 %EVAL_FULLELCBO Evaluate full expected lower confidence bound.
 
 if nargin == 2
@@ -297,7 +300,7 @@ else
         
     theta = theta(:)';
     [nelbo,~,G,H,varF,~,varss,varG,varH] = ...
-        negelcbo_vbmc(theta,0,vp,gp,NSentFineK,0,1,options.AltMCEntropy,[]);
+        negelcbo_vbmc(theta,0,vp,gp,NSentFineK,0,1,options.AltMCEntropy,[],entropy_alpha);
     nelcbo = nelbo + beta*sqrt(varF);
 
     elbostats.nelbo(idx) = nelbo;

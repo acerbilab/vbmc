@@ -39,7 +39,6 @@ else                    % Active uncertainty sampling
         options_activevar.NSentFine = options.NSent;
         options_activevar.ELCBOmidpoint = false;
         Ns_activevar = options.ActiveVariationalSamples;
-        vp_old = vp;
     end
     
     if options.ActiveSampleFullUpdate && Ns > 1
@@ -57,11 +56,32 @@ else                    % Active uncertainty sampling
         hypstruct = [];
     end
 
+    % if Ns > 1; vp_old = vp; end
     
     for is = 1:Ns
         
         optimState.N = optimState.Xn;  % Number of training inputs
         optimState.Neff = sum(optimState.nevals(optimState.X_flag));        
+        
+        if ~optimState.Warmup && 0
+            if rand() < 1
+                options_update = options;
+                options_update.GPRetrainThreshold = Inf;
+                options_update.TolWeight = 0;
+                options_update.NSentFine = options.NSent;
+                options_update.ELCBOmidpoint = false;
+                old_alpha = optimState.entropy_alpha;
+                optimState.entropy_alpha = 1-sqrt(rand());
+
+                % Quick variational optimization
+                t = tic;
+                vp = vpoptimize_vbmc(0,1,vp_old,gp,[],optimState,options_update,0);
+                timer.variationalFit = timer.variationalFit + toc(t);            
+                optimState.entropy_alpha = old_alpha;
+            else
+                vp = vp_old;
+            end
+        end
         
         if options.ActiveVariationalSamples > 0
             [vp,~,output] = vpsample_vbmc(Ns_activevar,0,vp,gp,optimState,options_activevar,1);
@@ -167,7 +187,7 @@ else                    % Active uncertainty sampling
             LB = min([gp.X;x0]) - 0.1*xrange; UB = max([gp.X;x0]) + 0.1*xrange;
             if isfield(optimState.acqInfo{idxAcq},'log_flag') ...
                     && optimState.acqInfo{idxAcq}.log_flag
-                TolFun = 1e-3;
+                TolFun = 1e-2;
             else
                 TolFun = max(1e-12,abs(fval_old*1e-3));
             end

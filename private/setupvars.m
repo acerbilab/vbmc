@@ -239,6 +239,8 @@ if round(T) ~= T || T > 4 || T < 1
 end
 optimState.temperature = T;
 
+% Deterministic entropy approximation lower/upper factor
+optimState.entropy_alpha = 0;
 
 %% Get warnings state
 
