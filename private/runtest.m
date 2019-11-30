@@ -6,7 +6,10 @@ function failed = runtest()
 % 
 %  See also VBMC, VBMC_EXAMPLES.
 
-tolerr = [0.5 0.5];                     % Error tolerance
+tolerr = [0.5 0.5];     % Error tolerance
+RunTime = 70;           % Ballpark runtime s on my laptop (fluctuates!)
+specs = 'i7-6700HQ CPU @ 2.60GHz, 16 GB RAM';
+t = tic;
 
 id = 1;
 nvars = 6;
@@ -43,6 +46,7 @@ for i = 1:numel(txt)
         failed = failed + 1;
     end 
 end
+fprintf('\nTotal runtime: %.1f s.\tBallpark runtime on a reference computer: %.1f s.\n(Reference computer specs: %s.)\n',toc(t),RunTime,specs);
 fprintf('===========================================================================\n');
 fprintf('\n');
 
