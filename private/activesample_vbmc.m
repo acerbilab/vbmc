@@ -159,27 +159,56 @@ else                    % Active uncertainty sampling
         Xsearch(idx,:) = []; idx_cache(idx) = [];
         % [size(Xacq,1),size(Xacq2,1)]
         
-        % Additional search with CMA-ES
-        if options.SearchCMAES
-            if options.SearchCMAESVPInit
-                [~,Sigma] = vbmc_moments(vp,0);       
-            else
-                X_hpd = gethpd_vbmc(gp.X,gp.y,options.HPDFrac);
-                Sigma = cov(X_hpd,1);
-            end
-            insigma = sqrt(diag(Sigma));
+        % Additional search via optimization
+        if ~strcmpi(options.SearchOptimizer,'none')
             fval_old = SearchAcqFcn{idxAcq}(Xacq(1,:),vp,gp,optimState,0);
-            cmaes_opts = options.CMAESopts;
-            cmaes_opts.TolFun = max(1e-12,abs(fval_old*1e-3));
-            cmaes_opts.MaxFunEvals = options.SearchMaxFunEvals;
-            x0 = real2int_vbmc(Xacq(1,:),vp.trinfo,optimState.integervars)';
-            [xsearch_cmaes,fval_cmaes,~,~,out_cmaes,bestever_cmaes] = cmaes_modded(func2str(SearchAcqFcn{idxAcq}),x0,insigma,cmaes_opts,vp,gp,optimState,1);
-            if options.SearchCMAESbest
-                xsearch_cmaes = bestever_cmaes.x;
-                fval_cmaes = bestever_cmaes.f;
+            x0 = real2int_vbmc(Xacq(1,:),vp.trinfo,optimState.integervars);
+            xrange = max(gp.X) - min(gp.X);
+            LB = min([gp.X;x0]) - 0.1*xrange; UB = max([gp.X;x0]) + 0.1*xrange;
+            if isfield(optimState.acqInfo{idxAcq},'log_flag') ...
+                    && optimState.acqInfo{idxAcq}.log_flag
+                TolFun = 1e-3;
+            else
+                TolFun = max(1e-12,abs(fval_old*1e-3));
             end
-            if fval_cmaes < fval_old            
-                Xacq(1,:) = real2int_vbmc(xsearch_cmaes',vp.trinfo,optimState.integervars);
+            
+            switch lower(options.SearchOptimizer)
+                case 'cmaes'
+                    if options.SearchCMAESVPInit
+                        [~,Sigma] = vbmc_moments(vp,0);       
+                    else
+                        X_hpd = gethpd_vbmc(gp.X,gp.y,options.HPDFrac);
+                        Sigma = cov(X_hpd,1);
+                    end
+                    insigma = sqrt(diag(Sigma));
+                    cmaes_opts = options.CMAESopts;
+                    cmaes_opts.TolFun = TolFun;
+                    cmaes_opts.MaxFunEvals = options.SearchMaxFunEvals;
+                    cmaes_opts.LBounds = LB(:);
+                    cmaes_opts.UBounds = UB(:);                
+                    [xsearch_optim,fval_optim,~,~,out_optim,bestever] = cmaes_modded(func2str(SearchAcqFcn{idxAcq}),x0(:),insigma,cmaes_opts,vp,gp,optimState,1);
+                    if options.SearchCMAESbest
+                        xsearch_optim = bestever.x;
+                        fval_optim = bestever.f;
+                    end
+                    xsearch_optim = xsearch_optim';
+                case 'fmincon'
+                    fmincon_opts.Display = 'off';
+                    fmincon_opts.TolFun = TolFun;
+                    fmincon_opts.MaxFunEvals = options.SearchMaxFunEvals;
+                    [xsearch_optim,fval_optim,~,out_optim] = fmincon(@(x) SearchAcqFcn{idxAcq}(x,vp,gp,optimState,0),x0,[],[],[],[],LB,UB,[],fmincon_opts);
+                    % out_optim
+                case 'bads'
+                    bads_opts.Display = 'off';
+                    bads_opts.TolFun = TolFun;
+                    bads_opts.MaxFunEvals = options.SearchMaxFunEvals;
+                    [xsearch_optim,fval_optim,~,out_optim] = bads(@(x) SearchAcqFcn{idxAcq}(x,vp,gp,optimState,0),x0,LB,UB,LB,UB,[],bads_opts);
+                otherwise
+                    error('vbmc:UnknownOptimizer','Unknown acquisition function search optimization method.');            
+            end        
+
+            if fval_optim < fval_old            
+                Xacq(1,:) = real2int_vbmc(xsearch_optim,vp.trinfo,optimState.integervars);
                 idx_cache_acq(1) = 0;
                 % idx_cache = [idx_cache(:); 0];
                 % Double check if the cache indexing is correct
