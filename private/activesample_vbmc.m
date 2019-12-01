@@ -339,7 +339,9 @@ else                    % Active uncertainty sampling
                 
                 % Decide number of fast optimizations
                 Nfastopts = ceil(options_update.NSelboIncr * evaloption_vbmc(options_update.NSelbo,vp.K));
-                optimState.entropy_alpha = 1 - sqrt(rand());
+                if options.UpdateRandomAlpha
+                    optimState.entropy_alpha = 1 - sqrt(rand());
+                end
                 vp = vpoptimize_vbmc(Nfastopts,1,vp,gp,[],optimState,options_update,0);
                 optimState.vp_repo{end+1} = get_vptheta(vp);
                 timer.variationalFit = timer.variationalFit + toc(t);

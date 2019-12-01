@@ -203,7 +203,7 @@ defopts.StableGPSampling   = '200 + 10*nvars    % Force stable GP hyperparameter
 defopts.StableGPSamples    = '0                 % Number of GP samples when GP is stable (0 = optimize)';
 defopts.GPSampleThin       = '5                 % Thinning for GP hyperparameter sampling';
 defopts.GPTrainNinit       = '1024              % Initial design points for GP hyperparameter training';
-defopts.GPTrainInitMethod  = 'sobol             % Initial design method for GP hyperparameter training';
+defopts.GPTrainInitMethod  = 'rand              % Initial design method for GP hyperparameter training';
 defopts.TolGPVar           = '1e-4              % Threshold on GP variance, used to stabilize sampling and by some acquisition fcns';
 defopts.gpMeanFun          = 'negquadfix        % GP mean function';
 defopts.KfunMax            = '@(N) N.^(2/3)     % Max variational components as a function of training points';
@@ -253,6 +253,7 @@ defopts.DetEntTolOpt       = '1e-3              % Optimality tolerance for optim
 defopts.EntropySwitch      = 'off               % Switch from deterministic entropy to stochastic entropy when reaching stability';
 defopts.EntropyForceSwitch = '0.8               % Force switch to stochastic entropy at this fraction of total fcn evals';
 defopts.DetEntropyAlpha    = '0                 % Alpha value for lower/upper deterministic entropy interpolation';
+defopts.UpdateRandomAlpha  = 'no                % Randomize deterministic entropy alpha during active sample updates';
 defopts.DetEntropyMinD     = '5                 % Start with deterministic entropy only with this number of vars or more';
 defopts.TolConLoss         = '0.01              % Fractional tolerance for constraint violation of variational parameters';
 defopts.BestSafeSD         = '5                 % SD multiplier of ELCBO for computing best variational solution';
