@@ -205,7 +205,7 @@ defopts.GPSampleThin       = '5                 % Thinning for GP hyperparameter
 defopts.GPTrainNinit       = '1024              % Initial design points for GP hyperparameter training';
 defopts.GPTrainInitMethod  = 'sobol             % Initial design method for GP hyperparameter training';
 defopts.TolGPVar           = '1e-4              % Threshold on GP variance, used to stabilize sampling and by some acquisition fcns';
-defopts.gpMeanFun          = 'negquad           % GP mean function';
+defopts.gpMeanFun          = 'negquadfix        % GP mean function';
 defopts.KfunMax            = '@(N) N.^(2/3)     % Max variational components as a function of training points';
 defopts.Kwarmup            = '2                 % Variational components during warmup';
 defopts.AdaptiveK          = '2                 % Added variational components for stable solution';
@@ -252,6 +252,7 @@ defopts.CovSampleThresh    = '10                % Switch to covariance sampling 
 defopts.DetEntTolOpt       = '1e-3              % Optimality tolerance for optimization of deterministic entropy';
 defopts.EntropySwitch      = 'off               % Switch from deterministic entropy to stochastic entropy when reaching stability';
 defopts.EntropyForceSwitch = '0.8               % Force switch to stochastic entropy at this fraction of total fcn evals';
+defopts.DetEntropyAlpha    = '0                 % Alpha value for lower/upper deterministic entropy interpolation';
 defopts.DetEntropyMinD     = '5                 % Start with deterministic entropy only with this number of vars or more';
 defopts.TolConLoss         = '0.01              % Fractional tolerance for constraint violation of variational parameters';
 defopts.BestSafeSD         = '5                 % SD multiplier of ELCBO for computing best variational solution';
@@ -510,8 +511,9 @@ while ~isFinished_flag
                 variationalactivesample_vbmc(optimState,new_funevals,funwrapper,vp,vp_old,gp_search,options);
         else
             optimState.hypstruct = hypstruct;
-            [optimState,gp,timer] = ...
+            [optimState,vp,gp,timer] = ...
                 activesample_vbmc(optimState,new_funevals,funwrapper,vp,vp_old,gp_search,stats,timer,options);
+            hypstruct = optimState.hypstruct;
         end
     end
     optimState.N = optimState.Xn;  % Number of training inputs
@@ -587,18 +589,10 @@ while ~isFinished_flag
 %         pruned = 0;
     else
         [vp,varss,pruned] =  ...
-            vpoptimize_vbmc(Nfastopts,Nslowopts,vp,gp,Knew,optimState,options,prnt);        
+            vpoptimize_vbmc(Nfastopts,Nslowopts,vp,gp,Knew,optimState,options,prnt);
+        optimState.vp_repo{end+1} = get_vptheta(vp);
     end
-        
-%     % Save variational solution stats
-%     vp.stats.elbo = elbo;               % ELBO
-%     vp.stats.elbo_sd = elbo_sd;         % Error on the ELBO
-%     vp.stats.elogjoint = G;             % Expected log joint
-%     vp.stats.elogjoint_sd = sqrt(varG); % Error on expected log joint
-%     vp.stats.entropy = H;               % Entropy
-%     vp.stats.entropy_sd = sqrt(varH);   % Error on the entropy
-%     vp.stats.stable = false;            % Unstable until proven otherwise
-    
+            
     optimState.vpK = vp.K;
     optimState.H = vp.stats.entropy;   % Save current entropy
     
@@ -678,6 +672,7 @@ while ~isFinished_flag
             % Switch to main algorithm options
             options = options_main;
             hypstruct.runcov = [];    % Reset GP hyperparameter covariance            
+            optimState.vp_repo = []; % Reset VP repository
         end
     end
     

@@ -1,4 +1,4 @@
-function [optimState,gp,timer] = ...
+function [optimState,vp,gp,timer] = ...
     activesample_vbmc(optimState,Ns,funwrapper,vp,vp_old,gp,stats,timer,options)
 %ACTIVESAMPLE_VBMC Actively sample points iteratively based on acquisition function.
 
@@ -42,17 +42,23 @@ else                    % Active uncertainty sampling
     end
     
     if options.ActiveSampleFullUpdate && Ns > 1
+        RecomputeVarPost_old = optimState.RecomputeVarPost;
+        entropy_alpha_old = optimState.entropy_alpha;
+        
+        % optimState.RecomputeVarPost = false;
         options_update = options;
-        optimState.RecomputeVarPost = false;
-        options_update.GPRetrainThreshold = Inf;
+        % options_update.GPRetrainThreshold = Inf;
         options_update.TolWeight = 0;
         options_update.NSentFine = options.NSent;
         options_update.ELCBOmidpoint = false;
+        options_update.NSent = 0;
+        options_update.NSentFast = 0;
+        options_update.NSentFine = 0;
+        
 %        options_update.TolFunStochastic = 3*options.TolFunStochastic;
 %        options_update.DetEntTolOpt = 3*options.DetEntTolOpt;
 %        options_update.NSgpMaxMain = 3;
 %        options_update.NSgpMaxWarmup = 3;
-        RecomputeVarPost_old = optimState.RecomputeVarPost;
         hypstruct = [];
     end
 
@@ -330,7 +336,12 @@ else                    % Active uncertainty sampling
                 
                 % Quick variational optimization
                 t = tic;
-                vp = vpoptimize_vbmc(0,1,vp,gp,[],optimState,options_update,0);
+                
+                % Decide number of fast optimizations
+                Nfastopts = ceil(options_update.NSelboIncr * evaloption_vbmc(options_update.NSelbo,vp.K));
+                optimState.entropy_alpha = 1 - sqrt(rand());
+                vp = vpoptimize_vbmc(Nfastopts,1,vp,gp,[],optimState,options_update,0);
+                optimState.vp_repo{end+1} = get_vptheta(vp);
                 timer.variationalFit = timer.variationalFit + toc(t);
                 
             else
@@ -355,6 +366,8 @@ else                    % Active uncertainty sampling
     
     if options.ActiveSampleFullUpdate && Ns > 1
         optimState.RecomputeVarPost = RecomputeVarPost_old;
+        optimState.entropy_alpha = entropy_alpha_old;
+        optimState.hypstruct = hypstruct;        
     end
 end
 

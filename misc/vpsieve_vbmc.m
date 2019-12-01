@@ -56,9 +56,22 @@ if Ninit > 0
             vp0_vec = [vp0_vec1,vp0_vec2,vp0_vec3];
             vp0_type = [vp0_type1;vp0_type2;vp0_type3];
     end
+    
+    if isfield(optimState,'vp_repo') && ~isempty(optimState.vp_repo) && 0
+        Ntheta = numel(get_vptheta(vp0_vec(1)));
+        idx = find(cellfun(@numel,optimState.vp_repo) == Ntheta);
+        if ~isempty(idx)
+            vp0_vec4 = [];
+            for ii = 1:numel(idx)
+                vp0_vec4 = [vp0_vec4,rescale_params(vp0_vec(1),optimState.vp_repo{idx(ii)})];
+            end
+            vp0_vec = [vp0_vec,vp0_vec4];
+            vp0_type = [vp0_type;ones(numel(vp0_vec4),1)];        
+        end
+    end
 
     % Quickly estimate ELCBO at each candidate variational posterior
-    for iOpt = 1:Ninit
+    for iOpt = 1:numel(vp0_vec)
         [theta0,vp0_vec(iOpt)] = get_vptheta(vp0_vec(iOpt),vp.optimize_mu,vp.optimize_sigma,vp.optimize_lambda,vp.optimize_weights);        
         [nelbo_tmp,~,~,~,varF_tmp] = negelcbo_vbmc(theta0,0,vp0_vec(iOpt),gp,NSentKFast,0,compute_var,options.AltMCEntropy,thetabnd);
         nelcbo_fill(iOpt) = nelbo_tmp + elcbo_beta*sqrt(varF_tmp);

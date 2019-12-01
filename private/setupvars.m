@@ -240,7 +240,10 @@ end
 optimState.temperature = T;
 
 % Deterministic entropy approximation lower/upper factor
-optimState.entropy_alpha = 0;
+optimState.entropy_alpha = options.DetEntropyAlpha;
+
+% Repository of variational solutions
+optimState.vp_repo = [];
 
 %% Get warnings state
 
