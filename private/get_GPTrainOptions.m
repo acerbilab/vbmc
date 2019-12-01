@@ -85,10 +85,19 @@ switch lower(options.GPHypSampler)
             'Unknown MCMC sampler for GP hyperparameters.');
 end
 
+% N-dependent initial training points
+a = -(options.GPTrainNinit - options.GPTrainNinitFinal);
+b = -3*a;
+c = 3*a;
+d = options.GPTrainNinit;
+x = (optimState.Neff - options.FunEvalStart) / (min(options.MaxFunEvals,1e3)-options.FunEvalStart);
+f = @(x) a*x.^3 + b*x.^2 + c*x + d;
+Ninit = max(round(f(x)),0);
+
 % Set other hyperparameter fitting parameters
 if optimState.RecomputeVarPost
     gptrain_options.Burnin = gptrain_options.Thin*Ns_gp;
-    gptrain_options.Ninit = options.GPTrainNinit;
+    gptrain_options.Ninit = Ninit;
     if Ns_gp > 0; gptrain_options.Nopts = 1; else; gptrain_options.Nopts = 2; end
 else
     gptrain_options.Burnin = gptrain_options.Thin*3;
@@ -100,7 +109,7 @@ else
         end
         if Ns_gp > 0; gptrain_options.Nopts = 0; else; gptrain_options.Nopts = 1; end            
     else
-        gptrain_options.Ninit = options.GPTrainNinit;
+        gptrain_options.Ninit = Ninit;
         if Ns_gp > 0; gptrain_options.Nopts = 1; else; gptrain_options.Nopts = 2; end
     end
 end

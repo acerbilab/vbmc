@@ -23,7 +23,7 @@ if isempty(hypstruct.hyp); hypstruct.hyp = hyp0; end
 
 % Get GP training options
 gptrain_options = get_GPTrainOptions(Ns_gp,hypstruct,optimState,stats,options);    
-gptrain_options.LogP = hypstruct.logp;
+% gptrain_options.LogP = hypstruct.logp;
 if numel(gptrain_options.Widths) ~= numel(hyp0); gptrain_options.Widths = []; end
 
 % Get training dataset
@@ -31,8 +31,21 @@ if numel(gptrain_options.Widths) ~= numel(hyp0); gptrain_options.Widths = []; en
 % optimState.warp_thresh = []; % max(y_train) - 10*D;    
 % y_train = outputwarp(y_train,optimState,options);   % Fitness shaping
 
+% Build starting points
+hyp0 = [];
+if gptrain_options.Ninit > 0 && ~isempty(stats)
+    for ii = ceil(numel(stats.gp)/2):numel(stats.gp)
+        hyp0 = [hyp0, [stats.gp(ii).post.hyp]];
+    end
+    N0 = size(hyp0,2);
+    if N0 > gptrain_options.Ninit/2
+        hyp0 = hyp0(:,randperm(N0,floor(gptrain_options.Ninit/2)));
+    end
+end
+hyp0 = unique([hyp0, hypstruct.hyp]','rows')';
+
 % Fit GP to training set
-[gp,hypstruct.hyp,gpoutput] = gplite_train(hypstruct.hyp,Ns_gp,...
+[gp,hypstruct.hyp,gpoutput] = gplite_train(hyp0,Ns_gp,...
     X_train,y_train, ...
     optimState.gpCovfun,optimState.gpMeanfun,optimState.gpNoisefun,...
     s2_train,hypprior,gptrain_options);

@@ -983,7 +983,7 @@ while isempty(stopflag)
     %    / N / mean(diagC) / sigma^2;
     % Catch non-sensible values 
     if ~isfinite(val)
-      warning('Non-finite fitness range');
+      % warning('Non-finite fitness range');
       val = max(bnd.dfithist);  
     elseif val == 0 % happens if all points are out of bounds
       val = min(bnd.dfithist(bnd.dfithist>0));  % seems not to make sense, given all solutions are out of bounds

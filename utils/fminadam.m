@@ -1,4 +1,4 @@
-function [x,f,xtab,ftab] = fminadam(fun,x0,LB,UB,TolFun,MaxIter,master_stepsize)
+function [x,f,xtab,ftab,iter] = fminadam(fun,x0,LB,UB,TolFun,MaxIter,master_stepsize)
 
 if nargin < 3; LB = []; end
 if nargin < 4; UB = []; end

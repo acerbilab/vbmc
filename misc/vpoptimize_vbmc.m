@@ -60,10 +60,11 @@ for iOpt = 1:Nslowopts
         % Fast optimization via deterministic entropy approximation
         TolOpt = options.DetEntTolOpt;
         vbtrain_options.TolFun = TolOpt;
-        vbtrain_options.MaxFunEvals = 500*vp.D;
+        vbtrain_options.MaxFunEvals = 50*(vp.D+2);
         vbtrain_fun = @(theta_) negelcbo_vbmc(theta_,elcbo_beta,vp0,gp,0,1,compute_var,0,thetabnd,optimState.entropy_alpha);
         try
             [thetaopt,~,~,output] = fminunc(vbtrain_fun,theta0(:)',vbtrain_options);
+            % output.funcCount
         catch
             % FMINUNC failed, try with CMA-ES
             if prnt > 0
@@ -79,7 +80,7 @@ for iOpt = 1:Nslowopts
             cmaes_opts.TolX = '1e-8*max(insigma)';
             cmaes_opts.TolFun = 1e-6;
             cmaes_opts.TolHistFun = 1e-7;
-            cmaes_opts.MaxFunEvals = 200*vp.D;            
+            cmaes_opts.MaxFunEvals = 200*(vp.D+2);            
             thetaopt = cmaes_modded('negelcbo_vbmc',theta0(:),insigma,cmaes_opts, ...
                 elcbo_beta,vp0,gp,0,1,compute_var,0,thetabnd,optimState.entropy_alpha); 
             thetaopt = thetaopt(:)';
@@ -142,9 +143,10 @@ for iOpt = 1:Nslowopts
                 master_stepsize.max = max(master_stepsize.min,master_stepsize.max);
                 master_stepsize.decay = 200;
                 MaxIter = min(options.MaxIterStochastic,1e4);
-                [thetaopt,~,theta_lst,fval_lst] = ...
+                [thetaopt,~,theta_lst,fval_lst,niters] = ...
                     fminadam(vbtrainmc_fun,thetaopt,[],[],options.TolFunStochastic,MaxIter,master_stepsize);
-
+                % niters
+                
                 if options.ELCBOmidpoint
                     % Recompute ELCBO at best midpoint with full variance and more precision
                     [~,idx_mid] = min(fval_lst);
