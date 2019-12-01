@@ -254,6 +254,7 @@ defopts.EntropySwitch      = 'off               % Switch from deterministic entr
 defopts.EntropyForceSwitch = '0.8               % Force switch to stochastic entropy at this fraction of total fcn evals';
 defopts.DetEntropyAlpha    = '0                 % Alpha value for lower/upper deterministic entropy interpolation';
 defopts.UpdateRandomAlpha  = 'no                % Randomize deterministic entropy alpha during active sample updates';
+defopts.AdaptiveEntropyAlpha = 'no              % Online adaptation of alpha value for lower/upper deterministic entropy interpolation';
 defopts.DetEntropyMinD     = '5                 % Start with deterministic entropy only with this number of vars or more';
 defopts.TolConLoss         = '0.01              % Fractional tolerance for constraint violation of variational parameters';
 defopts.BestSafeSD         = '5                 % SD multiplier of ELCBO for computing best variational solution';
@@ -280,6 +281,7 @@ defopts.AcqHedgeDecay      = '0.9               % Portfolio value decay per func
 defopts.ActiveVariationalSamples = '0           % MCMC variational steps before each active sampling';
 defopts.ActiveSampleFullUpdate = 'no            % Perform GP and variational updates in-between active samples';
 defopts.FixedMaxMeanGP     = 'no                % Fix GP quadratic mean function location to max training input';
+defopts.VariationalInitRepo = 'no               % Use previous variational posteriors to initialize optimization';
 
 %% Advanced options for unsupported/untested features (do *not* modify)
 defopts.WarpRotoScaling    = 'off               % Rotate and scale input';
@@ -632,6 +634,14 @@ while ~isFinished_flag
     [~,~,fmu,fs2] = gplite_pred(gp,gp.X,gp.y,gp.s2);
     optimState.lcbmax = max(fmu - options.ELCBOImproWeight*sqrt(fs2));    
         
+    if options.AdaptiveEntropyAlpha
+        % Evaluate deterministic entropy
+        Hl = entlb_vbmc(vp,0,0);
+        Hu = entub_vbmc(vp,0,0);
+        optimState.entropy_alpha = max(0,min(1,(vp.stats.entropy - Hl)/(Hu - Hl)));    
+        optimState.entropy_alpha
+    end
+    
     % Compare variational posterior's moments with ground truth
     if ~isempty(options.TrueMean) && ~isempty(options.TrueCov) ...
         && all(isfinite(options.TrueMean(:))) ...

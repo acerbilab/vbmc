@@ -57,7 +57,7 @@ if Ninit > 0
             vp0_type = [vp0_type1;vp0_type2;vp0_type3];
     end
     
-    if isfield(optimState,'vp_repo') && ~isempty(optimState.vp_repo) && 0
+    if isfield(optimState,'vp_repo') && ~isempty(optimState.vp_repo) && options.VariationalInitRepo
         Ntheta = numel(get_vptheta(vp0_vec(1)));
         idx = find(cellfun(@numel,optimState.vp_repo) == Ntheta);
         if ~isempty(idx)

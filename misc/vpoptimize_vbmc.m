@@ -141,8 +141,9 @@ for iOpt = 1:Nslowopts
                 
                 master_stepsize.max = max(master_stepsize.min,master_stepsize.max);
                 master_stepsize.decay = 200;
+                MaxIter = min(1e3+500*vp.D,1e4);
                 [thetaopt,~,theta_lst,fval_lst] = ...
-                    fminadam(vbtrainmc_fun,thetaopt,[],[],options.TolFunStochastic,[],master_stepsize);
+                    fminadam(vbtrainmc_fun,thetaopt,[],[],options.TolFunStochastic,MaxIter,master_stepsize);
 
                 if options.ELCBOmidpoint
                     % Recompute ELCBO at best midpoint with full variance and more precision
