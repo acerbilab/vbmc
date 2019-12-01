@@ -44,6 +44,7 @@ if do_boost
     options.NSent = NSentBoost;
     options.NSentFast = NSentFastBoost;
     options.NSentFine = NSentFineBoost;
+    optimState.entropy_alpha = 0;
         
     stable_flag = vp.stats.stable;
     vp = vpoptimize_vbmc(Nfastopts,Nslowopts,vp,gp_idx,Knew,optimState,options);

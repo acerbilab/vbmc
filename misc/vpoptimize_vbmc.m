@@ -10,6 +10,7 @@ if ~isfield(optimState,'delta'); optimState.delta = 0; end
 if ~isfield(optimState,'EntropySwitch'); optimState.EntropySwitch = false; end
 if ~isfield(optimState,'Warmup'); optimState.Warmup = ~vp.optimize_weights; end
 if ~isfield(optimState,'temperature'); optimState.temperature = 1; end
+if ~isfield(optimState,'entropy_alpha'); optimState.entropy_alpha = 0; end
 
 % Quick sieve optimization to determine starting point(s)
 [vp0_vec,vp0_type,elcbo_beta,compute_var,NSentK] = ...
