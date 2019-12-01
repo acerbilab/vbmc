@@ -44,6 +44,7 @@ if do_boost
     options.NSent = NSentBoost;
     options.NSentFast = NSentFastBoost;
     options.NSentFine = NSentFineBoost;
+    options.MaxIterStochastic = Inf;
     optimState.entropy_alpha = 0;
         
     stable_flag = vp.stats.stable;
