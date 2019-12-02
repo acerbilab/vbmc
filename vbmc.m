@@ -201,7 +201,7 @@ defopts.WarmupNoImproThreshold = '20 + 5*nvars  % Fcn evals without improvement 
 defopts.WarmupCheckMax     = 'yes               % Also check for max fcn value improvement before stopping warmup';
 defopts.StableGPSampling   = '200 + 10*nvars    % Force stable GP hyperparameter sampling (reduce samples or start optimizing)';
 defopts.StableGPSamples    = '0                 % Number of GP samples when GP is stable (0 = optimize)';
-defopts.GPSampleThin       = '5                 % Thinning for GP hyperparameter sampling';
+defopts.GPSampleThin       = '1                 % Thinning for GP hyperparameter sampling';
 defopts.GPTrainNinit       = '1024              % Initial design points for GP hyperparameter training';
 defopts.GPTrainNinitFinal  = '64                % Final design points for GP hyperparameter training';
 defopts.GPTrainInitMethod  = 'rand              % Initial design method for GP hyperparameter training';
