@@ -38,6 +38,7 @@ defopts.Widths          = [];        % Default widths
 defopts.LogP            = [];        % Old log probability associated to starting points
 defopts.OutwarpFun      = [];        % Output warping function
 defopts.Stepsize        = [];        % Default step size for MALA sampler
+defopts.TolOpt          = 1e-5;      % Optimization tolerance for stopping
 
 for f = fields(defopts)'
     if ~isfield(options,f{:}) || isempty(options.(f{:}))
@@ -58,6 +59,7 @@ Widths = options.Widths;
 LogP = options.LogP;
 outwarpfun = options.OutwarpFun;
 Stepsize = options.Stepsize;
+TolOpt = options.TolOpt;
 
 %% Initialize inference of GP hyperparameters (bounds, priors, etc.)
 
@@ -145,7 +147,7 @@ gptrain_options = optimoptions('fmincon','GradObj','on','Display','off');
 if Ns > 0
     gptrain_options.TolFun = 0.1;  % Limited optimization
 else
-    gptrain_options.TolFun = 1e-6;        
+    gptrain_options.TolFun = TolOpt;
 end
 
 hyp = zeros(Nhyp,Nopts);

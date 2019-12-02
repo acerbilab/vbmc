@@ -49,6 +49,7 @@ else                    % Active uncertainty sampling
         options_update = options;
         % options_update.GPRetrainThreshold = Inf;
         % options_update.GPSampleThin = 1;        
+        options_update.GPTolOpt = max(1e-3,options.GPTolOpt);
         options_update.TolWeight = 0;
         options_update.NSentFine = options.NSent;
         options_update.ELCBOmidpoint = false;
@@ -258,28 +259,37 @@ else                    % Active uncertainty sampling
 %             fval_mcmc = SearchAcqFcn{idxAcq}(Xacq(1,:),vp,gp,optimState,0);
 %         end        
         
-        if options.UncertaintyHandling && options.RepeatedObservations
-            % Re-evaluate acquisition function on training set
-            X_train = get_traindata(optimState,options);
-            
-            % Disable variance-based regularization first
-            oldflag = optimState.VarianceRegularizedAcqFcn;
-            optimState.VarianceRegularizedAcqFcn = false;
-            % Use current cost of GP instead of future cost
-            old_t_algoperfuneval = optimState.t_algoperfuneval;
-            optimState.t_algoperfuneval = t_base/deltaNeff;
-            acq_train = SearchAcqFcn{idxAcq}(X_train,vp,gp,optimState,0);
-            optimState.VarianceRegularizedAcqFcn = oldflag;
-            optimState.t_algoperfuneval = old_t_algoperfuneval;            
-            [acq_train,idx_train] = min(acq_train);            
-            
-            acq_now = SearchAcqFcn{idxAcq}(Xacq(1,:),vp,gp,optimState,0);
-            
-            % [acq_train,acq_now]
-            
-            if acq_train < options.RepeatedAcqDiscount*acq_now
-                Xacq(1,:) = X_train(idx_train,:);              
-            end            
+        if options.UncertaintyHandling && options.MaxRepeatedObservations > 0            
+            if optimState.RepeatedObservationsStreak >= options.MaxRepeatedObservations
+                % Maximum number of consecutive repeated observations 
+                % (to prevent getting stuck in a wrong belief state)
+                optimState.RepeatedObservationsStreak = 0;
+            else            
+                % Re-evaluate acquisition function on training set
+                X_train = get_traindata(optimState,options);
+
+                % Disable variance-based regularization first
+                oldflag = optimState.VarianceRegularizedAcqFcn;
+                optimState.VarianceRegularizedAcqFcn = false;
+                % Use current cost of GP instead of future cost
+                old_t_algoperfuneval = optimState.t_algoperfuneval;
+                optimState.t_algoperfuneval = t_base/deltaNeff;
+                acq_train = SearchAcqFcn{idxAcq}(X_train,vp,gp,optimState,0);
+                optimState.VarianceRegularizedAcqFcn = oldflag;
+                optimState.t_algoperfuneval = old_t_algoperfuneval;            
+                [acq_train,idx_train] = min(acq_train);            
+
+                acq_now = SearchAcqFcn{idxAcq}(Xacq(1,:),vp,gp,optimState,0);
+
+                % [acq_train,acq_now]
+
+                if acq_train < options.RepeatedAcqDiscount*acq_now
+                    Xacq(1,:) = X_train(idx_train,:);
+                    optimState.RepeatedObservationsStreak = optimState.RepeatedObservationsStreak + 1;
+                else
+                    optimState.RepeatedObservationsStreak = 0;
+                end
+            end
         end
         
         y_orig = [NaN; optimState.Cache.y_orig(:)]; % First position is NaN (not from cache)

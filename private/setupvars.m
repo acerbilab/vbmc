@@ -245,6 +245,9 @@ optimState.entropy_alpha = options.DetEntropyAlpha;
 % Repository of variational solutions
 optimState.vp_repo = [];
 
+% Repeated measurement streak
+optimState.RepeatedObservationsStreak = 0;
+
 %% Get warnings state
 
 optimState.DefaultWarnings.singularMatrix = warning('query','MATLAB:singularMatrix');
