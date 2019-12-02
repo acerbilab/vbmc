@@ -248,6 +248,9 @@ optimState.vp_repo = [];
 % Repeated measurement streak
 optimState.RepeatedObservationsStreak = 0;
 
+% List of data trimming events
+optimState.DataTrimList = [];
+
 %% Get warnings state
 
 optimState.DefaultWarnings.singularMatrix = warning('query','MATLAB:singularMatrix');

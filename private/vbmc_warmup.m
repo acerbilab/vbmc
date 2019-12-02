@@ -74,16 +74,23 @@ else
     currentpos = optimState.funccount;
 end
 
+if ~isempty(optimState.DataTrimList)
+    lastDataTrim = optimState.DataTrimList(end);
+else
+    lastDataTrim = -Inf;
+end
 stopWarmup = (StableCountFlag && improFcn < StopWarmupThresh) || ...
     (currentpos - pos) > options.WarmupNoImproThreshold;
-    
+stopWarmup = stopWarmup & (optimState.N - lastDataTrim) >= 10;
+
 if stopWarmup
     
     % Remove warm-up points from training set unless close to max
     ymax = max(optimState.y_orig(1:optimState.Xn));
     D = numel(optimState.LB);
-    NkeepMin = D+1; 
-    idx_keep = (ymax - optimState.y_orig) < options.WarmupKeepThreshold;
+    NkeepMin = D+1;
+    threshold = options.WarmupKeepThreshold * (numel(optimState.DataTrimList)+1);
+    idx_keep = (ymax - optimState.y_orig) < threshold;
     if sum(idx_keep) < NkeepMin
         y_temp = optimState.y_orig;
         y_temp(~isfinite(y_temp)) = -Inf;
@@ -98,7 +105,7 @@ if stopWarmup
     % Fully recompute variational posterior
     optimState.RecomputeVarPost = true;
     
-    if stats.rindex(iter) < options.StopWarmupReliability        
+    if stats.rindex(iter) < options.StopWarmupReliability
         optimState.Warmup = false;
         if isempty(action); action = 'end warm-up'; else; action = [action ', end warm-up']; end
 
@@ -107,7 +114,7 @@ if stopWarmup
         optimState.LastNonlinearWarping = optimState.N;
     else
         % This may be a false alarm; prune and continue
-        
+        optimState.DataTrimList = [optimState.DataTrimList, optimState.N]; 
         if isempty(action); action = 'trim data'; else; action = [action ', trim data']; end        
     end
 end
