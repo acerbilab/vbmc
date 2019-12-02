@@ -8,6 +8,7 @@ gptrain_options.OutwarpFun = optimState.gpOutwarpfun;
 gptrain_options.Thin = options.GPSampleThin;    % MCMC thinning
 gptrain_options.InitMethod = options.GPTrainInitMethod;
 gptrain_options.TolOpt = options.GPTolOpt;
+gptrain_options.TolOptMCMC = options.GPTolOptMCMC;
 
 % Get hyperparameter posterior covariance from previous iters
 hypcov = GetHypCov(hypstruct,optimState,stats,options);    

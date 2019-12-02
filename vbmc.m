@@ -206,6 +206,7 @@ defopts.GPTrainNinit       = '1024              % Initial design points for GP h
 defopts.GPTrainNinitFinal  = '64                % Final design points for GP hyperparameter training';
 defopts.GPTrainInitMethod  = 'rand              % Initial design method for GP hyperparameter training';
 defopts.GPTolOpt           = '1e-6              % Tolerance for optimization of GP hyperparameters';
+defopts.GPTolOptMCMC       = '0.1               % Tolerance for optimization of GP hyperparameters preliminary to MCMC';
 defopts.TolGPVar           = '1e-4              % Threshold on GP variance, used to stabilize sampling and by some acquisition fcns';
 defopts.gpMeanFun          = 'negquadfix        % GP mean function';
 defopts.KfunMax            = '@(N) N.^(2/3)     % Max variational components as a function of training points';
