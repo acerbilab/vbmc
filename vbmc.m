@@ -239,6 +239,7 @@ defopts.Warmup             = 'on                % Perform warm-up stage';
 defopts.WarmupOptions      = '[]                % Special OPTIONS struct for warmup stage';
 defopts.StopWarmupThresh   = '0.2               % Stop warm-up when ELCBO increase below threshold (per fcn eval)';
 defopts.WarmupKeepThreshold = '20*nvars         % Max log-likelihood difference for points kept after warmup';
+defopts.StopWarmupReliability = 'Inf            % Reliability index required to stop warmup';
 defopts.SearchOptimizer    = 'cmaes             % Optimization method for active sampling';
 defopts.SearchCMAESVPInit  = 'yes               % Initialize CMA-ES search SIGMA from variational posterior';
 defopts.SearchCMAESbest    = 'no                % Take bestever solution from CMA-ES search';
@@ -672,24 +673,7 @@ while ~isFinished_flag
         optimState.LastRunAvg = optimState.N;
         % optimState.RunT = optimState.RunT + 1;
     end
-            
-    % Check if we are still warming-up
-    if optimState.Warmup && iter > 1    
-        [optimState,action] = vbmc_warmup(optimState,stats,action,elbo,elbo_sd,options);
-        if ~optimState.Warmup
-            vp.optimize_mu = logical(options.VariableMeans);
-            vp.optimize_weights = logical(options.VariableWeights);
-            if options.BOWarmup
-                optimState.gpMeanfun = options.gpMeanFun;
-                hypstruct.hyp = [];
-            end
-            % Switch to main algorithm options
-            options = options_main;
-            hypstruct.runcov = [];    % Reset GP hyperparameter covariance            
-            optimState.vp_repo = []; % Reset VP repository
-        end
-    end
-    
+                
     % t_fits(iter) = toc(timer_fits);    
     % dt = (t_active(iter)+t_fits(iter))/new_funevals;
     
@@ -704,11 +688,29 @@ while ~isFinished_flag
     
     
     %----------------------------------------------------------------------
-    %% Check termination conditions    
+    %% Check termination conditions and warmup
 
     [optimState,stats,isFinished_flag,exitflag,action,msg] = ...
         vbmc_termination(optimState,action,stats,options);
     
+    % Check if we are still warming-up
+    if optimState.Warmup && iter > 1    
+        [optimState,action] = vbmc_warmup(optimState,stats,action,options);
+        if ~optimState.Warmup
+            vp.optimize_mu = logical(options.VariableMeans);
+            vp.optimize_weights = logical(options.VariableWeights);
+            if options.BOWarmup
+                optimState.gpMeanfun = options.gpMeanFun;
+                hypstruct.hyp = [];
+            end
+            % Switch to main algorithm options
+            options = options_main;
+            hypstruct.runcov = [];    % Reset GP hyperparameter covariance            
+            optimState.vp_repo = []; % Reset VP repository
+        end
+    end
+    stats.warmup(iter) = optimState.Warmup;
+        
     % Check and update output warping threshold
     if ~isempty(optimState.gpOutwarpfun) && (optimState.R < 1)
         Xrnd = vbmc_rnd(vp,1e5);

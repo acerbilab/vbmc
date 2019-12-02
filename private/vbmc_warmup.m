@@ -1,4 +1,4 @@
-function [optimState,action] = vbmc_warmup(optimState,stats,action,elbo,elbo_sd,options)
+function [optimState,action] = vbmc_warmup(optimState,stats,action,options)
 %VBMC_WARMUP Check when warmup stage ends
 
 iter = optimState.iter;
@@ -33,7 +33,8 @@ if 0
     StableCountFlag = optimState.WarmupStableCount >= options.TolStableWarmup;
 elseif iter > TolStableWarmupIters + 1
     % Vector of ELCBO (ignore first two iterations, ELCBO is unreliable)
-    elcbo_vec = [stats.elbo,elbo] - options.ELCBOImproWeight*[stats.elbo_sd,elbo_sd];    
+    %elcbo_vec = [stats.elbo,elbo] - options.ELCBOImproWeight*[stats.elbo_sd,elbo_sd];    
+    elcbo_vec = stats.elbo - options.ELCBOImproWeight*stats.elbo_sd;    
     max_now = max(elcbo_vec(max(4,end-TolStableWarmupIters+1):end));
     max_before = max(elcbo_vec(3:max(3,end-TolStableWarmupIters)));
     
@@ -41,7 +42,7 @@ elseif iter > TolStableWarmupIters + 1
 end
 
 % Vector of maximum lower confidence bounds (LCB) of fcn values
-lcbmax_vec = [stats.lcbmax(1:iter-1),optimState.lcbmax];
+lcbmax_vec = stats.lcbmax(1:iter);
 
 % Second requirement, also no substantial improvement of max fcn value 
 % in recent iters (unless already performing BO-like warmup)
@@ -68,7 +69,7 @@ if 0
 else    
     max_thresh = max(lcbmax_vec) - options.TolImprovement;
     idx_1st = find(lcbmax_vec > max_thresh,1);
-    yy = [stats.funccount(1:iter-1),optimState.funccount];
+    yy = stats.funccount(1:iter);
     pos = yy(idx_1st);
     currentpos = optimState.funccount;
 end
@@ -77,9 +78,7 @@ stopWarmup = (StableCountFlag && improFcn < StopWarmupThresh) || ...
     (currentpos - pos) > options.WarmupNoImproThreshold;
     
 if stopWarmup
-    optimState.Warmup = false;
-    if isempty(action); action = 'end warm-up'; else; action = [action ', end warm-up']; end
-
+    
     % Remove warm-up points from training set unless close to max
     ymax = max(optimState.y_orig(1:optimState.Xn));
     D = numel(optimState.LB);
@@ -93,13 +92,22 @@ if stopWarmup
     end
     optimState.X_flag = idx_keep & optimState.X_flag;
 
-    % Start warping
-    optimState.LastWarping = optimState.N;
-    optimState.LastNonlinearWarping = optimState.N;
-
     % Skip adaptive sampling for next iteration
     optimState.SkipActiveSampling = options.SkipActiveSamplingAfterWarmup;
 
     % Fully recompute variational posterior
     optimState.RecomputeVarPost = true;
+    
+    if stats.rindex(iter) < options.StopWarmupReliability        
+        optimState.Warmup = false;
+        if isempty(action); action = 'end warm-up'; else; action = [action ', end warm-up']; end
+
+        % Start warping
+        optimState.LastWarping = optimState.N;
+        optimState.LastNonlinearWarping = optimState.N;
+    else
+        % This may be a false alarm; prune and continue
+        
+        if isempty(action); action = 'trim data'; else; action = [action ', trim data']; end        
+    end
 end
