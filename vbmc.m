@@ -203,7 +203,7 @@ defopts.StableGPSampling   = '200 + 10*nvars    % Force stable GP hyperparameter
 defopts.StableGPSamples    = '0                 % Number of GP samples when GP is stable (0 = optimize)';
 defopts.GPSampleThin       = '5                 % Thinning for GP hyperparameter sampling';
 defopts.GPTrainNinit       = '1024              % Initial design points for GP hyperparameter training';
-defopts.GPTrainNinitFinal  = '1024              % Final design points for GP hyperparameter training';
+defopts.GPTrainNinitFinal  = '64                % Final design points for GP hyperparameter training';
 defopts.GPTrainInitMethod  = 'rand              % Initial design method for GP hyperparameter training';
 defopts.TolGPVar           = '1e-4              % Threshold on GP variance, used to stabilize sampling and by some acquisition fcns';
 defopts.gpMeanFun          = 'negquadfix        % GP mean function';
@@ -217,7 +217,7 @@ defopts.CacheSize          = '500               % Size of cache for storing fcn 
 defopts.CacheFrac          = '0.5               % Fraction of search points from starting cache (if nonempty)';
 defopts.StochasticOptimizer = 'adam             % Stochastic optimizer for varational parameters';
 defopts.TolFunStochastic   = '1e-3              % Stopping threshold for stochastic optimization';
-defopts.MaxIterStochastic  = '500*(2+nvars)     % Max iterations for stochastic optimization';
+defopts.MaxIterStochastic  = '100*(2+nvars)     % Max iterations for stochastic optimization';
 defopts.GPStochasticStepsize = 'off               % Set stochastic optimization stepsize via GP hyperparameters';
 defopts.TolSD              = '0.1               % Tolerance on ELBO uncertainty for stopping (iff variational posterior is stable)';
 defopts.TolsKL             = '0.01*sqrt(nvars)  % Stopping threshold on change of variational posterior per training point';

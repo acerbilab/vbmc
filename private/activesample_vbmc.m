@@ -48,6 +48,7 @@ else                    % Active uncertainty sampling
         % optimState.RecomputeVarPost = false;
         options_update = options;
         % options_update.GPRetrainThreshold = Inf;
+        % options_update.GPSampleThin = 1;        
         options_update.TolWeight = 0;
         options_update.NSentFine = options.NSent;
         options_update.ELCBOmidpoint = false;
