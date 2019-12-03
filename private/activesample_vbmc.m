@@ -49,7 +49,7 @@ else                    % Active uncertainty sampling
         options_update = options;
         % options_update.GPRetrainThreshold = Inf;
         % options_update.GPSampleThin = 1;        
-        options_update.GPTolOpt = max(1e-3,options.GPTolOpt);
+        options_update.GPTolOpt = max(1e-4,options.GPTolOpt);
         options_update.TolWeight = 0;
         options_update.NSentFine = options.NSent;
         options_update.ELCBOmidpoint = false;
@@ -203,7 +203,9 @@ else                    % Active uncertainty sampling
             switch lower(options.SearchOptimizer)
                 case 'cmaes'
                     if options.SearchCMAESVPInit
-                        [~,Sigma] = vbmc_moments(vp,0);       
+                        [~,Sigma] = vbmc_moments(vp,0);                        
+                        %[~,idx_nearest] = min(sum(bsxfun(@minus,vp.mu,x0(:)).^2,1));
+                        %Sigma = diag(vp.sigma(idx_nearest)^2.*vp.lambda.^2);                        
                     else
                         X_hpd = gethpd_vbmc(gp.X,gp.y,options.HPDFrac);
                         Sigma = cov(X_hpd,1);
@@ -219,6 +221,7 @@ else                    % Active uncertainty sampling
                         xsearch_optim = bestever.x;
                         fval_optim = bestever.f;
                     end
+                    % out_optim.evals
                     xsearch_optim = xsearch_optim';
                 case 'fmincon'
                     fmincon_opts.Display = 'off';
