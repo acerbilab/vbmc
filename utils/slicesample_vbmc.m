@@ -360,7 +360,25 @@ for ii = 1:(effN+burn)
         xx(dd) = xprime(dd);
 %        shrink
     end
+    
+    %% Metropolis step (optional)
+    
+    if metropolis_flag        
+        % Generate and evaluate Metropolis proposal
+        xx_new = options.MetropolisRnd();        
+        [log_Px_new,fval_new,logprior_new] = feval(@logpdfbound,xx_new,varargin{:});
 
+        % Acceptance rate
+        a = exp(log_Px_new - log_Px) * (options.MetropolisPdf(xx) / options.MetropolisPdf(xx_new));
+        
+        % Accept proposal?
+        if rand() < a
+            xx = xx_new;        log_Px = log_Px_new;
+            fval = fval_new;    logprior = logprior_new;            
+        end        
+    end
+    
+    
     %% Record samples and miscellaneous bookkeeping    
     
     % Record samples?

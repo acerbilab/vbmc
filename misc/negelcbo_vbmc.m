@@ -73,7 +73,7 @@ else
         end
     else
         [G,dG] = gplogjoint(vp,gp,grad_flags,avg_flag,jacobian_flag,0);
-        varGss = NaN; varG = NaN;
+        varGss = 0; varG = 0;
     end
 end
 
