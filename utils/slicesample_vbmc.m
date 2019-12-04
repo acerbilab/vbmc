@@ -242,19 +242,8 @@ for ii = 1:(effN+burn)
     
     %% Metropolis step (optional)
     
-    if metropolis_flag        
-        % Generate and evaluate Metropolis proposal
-        xx_new = options.MetropolisRnd();        
-        [log_Px_new,fval_new,logprior_new] = feval(@logpdfbound,xx_new,varargin{:});
-
-        % Acceptance rate
-        a = exp(log_Px_new - log_Px) * (options.MetropolisPdf(xx) / options.MetropolisPdf(xx_new));
-        
-        % Accept proposal?
-        if rand() < a
-            xx = xx_new;        log_Px = log_Px_new;
-            fval = fval_new;    logprior = logprior_new;            
-        end        
+    if metropolis_flag
+        [xx,log_Px,fval,logprior] = metropolis_step(xx,varargin{:});
     end
     
     %% Slice-sampling step
@@ -361,21 +350,10 @@ for ii = 1:(effN+burn)
 %        shrink
     end
     
-    %% Metropolis step (optional)
-    
-    if metropolis_flag        
-        % Generate and evaluate Metropolis proposal
-        xx_new = options.MetropolisRnd();        
-        [log_Px_new,fval_new,logprior_new] = feval(@logpdfbound,xx_new,varargin{:});
+    %% Metropolis step (optional)    
 
-        % Acceptance rate
-        a = exp(log_Px_new - log_Px) * (options.MetropolisPdf(xx) / options.MetropolisPdf(xx_new));
-        
-        % Accept proposal?
-        if rand() < a
-            xx = xx_new;        log_Px = log_Px_new;
-            fval = fval_new;    logprior = logprior_new;            
-        end        
+    if metropolis_flag
+        [xx,log_Px,fval,logprior] = metropolis_step(xx,varargin{:});
     end
     
     
@@ -464,6 +442,28 @@ if nargout > 3
     end
 end
 
+
+%--------------------------------------------------------------------------
+function [xx_up,y,fval_up,logprior_up] = metropolis_step(x,varargin)
+%METROPOLIS_STEP Metropolis step.
+
+    % Generate and evaluate Metropolis proposal
+    xx_new = options.MetropolisRnd();        
+    [log_Px_new,fval_new,logprior_new] = feval(@logpdfbound,xx_new,varargin{:});
+
+    % Acceptance rate
+    a = exp(log_Px_new - log_Px) * (options.MetropolisPdf(x) / options.MetropolisPdf(xx_new));
+
+    % Accept proposal?
+    if rand() < a
+        xx_up = xx_new;        y = log_Px_new;
+        fval_up = fval_new;    logprior_up = logprior_new;
+    else
+        xx_up = x;              y = log_Px;
+        fval_up = fval;         logprior_up = logprior;
+    end
+
+end
 
 %--------------------------------------------------------------------------
 function [y,fval,logprior] = logpdfbound(x,varargin)
