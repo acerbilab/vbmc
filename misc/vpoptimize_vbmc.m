@@ -8,7 +8,7 @@ if nargin < 8 || isempty(prnt); prnt = 0; end
 
 % Assign default values to OPTIONS
 if isempty(options)
-    options = vbmc('all'); 
+    options = vbmc('all');
     options = setupoptions_vbmc(vp.D,options,options);
 end
 
@@ -309,9 +309,15 @@ else
     K = vp.K;
     NSentFineK = ceil(evaloption_vbmc(options.NSentFine,K)/K);
         
+    if isfield(options,'SkipELBOVariance') && options.SkipELBOVariance
+        computevar_flag = false;
+    else
+        computevar_flag = true;
+    end
+    
     theta = theta(:)';
     [nelbo,~,G,H,varF,~,varss,varG,varH] = ...
-        negelcbo_vbmc(theta,0,vp,gp,NSentFineK,0,1,options.AltMCEntropy,[],entropy_alpha);
+        negelcbo_vbmc(theta,0,vp,gp,NSentFineK,0,computevar_flag,options.AltMCEntropy,[],entropy_alpha);
     nelcbo = nelbo + beta*sqrt(varF);
 
     elbostats.nelbo(idx) = nelbo;

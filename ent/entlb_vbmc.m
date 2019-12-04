@@ -1,7 +1,7 @@
 function [H,dH,gammasum] = entlb_vbmc(vp,grad_flags,jacobian_flag)
 %ENTLB_VBMC Entropy lower bound for variational posterior
 
-BigK = 100; % Large number of components
+BigK = Inf; % Large number of components
 
 % Uses entropy lower bound of Gershman et al. (2012)
 

@@ -60,7 +60,7 @@ if onlyweights_flag
     else
         [G,dG] = gplogjoint_weights(vp,compute_grad,avg_flag,jacobian_flag,0);                
     end
-    varGss = [];
+    varGss = NaN;
 else
     if compute_var
         if compute_grad
@@ -73,6 +73,7 @@ else
         end
     else
         [G,dG] = gplogjoint(vp,gp,grad_flags,avg_flag,jacobian_flag,0);
+        varGss = NaN; varG = NaN;
     end
 end
 
@@ -109,8 +110,8 @@ end
 F = -G - H;
 if compute_grad; dF = -dG - dH; else; dF = []; end
 
+varH = 0;   % For the moment use zero variance for entropy
 if compute_var
-    varH = 0;   % For the moment use zero variance for entropy
     varF = varG + varH;
 else
     varF = 0;

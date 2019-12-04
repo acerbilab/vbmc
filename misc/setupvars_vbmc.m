@@ -254,6 +254,34 @@ optimState.RepeatedObservationsStreak = 0;
 % List of data trimming events
 optimState.DataTrimList = [];
 
+%% Initialize Gaussian process settings
+
+optimState.gpCovfun = 1;    % Squared exponential kernel with separate length scales
+switch optimState.UncertaintyHandlingLevel
+    case 0; optimState.gpNoisefun = [1 0];  % Observation noise for stability
+    case 1; optimState.gpNoisefun = [1 2];  % Infer noise
+    case 2; optimState.gpNoisefun = [1 1];  % Provided heteroskedastic noise
+end
+if options.NoiseShaping && optimState.gpNoisefun(2) == 0
+    optimState.gpNoisefun(2) = 1;
+end
+optimState.gpMeanfun = options.gpMeanFun;
+switch optimState.gpMeanfun
+    case {'zero','const','negquad','se','negquadse','negquadfixiso','negquadfix'}
+    otherwise
+        error('vbmc:UnknownGPmean', ...
+            'Unknown/unsupported GP mean function. Supported mean functions are ''zero'', ''const'', ''negquad'', and ''se''.');
+end
+optimState.gpOutwarpfun = options.gpOutwarpFun;
+if ischar(optimState.gpOutwarpfun)
+    switch lower(optimState.gpOutwarpfun)
+        case {'[]','off','no','none','0'}; optimState.gpOutwarpfun = [];
+        otherwise
+            optimState.gpOutwarpfun = str2func(optimState.gpOutwarpfun);
+    end
+end
+
+
 %% Get warnings state
 
 optimState.DefaultWarnings.singularMatrix = warning('query','MATLAB:singularMatrix');

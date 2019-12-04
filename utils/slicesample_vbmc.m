@@ -147,6 +147,8 @@ defopts.Display     = 'notify';     % Display
 defopts.Adaptive    = true;         % Adaptive widths
 defopts.LogPrior    = [];           % Log prior over X
 defopts.Diagnostics = true;         % Convergence diagnostics at the end
+defopts.MetropolisPdf = [];         % Metropolis proposal probability density function
+defopts.MetropolisRnd = [];         % Random draw from Metropolis proposal density
 
 for f = fields(defopts)'
     if ~isfield(options,f{:}) || isempty(options.(f{:}))
@@ -184,6 +186,8 @@ burn = floor(options.Burnin);
 log_Px = y;
 widths(LB == UB) = 1;   % WIDTHS is irrelevant when LB == UB, set to 1
 
+metropolis_flag = ~isempty(options.MetropolisPdf) || ~isempty(options.MetropolisRnd);
+
 % Sanity checks
 assert(size(x0,1) == 1 && size(x0,1) == 1, ...
     'The initial point X0 needs to be a scalar or row vector.');
@@ -201,6 +205,9 @@ assert(thin > 0 && isscalar(thin), ...
     'The thinning factor OPTIONS.Thin needs to be a positive integer.');
 assert(burn >= 0 && isscalar(burn), ...
     'The burn-in samples OPTIONS.Burnin needs to be a non-negative integer.');
+assert(~metropolis_flag || ...
+    (isa(options.MetropolisPdf,'function_handle') && isa(options.MetropolisRnd,'function_handle')), ...
+    'Both OPTIONS.MetropolisPdf and OPTIONS.MetropolisRnd, if specified, need to be function handles.');
 
 effN = N + (N-1)*(thin-1); % Effective samples
 
@@ -231,6 +238,23 @@ for ii = 1:(effN+burn)
     if trace > 1 && ii == burn+1
         action = 'start recording';
         fprintf(displayFormat,ii-burn,funccount,log_Px,action);
+    end
+    
+    %% Metropolis step (optional)
+    
+    if metropolis_flag        
+        % Generate and evaluate Metropolis proposal
+        xx_new = options.MetropolisRnd();        
+        [log_Px_new,fval_new,logprior_new] = feval(@logpdfbound,xx_new,varargin{:});
+
+        % Acceptance rate
+        a = exp(log_Px_new - log_Px) * (options.MetropolisPdf(xx) / options.MetropolisPdf(xx_new));
+        
+        % Accept proposal?
+        if rand() < a
+            xx = xx_new;        log_Px = log_Px_new;
+            fval = fval_new;    logprior = logprior_new;            
+        end        
     end
     
     %% Slice-sampling step

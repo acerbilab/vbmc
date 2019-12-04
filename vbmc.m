@@ -390,7 +390,7 @@ end
 % Convert from char to function handles
 if ischar(fun); fun = str2func(fun); end
 
-% Setup and transform variables
+% Setup and transform variables, prepare OPTIMSTATE settings struct
 K = options.Kwarmup;
 [vp,optimState] = ...
     setupvars_vbmc(x0,LB,UB,PLB,PUB,K,optimState,options,prnt);
@@ -412,31 +412,6 @@ end
 
 % GP struct and GP hyperparameters
 gp = [];        hypstruct = [];     hypstruct_search = [];
-
-optimState.gpCovfun = 1;    % Squared exponential kernel with separate length scales
-switch optimState.UncertaintyHandlingLevel
-    case 0; optimState.gpNoisefun = [1 0];  % Observation noise for stability
-    case 1; optimState.gpNoisefun = [1 2];  % Infer noise
-    case 2; optimState.gpNoisefun = [1 1];  % Provided heteroskedastic noise
-end
-if options.NoiseShaping && optimState.gpNoisefun(2) == 0
-    optimState.gpNoisefun(2) = 1;
-end
-optimState.gpMeanfun = options.gpMeanFun;
-switch optimState.gpMeanfun
-    case {'zero','const','negquad','se','negquadse','negquadfixiso','negquadfix'}
-    otherwise
-        error('vbmc:UnknownGPmean', ...
-            'Unknown/unsupported GP mean function. Supported mean functions are ''zero'', ''const'', ''negquad'', and ''se''.');
-end
-optimState.gpOutwarpfun = options.gpOutwarpFun;
-if ischar(optimState.gpOutwarpfun)
-    switch lower(optimState.gpOutwarpfun)
-        case {'[]','off','no','none','0'}; optimState.gpOutwarpfun = [];
-        otherwise
-            optimState.gpOutwarpfun = str2func(optimState.gpOutwarpfun);
-    end
-end
 
 % Initialize function logger
 [~,optimState] = funlogger_vbmc([],D,optimState,'init',options.CacheSize);
