@@ -192,6 +192,20 @@ if Ninit > 0
     hyp(:,:) = output_fill.X(1:Nopts,:)';
     widths_default = std(output_fill.X,[],1);
     
+    % Extract a good low-noise starting point for the 2nd optimization
+    if Nnoise > 0 && Nopts > 1 && Ninit > Nopts
+        xx = output_fill.X(Nopts+1:end,:);        
+        noise_y = output_fill.fvals(Nopts+1:end);
+        noise_params = xx(:,Ncov+1);
+        % Order by noise parameter magnitude
+        [~,ord] = sort(noise_params,'ascend');
+        xx = xx(ord,:);
+        noise_y = noise_y(ord);
+        % Take best amongst bottom 20% vectors
+        [~,idx_best] = min(noise_y(1:ceil(0.2*end)));
+        hyp(:,2) = xx(idx_best,:)';
+    end
+    
     if 0
         tic
         tprior = hprior;
@@ -245,9 +259,21 @@ hyp = bsxfun(@min,UB'-eps(UB'),bsxfun(@max,LB'+eps(LB'),hyp));
 
 timer2 = tic;
 % Perform optimization from most promising NOPTS hyperparameter vectors
+nll = Inf(1,Nopts);
 for iTrain = 1:Nopts
-    nll = Inf(1,Nopts);
-    try
+    try        
+%         if 0
+%             [~,idx] = max(y);
+%             idx = unique([idx, randperm(size(X,1),50)]);
+%             gp_lite = gplite_post(hyp0(:,1),X(idx,:),y(idx),covfun,meanfun,noisefun,s2,0,outwarpfun);
+%             gpoptimize_fun_lite = @(hyp_) gp_objfun(hyp_(:),gp_lite,hprior,0,0);
+%             tic
+%             hyp_temp = ...
+%                 fmincon(gpoptimize_fun_lite,hyp(:,iTrain),[],[],[],[],LB,UB,[],gptrain_options);
+%             [hyp2(:,iTrain),nll2(iTrain)] = ...
+%                 fmincon(gpoptimize_fun,hyp_temp,[],[],[],[],LB,UB,[],gptrain_options);
+%             toc
+%         end        
         [hyp(:,iTrain),nll(iTrain)] = ...
             fmincon(gpoptimize_fun,hyp(:,iTrain),[],[],[],[],LB,UB,[],gptrain_options);
     catch
