@@ -1,4 +1,4 @@
-function [x0,LB,UB,PLB,PUB] = boundscheck(x0,LB,UB,PLB,PUB,prnt)
+function [x0,LB,UB,PLB,PUB] = boundscheck_vbmc(x0,LB,UB,PLB,PUB,prnt)
 %BOUNDSCHECK Initial check of bounds.
 
 [N0,nvars] = size(x0);

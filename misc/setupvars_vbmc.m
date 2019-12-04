@@ -1,4 +1,4 @@
-function [vp,optimState] = setupvars(x0,LB,UB,PLB,PUB,K,optimState,options,prnt)
+function [vp,optimState] = setupvars_vbmc(x0,LB,UB,PLB,PUB,K,optimState,options,prnt)
 %INITVARS Initialize variational posterior, transforms and variables for VBMC.
 
 nvars = size(LB,2);
@@ -130,6 +130,9 @@ vp.stats = [];
 % end
 
 %% Initialize OPTIMSTATE variables
+
+% Before first iteration
+optimState.iter = 0;
 
 % Estimate of GP observation noise around the high posterior density region
 optimState.sn2hpd = Inf;

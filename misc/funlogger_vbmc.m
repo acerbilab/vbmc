@@ -264,6 +264,8 @@ else
 end
 
 optimState.ymax = max(optimState.y(optimState.X_flag));
+optimState.N = optimState.Xn;  % Number of training inputs
+optimState.Neff = sum(optimState.nevals(optimState.X_flag));
 
 end
 

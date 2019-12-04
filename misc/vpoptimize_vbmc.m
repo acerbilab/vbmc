@@ -1,9 +1,16 @@
 function [vp,varss,pruned] = vpoptimize_vbmc(Nfastopts,Nslowopts,vp,gp,K,optimState,options,prnt)
 %VPOPTIMIZE Optimize variational posterior.
 
+if nargin < 5 || isempty(K); K = vp.K; end
+if nargin < 6; optimState = []; end
+if nargin < 7; options = []; end
 if nargin < 8 || isempty(prnt); prnt = 0; end
 
-if isempty(K); K = vp.K; end
+% Assign default values to OPTIONS
+if isempty(options)
+    options = vbmc('all'); 
+    options = setupoptions_vbmc(vp.D,options,options);
+end
 
 % Assign default values to OPTIMSTATE
 if ~isfield(optimState,'delta'); optimState.delta = 0; end

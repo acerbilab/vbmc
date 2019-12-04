@@ -269,7 +269,7 @@ else                    % Active uncertainty sampling
                 optimState.RepeatedObservationsStreak = 0;
             else            
                 % Re-evaluate acquisition function on training set
-                X_train = get_traindata(optimState,options);
+                X_train = get_traindata_vbmc(optimState,options);
 
                 % Disable variance-based regularization first
                 oldflag = optimState.VarianceRegularizedAcqFcn;
@@ -368,7 +368,7 @@ else                    % Active uncertainty sampling
                     gp = gplite_post(gp,xnew,ynew,[],[],[],s2new,1);
                     gp.t(end+1) = tnew;
                 else
-                    [X_train,y_train,s2_train,t_train] = get_traindata(optimState,options);
+                    [X_train,y_train,s2_train,t_train] = get_traindata_vbmc(optimState,options);
                     gp.X = X_train;
                     gp.y = y_train;
                     gp.s2 = s2_train;

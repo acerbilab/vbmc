@@ -1,4 +1,4 @@
-function [X_train,y_train,s2_train,t_train] = get_traindata(optimState,options)
+function [X_train,y_train,s2_train,t_train] = get_traindata_vbmc(optimState,options)
 %GETRAINDATA Get training data for building GP surrogate.
 
 nvars = size(optimState.X,2);

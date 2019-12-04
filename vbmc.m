@@ -205,8 +205,8 @@ defopts.GPSampleThin       = '1                 % Thinning for GP hyperparameter
 defopts.GPTrainNinit       = '1024              % Initial design points for GP hyperparameter training';
 defopts.GPTrainNinitFinal  = '64                % Final design points for GP hyperparameter training';
 defopts.GPTrainInitMethod  = 'rand              % Initial design method for GP hyperparameter training';
-defopts.GPTolOpt           = '1e-6              % Tolerance for optimization of GP hyperparameters';
-defopts.GPTolOptMCMC       = '0.1               % Tolerance for optimization of GP hyperparameters preliminary to MCMC';
+defopts.GPTolOpt           = '1e-5              % Tolerance for optimization of GP hyperparameters';
+defopts.GPTolOptMCMC       = '1e-2              % Tolerance for optimization of GP hyperparameters preliminary to MCMC';
 defopts.TolGPVar           = '1e-4              % Threshold on GP variance, used to stabilize sampling and by some acquisition fcns';
 defopts.gpMeanFun          = 'negquadfix        % GP mean function';
 defopts.KfunMax            = '@(N) N.^(2/3)     % Max variational components as a function of training points';
@@ -385,7 +385,7 @@ if init_from_vp_flag    % Finish initialization from variational posterior
 end
 
 % Check/fix boundaries and starting points
-[x0,LB,UB,PLB,PUB] = boundscheck(x0,LB,UB,PLB,PUB,prnt);
+[x0,LB,UB,PLB,PUB] = boundscheck_vbmc(x0,LB,UB,PLB,PUB,prnt);
 
 % Convert from char to function handles
 if ischar(fun); fun = str2func(fun); end
@@ -393,7 +393,7 @@ if ischar(fun); fun = str2func(fun); end
 % Setup and transform variables
 K = options.Kwarmup;
 [vp,optimState] = ...
-    setupvars(x0,LB,UB,PLB,PUB,K,optimState,options,prnt);
+    setupvars_vbmc(x0,LB,UB,PLB,PUB,K,optimState,options,prnt);
 
 % Store target density function
 optimState.fun = fun;
