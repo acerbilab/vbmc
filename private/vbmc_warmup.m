@@ -84,12 +84,31 @@ stopWarmup = (StableCountFlag && improFcn < StopWarmupThresh) || ...
 stopWarmup = stopWarmup & (optimState.N - lastDataTrim) >= 10;
 
 if stopWarmup
+
+    if stats.rindex(iter) < options.StopWarmupReliability || numel(optimState.DataTrimList) >= 1
+        optimState.Warmup = false;
+        if isempty(action); action = 'end warm-up'; else; action = [action ', end warm-up']; end
+        threshold = options.WarmupKeepThreshold * (numel(optimState.DataTrimList)+1);
+
+        % Start warping
+        optimState.LastWarping = optimState.N;
+        optimState.LastNonlinearWarping = optimState.N;
+    else
+        % This may be a false alarm; prune and continue
+        if isempty(options.WarmupKeepThresholdFalseAlarm)
+            WarmupKeepThresholdFalseAlarm = options.WarmupKeepThreshold;
+        else
+            WarmupKeepThresholdFalseAlarm = options.WarmupKeepThresholdFalseAlarm;
+        end            
+        threshold = WarmupKeepThresholdFalseAlarm * (numel(optimState.DataTrimList)+1);
+        optimState.DataTrimList = [optimState.DataTrimList, optimState.N]; 
+        if isempty(action); action = 'trim data'; else; action = [action ', trim data']; end        
+    end
     
     % Remove warm-up points from training set unless close to max
     ymax = max(optimState.y_orig(1:optimState.Xn));
     D = numel(optimState.LB);
     NkeepMin = D+1;
-    threshold = options.WarmupKeepThreshold * (numel(optimState.DataTrimList)+1);
     idx_keep = (ymax - optimState.y_orig) < threshold;
     if sum(idx_keep) < NkeepMin
         y_temp = optimState.y_orig;
@@ -105,16 +124,4 @@ if stopWarmup
     % Fully recompute variational posterior
     optimState.RecomputeVarPost = true;
     
-    if stats.rindex(iter) < options.StopWarmupReliability
-        optimState.Warmup = false;
-        if isempty(action); action = 'end warm-up'; else; action = [action ', end warm-up']; end
-
-        % Start warping
-        optimState.LastWarping = optimState.N;
-        optimState.LastNonlinearWarping = optimState.N;
-    else
-        % This may be a false alarm; prune and continue
-        optimState.DataTrimList = [optimState.DataTrimList, optimState.N]; 
-        if isempty(action); action = 'trim data'; else; action = [action ', trim data']; end        
-    end
 end

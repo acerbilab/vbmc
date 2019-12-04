@@ -240,6 +240,7 @@ defopts.Warmup             = 'on                % Perform warm-up stage';
 defopts.WarmupOptions      = '[]                % Special OPTIONS struct for warmup stage';
 defopts.StopWarmupThresh   = '0.2               % Stop warm-up when ELCBO increase below threshold (per fcn eval)';
 defopts.WarmupKeepThreshold = '20*nvars         % Max log-likelihood difference for points kept after warmup';
+defopts.WarmupKeepThresholdFalseAlarm = '[]     % Max log-likelihood difference for points kept after a false-alarm warmup stop';
 defopts.StopWarmupReliability = 'Inf            % Reliability index required to stop warmup';
 defopts.SearchOptimizer    = 'cmaes             % Optimization method for active sampling';
 defopts.SearchCMAESVPInit  = 'yes               % Initialize CMA-ES search SIGMA from variational posterior';
