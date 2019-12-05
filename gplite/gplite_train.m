@@ -259,8 +259,8 @@ hyp = bsxfun(@min,UB'-eps(UB'),bsxfun(@max,LB'+eps(LB'),hyp));
 
 timer2 = tic;
 % Perform optimization from most promising NOPTS hyperparameter vectors
-nll = Inf(1,Nopts);
 for iTrain = 1:Nopts
+    nll(iTrain) = Inf;
     try        
 %         if 0
 %             [~,idx] = max(y);
@@ -312,7 +312,6 @@ if Ns > 0
                 Widths = min(Widths(:)',widths_default);
                 % [Widths; widths_default]
             end
-            
             [samples,fvals,exitflag,output] = ...
                 slicesamplebnd(gpsample_fun,hyp_start',Ns_eff,Widths,LB,UB,sampleopts);
             hyp_prethin = samples';
