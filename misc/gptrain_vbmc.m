@@ -153,6 +153,10 @@ if Noutwarp > 0; hyp0(Ncov+Nnoise+Nmean+(1:Noutwarp)) = outwarpinfo.x0; end
 %% Change default bounds and set priors over hyperparameters
 LB_gp = NaN(1,Nhyp);
 UB_gp = NaN(1,Nhyp);
+
+if options.UpperGPLengthFactor > 0
+    UB_gp(1:D) = log(options.UpperGPLengthFactor*(optimState.PUB - optimState.PLB));  % Max GP input length scale
+end
 LB_gp(Ncov+1) = log(MinNoise);     % Increase minimum noise
 
 switch meanfun
