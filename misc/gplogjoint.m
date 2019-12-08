@@ -44,7 +44,7 @@ Nmean = gp.Nmean;
 
 Ns = numel(gp.post);            % Hyperparameter samples
 
-if all(gp.meanfun ~= [0,1,4,6,8,10,12])
+if all(gp.meanfun ~= [0,1,4,6,8,10,12,14])
     error('gplogjoint:UnsupportedMeanFun', ...
         'Log joint computation currently only supports zero, constant, negative quadratic, negative quadratic (fixed/isotropic), or squared exponential mean functions.');
 end
@@ -52,9 +52,10 @@ end
 % Which mean function is being used?
 quadratic_meanfun = gp.meanfun == 4 || gp.meanfun == 10 || gp.meanfun == 12;
 fixediso_meanfun = gp.meanfun == 10;
-fixed_meanfun = gp.meanfun == 12;
+fixed_meanfun = gp.meanfun == 12 || gp.meanfun == 14;
 sqexp_meanfun = gp.meanfun == 6;
-quadsqexp_meanfun = gp.meanfun == 8;
+quadsqexp_meanfun = gp.meanfun == 8 || gp.meanfun == 14;
+quadsqexpconstrained_meanfun = gp.meanfun == 14;
 
 F = zeros(1,Ns);
 % Check which gradients are computed
@@ -95,7 +96,7 @@ for s = 1:Ns
         
     % GP mean function hyperparameters
     if gp.meanfun > 0; m0 = hyp(Ncov+Nnoise+1); else; m0 = 0; end
-    if quadratic_meanfun || sqexp_meanfun || quadsqexp_meanfun
+    if quadratic_meanfun || sqexp_meanfun || quadsqexp_meanfun || quadsqexpconstrained_meanfun
         if fixediso_meanfun
             xm(:,1) = gp.meanfun_extras(1:D)';
             omega = exp(hyp(Ncov+Nnoise+2));
@@ -110,7 +111,12 @@ for s = 1:Ns
             h = exp(hyp(Ncov+Nnoise+2*D+2));
         end
     end
-    if quadsqexp_meanfun
+    if quadsqexpconstrained_meanfun
+        xm_se = xm;
+        omega_se = omega*exp(hyp(Ncov+Nnoise+D+2));
+        h_se = exp(hyp(Ncov+Nnoise+D+3));
+        m0 = m0 - h_se;
+    elseif quadsqexp_meanfun
         xm_se = hyp(Ncov+Nnoise+2*D+1+(1:D));
         omega_se = exp(hyp(Ncov+Nnoise+3*D+1+(1:D)));
         h_se = hyp(Ncov+Nnoise+4*D+2);        

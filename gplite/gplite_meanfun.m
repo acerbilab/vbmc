@@ -94,6 +94,12 @@ switch meanfun
     case {13,'13','posquadfix'}
         Nmean = 1 + D;
         meanfun = 13;        
+    case {14,'14','negquadsefix'}
+        Nmean = 3 + D;
+        meanfun = 14;
+    case {15,'15','posquadsefix'}
+        Nmean = 3 + D;
+        meanfun = 15;        
     otherwise
         if isnumeric(meanfun); meanfun = num2str(meanfun); end
         error('gplite_meanfun:UnknownMeanFun',...
@@ -138,7 +144,7 @@ if ischar(hyp)
                 dm.PUB(D+2:2*D+1) = delta.^2;                
             end
             
-        elseif meanfun >= 4 && meanfun <= 13
+        elseif meanfun >= 4 && meanfun <= 15
             
             % Redefine limits for m0 (meaning depends on mean func type)
             h = max(y) - min(y);    % Height
@@ -168,6 +174,12 @@ if ischar(hyp)
                     dm.PUB(1) = max(y);
                     dm.x0(1) = quantile1(y,0.9);                    
                 case {8,9}
+                    dm.LB(1) = min(y) - h;
+                    dm.UB(1) = max(y) + h;
+                    dm.PLB(1) = min(y);
+                    dm.PUB(1) = max(y);
+                    dm.x0(1) = median(y);
+                case {14,15}
                     dm.LB(1) = min(y) - h;
                     dm.UB(1) = max(y) + h;
                     dm.PLB(1) = min(y);
@@ -228,7 +240,7 @@ if ischar(hyp)
                 dm.x0(2) = mean(log(std(X)));                
             end
             
-            if meanfun == 12 || meanfun == 13
+            if meanfun == 12 || meanfun == 13 || meanfun == 14 || meanfun == 15
                 dm.LB(2:D+1) = log(w) + log(ToL);   % omega
                 dm.UB(2:D+1) = log(w) + log(Big);
                 dm.PLB(2:D+1) = log(w) + 0.5*log(ToL);
@@ -236,8 +248,22 @@ if ischar(hyp)
                 dm.x0(2:D+1) = log(std(X));
             end
             
-            if meanfun >= 10 && meanfun <= 13
-                if meanfun == 10 || meanfun == 12   % find max/min
+            if meanfun == 14 || meanfun == 15
+                dm.LB(D+2) = log(0.01);      % alpha_se
+                dm.UB(D+2) = log(10);
+                dm.PLB(D+2) = log(0.1);
+                dm.PUB(D+2) = log(1);
+                dm.x0(D+2) = log(0.5);
+                
+                dm.LB(D+3) = log(1e-3);      % h_se
+                dm.UB(D+3) = log(1e4);
+                dm.PLB(D+3) = log(0.1);
+                dm.PUB(D+3) = log(100);
+                dm.x0(D+3) = log(1);
+            end
+            
+            if meanfun >= 10 && meanfun <= 15
+                if any(meanfun == [10,12,14])   % find max/min
                     [~,idx] = max(y);
                 else
                     [~,idx] = min(y);
@@ -262,10 +288,12 @@ if ischar(hyp)
             case 7; dm.meanfun_name = 'negse';
             case 8; dm.meanfun_name = 'negquadse';
             case 9; dm.meanfun_name = 'posquadse';
-            case 10; dm.meanfun_name = 'negquadsefixiso';
-            case 11; dm.meanfun_name = 'posquadsefixiso';
-            case 12; dm.meanfun_name = 'negquadsefix';
-            case 13; dm.meanfun_name = 'posquadsefix';
+            case 10; dm.meanfun_name = 'negquadfixiso';
+            case 11; dm.meanfun_name = 'posquadfixiso';
+            case 12; dm.meanfun_name = 'negquadfix';
+            case 13; dm.meanfun_name = 'posquadfix';
+            case 14; dm.meanfun_name = 'negquadsefix';
+            case 15; dm.meanfun_name = 'posquadsefix';
         end
         
     end
@@ -395,6 +423,27 @@ switch meanfun
             dm(:,1) = ones(N,1);
             dm(:,2:D+1) = (-sgn)*z2;        
         end
+    case {14,15}  % Sum of negative (14) or positive (15) quadratic and squared exponential, constrained
+        if meanfun == 14; sgn = -1; else; sgn = 1; end        
+        m0 = hyp(1);
+        xm = extras(1:D);
+        omega = exp(hyp(1+(1:D)))';
+        z2 = bsxfun(@rdivide,bsxfun(@minus,X,xm),omega).^2;
+        
+        alpha_se = exp(hyp(D+2));   % Rescaling for the squared exponential
+        % omega_se = alpha_se*omega;
+        h_se = exp(hyp(D+3));
+        z2_se = z2 ./ alpha_se^2;
+        se0 = exp(-0.5*sum(z2_se,2));
+        se = h_se*se0;
+        
+        m = (m0 + sgn*h_se) + (sgn*0.5)*sum(z2,2) - sgn*se;
+        if compute_grad
+            dm(:,1) = ones(N,1);
+            dm(:,2:D+1) = (-sgn)*z2 - sgn*bsxfun(@times, z2_se, se);      
+            dm(:,D+2) = -sgn*sum(z2_se,2).*se;
+            dm(:,D+3) = sgn*h_se - sgn*h_se*se0;
+        end        
         
 end
 
