@@ -286,7 +286,6 @@ defopts.AcqHedgeIterWindow = '4                 % Past iterations window to judg
 defopts.AcqHedgeDecay      = '0.9               % Portfolio value decay per function evaluation';
 defopts.ActiveVariationalSamples = '0           % MCMC variational steps before each active sampling';
 defopts.ActiveSampleFullUpdate = 'no            % Perform GP and variational updates in-between active samples';
-defopts.FixedMaxMeanGP     = 'no                % Fix GP quadratic mean function location to max training input';
 defopts.VariationalInitRepo = 'no               % Use previous variational posteriors to initialize optimization';
 
 %% Advanced options for unsupported/untested features (do *not* modify)
@@ -599,6 +598,9 @@ while ~isFinished_flag
     if options.Plot
         vbmc_iterplot(vp,gp,optimState,stats,elbo);
     end
+    
+    %hh = [gp.post.hyp];
+    %exp(hh(gp.Ncov+gp.Nnoise+2:end,:))
     
     %mubar
     %Sigma

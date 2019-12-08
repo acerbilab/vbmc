@@ -158,16 +158,21 @@ LB_gp(Ncov+1) = log(MinNoise);     % Increase minimum noise
 switch meanfun
     case 1
         UB_gp(Ncov+Nnoise+1) = min(y_hpd);    % Lower maximum constant mean
-    case {4,10,12}
+    case {4,10,12,14}
         if options.gpQuadraticMeanBound
             deltay = max(options.TolSD,min(D,max(y_hpd)-min(y_hpd)));
             UB_gp(Ncov+Nnoise+1) = max(y_hpd)+deltay; 
-        end
+        end        
+        if meanfun == 14
+            UB_gp(Ncov+Nnoise+D+2) = log(1);        % Lower max scaling factor
+            LB_gp(Ncov+Nnoise+D+2) = log(1e-3);    % Lower min scaling factor
+        end        
     case 6
         hyp0(Ncov+Nnoise+1) = min(y);
         UB_gp(Ncov+Nnoise+1) = min(y_hpd);    % Lower maximum constant mean
     case 8
 end
+
 
 % Set priors over hyperparameters (might want to double-check this)
 hypprior = [];
@@ -280,25 +285,18 @@ else
     
     hypprior.mu(1:D) = log(0.05*(optimState.PUB - optimState.PLB));
     hypprior.sigma(1:D) = log(10);
-
+    
 %      switch meanfun
 %          case {4,6}
 %              hypprior.mu(Ncov+Nnoise+1+D+(1:D)) = log(0.5*(optimState.PUB - optimState.PLB));
 %              hypprior.sigma(Ncov+Nnoise+1+D+(1:D)) = log(100);            
 %      end
     
-    if options.FixedMaxMeanGP
-        % Location of GP mean quadratic component fixed at max training input
-         [~,idx] = max(y_hpd);
-         xmax = X_hpd(idx,:);    
-         switch meanfun
-             case {4,6}
-                 hypprior.mu(Ncov+Nnoise+1+(1:D)) = xmax;
-                 hypprior.sigma(Ncov+Nnoise+1+(1:D)) = 1;
-                 LB_gp(Ncov+Nnoise+1+(1:D)) = xmax;
-                 UB_gp(Ncov+Nnoise+1+(1:D)) = xmax;
-                 hyp0(Ncov+Nnoise+1+(1:D)) = xmax;
-         end
+    if meanfun == 14
+        hypprior.mu(Ncov+Nnoise+D+2) = log(0.1);
+        hypprior.sigma(Ncov+Nnoise+D+2) = log(10);
+        hypprior.mu(Ncov+Nnoise+D+3) = log(0.1);
+        hypprior.sigma(Ncov+Nnoise+D+3) = log(100);
     end
 
 end
