@@ -658,7 +658,7 @@ while ~isFinished_flag
     % dt = (t_active(iter)+t_fits(iter))/new_funevals;
     
     timer.finalize = toc(t);
-    
+    timer.totalruntime = NaN;   % Update at the end of iteration
     % timer
     
     % Record all useful stats
@@ -732,6 +732,8 @@ while ~isFinished_flag
             end
         end
     end
+    
+    stats.timer(iter).totalruntime = toc(t0);
             
 end
 
@@ -783,6 +785,7 @@ if nargout > 6
     if ~options.Diagnostics
         stats = rmfield(stats,'gp');
         stats = rmfield(stats,'gpHypFull');
+        stats.timer(iter).totalruntime = toc(t0);
     end
 end
 
