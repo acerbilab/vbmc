@@ -42,7 +42,7 @@ if ~isempty(idx_stable)
     % Stop sampling after sample variance has stabilized below ToL
     if ~isempty(idx_stable) && optimState.StopSampling == 0 && ~optimState.Warmup
         varss_list = stats.gpSampleVar;
-        if sum(w.*varss_list(idx_stable:iter)) < options.TolGPVar
+        if sum(w.*varss_list(idx_stable:iter)) < options.TolGPVarMCMC
             optimState.StopSampling = optimState.N;
         end
     end
