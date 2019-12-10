@@ -51,11 +51,9 @@ else                    % Active uncertainty sampling
         % options_update.GPSampleThin = 1;        
         options_update.GPTolOpt = max(1e-4,options.GPTolOpt);
         options_update.TolWeight = 0;
-        options_update.NSentFine = options.NSent;
-        options_update.ELCBOmidpoint = false;
-        options_update.NSent = 0;
-        options_update.NSentFast = 0;
-        options_update.NSentFine = 0;
+        options_update.NSent = options.NSentActive;
+        options_update.NSentFast = options.NSentFastActive;
+        options_update.NSentFine = options.NSentFineActive;
         
 %        options_update.TolFunStochastic = 3*options.TolFunStochastic;
 %        options_update.DetEntTolOpt = 3*options.DetEntTolOpt;
