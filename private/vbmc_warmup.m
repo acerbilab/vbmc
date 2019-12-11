@@ -1,7 +1,8 @@
-function [optimState,action] = vbmc_warmup(optimState,stats,action,options)
+function [optimState,action,trim_flag] = vbmc_warmup(optimState,stats,action,options)
 %VBMC_WARMUP Check when warmup stage ends
 
 iter = optimState.iter;
+trim_flag = false;  % Report if training data are trimmed
 
 elbo_old = stats.elbo(iter-1);
 elboSD_old = stats.elbo_sd(iter-1);
@@ -117,6 +118,7 @@ if stopWarmup
         idx_keep(ord(1:min(NkeepMin,optimState.Xn))) = true;
     end
     optimState.X_flag = idx_keep & optimState.X_flag;
+    trim_flag = true;
 
     % Skip adaptive sampling for next iteration
     optimState.SkipActiveSampling = options.SkipActiveSamplingAfterWarmup;

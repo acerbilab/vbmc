@@ -679,7 +679,10 @@ while ~isFinished_flag
     
     % Check if we are still warming-up
     if optimState.Warmup && iter > 1    
-        [optimState,action] = vbmc_warmup(optimState,stats,action,options);
+        [optimState,action,trim_flag] = vbmc_warmup(optimState,stats,action,options);
+        if trim_flag    % Re-update GP after trimming
+            gp = gpreupdate(gp,optimState,options);
+        end
         if ~optimState.Warmup
             vp.optimize_mu = logical(options.VariableMeans);
             vp.optimize_weights = logical(options.VariableWeights);

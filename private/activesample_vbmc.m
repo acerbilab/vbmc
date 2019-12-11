@@ -366,12 +366,7 @@ else                    % Active uncertainty sampling
                     gp = gplite_post(gp,xnew,ynew,[],[],[],s2new,1);
                     gp.t(end+1) = tnew;
                 else
-                    [X_train,y_train,s2_train,t_train] = get_traindata_vbmc(optimState,options);
-                    gp.X = X_train;
-                    gp.y = y_train;
-                    gp.s2 = s2_train;
-                    gp.t = t_train;
-                    gp = gplite_post(gp);            
+                    gp = gpreupdate(gp,optimState,options);                    
                 end
                 timer.gpTrain = timer.gpTrain + toc(t);
             end
