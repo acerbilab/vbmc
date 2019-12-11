@@ -49,8 +49,8 @@ if do_boost
         
     stable_flag = vp.stats.stable;
     vp = vpoptimize_vbmc(Nfastopts,Nslowopts,vp,gp_idx,Knew,optimState,options);
-    vp.stable = stable_flag;
-    changedflag = true; 
+    vp.stats.stable = stable_flag;
+    changedflag = true;
 end
 
 elbo = vp.stats.elbo;
