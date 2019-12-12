@@ -23,7 +23,7 @@ function [kls,xx1,xx2] = vbmc_kldiv(vp1,vp2,Ns,gaussflag)
 %   from variational posteriors (they do not need have the same number
 %   of samples).
 %
-%   See also VBMC, VBMC_PDF, VBMC_RND, VBMC_DIAGNOSTICS.
+%   See also VBMC, VBMC_MTV, VBMC_PDF, VBMC_RND, VBMC_DIAGNOSTICS.
 
 if nargin < 3 || isempty(Ns); Ns = 1e5; end
 if nargin < 4 || isempty(gaussflag); gaussflag = false; end

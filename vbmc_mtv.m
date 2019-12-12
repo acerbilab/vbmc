@@ -1,7 +1,7 @@
 function [mtv,xx1,xx2] = vbmc_mtv(vp1,vp2,Ns)
-%VBMC_MTV Marginal Total Variation between two variational posteriors.
+%VBMC_MTV Marginal Total Variation distances between two variational posteriors.
 %   MTV = VBMC_MTV(VP1,VP2) returns an estimate of the marginal total 
-%   variation distance between two variational posterior distributions VP1 
+%   variation distances between two variational posterior distributions VP1 
 %   and VP2. MTV is a D-element vector whose elements are the total variation
 %   distance between the marginal distributions of VP1 and VP2, for each
 %   coordinate dimension. 
@@ -34,8 +34,8 @@ if vbmc_isavp(vp1)
     ub1 = vp1.trinfo.ub_orig;
 else
     xx1 = vp1;
-    lb1 = -Inf(1,vp1.D);
-    ub1 = Inf(1,vp1.D);
+    lb1 = -Inf(1,size(vp1,2));
+    ub1 = Inf(1,size(vp1,2));
 end
 if vbmc_isavp(vp2)
     xx2 = vbmc_rnd(vp2,Ns,origflag,1);
@@ -43,8 +43,8 @@ if vbmc_isavp(vp2)
     ub2 = vp2.trinfo.ub_orig;
 else
     xx2 = vp2;
-    lb2 = -Inf(1,vp2.D);
-    ub2 = Inf(1,vp2.D);
+    lb2 = -Inf(1,size(vp2,2));
+    ub2 = Inf(1,size(vp2,2));
 end
     
 D = size(xx1,2);
@@ -54,13 +54,13 @@ mtv = zeros(1,D);
 % Set bounds for kernel density estimate
 lb1_xx = min(xx1); ub1_xx = max(xx1);
 range1 = ub1_xx - lb1_xx;
-lb1 = max(lb1_xx-range1/2,lb1); 
-ub1 = min(ub1_xx+range1/2,ub1);
+lb1 = max(lb1_xx-range1/10,lb1); 
+ub1 = min(ub1_xx+range1/10,ub1);
 
 lb2_xx = min(xx2); ub2_xx = max(xx2);
 range2 = ub2_xx - lb2_xx;
-lb2 = max(lb2_xx-range2/2,lb2); 
-ub2 = min(ub2_xx+range2/2,ub2);
+lb2 = max(lb2_xx-range2/10,lb2); 
+ub2 = min(ub2_xx+range2/10,ub2);
 
 % Compute marginal total variation
 for i = 1:D    
