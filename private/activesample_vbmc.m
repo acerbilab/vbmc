@@ -49,7 +49,8 @@ else                    % Active uncertainty sampling
         options_update = options;
         % options_update.GPRetrainThreshold = Inf;
         % options_update.GPSampleThin = 1;        
-        options_update.GPTolOpt = max(1e-4,options.GPTolOpt);
+        options_update.GPTolOpt = options.GPTolOptActive;
+        options_update.GPTolOptMCMC = options.GPTolOptMCMCActive;
         options_update.TolWeight = 0;
         options_update.NSent = options.NSentActive;
         options_update.NSentFast = options.NSentFastActive;
