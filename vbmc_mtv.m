@@ -1,5 +1,5 @@
-function [kls,xx1,xx2] = vbmc_kldiv(vp1,vp2,Ns,gaussflag)
-%VBMC_KLDIV Kullback-Leibler divergence between two variational posteriors.
+function [mtv,xx1,xx2] = vbmc_mtv(vp1,vp2,Ns)
+%VBMC_MTV Marginal Total Variation between two variational posteriors.
 %   KLS = VBMC_KLDIV(VP1,VP2) returns an estimate of the (asymmetric) 
 %   Kullback-Leibler (KL) divergence between two variational posterior 
 %   distributions VP1 and VP2. KLS is a 2-element vector whose first element

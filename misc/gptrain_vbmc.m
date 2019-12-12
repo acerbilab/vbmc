@@ -336,9 +336,16 @@ if StopSampling == 0
         Ns_gp = min(Ns_gp,options.NSgpMaxMain);        
     end
 
+    
+    
     % Stop sampling after reaching max number of training points
     if optimState.N >= options.StableGPSampling
         StopSampling = optimState.N;
+    end
+    
+    % Stop sampling after reaching threshold number of variational components
+    if optimState.vpK >= options.StableGPvpK
+        StopSampling = optimState.N;        
     end
 end
 if StopSampling > 0

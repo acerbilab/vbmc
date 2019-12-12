@@ -85,6 +85,11 @@ else
     delta = 0;
 end
 
+Xt = zeros(D,N,K);
+for k = 1:K
+    Xt(:,:,k) = bsxfun(@minus, mu(:,k), gp.X');
+end
+
 % Loop over hyperparameter samples
 for s = 1:Ns
     hyp = gp.post(s).hyp;
@@ -132,7 +137,8 @@ for s = 1:Ns
 
         tau_k = sqrt(sigma(k)^2*lambda.^2 + ell.^2 + delta.^2);
         lnnf_k = ln_sf2 + sum_lnell - sum(log(tau_k));  % Covariance normalization factor
-        delta_k = bsxfun(@rdivide,bsxfun(@minus, mu(:,k), gp.X'), tau_k);
+%        delta_k = bsxfun(@rdivide,bsxfun(@minus, mu(:,k), gp.X'), tau_k);
+        delta_k = bsxfun(@rdivide, Xt(:,:,k), tau_k);
         z_k = exp(lnnf_k -0.5 * sum(delta_k.^2,1));
         I_k = z_k*alpha + m0;
 
