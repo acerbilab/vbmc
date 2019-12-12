@@ -51,8 +51,8 @@ end
 % Compute kernel matrix K_mat
 if gp.covfun(1) == 1
     ell = exp(hyp(1:D));
-    sf2 = exp(2*hyp(D+1));    
-    K_mat = sq_dist(diag(1./ell)*gp.X');
+    sf2 = exp(2*hyp(D+1));
+    K_mat = sq_dist(bsxfun(@rdivide,gp.X',ell));
     K_mat = sf2 * exp(-K_mat/2);
 else
     hyp_cov = hyp(1:Ncov); % Get covariance function hyperparameters
