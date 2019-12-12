@@ -1,94 +1,80 @@
 function [mtv,xx1,xx2] = vbmc_mtv(vp1,vp2,Ns)
 %VBMC_MTV Marginal Total Variation between two variational posteriors.
-%   KLS = VBMC_KLDIV(VP1,VP2) returns an estimate of the (asymmetric) 
-%   Kullback-Leibler (KL) divergence between two variational posterior 
-%   distributions VP1 and VP2. KLS is a 2-element vector whose first element
-%   is KL(VP1||VP2) and the second element is KL(VP2||VP1). The symmetrized
-%   KL divergence can be computed as mean(KLS).
+%   MTV = VBMC_MTV(VP1,VP2) returns an estimate of the marginal total 
+%   variation distance between two variational posterior distributions VP1 
+%   and VP2. MTV is a D-element vector whose elements are the total variation
+%   distance between the marginal distributions of VP1 and VP2, for each
+%   coordinate dimension. 
 %
-%   KLS = VBMC_KLDIV(VP1,VP2,NS) uses NS random draws to estimate each
-%   KL divergence (default NS=1e5).
+%   The total variation distance between two densities p1 and p2 is:
+%       TV(p1, p2) = 1/2 \int | p1(x) - p2(x) | dx
 %
-%   KLS = VBMC_KLDIV(VP1,VP2,NS,GAUSSFLAG) computes the "Gaussianized" 
-%   KL-divergence if GAUSSFLAG=1, that is the KL divergence between two
-%   multivariate normal distibutions with the same moments as the variational
-%   posteriors given as inputs. Otherwise, the standard KL-divergence is 
-%   returned for GAUSSFLAG=0 (default).
+%   MTV = VBMC_MTV(VP1,VP2,NS) uses NS random draws to estimate the MTV 
+%   (default NS=1e5).
 %
-%   [KLS,XX1,XX2] = VBMC_KLDIV(...) returns NS samples from the variational 
+%   [MTV,XX1,XX2] = VBMC_MTV(...) returns NS samples from the variational 
 %   posteriors VP1 and VP2 as, respectively, NS-by-D matrices XX1 and XX2, 
 %   where D is the dimensionality of the problem.
 %
-%   If GAUSSFLAG is 1, VP1 and/or VP2 can be N-by-D matrices of samples
-%   from variational posteriors (they do not need have the same number
-%   of samples).
+%   VP1 and/or VP2 can be N-by-D matrices of samples from variational 
+%   posteriors (they do not need have the same number of samples).
 %
-%   See also VBMC, VBMC_PDF, VBMC_RND, VBMC_DIAGNOSTICS.
+%   See also VBMC, VBMC_KLDIV, VBMC_PDF, VBMC_RND, VBMC_DIAGNOSTICS.
 
 if nargin < 3 || isempty(Ns); Ns = 1e5; end
-if nargin < 4 || isempty(gaussflag); gaussflag = false; end
 
 % This was removed because the comparison *has* to be in original space,
 % given that the transform might change for distinct variational posteriors
-% if nargin < 5 || isempty(origflag); origflag = true; end
+% if nargin < 4 || isempty(origflag); origflag = true; end
 origflag = true;
 
-kls = NaN(1,2);
+if vbmc_isavp(vp1)
+    xx1 = vbmc_rnd(vp1,Ns,origflag,1);
+    lb1 = vp1.trinfo.lb_orig;
+    ub1 = vp1.trinfo.ub_orig;
+else
+    xx1 = vp1;
+    lb1 = -Inf(1,vp1.D);
+    ub1 = Inf(1,vp1.D);
+end
+if vbmc_isavp(vp2)
+    xx2 = vbmc_rnd(vp2,Ns,origflag,1);
+    lb2 = vp2.trinfo.lb_orig;
+    ub2 = vp2.trinfo.ub_orig;
+else
+    xx2 = vp2;
+    lb2 = -Inf(1,vp2.D);
+    ub2 = Inf(1,vp2.D);
+end
+    
+D = size(xx1,2);
+nkde = 2^13;
+mtv = zeros(1,D);
 
-if ~gaussflag && (~vbmc_isavp(vp1) || ~vbmc_isavp(vp2))
-    error('vbmc_kldiv:WrongInputs', ...
-        'Unless the KL divergence is Gaussianized, VP1 and VP2 need to be variational posteriors.');
+% Set bounds for kernel density estimate
+lb1_xx = min(xx1); ub1_xx = max(xx1);
+range1 = ub1_xx - lb1_xx;
+lb1 = max(lb1_xx-range1/2,lb1); 
+ub1 = min(ub1_xx+range1/2,ub1);
+
+lb2_xx = min(xx2); ub2_xx = max(xx2);
+range2 = ub2_xx - lb2_xx;
+lb2 = max(lb2_xx-range2/2,lb2); 
+ub2 = min(ub2_xx+range2/2,ub2);
+
+% Compute marginal total variation
+for i = 1:D    
+    [~,yy1,x1mesh] = kde(xx1(:,i),nkde,lb1(i),ub1(i));
+    yy1 = yy1/(qtrapz(yy1)*(x1mesh(2)-x1mesh(1))); % Ensure normalization
+    
+    [~,yy2,x2mesh] = kde(xx2(:,i),nkde,lb2(i),ub2(i));
+    yy2 = yy2/(qtrapz(yy2)*(x2mesh(2)-x2mesh(1))); % Ensure normalization
+        
+    f = @(x) abs(interp1(x1mesh,yy1,x,'spline',0) - interp1(x2mesh,yy2,x,'spline',0));
+    bb = sort([x1mesh([1,end]),x2mesh([1,end])]);
+    for j = 1:3
+        xx_range = linspace(bb(j),bb(j+1),1e5);
+        mtv(i) = mtv(i) + 0.5*qtrapz(f(xx_range))*(xx_range(2)-xx_range(1));
+    end
 end
 
-%try
-    if gaussflag
-        if Ns == 0  % Analytical calculation
-            if origflag
-                error('vbmc_kldiv:NoAnalyticalMoments', ...
-                    'Analytical moments are available only for the transformed space.')
-            end
-            [q1mu,q1sigma] = vbmc_moments(vp1,0);
-            [q2mu,q2sigma] = vbmc_moments(vp2,0);
-            xx1 = []; xx2 = [];
-        else        % Numerical moments
-            if vbmc_isavp(vp1)
-                [q1mu,q1sigma] = vbmc_moments(vp1,origflag,Ns);
-            else
-                q1mu = mean(vp1,1);
-                q1sigma = cov(vp1);
-            end
-            if vbmc_isavp(vp2)                
-                [q2mu,q2sigma] = vbmc_moments(vp2,origflag,Ns);
-            else
-                q2mu = mean(vp2,1);
-                q2sigma = cov(vp2);                
-            end
-        end
-        [kls(1),kls(2)] = mvnkl(q1mu,q1sigma,q2mu,q2sigma);
-        
-    else
-        MINP = realmin;
-        
-        xx1 = vbmc_rnd(vp1,Ns,origflag,1);        
-        q1 = vbmc_pdf(vp1,xx1,origflag);
-        q2 = vbmc_pdf(vp2,xx1,origflag);
-        q1(q1 == 0 | ~isfinite(q1)) = 1;    % Ignore these points
-        q2(q2 == 0 | ~isfinite(q2)) = MINP;
-        kls(1) = -mean(log(q2) - log(q1));
-
-        xx2 = vbmc_rnd(vp2,Ns,origflag,1);
-        q1 = vbmc_pdf(vp1,xx2,origflag);
-        q2 = vbmc_pdf(vp2,xx2,origflag);
-        q1(q1 == 0 | ~isfinite(q1)) = MINP;
-        q2(q2 == 0 | ~isfinite(q2)) = 1;    % Ignore these points
-        kls(2) = -mean(log(q1) - log(q2));
-        
-    end
-    
-    kls = max(kls,0); % Correct for numerical errors
-    
-%catch
-    
-    % Could not compute KL divs
-    
-%end

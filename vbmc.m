@@ -618,6 +618,7 @@ while ~isFinished_flag
     % Compute symmetrized KL-divergence between old and new posteriors
     Nkl = 1e5;
     sKL = max(0,0.5*sum(vbmc_kldiv(vp,vp_old,Nkl,options.KLgauss)));
+    % mtv = vbmc_mtv(vp,vp_old,Nkl)
     
     % Evaluate max LCB of GP prediction on all training inputs
     [~,~,fmu,fs2] = gplite_pred(gp,gp.X,gp.y,gp.s2);
