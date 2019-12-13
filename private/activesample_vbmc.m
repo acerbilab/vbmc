@@ -48,7 +48,7 @@ else                    % Active uncertainty sampling
         % optimState.RecomputeVarPost = false;
         options_update = options;
         % options_update.GPRetrainThreshold = Inf;
-        % options_update.GPSampleThin = 1;        
+        % options_update.GPSampleThin = 1;
         options_update.GPTolOpt = options.GPTolOptActive;
         options_update.GPTolOptMCMC = options.GPTolOptMCMCActive;
         options_update.TolWeight = 0;
@@ -69,30 +69,11 @@ else                    % Active uncertainty sampling
         
         optimState.N = optimState.Xn;  % Number of training inputs
         optimState.Neff = sum(optimState.nevals(optimState.X_flag));        
-        
-        if ~optimState.Warmup && 0
-            if rand() < 1
-                options_update = options;
-                options_update.GPRetrainThreshold = Inf;
-                options_update.TolWeight = 0;
-                options_update.NSentFine = options.NSent;
-                options_update.ELCBOmidpoint = false;
-                old_alpha = optimState.entropy_alpha;
-                optimState.entropy_alpha = 1-sqrt(rand());
-
-                % Quick variational optimization
-                t = tic;
-                vp = vpoptimize_vbmc(0,1,vp_old,gp,[],optimState,options_update,0);
-                timer.variationalFit = timer.variationalFit + toc(t);            
-                optimState.entropy_alpha = old_alpha;
-            else
-                vp = vp_old;
-            end
-        end
-        
+                
         if options.ActiveVariationalSamples > 0
-            [vp,~,output] = vpsample_vbmc(Ns_activevar,0,vp,gp,optimState,options_activevar,1);
-            if isfield(output,'stepsize'); optimState.mcmc_stepsize = output.stepsize; end            
+            [vp,~,output] = vpsample_vbmc(Ns_activevar,0,vp,gp,optimState,options_activevar,options.ScaleLowerBound);
+            if isfield(output,'stepsize'); optimState.mcmc_stepsize = output.stepsize; end
+%            output.stepsize
 %            ELCBOWeight = sqrt(0.2*2*log(vp.D*optimState.Neff^2*pi^2/(6*0.1)));
 %            options_temp.ELCBOWeight = -log(rand())*ELCBOWeight;
 %            vp = vpoptimize_vbmc(0,1,vp,gp,vp.K,optimState,options_temp,0);

@@ -293,6 +293,7 @@ defopts.AcqHedge           = 'no                % Hedge on multiple acquisition 
 defopts.AcqHedgeIterWindow = '4                 % Past iterations window to judge acquisition fcn improvement';
 defopts.AcqHedgeDecay      = '0.9               % Portfolio value decay per function evaluation';
 defopts.ActiveVariationalSamples = '0           % MCMC variational steps before each active sampling';
+defopts.ScaleLowerBound    = 'yes               % Apply lower bound on variational components scale during variational sampling';
 defopts.ActiveSampleFullUpdate = 'no            % Perform GP and variational updates in-between active samples';
 defopts.VariationalInitRepo = 'no               % Use previous variational posteriors to initialize optimization';
 
