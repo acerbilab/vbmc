@@ -1,4 +1,4 @@
-function [vp,elbo,elbo_sd,exitflag,output,optimState,stats] = vbmc(fun,x0,LB,UB,PLB,PUB,options,varargin)
+function [vp,elbo,elbo_sd,exitflag,output,gp,optimState,stats] = vbmc(fun,x0,LB,UB,PLB,PUB,options,varargin)
 %VBMC Posterior and model inference via Variational Bayesian Monte Carlo (v0.96)
 %   VBMC computes a variational approximation of the full posterior and a 
 %   lower bound on the normalization constant (marginal likelhood or model
@@ -755,6 +755,7 @@ vp_old = vp;
 [vp,elbo,elbo_sd,idx_best] = ...
     best_vbmc(stats,iter,options.BestSafeSD,options.BestFracBack,options.RankCriterion);
 new_final_vp_flag = idx_best ~= iter;
+gp = stats.gp(idx_best);
 
 % Last variational optimization with large number of components
 [vp,elbo,elbo_sd,changedflag] = finalboost_vbmc(vp,idx_best,optimState,stats,options);

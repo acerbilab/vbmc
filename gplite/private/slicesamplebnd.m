@@ -66,7 +66,7 @@ function [samples,fvals,exitflag,output] = slicesamplebnd(logf,x0,N,widths,LB,UB
 %     performed at the end of the run. Diagnostics is a boolean value. Set 
 %     OPTIONS.Diagnostics to true to run the diagnostics, false to skip it. 
 %     The default for OPTIONS.Diagnostics is true. The diagnostics tests 
-%     use the PSRF function by Simo S�rkk� and Aki Vehtari, which implements 
+%     use the PSRF function by Simo Sarkka and Aki Vehtari, which implements 
 %     diagnostics from Gelman et al. (2013).
 %
 %   SAMPLES = SLICESAMPLEBND(...,VARARGIN) passes additional arguments
@@ -147,6 +147,8 @@ defopts.Display     = 'notify';     % Display
 defopts.Adaptive    = true;         % Adaptive widths
 defopts.LogPrior    = [];           % Log prior over X
 defopts.Diagnostics = true;         % Convergence diagnostics at the end
+defopts.MetropolisPdf = [];         % Metropolis proposal probability density function
+defopts.MetropolisRnd = [];         % Random draw from Metropolis proposal density
 
 for f = fields(defopts)'
     if ~isfield(options,f{:}) || isempty(options.(f{:}))
@@ -184,6 +186,8 @@ burn = floor(options.Burnin);
 log_Px = y;
 widths(LB == UB) = 1;   % WIDTHS is irrelevant when LB == UB, set to 1
 
+metropolis_flag = ~isempty(options.MetropolisPdf) || ~isempty(options.MetropolisRnd);
+
 % Sanity checks
 assert(size(x0,1) == 1 && size(x0,1) == 1, ...
     'The initial point X0 needs to be a scalar or row vector.');
@@ -201,6 +205,9 @@ assert(thin > 0 && isscalar(thin), ...
     'The thinning factor OPTIONS.Thin needs to be a positive integer.');
 assert(burn >= 0 && isscalar(burn), ...
     'The burn-in samples OPTIONS.Burnin needs to be a non-negative integer.');
+assert(~metropolis_flag || ...
+    (isa(options.MetropolisPdf,'function_handle') && isa(options.MetropolisRnd,'function_handle')), ...
+    'Both OPTIONS.MetropolisPdf and OPTIONS.MetropolisRnd, if specified, need to be function handles.');
 
 effN = N + (N-1)*(thin-1); % Effective samples
 
@@ -231,6 +238,12 @@ for ii = 1:(effN+burn)
     if trace > 1 && ii == burn+1
         action = 'start recording';
         fprintf(displayFormat,ii-burn,funccount,log_Px,action);
+    end
+    
+    %% Metropolis step (optional)
+    
+    if metropolis_flag
+        [xx,log_Px,fval,logprior] = metropolis_step(xx,varargin{:});
     end
     
     %% Slice-sampling step
@@ -305,10 +318,11 @@ for ii = 1:(effN+burn)
                 elseif xprime(dd) < xx(dd)
                     x_l(dd) = xprime(dd);
                 else
-                    errorstr = ['Shrunk to current position and proposal still not acceptable. ' ...
-                        'Current position: ' num2str(xx,' %g') '. ' ...
-                        'Log f: (new value) ' num2str(log_Px), ', (target value) ' num2str(log_uprime) '.'];
-                    error(errorstr);                    
+                    %errorstr = ['Shrunk to current position and proposal still not acceptable. ' ...
+                    %    'Current position: ' num2str(xx,' %g') '. ' ...
+                    %    'Log f: (new value) ' num2str(log_Px), ', (target value) ' num2str(log_uprime) '.'];
+                    %error(errorstr);
+                    break;
                 end
             end
         end
@@ -333,8 +347,16 @@ for ii = 1:(effN+burn)
         end
                 
         xx(dd) = xprime(dd);
+%        shrink
     end
+    
+    %% Metropolis step (optional)    
 
+    if metropolis_flag
+        [xx,log_Px,fval,logprior] = metropolis_step(xx,varargin{:});
+    end
+    
+    
     %% Record samples and miscellaneous bookkeeping    
     
     % Record samples?
@@ -420,6 +442,28 @@ if nargout > 3
     end
 end
 
+
+%--------------------------------------------------------------------------
+function [xx_up,y,fval_up,logprior_up] = metropolis_step(x,varargin)
+%METROPOLIS_STEP Metropolis step.
+
+    % Generate and evaluate Metropolis proposal
+    xx_new = options.MetropolisRnd();        
+    [log_Px_new,fval_new,logprior_new] = feval(@logpdfbound,xx_new,varargin{:});
+
+    % Acceptance rate
+    a = exp(log_Px_new - log_Px) * (options.MetropolisPdf(x) / options.MetropolisPdf(xx_new));
+
+    % Accept proposal?
+    if rand() < a
+        xx_up = xx_new;        y = log_Px_new;
+        fval_up = fval_new;    logprior_up = logprior_new;
+    else
+        xx_up = x;              y = log_Px;
+        fval_up = fval;         logprior_up = logprior;
+    end
+
+end
 
 %--------------------------------------------------------------------------
 function [y,fval,logprior] = logpdfbound(x,varargin)

@@ -1,9 +1,12 @@
-function [Xs,gp] = gplite_sample(gp,Ns,x0,method,logprior)
+function [Xs,gp] = gplite_sample(gp,Ns,x0,method,logprior,VarThresh,proppdf,proprnd)
 %GPLITE_SAMPLE Draw random samples from log pdf represented by GP.
 
 if nargin < 3; x0 = []; end
 if nargin < 4 || isempty(method); method = 'slicesample'; end
 if nargin < 5 || isempty(logprior); logprior = []; end
+if nargin < 6 || isempty(VarThresh); VarThresh = Inf; end
+if nargin < 7 || isempty(proppdf); proppdf = []; end
+if nargin < 8 || isempty(proprnd); proprnd = []; end
 
 MaxBnd = 10;
 D = size(gp.X,2);
@@ -35,12 +38,8 @@ end
 if ~isfield(gp.post(1),'alpha') || isempty(gp.post(1).alpha)
     gp = gplite_post(gp);
 end
-    
-if isempty(logprior)
-    logpfun = @(x) gplite_pred(gp,x);
-else
-    logpfun = @(x) gplite_pred(gp,x) + logprior(x);    
-end
+
+logpfun = @(x) log_gpfun(gp,x,VarThresh);
 
 switch method
     case {'slicesample','slicesamplebnd'}
@@ -48,6 +47,9 @@ switch method
         sampleopts.Thin = 1;
         sampleopts.Display = 'off';
         sampleopts.Diagnostics = false;
+        sampleopts.LogPrior = logprior;
+        sampleopts.MetropolisPdf = proppdf;
+        sampleopts.MetropolisRnd = proprnd;
 
         if isempty(x0)
             [~,idx0] = max(gp.y);
@@ -66,6 +68,7 @@ switch method
         sampleopts.VarTransform = false;
         sampleopts.InversionSample = false;
         sampleopts.FitGMM = false;
+        sampleopts.LogPrior = logprior;
         % sampleopts.TransitionOperators = {'transSliceSampleRD'};
         
         W = 2*(D+1);
@@ -85,6 +88,18 @@ switch method
         end
         x0 = bsxfun(@min,bsxfun(@max,x0,LB),UB);
         Xs = eissample_lite(logpfun,x0,Ns,W,widths,LB,UB,sampleopts);
+end
+
+end
+
+%--------------------------------------------------------------------------
+function y = log_gpfun(gp,x,VarThresh)
+
+if VarThresh == 0 || ~isfinite(VarThresh)
+    y = gplite_pred(gp,x);
+else
+    [y,s2] = gplite_pred(gp,x);
+    y(s2 >= VarThresh) = -Inf;
 end
 
 end
