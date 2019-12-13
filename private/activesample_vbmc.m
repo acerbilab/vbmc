@@ -80,6 +80,28 @@ else                    % Active uncertainty sampling
 %            vbmc_iterplot(vp,gp,optimState,stats,stats.elbo(end));
 %            vbmc_iterplot(vp_old,gp,optimState,stats,stats.elbo(end));            
         end
+                
+        Nextra = evaloption_vbmc(options.SampleExtraVPMeans,vp.K);        
+        if Nextra > 0
+            vp_base = vp;
+            NsFromGP = 2e3;
+            Nextra = evaloption_vbmc(options.SampleExtraVPMeans,vp.K);
+            x0 = vbmc_rnd(vp,1,0);
+            xx = gplite_sample(gp,NsFromGP,x0);
+            OptimizeMu = vp.optimize_mu;
+            vp.optimize_mu = false;
+            vp.K = vp.K + Nextra;
+            vp.mu = [vp.mu,xx(round(linspace(1,size(xx,1),Nextra)),:)'];
+            vp.sigma = [vp.sigma,exp(mean(log(vp.sigma)))*ones(1,Nextra)];
+            vp.w = [vp.w,exp(mean(log(vp.w)))*ones(1,Nextra)];
+            vp.w = vp.w(:)'/sum(vp.w);
+            options_vp = options;
+            options_vp.NSent = 0;
+            options_vp.NSentFast = 0;
+            options_vp.NSentFine = 0;
+            vp = vpoptimize_vbmc(0,1,vp,gp,[],optimState,options_vp,0);
+            vp.optimize_mu = OptimizeMu;
+        end
         
         if ~options.AcqHedge
             idxAcq = randi(numel(SearchAcqFcn));
@@ -316,6 +338,10 @@ else                    % Active uncertainty sampling
             [~,~,fmu,fs2] = gplite_pred(gp,xnew);
             v = [idxAcq,ynew,fmu,sqrt(fs2)];
             optimState.acqtable = [optimState.acqtable; v];
+        end
+        
+        if Nextra > 0
+            vp = vp_base;
         end
         
         if is < Ns

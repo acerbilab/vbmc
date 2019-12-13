@@ -296,6 +296,7 @@ defopts.ActiveVariationalSamples = '0           % MCMC variational steps before 
 defopts.ScaleLowerBound    = 'yes               % Apply lower bound on variational components scale during variational sampling';
 defopts.ActiveSampleFullUpdate = 'no            % Perform GP and variational updates in-between active samples';
 defopts.VariationalInitRepo = 'no               % Use previous variational posteriors to initialize optimization';
+defopts.SampleExtraVPMeans = '0                 % Extra variational components sampled from GP profile';
 
 %% Advanced options for unsupported/untested features (do *not* modify)
 defopts.WarpRotoScaling    = 'off               % Rotate and scale input';
