@@ -107,7 +107,7 @@ else                    % Active uncertainty sampling
 %            xrnd = vbmc_rnd(vp2,1e5); cornerplot(xrnd);
             options_vp.ELCBOWeight = -options.OptimisticVariationalBound;
             vp = vpoptimize_vbmc(0,1,vp,gp,[],optimState,options_vp,0);
-            xrnd = vbmc_rnd(vp,1e5); cornerplot(xrnd);                        
+%            xrnd = vbmc_rnd(vp,1e5); cornerplot(xrnd);                        
             vp.optimize_mu = OptimizeMu;
             vp.optimize_weights = OptimizeWeights;
         end
