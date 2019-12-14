@@ -99,7 +99,7 @@ if VarThresh == 0 || ~isfinite(VarThresh)
     y = gplite_pred(gp,x);
 else
     [y,s2] = gplite_pred(gp,x);
-    y(s2 >= VarThresh) = -Inf;
+    y(s2 >= VarThresh) = y(s2 >= VarThresh) - (s2(s2 >= VarThresh) - VarThresh);
 end
 
 end
