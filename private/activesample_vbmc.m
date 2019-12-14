@@ -410,7 +410,7 @@ else                    % Active uncertainty sampling
         NSentFineK = ceil(evaloption_vbmc(options.NSentFineActive,vp0.K)/vp0.K);
         elbo0 = -negelcbo_vbmc(theta0,0,vp0,gp,NSentFineK,0,1);
         if elbo0 > vp.stats.elbo; vp = vp0; end
-        [elbo0,vp.stats.elbo]
+        % [elbo0,vp.stats.elbo]
     end
 end
 
