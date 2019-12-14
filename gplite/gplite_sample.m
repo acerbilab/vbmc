@@ -1,12 +1,13 @@
-function [Xs,gp] = gplite_sample(gp,Ns,x0,method,logprior,VarThresh,proppdf,proprnd)
+function [Xs,gp] = gplite_sample(gp,Ns,x0,method,logprior,beta,VarThresh,proppdf,proprnd)
 %GPLITE_SAMPLE Draw random samples from log pdf represented by GP.
 
 if nargin < 3; x0 = []; end
 if nargin < 4 || isempty(method); method = 'slicesample'; end
 if nargin < 5 || isempty(logprior); logprior = []; end
-if nargin < 6 || isempty(VarThresh); VarThresh = Inf; end
-if nargin < 7 || isempty(proppdf); proppdf = []; end
-if nargin < 8 || isempty(proprnd); proprnd = []; end
+if nargin < 6 || isempty(beta); beta = 0; end
+if nargin < 7 || isempty(VarThresh); VarThresh = Inf; end
+if nargin < 8 || isempty(proppdf); proppdf = []; end
+if nargin < 9 || isempty(proprnd); proprnd = []; end
 
 MaxBnd = 10;
 D = size(gp.X,2);
@@ -39,7 +40,7 @@ if ~isfield(gp.post(1),'alpha') || isempty(gp.post(1).alpha)
     gp = gplite_post(gp);
 end
 
-logpfun = @(x) log_gpfun(gp,x,VarThresh);
+logpfun = @(x) log_gpfun(gp,x,beta,VarThresh);
 
 switch method
     case {'slicesample','slicesamplebnd'}
@@ -68,7 +69,13 @@ switch method
         sampleopts.VarTransform = false;
         sampleopts.InversionSample = false;
         sampleopts.FitGMM = false;
-        sampleopts.LogPrior = logprior;
+        
+        if ~isempty(logprior)
+            logPfuns = {logprior,logpfun};
+        else
+            logPfuns = logpfun;
+        end
+                
         % sampleopts.TransitionOperators = {'transSliceSampleRD'};
         
         W = 2*(D+1);
@@ -87,19 +94,20 @@ switch method
             x0 = X_hpd(randperm(N_hpd,min(W,N_hpd)),:);
         end
         x0 = bsxfun(@min,bsxfun(@max,x0,LB),UB);
-        Xs = eissample_lite(logpfun,x0,Ns,W,widths,LB,UB,sampleopts);
+        Xs = eissample_lite(logPfuns,x0,Ns,W,widths,LB,UB,sampleopts);
 end
 
 end
 
 %--------------------------------------------------------------------------
-function y = log_gpfun(gp,x,VarThresh)
+function y = log_gpfun(gp,x,beta,VarThresh)
 
-if VarThresh == 0 || ~isfinite(VarThresh)
+if (VarThresh == 0 || ~isfinite(VarThresh)) && beta == 0
     y = gplite_pred(gp,x);
 else
     [y,s2] = gplite_pred(gp,x);
     y(s2 >= VarThresh) = y(s2 >= VarThresh) - (s2(s2 >= VarThresh) - VarThresh);
+    y = y - beta*sqrt(s2);
 end
 
 end

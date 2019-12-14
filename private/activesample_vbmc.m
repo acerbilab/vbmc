@@ -55,12 +55,14 @@ else                    % Active uncertainty sampling
         options_update.NSent = options.NSentActive;
         options_update.NSentFast = options.NSentFastActive;
         options_update.NSentFine = options.NSentFineActive;
+        options_update.ELCBOWeight = -options.OptimisticVariationalBound;
         
 %        options_update.TolFunStochastic = 3*options.TolFunStochastic;
 %        options_update.DetEntTolOpt = 3*options.DetEntTolOpt;
 %        options_update.NSgpMaxMain = 3;
 %        options_update.NSgpMaxWarmup = 3;
         hypstruct = [];
+        vp0 = vp;
     end
 
     % if Ns > 1; vp_old = vp; end
@@ -84,10 +86,17 @@ else                    % Active uncertainty sampling
         Nextra = evaloption_vbmc(options.SampleExtraVPMeans,vp.K);        
         if Nextra > 0
             vp_base = vp;
-            NsFromGP = 2e3;
+            NsFromGP = 4e3;
             Nextra = evaloption_vbmc(options.SampleExtraVPMeans,vp.K);
-            x0 = vbmc_rnd(vp,1,0);
-            xx = gplite_sample(gp,NsFromGP,x0,[],[],Inf);
+            gpbeta = -options.OptimisticVariationalBound;
+            if 0
+                x0 = vbmc_rnd(vp,1,0);
+                xx = gplite_sample(gp,NsFromGP,x0,[],[],gpbeta,Inf);
+            else
+                K = 2*(vp.D+1);
+                x0 = vbmc_rnd(vp,K,0);
+                xx = gplite_sample(gp,NsFromGP,x0,'parallel',[],gpbeta,Inf);
+            end                
             OptimizeMu = vp.optimize_mu;
             OptimizeWeights = vp.optimize_weights;
             vp.optimize_mu = false;
@@ -391,9 +400,17 @@ else                    % Active uncertainty sampling
     end
     
     if options.ActiveSampleFullUpdate && Ns > 1
+        % Reset OPTIMSTATE
         optimState.RecomputeVarPost = RecomputeVarPost_old;
         optimState.entropy_alpha = entropy_alpha_old;
-        optimState.hypstruct = hypstruct;        
+        optimState.hypstruct = hypstruct;
+        
+        % Check if old variational posterior is better than current
+        theta0 = get_vptheta(vp0);
+        NSentFineK = ceil(evaloption_vbmc(options.NSentFineActive,vp0.K)/vp0.K);
+        elbo0 = -negelcbo_vbmc(theta0,0,vp0,gp,NSentFineK,0,1);
+        if elbo0 > vp.stats.elbo; vp = vp0; end
+        [elbo0,vp.stats.elbo]
     end
 end
 
