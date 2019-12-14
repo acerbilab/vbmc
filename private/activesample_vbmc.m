@@ -87,9 +87,11 @@ else                    % Active uncertainty sampling
             NsFromGP = 2e3;
             Nextra = evaloption_vbmc(options.SampleExtraVPMeans,vp.K);
             x0 = vbmc_rnd(vp,1,0);
-            xx = gplite_sample(gp,NsFromGP,x0);
+            xx = gplite_sample(gp,NsFromGP,x0,[],[],Inf);
             OptimizeMu = vp.optimize_mu;
+            OptimizeWeights = vp.optimize_weights;
             vp.optimize_mu = false;
+            vp.optimize_weights = true;
             vp.K = vp.K + Nextra;
             vp.mu = [vp.mu,xx(round(linspace(1,size(xx,1),Nextra)),:)'];
             vp.sigma = [vp.sigma,exp(mean(log(vp.sigma)))*ones(1,Nextra)];
@@ -99,8 +101,15 @@ else                    % Active uncertainty sampling
             options_vp.NSent = 0;
             options_vp.NSentFast = 0;
             options_vp.NSentFine = 0;
+            options_vp.TolW = 0;
+%            options_vp.ELCBOWeight = 0;
+%            vp2 = vpoptimize_vbmc(0,1,vp,gp,[],optimState,options_vp,0);
+%            xrnd = vbmc_rnd(vp2,1e5); cornerplot(xrnd);
+            options_vp.ELCBOWeight = -options.OptimisticVariationalBound;
             vp = vpoptimize_vbmc(0,1,vp,gp,[],optimState,options_vp,0);
+            xrnd = vbmc_rnd(vp,1e5); cornerplot(xrnd);                        
             vp.optimize_mu = OptimizeMu;
+            vp.optimize_weights = OptimizeWeights;
         end
         
         if ~options.AcqHedge

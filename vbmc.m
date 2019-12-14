@@ -297,6 +297,7 @@ defopts.ScaleLowerBound    = 'yes               % Apply lower bound on variation
 defopts.ActiveSampleFullUpdate = 'no            % Perform GP and variational updates in-between active samples';
 defopts.VariationalInitRepo = 'no               % Use previous variational posteriors to initialize optimization';
 defopts.SampleExtraVPMeans = '0                 % Extra variational components sampled from GP profile';
+defopts.OptimisticVariationalBound = '0         % Uncertainty weight on ELCBO during active sampling';
 
 %% Advanced options for unsupported/untested features (do *not* modify)
 defopts.WarpRotoScaling    = 'off               % Rotate and scale input';

@@ -23,10 +23,6 @@ if ~isfield(optimState,'entropy_alpha'); optimState.entropy_alpha = 0; end
 [vp0_vec,vp0_type,elcbo_beta,compute_var,NSentK] = ...
     vpsieve_vbmc(Nfastopts,Nslowopts,vp,gp,optimState,options,K);
     
-if compute_var == 1     % For the moment no gradient available for variance
-    options.StochasticOptimizer = 'cmaes';
-end
-
 % Compute soft bounds for variational parameters optimization
 [vp,thetabnd] = vpbounds(vp,gp,options,K);
 
@@ -36,8 +32,18 @@ end
 Ntheta = numel(get_vptheta(vp0_vec(1)));
 elbostats = eval_fullelcbo(Nslowopts*2,Ntheta);
 
-% Set basic options for deterministic optimizer (FMINUNC)
-vbtrain_options = optimoptions('fminunc','GradObj','on','Display','off');
+% For the moment no gradient available for variance
+gradient_available = (compute_var == 0);
+
+if gradient_available
+    % Set basic options for deterministic optimizer (FMINUNC)
+    vbtrain_options = optimoptions('fminunc','GradObj','on','Display','off');
+    compute_grad = 1;
+else
+    options.StochasticOptimizer = 'cmaes';
+    vbtrain_options = optimoptions('fminunc','GradObj','off','Display','off');
+    compute_grad = 0;
+end    
 
 for iOpt = 1:Nslowopts
     iOpt_mid = iOpt*2-1;
@@ -68,13 +74,13 @@ for iOpt = 1:Nslowopts
         TolOpt = options.DetEntTolOpt;
         vbtrain_options.TolFun = TolOpt;
         vbtrain_options.MaxFunEvals = 50*(vp.D+2);
-        vbtrain_fun = @(theta_) negelcbo_vbmc(theta_,elcbo_beta,vp0,gp,0,1,compute_var,0,thetabnd,optimState.entropy_alpha);
+        vbtrain_fun = @(theta_) negelcbo_vbmc(theta_,elcbo_beta,vp0,gp,0,compute_grad,compute_var,0,thetabnd,optimState.entropy_alpha);
         try
             [thetaopt,~,~,output] = fminunc(vbtrain_fun,theta0(:)',vbtrain_options);
             % output.funcCount
         catch
             % FMINUNC failed, try with CMA-ES
-            if prnt > 0
+            if prnt >= 0
                 fprintf('Cannot optimize variational parameters with FMINUNC. Trying with CMA-ES (slower).\n');
             end
             if vp.optimize_mu; insigma_mu = repmat(vp.bounds.mu_ub(:) - vp.bounds.mu_lb(:),[K,1]); else; insigma_mu = []; end
@@ -89,7 +95,7 @@ for iOpt = 1:Nslowopts
             cmaes_opts.TolHistFun = 1e-7;
             cmaes_opts.MaxFunEvals = 200*(vp.D+2);            
             thetaopt = cmaes_modded('negelcbo_vbmc',theta0(:),insigma,cmaes_opts, ...
-                elcbo_beta,vp0,gp,0,1,compute_var,0,thetabnd,optimState.entropy_alpha); 
+                elcbo_beta,vp0,gp,0,0,compute_var,0,thetabnd,optimState.entropy_alpha); 
             thetaopt = thetaopt(:)';
         end
         % output, % pause
