@@ -1,4 +1,4 @@
-function [Xs,gp] = gplite_sample(gp,Ns,x0,method,logprior,beta,VarThresh,proppdf,proprnd)
+function [Xs,gp] = gplite_sample(gp,Ns,x0,method,logprior,beta,VarThresh,proppdf,proprnd,bounds)
 %GPLITE_SAMPLE Draw random samples from log pdf represented by GP.
 
 if nargin < 3; x0 = []; end
@@ -8,14 +8,20 @@ if nargin < 6 || isempty(beta); beta = 0; end
 if nargin < 7 || isempty(VarThresh); VarThresh = Inf; end
 if nargin < 8 || isempty(proppdf); proppdf = []; end
 if nargin < 9 || isempty(proprnd); proprnd = []; end
+if nargin < 10; bounds = []; end
 
-MaxBnd = 10;
 D = size(gp.X,2);
 
 widths = std(gp.X,[],1);
-diam = max(gp.X) - min(gp.X);
-LB = min(gp.X) - MaxBnd*diam;
-UB = max(gp.X) + MaxBnd*diam;
+if isempty(bounds)
+    MaxBnd = 10;
+    diam = max(gp.X) - min(gp.X);
+    LB = min(gp.X) - MaxBnd*diam;
+    UB = max(gp.X) + MaxBnd*diam;
+else
+    LB = bounds(1,:);
+    UB = bounds(2,:);
+end
 
 % First, train GP
 if ~isfield(gp,'post') || isempty(gp.post)
