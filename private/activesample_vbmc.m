@@ -55,7 +55,7 @@ else                    % Active uncertainty sampling
         options_update.NSent = options.NSentActive;
         options_update.NSentFast = options.NSentFastActive;
         options_update.NSentFine = options.NSentFineActive;
-        options_update.ELCBOWeight = -options.OptimisticVariationalBound;
+%        options_update.ELCBOWeight = -options.OptimisticVariationalBound;
         
 %        options_update.TolFunStochastic = 3*options.TolFunStochastic;
 %        options_update.DetEntTolOpt = 3*options.DetEntTolOpt;
@@ -89,13 +89,16 @@ else                    % Active uncertainty sampling
             NsFromGP = 4e3;
             Nextra = evaloption_vbmc(options.SampleExtraVPMeans,vp.K);
             gpbeta = -options.OptimisticVariationalBound;
+            
+            xrange = max(gp.X) - min(gp.X);
+            LB_extra = min(gp.X) - 0.1*xrange; UB_extra = max(gp.X) + 0.1*xrange;
             if 0
                 x0 = vbmc_rnd(vp,1,0);
-                xx = gplite_sample(gp,NsFromGP,x0,[],[],gpbeta,Inf);
+                xx = gplite_sample(gp,NsFromGP,x0,[],[],gpbeta,Inf,[],[],[LB_extra;UB_extra]);
             else
                 K = 2*(vp.D+1);
                 x0 = vbmc_rnd(vp,K,0);
-                xx = gplite_sample(gp,NsFromGP,x0,'parallel',[],gpbeta,Inf);
+                xx = gplite_sample(gp,NsFromGP,x0,'parallel',[],gpbeta,Inf,[],[],[LB_extra;UB_extra]);
             end                
             OptimizeMu = vp.optimize_mu;
             OptimizeWeights = vp.optimize_weights;
