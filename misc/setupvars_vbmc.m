@@ -267,11 +267,12 @@ if options.NoiseShaping && optimState.gpNoisefun(2) == 0
 end
 optimState.gpMeanfun = options.gpMeanFun;
 switch optimState.gpMeanfun
-    case {'zero','const','negquad','se','negquadse','negquadfixiso','negquadfix','negquadsefix'}
+    case {'zero','const','negquad','se','negquadse','negquadfixiso','negquadfix','negquadsefix','negquadonly','negquadfixonly'}
     otherwise
         error('vbmc:UnknownGPmean', ...
             'Unknown/unsupported GP mean function. Supported mean functions are ''zero'', ''const'', ''negquad'', and ''se''.');
 end
+optimState.intMeanfun = options.gpIntMeanFun;
 optimState.gpOutwarpfun = options.gpOutwarpFun;
 if ischar(optimState.gpOutwarpfun)
     switch lower(optimState.gpOutwarpfun)

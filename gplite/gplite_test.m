@@ -1,15 +1,20 @@
-function gp = gplite_test(hyp,X,y,covfun,meanfun,noisefun,s2,outwarpfun)
+function gp = gplite_test(test,hyp,X,y,covfun,meanfun,noisefun,s2,outwarpfun)
 %GPLITE_TEST Test computations for lite GP functions.
 
-if nargin < 1; hyp = []; end
-if nargin < 2; X = []; end
-if nargin < 3; y = []; end
-if nargin < 4 || isempty(covfun); covfun = 'seard'; end
-if nargin < 5 || isempty(meanfun); meanfun = 'zero'; end
-if nargin < 6; noisefun = []; end
-if nargin < 7; s2 = []; end
-if nargin < 8; outwarpfun = []; end
+if nargin < 1; test = []; end
+if nargin < 2; hyp = []; end
+if nargin < 3; X = []; end
+if nargin < 4; y = []; end
+if nargin < 5 || isempty(covfun); covfun = 'seard'; end
+if nargin < 6 || isempty(meanfun); meanfun = 'zero'; end
+if nargin < 7; noisefun = []; end
+if nargin < 8; s2 = []; end
+if nargin < 9; outwarpfun = []; end
 
+if isempty(test); test = 'all'; end
+all_flag = any(strcmpi(test,'all'));
+
+%% Set up basic GP
 if isempty(noisefun)
     if isempty(s2); noisefun = [1 0 0]; else; noisefun = [1 1 0]; end
 end
@@ -31,10 +36,6 @@ else
     Noutwarp = 0;
 end
 
-
-fprintf('---------------------------------------------------------------------------------\n');
-fprintf('Hyperparameters:\n\n');
-
 if isempty(hyp)
     Ns = randi(3);    % Test multiple hyperparameters
     hyp = [randn(D,Ns); 0.2*randn(1,Ns); 0.3*randn(Nnoise,Ns); randn(Nmean,Ns); randn(Noutwarp,Ns)];
@@ -48,7 +49,7 @@ if isempty(y)   % Generate from the GP prior
     gp = gplite_post(hyp(:,1),X,[],covfun,meanfun,noisefun,s2,0,outwarpfun);    
     [~,y] = gplite_rnd(gp,X);
 end
-    
+
 [N,D] = size(X);            % Number of training points and dimension
 [Nhyp,Ns] = size(hyp);      % Hyperparameters and samples
 
@@ -65,41 +66,60 @@ fprintf('Print noise variance for every GP point...\n\n');
 
 sn2 = gplite_noisefun(hyp0(Ncov+1:Ncov+Nnoise),gp.X,gp.noisefun,gp.y,gp.s2)
 
-fprintf('---------------------------------------------------------------------------------\n');
-fprintf('Check GP marginal likelihood gradient computation...\n\n');
-f = @(x) gplite_nlZ(x,gp);
-derivcheck(f,hyp0.*exp(0.1*rand(size(hyp0))));
-
-fprintf('---------------------------------------------------------------------------------\n');
-fprintf('Check GP hyperparameters log prior gradient computation...\n\n');
-hprior.mu = randn(size(hyp0));
-hprior.sigma = exp(randn(size(hyp0)));
-hprior.df = exp(randn(size(hyp0))).*(randi(2,size(hyp0))-1);
-f = @(x) gplite_hypprior(x,hprior);
-derivcheck(f,hyp0.*exp(0.1*rand(size(hyp0))));
-
-fprintf('---------------------------------------------------------------------------------\n');
-fprintf('Check rank-1 GP updates...\n\n');
-
-idx = ceil(size(X,1)/2);
-gp1 = gplite_post(hyp0,X(1:idx,:),y(1:idx),covfun,meanfun,noisefun,s2(1:min(idx,size(s2,1))),0,outwarpfun);
-for ii = idx+1:size(gp.X,1)
-    xstar = X(ii,:);
-    ystar = y(ii);
-    if ~isempty(s2); s2star = s2(ii); else; s2star = []; end    
-    gp1 = gplite_post(gp1,xstar,ystar,[],[],[],s2star,1);
+% Test GP marginal likelihood gradient computation
+if any(strcmpi(test,'nlzgrad')) || all_flag
+    fprintf('---------------------------------------------------------------------------------\n');
+    fprintf('Check GP marginal likelihood gradient computation...\n\n');
+    f = @(x) gplite_nlZ(x,gp);
+    derivcheck(f,hyp0.*exp(0.1*rand(size(hyp0))));
 end
 
-ff = fields(gp.post)';
-for i = 1:numel(ff)
-    update1_errs(i) = sum(abs(gp.post.(ff{i})(:) - gp1.post.(ff{i})(:)));
+if any(strcmpi(test,'priorgrad')) || all_flag
+    fprintf('---------------------------------------------------------------------------------\n');
+    fprintf('Check GP hyperparameters log prior gradient computation...\n\n');
+    hprior.mu = randn(size(hyp0));
+    hprior.sigma = exp(randn(size(hyp0)));
+    hprior.df = exp(randn(size(hyp0))).*(randi(2,size(hyp0))-1);
+    f = @(x) gplite_hypprior(x,hprior);
+    derivcheck(f,hyp0.*exp(0.1*rand(size(hyp0))));
 end
-update1_errs
+
+if any(strcmpi(test,'rank1')) || all_flag
+    fprintf('---------------------------------------------------------------------------------\n');
+    fprintf('Check rank-1 GP updates...\n\n');
+
+    idx = ceil(size(X,1)/2);
+    gp1 = gplite_post(hyp0,X(1:idx,:),y(1:idx),covfun,meanfun,noisefun,s2(1:min(idx,size(s2,1))),0,outwarpfun);
+    for ii = idx+1:size(gp.X,1)
+        xstar = X(ii,:);
+        ystar = y(ii);
+        if ~isempty(s2); s2star = s2(ii); else; s2star = []; end    
+        gp1 = gplite_post(gp1,xstar,ystar,[],[],[],s2star,1);
+    end
+
+    ff = fields(gp.post)';
+    for i = 1:numel(ff)
+        update1_errs(i) = sum(abs(gp.post.(ff{i})(:) - gp1.post.(ff{i})(:)));
+    end
+    update1_errs
+end
+
+if any(strcmpi(test,'meangrad')) || all_flag
+    fprintf('---------------------------------------------------------------------------------\n');
+    fprintf('Check mean function gradient computation...\n\n');
+    f = @(x) gplite_meanfun(x,X(1,:),meanfun,y(1));
+    hyp0_mean = hyp0(Ncov+Nnoise+1:Ncov+Nnoise+Nmean);    
+    derivcheck(f,hyp0_mean.*exp(0.1*rand(size(hyp0_mean))));
+end
+
+if any(strcmpi(test,'intmean')) || all_flag
+    fprintf('---------------------------------------------------------------------------------\n');
+    fprintf('Check integrated mean function...\n\n');
+    gp = gplite_intmeantest(X,y,covfun,noisefun,s2);
+end
 
 % Test plotting
 gplite_plot(gp);
-
-
 
 % fprintf('---------------------------------------------------------------------------------\n');
 % fprintf('Check GP training with warped data...\n\n');
@@ -126,5 +146,29 @@ gplite_plot(gp);
 % plot(Xt,yt); hold on;
 % plot(X,y); plot(gp.X,gp.y);
 
+
+end
+
+%--------------------------------------------------------------------------
+function gp = gplite_intmeantest(X,y,covfun,noisefun,s2)
+
+[N,D] = size(X);
+Nb = 2*D+1;
+
+% Add true basis functions to observations
+b_true = randn(1,Nb)
+y = y + b_true(1) + X*b_true(2:D+1)' + (X.^2)*b_true(D+2:2*D+1)';
+
+Ns = 0;
+bb = zeros(1,Nb);
+BB = Inf*ones(1,Nb);
+
+meanfun = {0,3,bb,BB};
+options = [];
+
+gp = gplite_train([],Ns,X,y,covfun,meanfun,noisefun,s2,[],options);
+
+fprintf('Inferred basis function coefficients:\n')
+gp.post.intmean.betabar
 
 end

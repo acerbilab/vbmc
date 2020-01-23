@@ -7,15 +7,18 @@ for f = hypfields
     if ~isfield(hypstruct,f{:}); hypstruct.(f{:}) = []; end
 end
 
-% Get priors, starting hyperparameters, and number of samples
+% Get training dataset
+[X_train,y_train,s2_train,t_train] = get_traindata_vbmc(optimState,options);
+% optimState.warp_thresh = max(y_train) - 100 - 20*size(X_train,2);
+% y_train = outputwarp(y_train,optimState,options);   % Fitness shaping
+
+% Get priors, starting hyperparameters, number of samples, and mean function
 if optimState.Warmup && options.BOWarmup
-%        [hypprior,X_hpd,y_hpd,~,hyp0,optimState.gpMeanfun,Ns_gp] = ...
-%            vbmc_gphyp(optimState,'const',0,options);
-    [hypprior,~,~,~,hyp0,Ns_gp] = ...
-        vbmc_gphyp(optimState,optimState.gpMeanfun,0,options);
+    [hypprior,hyp0,Ns_gp,meanfun] = ...
+        vbmc_gphyp(optimState,optimState.gpMeanfun,X_train,y_train,0,options);
 else
-    [hypprior,~,~,~,hyp0,Ns_gp] = ...
-        vbmc_gphyp(optimState,optimState.gpMeanfun,0,options);
+    [hypprior,hyp0,Ns_gp,meanfun] = ...
+        vbmc_gphyp(optimState,optimState.gpMeanfun,X_train,y_train,0,options);
 end
 
 % Initial GP hyperparameters
@@ -26,29 +29,77 @@ gptrain_options = get_GPTrainOptions(Ns_gp,hypstruct,optimState,stats,options);
 % gptrain_options.LogP = hypstruct.logp;
 if numel(gptrain_options.Widths) ~= numel(hyp0); gptrain_options.Widths = []; end
 
-% Get training dataset
-[X_train,y_train,s2_train,t_train] = get_traindata_vbmc(optimState,options);
-% optimState.warp_thresh = []; % max(y_train) - 10*D;    
-% y_train = outputwarp(y_train,optimState,options);   % Fitness shaping
-
 % Build starting points
 hyp0 = [];
-if gptrain_options.Ninit > 0 && ~isempty(stats)
-    for ii = ceil(numel(stats.gp)/2):numel(stats.gp)
-        hyp0 = [hyp0, [stats.gp(ii).post.hyp]];
+try
+    if gptrain_options.Ninit > 0 && ~isempty(stats)
+        for ii = ceil(numel(stats.gp)/2):numel(stats.gp)
+            hyp0 = [hyp0, [stats.gp(ii).post.hyp]];
+        end
+        N0 = size(hyp0,2);
+        if N0 > gptrain_options.Ninit/2
+            hyp0 = hyp0(:,randperm(N0,floor(gptrain_options.Ninit/2)));
+        end
     end
-    N0 = size(hyp0,2);
-    if N0 > gptrain_options.Ninit/2
-        hyp0 = hyp0(:,randperm(N0,floor(gptrain_options.Ninit/2)));
-    end
+    hyp0 = unique([hyp0, hypstruct.hyp]','rows')';
+catch
+    hyp0 = hypstruct.hyp;
 end
-hyp0 = unique([hyp0, hypstruct.hyp]','rows')';
 
 % Fit GP to training set
 [gp,hypstruct.hyp,gpoutput] = gplite_train(hyp0,Ns_gp,...
     X_train,y_train, ...
-    optimState.gpCovfun,optimState.gpMeanfun,optimState.gpNoisefun,...
+    optimState.gpCovfun,meanfun,optimState.gpNoisefun,...
     s2_train,hypprior,gptrain_options);
+
+% Check for posite-definiteness of negative quadratic basis function
+if optimState.intMeanfun == 3 || optimState.intMeanfun == 4
+    D = size(X_train,2);
+    Nb = numel(gp.post(1).intmean.betabar);
+    betabar = zeros(Nb,numel(gp.post));
+    for s = 1:numel(gp.post)        
+        betabar(:,s) = gp.post(s).intmean.betabar;
+    end
+    % betabar
+    
+    if optimState.intMeanfun == 3
+        redo_flag = any(betabar(1+D+(1:D),:) >= 0,2)';
+    elseif optimState.intMeanfun == 4
+        tril_mat = tril(true(D),-1); 
+        tril_vec = tril_mat(:);
+        z = zeros(D*D,1); 
+        redo_flag = false;
+        for b = 1:size(betabar,2)
+            beta_mat = z;
+            beta_mat(tril_vec) = betabar(1+2*D+(1:D*(D-1)/2),b);
+            beta_mat = reshape(beta_mat,[D,D]);
+            beta_mat = beta_mat + beta_mat' + diag(betabar(1+D+(1:D),b));
+            try
+                [~,dd] = chol(-beta_mat);
+            catch
+                dd = 1;
+            end
+            dd
+            redo_flag = redo_flag | dd;
+        end
+    end
+
+    % If the coefficients are not negative, redo the fit
+    if redo_flag
+        optimState_temp = optimState;
+        optimState.gpMeanfun = 18;
+        optimState.intMeanfun = 1;
+        [gp,hypstruct,Ns_gp,optimState] = gptrain_vbmc([],optimState,stats,options);
+        optimState.gpMeanfun = optimState_temp.gpMeanfun;
+        optimState.intMeanfun = optimState_temp.intMeanfun;
+        hypstruct.hyp = [];
+        return;
+    end
+
+end
+    
+
+
 hypstruct.full = gpoutput.hyp_prethin; % Pre-thinning GP hyperparameters
 hypstruct.logp = gpoutput.logp;
 
@@ -87,7 +138,7 @@ end
 
 %--------------------------------------------------------------------------
 
-function [hypprior,X_hpd,y_hpd,Nhyp,hyp0,Ns_gp] = vbmc_gphyp(optimState,meanfun,warpflag,options)
+function [hypprior,hyp0,Ns_gp,meanfun] = vbmc_gphyp(optimState,meanfun,X_train,y_train,warpflag,options)
 %VBMC_GPHYP Define bounds, priors and samples for GP hyperparameters.
 
 % Get high-posterior density dataset
@@ -122,6 +173,7 @@ hyp0(1:Ncov) = covinfo.x0;
 % GP noise hyperparameters
 hyp0(Ncov+(1:Nnoise)) = noiseinfo.x0;
 MinNoise = 1e-3;
+% MinNoise = max(1e-3,std(y_hpd)*1e-3)
 noisemult = [];
 switch optimState.UncertaintyHandlingLevel
     case 0
@@ -320,6 +372,39 @@ if warpflag
     hypprior.UB = [hypprior.UB, UB_warp];
 end
 
+
+%% Integrated mean function
+
+if optimState.intMeanfun > 0
+    H = gplite_intmeanfun(zeros(1,D),optimState.intMeanfun);
+    Nb = size(H,1);    
+    bb = zeros(1,Nb);   % Prior mean over basis function coefficients
+    BB = Inf(1,Nb);     % Prior variance over basis function coefficients
+    if optimState.intMeanfun == 1
+        bb(1) = max(y_train);
+        BB(1) = 1e3;
+    else
+        bb(1) = max(y_train);
+        BB(1) = 1e3;            
+    end
+    if optimState.intMeanfun > 1
+        bb(1+(1:D)) = 0;
+        BB(1+(1:D)) = 1e3;
+    end
+    if optimState.intMeanfun > 2
+        bb(1+D+(1:D)) = 0;
+        BB(1+D+(1:D)) = 1e3;            
+    end
+    if optimState.intMeanfun > 3
+        bb(1+2*D+(1:D*(D-1)/2)) = 0;
+        BB(1+2*D+(1:D*(D-1)/2)) = 1e4;
+    end
+    % Fix variance for under-determined training set
+    if size(X_train,1) <= Nb + Nhyp; BB(isinf(BB)) = 1e3; end
+        
+    meanfun = {meanfun,optimState.intMeanfun,bb,BB};
+end
+
 %% Number of GP hyperparameter samples
 
 StopSampling = optimState.StopSampling;
@@ -335,8 +420,6 @@ if StopSampling == 0
     else
         Ns_gp = min(Ns_gp,options.NSgpMaxMain);        
     end
-
-    
     
     % Stop sampling after reaching max number of training points
     if optimState.N >= options.StableGPSampling

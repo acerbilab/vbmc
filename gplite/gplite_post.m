@@ -34,7 +34,13 @@ if isstruct(hyp)
     if nargin < 2; X = gp.X; end
     if nargin < 3; y = gp.y; end
     if nargin < 4; covfun = gp.covfun; end
-    if nargin < 5; meanfun = gp.meanfun; end
+    if nargin < 5
+        if isfield(gp,'intmeanfun') && gp.intmeanfun > 0
+            meanfun = {gp.meanfun,gp.intmeanfun,gp.intmeanfun_mean,gp.intmeanfun_var};
+        else
+            meanfun = gp.meanfun;
+        end
+    end
     if nargin < 6; noisefun = gp.noisefun; end
     if nargin < 7; s2 = gp.s2; end
     if nargin < 9
@@ -71,6 +77,10 @@ if update1
         % Rank-1 update is not supported with heteroskedastic noise
         update1 = false;
     end
+    if gp.intmeanfun > 0
+        % Rank-1 update is not supported with integrated mean functions
+        update1 = false;
+    end
     
     if ~update1
         % Perform standard update
@@ -92,6 +102,16 @@ if isempty(gp)
     if isempty(noisefun)
         if isempty(s2); noisefun = [1 0 0]; else; noisefun = [1 1 0]; end
     end
+    if iscell(meanfun)
+        % Integrated mean function
+        intmeanfun = meanfun{2};
+        intmeanfun_priormean = meanfun{3};
+        intmeanfun_priorvar = meanfun{4};
+        meanfun = meanfun{1};
+    else
+        intmeanfun = 0;
+    end
+    
     % Get number and field of covariance / noise / mean function
     [gp.Ncov,info] = gplite_covfun('info',X,covfun);
     gp.covfun = info.covfun;
@@ -100,6 +120,13 @@ if isempty(gp)
     [gp.Nmean,info] = gplite_meanfun('info',X,meanfun,y);
     gp.meanfun = info.meanfun;
     gp.meanfun_extras = info.extras;
+    gp.intmeanfun = intmeanfun;
+    if gp.intmeanfun > 0
+        gp.intmeanfun_mean(1,:) = intmeanfun_priormean;
+        gp.intmeanfun_var(1,:) = intmeanfun_priorvar;
+        inf_idx = isinf(gp.intmeanfun_var);
+        gp.intmeanfun_mean(inf_idx) = 0;
+    end
     
     % Output warping function (optional)
     if ~isempty(outwarpfun)
@@ -113,7 +140,8 @@ if isempty(gp)
         
     % Create posterior structure
     postfields = {'hyp','alpha','sW','L','sn2_mult','Lchol'};
-    for i = 1:numel(postfields); post.(postfields{i}) = []; end    
+    for i = 1:numel(postfields); post.(postfields{i}) = []; end
+    if gp.intmeanfun > 0; post.intmean = []; end
     for s = 1:size(hyp,2)
         gp.post(s) = post;
         gp.post(s).hyp = hyp(:,s);

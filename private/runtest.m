@@ -7,7 +7,7 @@ function failed = runtest()
 %  See also VBMC, VBMC_EXAMPLES.
 
 tolerr = [0.5 0.5];     % Error tolerance
-RunTime = 70;           % Ballpark runtime s on my laptop (fluctuates!)
+RunTime = 60;           % Ballpark runtime s on my laptop (fluctuates!)
 specs = 'i7-6700HQ CPU @ 2.60GHz, 16 GB RAM';
 t = tic;
 

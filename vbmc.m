@@ -216,6 +216,7 @@ defopts.GPTolOptMCMCActive = '1e-2              % Tolerance for optimization of 
 defopts.TolGPVar           = '1e-4              % Threshold on GP variance used by regulatized acquisition fcns';
 defopts.TolGPVarMCMC       = '1e-4              % Threshold on GP variance, used to stabilize sampling';
 defopts.gpMeanFun          = 'negquadfix        % GP mean function';
+defopts.gpIntMeanFun       = '0                 % GP integrated mean function';
 defopts.KfunMax            = '@(N) N.^(2/3)     % Max variational components as a function of training points';
 defopts.Kwarmup            = '2                 % Variational components during warmup';
 defopts.AdaptiveK          = '2                 % Added variational components for stable solution';
@@ -298,6 +299,8 @@ defopts.ActiveSampleFullUpdate = 'no            % Perform GP and variational upd
 defopts.VariationalInitRepo = 'no               % Use previous variational posteriors to initialize optimization';
 defopts.SampleExtraVPMeans = '0                 % Extra variational components sampled from GP profile';
 defopts.OptimisticVariationalBound = '0         % Uncertainty weight on ELCBO during active sampling';
+defopts.ActiveImportanceSamplingVPSamples = '100 % # importance samples from smoothed variational posterior';
+defopts.ActiveImportanceSamplingBoxSamples = '100 % # importance samples from box-uniform centered on training inputs';
 
 %% Advanced options for unsupported/untested features (do *not* modify)
 defopts.WarpRotoScaling    = 'off               % Rotate and scale input';

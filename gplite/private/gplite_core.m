@@ -101,6 +101,28 @@ end
 
 alpha = L\(L'\(y-m)) / sl;     % alpha = inv(K_mat + diag(sn2)) * (y - m)  I
 
+%% Integrated basis functions
+
+if gp.intmeanfun > 0    
+    bb = gp.intmeanfun_mean(:);
+    BB = gp.intmeanfun_var(:);
+    
+    H = gplite_intmeanfun(gp.X,gp.intmeanfun);
+    plus_idx = (BB > 0);    % Non-delta parameters
+    betabar = zeros(1,size(H,1));
+    if any(~plus_idx)
+        T_plus = diag(1./BB(plus_idx)) + H(plus_idx,:)*(L\(L'\H(plus_idx,:)')/sl);
+        T_chol = chol(T_plus);
+        betabar(plus_idx) = T_chol \ (T_chol' \ (bb(plus_idx)./BB(plus_idx) + H(plus_idx,:)*alpha));
+        betabar(~plus_idx) = bb(~plus_idx);
+    else
+        T_plus = diag(1./BB) + H*(L\(L'\H')/sl);
+        T_chol = chol(T_plus);
+%        betabar(:) = T_plus \ (bb./BB + H*alpha);
+        betabar(:) = T_chol \ (T_chol' \ (bb./BB + H*alpha));
+    end
+end
+
 
 %% Negative log marginal likelihood computation
 nlZ = []; dnlZ = []; Q = [];
@@ -108,8 +130,68 @@ nlZ = []; dnlZ = []; Q = [];
 if compute_nlZ
     Nhyp = size(hyp,1);    
     
-    % Compute negative log marginal likelihood
-    nlZ = (y-m)'*alpha/2 + sum(log(diag(L))) + N*log(2*pi*sl)/2;
+    if gp.intmeanfun > 0
+        % Negative log marginal likelihood with integrated basis functions
+        prec_idx = BB > 0 & isfinite(BB);
+        inf_idx = isinf(BB);
+                
+        vagueall_flag = all(inf_idx);  % Vague prior on *all* basis functions?
+        vagueany_flag = any(inf_idx);  % Some vague priors?
+        precany_flag = any(prec_idx);  % Some precise priors?
+        
+        % Compute first quadratic term
+        nu = y-m - H'*bb;
+        if vagueall_flag
+            nlZ_1 = nu'*alpha/2;
+        else
+            if precany_flag
+                HBH_prec = H(prec_idx,:)'*bsxfun(@times,BB(prec_idx),H(prec_idx,:));
+                N_mat = L'*L*sl + HBH_prec;
+                N_chol = chol(N_mat);                
+                % Ninv = N_mat\eye(N);
+                Ninv = N_chol\(N_chol'\eye(N));
+                nlZ_1 = nu'*(Ninv*nu)/2;
+            else
+                nlZ_1 = nu'*(L\(L'\nu))/sl/2;
+            end
+        end
+        
+        % Compute second quadratic term (vague prior contribution)
+        if vagueany_flag
+            if ~precany_flag
+                W = chol(H*(L\(L'\H'))/sl);                
+                % A = H'*((H*Kinv*H')\H);
+                A_mat = H'*(W\(W'\H));
+                nlZ_v = -nu'*(L\(L'\(A_mat*(L\(L'\nu)))))/sl^2/2;
+            else
+                Hinf = H(inf_idx,:);
+                W = chol(Hinf*Ninv*Hinf');
+                % A = Hinf'*((Hinf*Ninv*Hinf')\Hinf);
+                A_mat = Hinf'*(W\(W'\Hinf));
+                C = Ninv*A_mat*Ninv;                
+                nlZ_v = -nu'*C*nu/2;
+            end
+        else
+            nlZ_v = 0;
+        end
+        
+        % Compute determinants
+        nldet = sum(log(diag(L)));                  % First component
+        if precany_flag                             % Precise priors
+            nldet = nldet + sum(log(BB(prec_idx)))/2;
+            Tprec_idx = isfinite(BB(BB > 0));
+            nldet = nldet + log(det(T_plus(Tprec_idx,Tprec_idx)))/2;
+        end
+        if vagueany_flag
+            nldet = nldet + sum(log(diag(W)));
+        end
+        
+        nlZ = nlZ_1 + nlZ_v + nldet + N*log(2*pi*sl)/2 - sum(inf_idx)*log(2*pi)/2;        
+        
+    else
+        % Compute negative log marginal likelihood
+        nlZ = (y-m)'*alpha/2 + sum(log(diag(L))) + N*log(2*pi*sl)/2;
+    end
     
     if outwarp_flag     % Jacobian correction for output warping
         nlZ = nlZ - sum(log(abs(dwarp_dt)));
@@ -119,8 +201,31 @@ if compute_nlZ
         % Compute gradient of negative log marginal likelihood
 
         dnlZ = zeros(Nhyp,1);    % allocate space for derivatives
-        Q = L\(L'\eye(N))/sl - alpha*alpha';    % precomputed
-
+        
+        if gp.intmeanfun > 0
+            % Gradient with integrated basis functions
+            Kinv = L\(L'\eye(N))/sl;
+            if ~precany_flag; Ninv = Kinv; end
+            chi = Ninv*nu;
+            Q = Kinv - chi*chi';
+            if vagueany_flag
+                phi = Ninv*A_mat*chi;
+                Q = Q - phi*phi' + 2*chi*phi';
+                if ~precany_flag
+                    Q = Q - Kinv*A_mat*Kinv;                
+                else
+                    Q = Q - Ninv*A_mat*Ninv;
+                end
+            else
+                phi = 0;                
+            end
+            if precany_flag
+                Q = Q - Kinv*H(prec_idx,:)'*(T_plus(Tprec_idx,Tprec_idx)\(H(prec_idx,:)*Kinv));
+            end            
+        else        
+            Q = L\(L'\eye(N))/sl - alpha*alpha';
+        end
+        
         if gp.covfun(1) == 1
             for i = 1:D                             % Grad of cov length scales
                 K_temp = K_mat .* sq_dist(gp.X(:,i)'/ell(i));
@@ -147,11 +252,19 @@ if compute_nlZ
 
         % Gradient of mean function
         if Nmean > 0
-            dnlZ(Ncov+Nnoise+(1:Nmean)) = -dm'*alpha;
+            if gp.intmeanfun > 0
+                % Mean function gradient with integrated basis functions
+                dnlZ(Ncov+Nnoise+(1:Nmean)) = -dm'*(chi - phi);                
+            else
+                dnlZ(Ncov+Nnoise+(1:Nmean)) = -dm'*alpha;
+            end
         end
         
         % Gradient of output warping function
         if outwarp_flag && Noutwarp > 0
+            if gp.intmeanfun > 0
+                error('Integrated basis functions are not supported with output warping yet.');
+            end
             for i = 1:Noutwarp
                 dnlZ(Ncov+Nnoise+Nmean+i) = dwarp_dtheta(:,i)'*alpha ...
                     - sum(d2warp_dthetadt(:,i)./dwarp_dt);
@@ -169,6 +282,12 @@ if nargout > 2
     post.L = pL;
     post.sn2_mult = sn2_mult;
     post.Lchol = Lchol;
+    if gp.intmeanfun > 0
+        post.intmean.HKinv = H*(L\(L'\eye(N))/sl);
+         % Inverse reduced T (only positive variances)
+        post.intmean.Tplusinv = T_chol \ (T_chol' \eye(size(T_chol)));
+        post.intmean.betabar = betabar;
+    end
 end
 
 

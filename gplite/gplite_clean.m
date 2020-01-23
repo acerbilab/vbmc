@@ -8,8 +8,12 @@ function gp = gplite_clean(gp)
 if ~isempty(gp) && isfield(gp,'post')
     copyfields = {'hyp'};
     emptyfields = {'alpha','sW','L','sn2_mult','Lchol'};
+    checkfields = {'intmean'};
     for ff = copyfields; post0.(ff{:}) = []; end
     for ff = emptyfields; post0.(ff{:}) = []; end
+    for ff = checkfields
+        if isfield(gp.post(1),ff{:}); post0.(ff{:}) = []; end
+    end
     
     for iG = 1:numel(gp)
         Ns = numel(gp(iG).post);

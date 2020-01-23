@@ -95,11 +95,17 @@ else                    % Active uncertainty sampling
             if 0
                 x0 = vbmc_rnd(vp,1,0);
                 xx = gplite_sample(gp,NsFromGP,x0,[],[],gpbeta,Inf,[],[],[LB_extra;UB_extra]);
-            else
+            elseif 0
                 K = 2*(vp.D+1);
                 x0 = vbmc_rnd(vp,K,0);
                 xx = gplite_sample(gp,NsFromGP,x0,'parallel',[],gpbeta,Inf,[],[],[LB_extra;UB_extra]);
-            end                
+            else
+                [X_hpd,y_hpd] = gethpd_vbmc(gp.X,gp.y,options.HPDFrac);
+                Nextra = min(size(X_hpd,1),Nextra);
+                xx = gp.X(randperm(size(X_hpd,1),Nextra),:);
+                xx = gp.X;
+                Nextra = size(xx,1);
+            end
             OptimizeMu = vp.optimize_mu;
             OptimizeWeights = vp.optimize_weights;
             vp.optimize_mu = false;
@@ -113,7 +119,7 @@ else                    % Active uncertainty sampling
             options_vp.NSent = 0;
             options_vp.NSentFast = 0;
             options_vp.NSentFine = 0;
-            options_vp.TolW = 0;
+            options_vp.TolWeight = 0;
 %            options_vp.ELCBOWeight = 0;
 %            vp2 = vpoptimize_vbmc(0,1,vp,gp,[],optimState,options_vp,0);
 %            xrnd = vbmc_rnd(vp2,1e5); cornerplot(xrnd);
@@ -136,7 +142,7 @@ else                    % Active uncertainty sampling
             [~,~,varF] = gplogjoint(vp,gp,0,0,0,1);
             optimState.varlogjoint_samples = varF;
         end
-        
+                
         % Evaluate noise at each training point
         Ns_gp = numel(gp.post);
         sn2new = zeros(size(gp.X,1),Ns_gp);
@@ -183,6 +189,11 @@ else                    % Active uncertainty sampling
         optimState.t_algoperfuneval = t_base/deltaNeff + max(0,gpTrain_diff);
         % [t_base/deltaNeff,gpTrain_diff]
         
+        % Prepare for importance sampling based acquisition function
+        if isfield(optimState.acqInfo{idxAcq},'importance_sampling') ...
+                && optimState.acqInfo{idxAcq}.importance_sampling
+            optimState.ActiveImportanceSampling = activeimportancesampling_vbmc(vp,gp,SearchAcqFcn{idxAcq},options);
+        end
         
         %% Start active search
         
@@ -261,6 +272,8 @@ else                    % Active uncertainty sampling
                     error('vbmc:UnknownOptimizer','Unknown acquisition function search optimization method.');            
             end        
 
+            % [fval_old, fval_optim]
+            
             if fval_optim < fval_old            
                 Xacq(1,:) = real2int_vbmc(xsearch_optim,vp.trinfo,optimState.integervars);
                 idx_cache_acq(1) = 0;
@@ -268,6 +281,17 @@ else                    % Active uncertainty sampling
                 % Double check if the cache indexing is correct
             end
         end
+        
+        % [acq,tr_p] = SearchAcqFcn{idxAcq}(Xacq(1,:),vp,gp,optimState,0)        
+        
+        % Add random jitter
+        if rand() < 1/3 && 0
+            X_hpd = gethpd_vbmc(gp.X,gp.y,options.HPDFrac);
+            Sigma = diag(var(X_hpd))*exp(randn());
+            Xacq(1,:) = mvnrnd(Xacq(1,:),Sigma);
+            Xacq(1,:) = real2int_vbmc(Xacq(1,:),vp.trinfo,optimState.integervars);
+        end
+        
         
 %         % Finish search with a few MCMC iterations
 %         if 1 || options.SearchMCMC                
@@ -367,7 +391,7 @@ else                    % Active uncertainty sampling
         
         if is < Ns
             
-            if options.ActiveSampleFullUpdate
+            if options.ActiveSampleFullUpdate > 0
                 % Quick GP update                
                 t = tic;
                 if isempty(hypstruct); hypstruct = optimState.hypstruct; end
@@ -375,17 +399,18 @@ else                    % Active uncertainty sampling
                     gptrain_vbmc(hypstruct,optimState,stats,options_update);    
                 timer.gpTrain = timer.gpTrain + toc(t);
                 
-                % Quick variational optimization
-                t = tic;
-                
-                % Decide number of fast optimizations
-                Nfastopts = ceil(options_update.NSelboIncr * evaloption_vbmc(options_update.NSelbo,vp.K));
-                if options.UpdateRandomAlpha
-                    optimState.entropy_alpha = 1 - sqrt(rand());
+                if options.ActiveSampleFullUpdate == 1
+                    % Quick variational optimization
+                    t = tic;                
+                    % Decide number of fast optimizations
+                    Nfastopts = ceil(options_update.NSelboIncr * evaloption_vbmc(options_update.NSelbo,vp.K));
+                    if options.UpdateRandomAlpha
+                        optimState.entropy_alpha = 1 - sqrt(rand());
+                    end
+                    vp = vpoptimize_vbmc(Nfastopts,1,vp,gp,[],optimState,options_update,0);
+                    optimState.vp_repo{end+1} = get_vptheta(vp);
+                    timer.variationalFit = timer.variationalFit + toc(t);
                 end
-                vp = vpoptimize_vbmc(Nfastopts,1,vp,gp,[],optimState,options_update,0);
-                optimState.vp_repo{end+1} = get_vptheta(vp);
-                timer.variationalFit = timer.variationalFit + toc(t);
                 
             else
                 % Perform simple rank-1 update if no noise and first sample
@@ -499,3 +524,6 @@ if size(Xsearch,1) < NSsearch
 end
 
 end
+
+
+

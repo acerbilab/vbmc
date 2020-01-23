@@ -144,7 +144,7 @@ PLB = min(max(PLB,LB),UB);
 PUB = max(min(PUB,UB),LB);
 
 %% Hyperparameter optimization
-gptrain_options = optimoptions('fmincon','GradObj','on','Display','off');    
+gptrain_options = optimoptions('fmincon','GradObj','on','Display','off');
 
 if Ns > 0
     gptrain_options.TolFun = TolOptMCMC;  % Limited optimization
@@ -457,7 +457,12 @@ compute_grad = nargout > 1 && ~gpflag;
 
 if gpflag
     if isfield(gp,'outwarpfun'); outwarpfun = gp.outwarpfun; else; outwarpfun = []; end
-    gp = gplite_post(hyp(1:end,:),gp.X,gp.y,gp.covfun,gp.meanfun,gp.noisefun,gp.s2,[],outwarpfun);
+    if isfield(gp,'intmeanfun') && gp.intmeanfun > 0
+        meanfun = {gp.meanfun,gp.intmeanfun,gp.intmeanfun_mean,gp.intmeanfun_var};
+    else
+        meanfun = gp.meanfun;
+    end
+    gp = gplite_post(hyp(1:end,:),gp.X,gp.y,gp.covfun,meanfun,gp.noisefun,gp.s2,[],outwarpfun);
     nlZ = gp;
 else
 
