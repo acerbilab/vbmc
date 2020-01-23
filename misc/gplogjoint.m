@@ -44,7 +44,7 @@ Nmean = gp.Nmean;
 
 Ns = numel(gp.post);            % Hyperparameter samples
 
-if all(gp.meanfun ~= [0,1,4,6,8,10,12,14,16,18])
+if all(gp.meanfun ~= [0,1,4,6,8,10,12,14,16,18,20])
     error('gplogjoint:UnsupportedMeanFun', ...
         'Log joint computation currently only supports zero, constant, negative quadratic, negative quadratic (fixed/isotropic), negative quadratic-only, or squared exponential mean functions.');
 end
@@ -58,6 +58,7 @@ quadsqexp_meanfun = gp.meanfun == 8 || gp.meanfun == 14;
 quadsqexpconstrained_meanfun = gp.meanfun == 14;
 quadraticonly_meanfun = gp.meanfun == 16;
 quadraticfixedonly_meanfun = gp.meanfun == 18;
+quadraticlinonly_meanfun = gp.meanfun == 20;
 
 % Integrated mean function being used?
 integrated_meanfun = isfield(gp,'intmeanfun') && gp.intmeanfun > 0;
@@ -127,7 +128,11 @@ for s = 1:Ns
     sum_lnell = sum(hyp(1:D));
         
     % GP mean function hyperparameters
-    if gp.meanfun > 0 && ~quadraticonly_meanfun && ~quadraticfixedonly_meanfun; m0 = hyp(Ncov+Nnoise+1); else; m0 = 0; end
+    if gp.meanfun > 0 && ~quadraticonly_meanfun && ~quadraticfixedonly_meanfun && ~quadraticlinonly_meanfun
+        m0 = hyp(Ncov+Nnoise+1);
+    else
+        m0 = 0;
+    end
     if quadratic_meanfun || sqexp_meanfun || quadsqexp_meanfun || quadsqexpconstrained_meanfun
         if fixediso_meanfun
             xm(:,1) = gp.meanfun_extras(1:D)';
@@ -160,6 +165,10 @@ for s = 1:Ns
         xm(:,1) = gp.meanfun_extras(1:D)';
         omega = exp(hyp(Ncov+Nnoise+(1:D)));        
     end
+    if quadraticlinonly_meanfun
+        xm = hyp(Ncov+Nnoise+(1:D));
+        omega = exp(hyp(Ncov+Nnoise+D+(1:D)));            
+    end
     
     % GP integrated mean function parameters
     if integrated_meanfun
@@ -187,7 +196,7 @@ for s = 1:Ns
         z_k = exp(lnnf_k -0.5 * sum(delta_k.^2,1));
         I_k = z_k*alpha + m0;
 
-        if quadratic_meanfun || quadsqexp_meanfun || quadraticfixedonly_meanfun
+        if quadratic_meanfun || quadsqexp_meanfun || quadraticfixedonly_meanfun || quadraticlinonly_meanfun
             nu_k = -0.5*sum(1./omega.^2 .* ...
                 (mu(:,k).^2 + sigma(k)^2*lambda.^2 - 2*mu(:,k).*xm + xm.^2 + delta.^2),1);            
             I_k = I_k + nu_k;        
@@ -223,7 +232,7 @@ for s = 1:Ns
         if grad_flags(1)
             dz_dmu = bsxfun(@times, -bsxfun(@rdivide, delta_k, tau_k), z_k);
             mu_grad(:,k,s) = w(k)*dz_dmu*alpha;            
-            if quadratic_meanfun || quadsqexp_meanfun || quadraticfixedonly_meanfun
+            if quadratic_meanfun || quadsqexp_meanfun || quadraticfixedonly_meanfun || quadraticlinonly_meanfun
                 mu_grad(:,k,s) = mu_grad(:,k,s) - w(k)./omega.^2.*(mu(:,k) - xm);
             elseif sqexp_meanfun
                 mu_grad(:,k,s) = mu_grad(:,k,s) - w(k)*nu_k_se./tau2_mfun.*(mu(:,k) - xm);                
@@ -248,7 +257,7 @@ for s = 1:Ns
         if grad_flags(2)
             dz_dsigma = bsxfun(@times, sum(bsxfun(@times,(lambda./tau_k).^2, delta_k.^2 - 1),1), sigma(k)*z_k);
             sigma_grad(k,s) = w(k)*dz_dsigma*alpha;
-            if quadratic_meanfun || quadsqexp_meanfun || quadraticonly_meanfun || quadraticfixedonly_meanfun
+            if quadratic_meanfun || quadsqexp_meanfun || quadraticonly_meanfun || quadraticfixedonly_meanfun || quadraticlinonly_meanfun
                 sigma_grad(k,s) = sigma_grad(k,s) - w(k)*sigma(k)*sum(1./omega.^2.*lambda.^2,1);
             elseif sqexp_meanfun
                 sigma_grad(k,s) = sigma_grad(k,s) - w(k)*sigma(k)*sum(lambda.^2./tau2_mfun,1)*nu_k_se ...
@@ -272,7 +281,7 @@ for s = 1:Ns
         if grad_flags(3)
             dz_dlambda = bsxfun(@times, bsxfun(@times, (sigma(k)./tau_k).^2, delta_k.^2 - 1), bsxfun(@times,lambda,z_k));
             lambda_grad(:,s) = lambda_grad(:,s) + w(k)*(dz_dlambda*alpha);
-            if quadratic_meanfun || quadsqexp_meanfun || quadraticonly_meanfun || quadraticfixedonly_meanfun
+            if quadratic_meanfun || quadsqexp_meanfun || quadraticonly_meanfun || quadraticfixedonly_meanfun || quadraticlinonly_meanfun
                 lambda_grad(:,s) = lambda_grad(:,s) - w(k)*sigma(k)^2./omega.^2.*lambda;
             elseif sqexp_meanfun
                 lambda_grad(:,s) = lambda_grad(:,s) - w(k)*sigma(k)^2*lambda./tau2_mfun*nu_k_se ...

@@ -114,6 +114,12 @@ switch meanfun
     case {19,'19','posquadfixonly'}
         Nmean = D;
         meanfun = 19;
+    case {20,'20','negquadlinonly'}
+        Nmean = 2*D;
+        meanfun = 20;
+    case {21,'21','posquadlinonly'}
+        Nmean = 2*D;
+        meanfun = 21;
     otherwise
         if isnumeric(meanfun); meanfun = num2str(meanfun); end
         error('gplite_meanfun:UnknownMeanFun',...
@@ -281,7 +287,20 @@ if ischar(hyp)
             dm.UB(1:D) = log(w) + log(Big);
             dm.PLB(1:D) = log(w) + 0.5*log(ToL);
             dm.PUB(1:D) = log(w);
-            dm.x0(1:D) = log(std(X));            
+            dm.x0(1:D) = log(std(X));
+            
+        elseif meanfun >= 20 && meanfun <= 21
+            dm.LB(1:D) = min(X) - 0.5*w;          % xm
+            dm.UB(1:D) = max(X) + 0.5*w;
+            dm.PLB(1:D) = min(X);
+            dm.PUB(1:D) = max(X);
+            dm.x0(1:D) = median(X);                
+                
+            dm.LB(D+(1:D)) = log(w) + log(ToL);   % omega
+            dm.UB(D+(1:D)) = log(w) + log(Big);
+            dm.PLB(D+(1:D)) = log(w) + 0.5*log(ToL);
+            dm.PUB(D+(1:D)) = log(w);
+            dm.x0(D+(1:D)) = log(std(X));            
         end
         
         % Fixed quadratic mean location
@@ -320,6 +339,8 @@ if ischar(hyp)
             case 17; dm.meanfun_name = 'posquadonly';
             case 18; dm.meanfun_name = 'negquadfixonly';
             case 19; dm.meanfun_name = 'posquadfixonly';
+            case 20; dm.meanfun_name = 'negquadlinonly';
+            case 21; dm.meanfun_name = 'posquadlinonly';
         end
         
     end
@@ -484,6 +505,16 @@ switch meanfun
         m = (sgn*0.5)*sum(z2,2);
         if compute_grad
             dm(:,1:D) = (-sgn)*z2;        
+        end
+    case {20,21}  % Negative (20) and positive (21) quadratic, no shift
+        if meanfun == 20; sgn = -1; else; sgn = 1; end
+        xm = hyp((1:D))';
+        omega = exp(hyp(D+(1:D)))';
+        z2 = bsxfun(@rdivide,bsxfun(@minus,X,xm),omega).^2;
+        m = (sgn*0.5)*sum(z2,2);
+        if compute_grad
+            dm(:,1:D) = (-sgn)*bsxfun(@rdivide,bsxfun(@minus,X,xm), omega.^2);
+            dm(:,D+(1:D)) = (-sgn)*z2;        
         end
                 
         
