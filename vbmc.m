@@ -242,6 +242,7 @@ defopts.MinIter            = 'nvars             % Min number of iterations';
 defopts.HeavyTailSearchFrac = '0.25               % Fraction of search points from heavy-tailed variational posterior';
 defopts.MVNSearchFrac      = '0.25              % Fraction of search points from multivariate normal';
 defopts.HPDSearchFrac      = '0                 % Fraction of search points from multivariate normal fitted to HPD points';
+defopts.BoxSearchFrac      = '0                 % Fraction of search points from uniform random box based on training inputs';
 defopts.SearchCacheFrac    = '0                 % Fraction of search points from previous iterations';
 defopts.AlwaysRefitVarPost = 'no                % Always fully refit variational posterior';
 defopts.Warmup             = 'on                % Perform warm-up stage';
@@ -299,8 +300,9 @@ defopts.ActiveSampleFullUpdate = 'no            % Perform GP and variational upd
 defopts.VariationalInitRepo = 'no               % Use previous variational posteriors to initialize optimization';
 defopts.SampleExtraVPMeans = '0                 % Extra variational components sampled from GP profile';
 defopts.OptimisticVariationalBound = '0         % Uncertainty weight on ELCBO during active sampling';
-defopts.ActiveImportanceSamplingVPSamples = '100 % # importance samples from smoothed variational posterior';
-defopts.ActiveImportanceSamplingBoxSamples = '100 % # importance samples from box-uniform centered on training inputs';
+defopts.ActiveImportanceSamplingVPSamples   = '100 % # importance samples from smoothed variational posterior';
+defopts.ActiveImportanceSamplingBoxSamples  = '100 % # importance samples from box-uniform centered on training inputs';
+defopts.ActiveImportanceSamplingMCMCSamples = '0   % # importance samples through MCMC';
 
 %% Advanced options for unsupported/untested features (do *not* modify)
 defopts.WarpRotoScaling    = 'off               % Rotate and scale input';

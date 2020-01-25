@@ -200,7 +200,7 @@ else                    % Active uncertainty sampling
         optimState.acqrand = rand();    % Seed for random acquisition fcn
         
         % Create search set from cache and randomly generated
-        [Xsearch,idx_cache] = getSearchPoints(NSsearch,optimState,vp,options);
+        [Xsearch,idx_cache] = getSearchPoints(NSsearch,optimState,vp,gp,options);
         Xsearch = real2int_vbmc(Xsearch,vp.trinfo,optimState.integervars);
         
         % Evaluate acquisition function
@@ -251,6 +251,7 @@ else                    % Active uncertainty sampling
                     cmaes_opts.LBounds = LB(:);
                     cmaes_opts.UBounds = UB(:);                
                     [xsearch_optim,fval_optim,~,~,out_optim,bestever] = cmaes_modded(func2str(SearchAcqFcn{idxAcq}),x0(:),insigma,cmaes_opts,vp,gp,optimState,1);
+                    nevals = out_optim.evals;
                     if options.SearchCMAESbest
                         xsearch_optim = bestever.x;
                         fval_optim = bestever.f;
@@ -262,6 +263,7 @@ else                    % Active uncertainty sampling
                     fmincon_opts.TolFun = TolFun;
                     fmincon_opts.MaxFunEvals = options.SearchMaxFunEvals;
                     [xsearch_optim,fval_optim,~,out_optim] = fmincon(@(x) SearchAcqFcn{idxAcq}(x,vp,gp,optimState,0),x0,[],[],[],[],LB,UB,[],fmincon_opts);
+                    nevals = out_optim.funcCount;               
                     % out_optim
                 case 'bads'
                     bads_opts.Display = 'off';
@@ -272,6 +274,7 @@ else                    % Active uncertainty sampling
                     error('vbmc:UnknownOptimizer','Unknown acquisition function search optimization method.');            
             end        
 
+            
             % [fval_old, fval_optim]
             
             if fval_optim < fval_old            
@@ -454,7 +457,7 @@ timer.funEvals = timer.funEvals + t_func;
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [Xsearch,idx_cache] = getSearchPoints(NSsearch,optimState,vp,options)
+function [Xsearch,idx_cache] = getSearchPoints(NSsearch,optimState,vp,gp,options)
 %GETSEARCHPOINTS Get search points from starting cache or randomly generated.
 
 % Take some points from starting cache, if not empty
@@ -514,7 +517,22 @@ if size(Xsearch,1) < NSsearch
             Xrnd = [Xrnd; mvnrnd(mubar,Sigmabar,Nhpd_vec(ii))];
         end
     end
-    Nvp = max(0,Nrnd-Nsearchcache-Nheavy-Nmvn-Nhpd);
+    Nbox = round(options.BoxSearchFrac*Nrnd);
+    if Nbox > 0
+        X = optimState.X(optimState.X_flag,:);
+        D = size(X,2);
+        X_diam = max(X) - min(X);
+        plb = optimState.PLB;
+        pub = optimState.PUB;
+        box_plb = plb - 3*(pub - plb);
+        box_pub = pub + 3*(pub - plb);
+        box_lb = max(min(X) - 0.5*X_diam,box_plb);
+        box_ub = min(max(X) + 0.5*X_diam,box_pub);
+        Xrnd = [Xrnd; ...
+            bsxfun(@plus,bsxfun(@times,rand(Nbox,D),box_ub-box_lb),box_lb)];
+    end
+    
+    Nvp = max(0,Nrnd-Nsearchcache-Nheavy-Nmvn-Nhpd-Nbox);
     if Nvp > 0
         Xrnd = [Xrnd; vbmc_rnd(vp,Nvp,0,1)];
     end
