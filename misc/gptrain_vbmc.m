@@ -318,7 +318,8 @@ if options.EmpiricalGPPrior
     
 else
     
-    hypprior.mu(1:D) = log(0.05*(optimState.PUB - optimState.PLB));
+    %hypprior.mu(1:D) = log(0.05*(optimState.PUB - optimState.PLB));
+    hypprior.mu(1:D) = log(options.GPLengthMeanPrior*(optimState.PUB - optimState.PLB));
     hypprior.sigma(1:D) = log(10);
     
 %      switch meanfun
