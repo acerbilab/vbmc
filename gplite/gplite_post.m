@@ -126,6 +126,9 @@ if isempty(gp)
         gp.intmeanfun_var(1,:) = intmeanfun_priorvar;
         inf_idx = isinf(gp.intmeanfun_var);
         gp.intmeanfun_mean(inf_idx) = 0;
+    else
+        gp.intmeanfun_mean = [];
+        gp.intmeanfun_var = [];
     end
     
     % Output warping function (optional)

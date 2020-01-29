@@ -16,6 +16,7 @@ if isempty(gp)
 else                    % Active uncertainty sampling
     
     SearchAcqFcn = options.SearchAcqFcn;
+    gp_old = [];
     
     if options.AcqHedge && numel(SearchAcqFcn) > 1        
         % Choose acquisition function via hedge strategy
@@ -68,6 +69,13 @@ else                    % Active uncertainty sampling
     % if Ns > 1; vp_old = vp; end
     
     for is = 1:Ns
+        
+        intmeangpSearch = 0;
+        
+        if intmeangpSearch
+            gp_old = gp;
+            gp = trainintmeangp_vbmc(gp,optimState,options);
+        end
         
         optimState.N = optimState.Xn;  % Number of training inputs
         optimState.Neff = sum(optimState.nevals(optimState.X_flag));        
@@ -225,8 +233,14 @@ else                    % Active uncertainty sampling
         if ~strcmpi(options.SearchOptimizer,'none')
             fval_old = SearchAcqFcn{idxAcq}(Xacq(1,:),vp,gp,optimState,0);
             x0 = real2int_vbmc(Xacq(1,:),vp.trinfo,optimState.integervars);
-            xrange = max(gp.X) - min(gp.X);
-            LB = min([gp.X;x0]) - 0.1*xrange; UB = max([gp.X;x0]) + 0.1*xrange;
+            if all(isfinite([optimState.LB_search,optimState.UB_search]))
+                LB = min([x0;optimState.LB_search]);
+                UB = max([x0;optimState.UB_search]);
+            else
+                xrange = max(gp.X) - min(gp.X);
+                LB = min([gp.X;x0]) - 0.1*xrange; UB = max([gp.X;x0]) + 0.1*xrange;                
+            end
+            
             if isfield(optimState.acqInfo{idxAcq},'log_flag') ...
                     && optimState.acqInfo{idxAcq}.log_flag
                 TolFun = 1e-2;
@@ -345,6 +359,26 @@ else                    % Active uncertainty sampling
             end
         end
         
+        if options.UncertaintyHandling && rand() < 0           
+            acqpeak = @acqfsn2reg_vbmc;
+            
+            % Evaluate acquisition function on training set
+            X_train = get_traindata_vbmc(optimState,options);
+
+            % Disable variance-based regularization first
+            oldflag = optimState.VarianceRegularizedAcqFcn;
+            optimState.VarianceRegularizedAcqFcn = false;
+            % Use current cost of GP instead of future cost
+            old_t_algoperfuneval = optimState.t_algoperfuneval;
+            optimState.t_algoperfuneval = t_base/deltaNeff;
+            acq_train = acqpeak(X_train,vp,gp,optimState,0);
+            optimState.VarianceRegularizedAcqFcn = oldflag;
+            optimState.t_algoperfuneval = old_t_algoperfuneval;            
+            [acq_train,idx_train] = min(acq_train);
+            Xacq(1,:) = X_train(idx_train,:);
+        end
+        
+        
         y_orig = [NaN; optimState.Cache.y_orig(:)]; % First position is NaN (not from cache)
         yacq = y_orig(idx_cache_acq+1);
         idx_nn = ~isnan(yacq);
@@ -394,6 +428,8 @@ else                    % Active uncertainty sampling
         
         if is < Ns
             
+            if ~isempty(gp_old); gp = gp_old; end
+            
             if options.ActiveSampleFullUpdate > 0
                 % Quick GP update                
                 t = tic;
@@ -418,7 +454,7 @@ else                    % Active uncertainty sampling
             else
                 % Perform simple rank-1 update if no noise and first sample
                 t = tic;
-                update1 = (isempty(s2new) || optimState.nevals(idx_new) == 1) && ~options.NoiseShaping;
+                update1 = (isempty(s2new) || optimState.nevals(idx_new) == 1) && ~options.NoiseShaping && ~options.IntegrateGPMean;
                 if update1
                     gp = gplite_post(gp,xnew,ynew,[],[],[],s2new,1);
                     gp.t(end+1) = tnew;
@@ -428,6 +464,27 @@ else                    % Active uncertainty sampling
                 timer.gpTrain = timer.gpTrain + toc(t);
             end
         end
+        
+        % Check if active search bounds need to be expanded        
+        delta_search = 0.05*(optimState.UB_search - optimState.LB_search);
+        
+        % ADD DIFFERENT CHECKS FOR INTEGER VARIABLES!
+        idx = abs(xnew - optimState.LB_search) < delta_search;
+        optimState.LB_search(idx) = max(optimState.LB(idx), ...
+            optimState.LB_search(idx) - delta_search(idx));
+        idx = abs(xnew - optimState.UB_search) < delta_search;
+        optimState.UB_search(idx) = min(optimState.UB(idx), ...
+            optimState.UB_search(idx) + delta_search(idx));
+        
+        % Hard lower/upper bounds on search
+        prange = optimState.PUB - optimState.PLB;
+        LB_searchmin = max(optimState.PLB - 2*prange*options.ActiveSearchBound,optimState.LB);
+        UB_searchmin = min(optimState.PUB + 2*prange*options.ActiveSearchBound,optimState.UB);        
+%         optimState.LB_search = max(optimState.LB_search,LB_searchmin);
+%         optimState.UB_search = min(optimState.UB_search,UB_searchmin);
+        
+        % [[optimState.LB_search, min(gp.X)]; [optimState.UB_search, max(gp.X)]]
+        
     end
     
     if options.ActiveSampleFullUpdate && Ns > 1
@@ -524,10 +581,17 @@ if size(Xsearch,1) < NSsearch
         X_diam = max(X) - min(X);
         plb = optimState.PLB;
         pub = optimState.PUB;
-        box_plb = plb - 3*(pub - plb);
-        box_pub = pub + 3*(pub - plb);
-        box_lb = max(min(X) - 0.5*X_diam,box_plb);
-        box_ub = min(max(X) + 0.5*X_diam,box_pub);
+        if all(isfinite([optimState.LB_search,optimState.UB_search]))
+            box_lb = optimState.LB_search;
+            box_ub = optimState.UB_search;            
+            box_lb = max(min(X) - 0.5*X_diam,box_lb);
+            box_ub = min(max(X) + 0.5*X_diam,box_ub);
+        else
+            box_lb = plb - 3*(pub - plb);
+            box_ub = pub + 3*(pub - plb);
+            box_lb = max(min(X) - 0.5*X_diam,box_lb);
+            box_ub = min(max(X) + 0.5*X_diam,box_ub);
+        end
         Xrnd = [Xrnd; ...
             bsxfun(@plus,bsxfun(@times,rand(Nbox,D),box_ub-box_lb),box_lb)];
     end
@@ -540,6 +604,9 @@ if size(Xsearch,1) < NSsearch
     Xsearch = [Xsearch; Xrnd];
     idx_cache = [idx_cache(:); zeros(Nrnd,1)];
 end
+
+% Apply search bounds
+Xsearch = bsxfun(@min,bsxfun(@max,Xsearch,optimState.LB_search),optimState.UB_search);
 
 end
 

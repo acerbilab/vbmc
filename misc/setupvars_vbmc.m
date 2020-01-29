@@ -254,6 +254,11 @@ optimState.RepeatedObservationsStreak = 0;
 % List of data trimming events
 optimState.DataTrimList = [];
 
+% Expanding search bounds
+prange = optimState.PUB - optimState.PLB;
+optimState.LB_search = max(optimState.PLB - prange*options.ActiveSearchBound,optimState.LB);
+optimState.UB_search = min(optimState.PUB + prange*options.ActiveSearchBound,optimState.UB);
+
 %% Initialize Gaussian process settings
 
 optimState.gpCovfun = 1;    % Squared exponential kernel with separate length scales

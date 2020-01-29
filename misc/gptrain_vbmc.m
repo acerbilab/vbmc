@@ -46,46 +46,26 @@ catch
     hyp0 = hypstruct.hyp;
 end
 
+if size(hyp0,1) ~= size(hypprior.mu,2); hyp0 = []; end
+
 % Fit GP to training set
 [gp,hypstruct.hyp,gpoutput] = gplite_train(hyp0,Ns_gp,...
     X_train,y_train, ...
     optimState.gpCovfun,meanfun,optimState.gpNoisefun,...
     s2_train,hypprior,gptrain_options);
 
-% Check for posite-definiteness of negative quadratic basis function
-if optimState.intMeanfun == 3 || optimState.intMeanfun == 4
-    D = size(X_train,2);
-    Nb = numel(gp.post(1).intmean.betabar);
-    betabar = zeros(Nb,numel(gp.post));
-    for s = 1:numel(gp.post)        
-        betabar(:,s) = gp.post(s).intmean.betabar;
-    end
-    % betabar
+if gp.intmeanfun == 0 && options.IntegrateGPMean
+    gp_intmean = trainintmeangp_vbmc(gp,optimState,stats,options);    
+    errorflag = check_quadcoefficients_vbmc(gp_intmean);
+    if ~errorflag; gp = gp_intmean; end
     
-    if optimState.intMeanfun == 3
-        redo_flag = any(betabar(1+D+(1:D),:) >= 0,2)';
-    elseif optimState.intMeanfun == 4
-        tril_mat = tril(true(D),-1); 
-        tril_vec = tril_mat(:);
-        z = zeros(D*D,1); 
-        redo_flag = false;
-        for b = 1:size(betabar,2)
-            beta_mat = z;
-            beta_mat(tril_vec) = betabar(1+2*D+(1:D*(D-1)/2),b);
-            beta_mat = reshape(beta_mat,[D,D]);
-            beta_mat = beta_mat + beta_mat' + diag(betabar(1+D+(1:D),b));
-            try
-                [~,dd] = chol(-beta_mat);
-            catch
-                dd = 1;
-            end
-            dd
-            redo_flag = redo_flag | dd;
-        end
-    end
+elseif gp.intmeanfun == 3 || gp.intmeanfun == 4    
+
+    % Check for posite-definiteness of negative quadratic basis function
+    errorflag = check_quadcoefficients_vbmc(gp);
 
     % If the coefficients are not negative, redo the fit
-    if redo_flag
+    if errorflag
         optimState_temp = optimState;
         optimState.gpMeanfun = 18;
         optimState.intMeanfun = 1;
@@ -95,7 +75,6 @@ if optimState.intMeanfun == 3 || optimState.intMeanfun == 4
         hypstruct.hyp = [];
         return;
     end
-
 end
     
 
@@ -399,6 +378,13 @@ if optimState.intMeanfun > 0
         bb(1+2*D+(1:D*(D-1)/2)) = 0;
         BB(1+2*D+(1:D*(D-1)/2)) = 1e4;
     end
+    
+    if isfield(optimState,'betabarmap')
+        bb = optimState.betabarmap;
+        BB = optimState.betabarvar;
+        hyp0 = optimState.hypbeta;
+    end
+    
     % Fix variance for under-determined training set
     if size(X_train,1) <= Nb + Nhyp; BB(isinf(BB)) = 1e3; end
         

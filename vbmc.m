@@ -303,6 +303,8 @@ defopts.OptimisticVariationalBound = '0         % Uncertainty weight on ELCBO du
 defopts.ActiveImportanceSamplingVPSamples   = '100 % # importance samples from smoothed variational posterior';
 defopts.ActiveImportanceSamplingBoxSamples  = '100 % # importance samples from box-uniform centered on training inputs';
 defopts.ActiveImportanceSamplingMCMCSamples = '0   % # importance samples through MCMC';
+defopts.ActiveSearchBound = 'Inf                % Active search bound multiplier';
+defopts.IntegrateGPMean = 'no                   % Try integrating GP mean function';
 
 %% Advanced options for unsupported/untested features (do *not* modify)
 defopts.WarpRotoScaling    = 'off               % Rotate and scale input';
@@ -537,10 +539,7 @@ while ~isFinished_flag
     if Ns_gp == options.StableGPSamples && optimState.StopSampling == 0
         optimState.StopSampling = optimState.N;
     end
-    
-    % Switch to numerical definition of GP mean function
-    optimState.gpMeanfun = gp.meanfun;
-    
+        
     % Estimate of GP noise around the top high posterior density region
     optimState.sn2hpd = estimate_GPnoise(gp);
     
