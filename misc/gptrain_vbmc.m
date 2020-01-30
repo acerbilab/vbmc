@@ -151,7 +151,7 @@ hyp0(1:Ncov) = covinfo.x0;
 
 % GP noise hyperparameters
 hyp0(Ncov+(1:Nnoise)) = noiseinfo.x0;
-MinNoise = 1e-3;
+MinNoise = options.TolGPNoise;
 % MinNoise = max(1e-3,std(y_hpd)*1e-3)
 noisemult = [];
 switch optimState.UncertaintyHandlingLevel
@@ -318,9 +318,14 @@ if options.EmpiricalGPPrior
     
 else
     
-    %hypprior.mu(1:D) = log(0.05*(optimState.PUB - optimState.PLB));
-    hypprior.mu(1:D) = log(options.GPLengthMeanPrior*(optimState.PUB - optimState.PLB));
-    hypprior.sigma(1:D) = log(10);
+    if numel(options.GPLengthPriorMean) == 1    
+        hypprior.mu(1:D) = log(options.GPLengthPriorMean*(optimState.PUB - optimState.PLB));
+    elseif numel(options.GPLengthPriorMean) == 2
+        lpmu = log(options.GPLengthPriorMean);
+        pmu = exp(rand()*(lpmu(2)-lpmu(1)) + lpmu(1)); 
+        hypprior.mu(1:D) = log(pmu*(optimState.PUB - optimState.PLB));        
+    end
+    hypprior.sigma(1:D) = options.GPLengthPriorStd;
     
 %      switch meanfun
 %          case {4,6}

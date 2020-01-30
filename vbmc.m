@@ -279,7 +279,9 @@ defopts.PruningThresholdMultiplier = '@(K) 1/sqrt(K)   % Multiplier to threshold
 defopts.AnnealedGPMean     = '@(N,NMAX) 0       % Annealing for hyperprior width of GP negative quadratic mean';
 defopts.ConstrainedGPMean  = 'no                % Strict hyperprior for GP negative quadratic mean';
 defopts.EmpiricalGPPrior   = 'no                % Empirical Bayes prior over some GP hyperparameters';
-defopts.GPLengthMeanPrior  = '0.05              % Mean prior over GP input length scale (in plausible units)';
+defopts.TolGPNoise         = '1e-3              % Minimum GP observation noise';
+defopts.GPLengthPriorMean  = '0.05              % Prior mean over GP input length scale (in plausible units)';
+defopts.GPLengthPriorStd   = 'log(10)           % Prior std over GP input length scale (in plausible units)';
 defopts.UpperGPLengthFactor = '0                % Upper bound on GP input lengths based on plausible box (0 = ignore)';
 defopts.InitDesign         = 'plausible         % Initial samples ("plausible" is uniform in the plausible box)';
 defopts.gpQuadraticMeanBound = 'yes             % Stricter upper bound on GP negative quadratic mean function';
