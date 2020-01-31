@@ -33,19 +33,34 @@ if nargin < 3
 end
 
 %% Transform variables
-if isstruct(varargin{3})
+if nargin == 3 && (isstruct(varargin{3}) || ischar(varargin{2}))
+    
+    action = varargin{2};
+    trinfo = varargin{3};
 
-    trinfo = varargin{3};    
+    if isempty(action)
+        error('The transformation direction cannot be empty. Allowed values are direct (''dir'' or ''d'') and inverse (''inv'' or ''i'').');
+    end
 
     if isempty(trinfo)
-        varargout{1} = varargin{1}; % Return untransformed input
-    else
+        % Empty TRINFO - consider as identity transformation
+
+        x = varargin{1};
         
-        action = varargin{2};
-        if isempty(action)
-            error('The transformation direction cannot be empty. Allowed values are direct (''dir'' or ''d'') and inverse (''inv'' or ''i'').');
+        switch lower(action(1))
+            case {'d','i'}
+                varargout{1} = x;
+            case 'p'
+                varargout{1} = ones(size(x,1),1);
+            case 'l'
+                varargout{1} = zeros(size(x,1),1);
+            case {'m','f','g'}
+                error('TRINFO is empty.');
+            otherwise
+                error(['Unkwnown transformation direction ''' action '''. Allowed values are direct (''dir'' or ''d'') and inverse (''inv'' or ''i'').']);
         end
-        
+    else
+                
         scale = [];
         if isfield(trinfo,'scale') && ~isempty(trinfo.scale) && any(trinfo.scale ~= 1)
             scale = trinfo.scale;
