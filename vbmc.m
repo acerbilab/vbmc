@@ -421,15 +421,7 @@ optimState.fun = fun;
 funwrapper = @(u_) fun(u_,varargin{:});
 
 % Get information from acquisition function(s)
-SearchAcqFcn = options.SearchAcqFcn;
-for iAcq = 1:numel(SearchAcqFcn)
-    try
-        % Called with first empty input should return infos
-        optimState.acqInfo{iAcq} = SearchAcqFcn{iAcq}([]);
-    catch
-        optimState.acqInfo{iAcq} = [];
-    end
-end
+optimState.acqInfo = getAcqInfo(options.SearchAcqFcn);
 
 % GP struct and GP hyperparameters
 gp = [];        hypstruct = [];     hypstruct_search = [];
@@ -708,6 +700,7 @@ while ~isFinished_flag
             options = options_main;
             hypstruct.runcov = [];    % Reset GP hyperparameter covariance            
             optimState.vp_repo = []; % Reset VP repository
+            optimState.acqInfo = getAcqInfo(options.SearchAcqFcn);   % Re-get acq info                        
         end
     end
     stats.warmup(iter) = optimState.Warmup;
@@ -755,7 +748,7 @@ while ~isFinished_flag
     end
     
     stats.timer(iter).totalruntime = toc(t0);
-            
+    
 end
 
 vp_old = vp;
@@ -980,6 +973,20 @@ timer.finalize = 0;
 
 end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function acqInfo = getAcqInfo(SearchAcqFcn)
+%GETACQINFO Get information from acquisition function(s)
+
+for iAcq = 1:numel(SearchAcqFcn)
+    try
+        % Called with first empty input should return infos
+        acqInfo{iAcq} = SearchAcqFcn{iAcq}([]);
+    catch
+        acqInfo{iAcq} = [];
+    end
+end
+
+end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % TO-DO list:
 % - Initialization with multiple (e.g., cell array of) variational posteriors.
