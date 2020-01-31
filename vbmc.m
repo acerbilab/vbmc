@@ -215,7 +215,7 @@ defopts.GPTolOptActive     = '1e-4              % Tolerance for optimization of 
 defopts.GPTolOptMCMCActive = '1e-2              % Tolerance for optimization of GP hyperparameters preliminary to MCMC during active sampling';
 defopts.TolGPVar           = '1e-4              % Threshold on GP variance used by regulatized acquisition fcns';
 defopts.TolGPVarMCMC       = '1e-4              % Threshold on GP variance, used to stabilize sampling';
-defopts.gpMeanFun          = 'negquadfix        % GP mean function';
+defopts.gpMeanFun          = 'negquad           % GP mean function';
 defopts.gpIntMeanFun       = '0                 % GP integrated mean function';
 defopts.KfunMax            = '@(N) N.^(2/3)     % Max variational components as a function of training points';
 defopts.Kwarmup            = '2                 % Variational components during warmup';
@@ -242,7 +242,7 @@ defopts.MinIter            = 'nvars             % Min number of iterations';
 defopts.HeavyTailSearchFrac = '0.25               % Fraction of search points from heavy-tailed variational posterior';
 defopts.MVNSearchFrac      = '0.25              % Fraction of search points from multivariate normal';
 defopts.HPDSearchFrac      = '0                 % Fraction of search points from multivariate normal fitted to HPD points';
-defopts.BoxSearchFrac      = '0                 % Fraction of search points from uniform random box based on training inputs';
+defopts.BoxSearchFrac      = '0.25              % Fraction of search points from uniform random box based on training inputs';
 defopts.SearchCacheFrac    = '0                 % Fraction of search points from previous iterations';
 defopts.AlwaysRefitVarPost = 'no                % Always fully refit variational posterior';
 defopts.Warmup             = 'on                % Perform warm-up stage';
@@ -279,9 +279,9 @@ defopts.PruningThresholdMultiplier = '@(K) 1/sqrt(K)   % Multiplier to threshold
 defopts.AnnealedGPMean     = '@(N,NMAX) 0       % Annealing for hyperprior width of GP negative quadratic mean';
 defopts.ConstrainedGPMean  = 'no                % Strict hyperprior for GP negative quadratic mean';
 defopts.EmpiricalGPPrior   = 'no                % Empirical Bayes prior over some GP hyperparameters';
-defopts.TolGPNoise         = '1e-3              % Minimum GP observation noise';
-defopts.GPLengthPriorMean  = '0.05              % Prior mean over GP input length scale (in plausible units)';
-defopts.GPLengthPriorStd   = 'log(10)           % Prior std over GP input length scale (in plausible units)';
+defopts.TolGPNoise         = 'sqrt(1e-5)        % Minimum GP observation noise';
+defopts.GPLengthPriorMean  = 'sqrt(D/6)         % Prior mean over GP input length scale (in plausible units)';
+defopts.GPLengthPriorStd   = '0.5*log(1e3)      % Prior std over GP input length scale (in plausible units)';
 defopts.UpperGPLengthFactor = '0                % Upper bound on GP input lengths based on plausible box (0 = ignore)';
 defopts.InitDesign         = 'plausible         % Initial samples ("plausible" is uniform in the plausible box)';
 defopts.gpQuadraticMeanBound = 'yes             % Stricter upper bound on GP negative quadratic mean function';
@@ -306,7 +306,7 @@ defopts.OptimisticVariationalBound = '0         % Uncertainty weight on ELCBO du
 defopts.ActiveImportanceSamplingVPSamples   = '100 % # importance samples from smoothed variational posterior';
 defopts.ActiveImportanceSamplingBoxSamples  = '100 % # importance samples from box-uniform centered on training inputs';
 defopts.ActiveImportanceSamplingMCMCSamples = '0   % # importance samples through MCMC';
-defopts.ActiveSearchBound = 'Inf                % Active search bound multiplier';
+defopts.ActiveSearchBound = '2                  % Active search bound multiplier';
 defopts.IntegrateGPMean = 'no                   % Try integrating GP mean function';
 
 %% Advanced options for unsupported/untested features (do *not* modify)
@@ -525,7 +525,7 @@ while ~isFinished_flag
     end
                 
     %% Train GP
-    t = tic;        
+    t = tic;
     [gp,hypstruct,Ns_gp,optimState] = ...
         gptrain_vbmc(hypstruct,optimState,stats,options);    
     timer.gpTrain = timer.gpTrain + toc(t);
