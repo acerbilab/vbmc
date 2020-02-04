@@ -396,7 +396,13 @@ if options.Warmup
     options_main = options;
     % Use special options during Warmup
     if isfield(options,'WarmupOptions')
-        options = setupoptions_vbmc(D,options,options.WarmupOptions);
+        WarmupOptions = options.WarmupOptions;
+        % Copy these fields to avoid re-update in SETUPOPTIONS_VBMC
+        copyfields = {'MaxFunEvals','TolStableCount'};
+        for f = copyfields
+            WarmupOptions.(f{:}) = options.(f{:});
+        end        
+        options = setupoptions_vbmc(D,options,WarmupOptions);
     end
 end
 
