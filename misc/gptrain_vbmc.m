@@ -170,7 +170,7 @@ switch optimState.UncertaintyHandlingLevel
         noisestd = log(10);
     case 2
         noisesize = MinNoise;
-        noisestd = log(10);
+        noisestd = 0.5;
 end
 hyp0(Ncov+1) = log(noisesize);
 if ~isempty(noisemult); hyp0(Ncov+2) = log(noisemult); end
