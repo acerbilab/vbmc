@@ -141,8 +141,8 @@ optimState.sn2hpd = Inf;
 optimState.Cache.active = any(isfinite(optimState.Cache.y_orig));
 
 % When was the last warping action performed (number of training inputs)
-optimState.LastWarping = 0;
-optimState.LastNonlinearWarping = 0;
+optimState.LastWarping = -Inf;
+optimState.LastNonlinearWarping = -Inf;
 
 % Number of warpings performed
 optimState.WarpingCount = 0;

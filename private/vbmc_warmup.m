@@ -92,8 +92,8 @@ if stopWarmup
         threshold = options.WarmupKeepThreshold * (numel(optimState.DataTrimList)+1);
 
         % Start warping
-        optimState.LastWarping = optimState.N;
-        optimState.LastNonlinearWarping = optimState.N;
+        % optimState.LastWarping = optimState.N;
+        % optimState.LastNonlinearWarping = optimState.N;
     else
         % This may be a false alarm; prune and continue
         if isempty(options.WarmupKeepThresholdFalseAlarm)

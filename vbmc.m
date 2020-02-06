@@ -310,6 +310,8 @@ defopts.ActiveSearchBound = '2                  % Active search bound multiplier
 defopts.IntegrateGPMean = 'no                   % Try integrating GP mean function';
 
 %% Advanced options for unsupported/untested features (do *not* modify)
+defopts.WarpEveryIters     = '10                % Warp every this number of iterations';
+% defopts.WarpTolReliability = '10                % Threshold on reliability index to perform warp';
 defopts.WarpRotoScaling    = 'off               % Rotate and scale input';
 %defopts.WarpCovReg         = '@(N) 25/N         % Regularization weight towards diagonal covariance matrix for N training inputs';
 defopts.WarpCovReg         = '0                 % Regularization weight towards diagonal covariance matrix for N training inputs';
@@ -482,6 +484,31 @@ while ~isFinished_flag
         optimState.EntropySwitch = false;
         if isempty(action); action = 'entropy switch'; else; action = [action ', entropy switch']; end        
     end
+        
+    %% Input warping / reparameterization
+    DoWarping = (options.WarpRotoScaling || options.WarpNonlinear) && ...
+        iter > 1 && ~optimState.Warmup && ...
+        (iter - optimState.LastWarping) > options.WarpEveryIters;
+        % (stats.stable(iter-1) || optimState.funccount >= options.MaxFunEvals*2/3);
+        
+    if DoWarping
+        t = tic;        
+        [vp_tmp,~,~,idx_best] = ...
+            best_vbmc(stats,iter-1,options.BestSafeSD,options.BestFracBack,options.RankCriterion);
+        
+        % Compute warping
+        [trinfo_warp,optimState] = warp_rotoscaling_vbmc(vp_tmp,optimState,stats.gp(idx_best),options);
+        optimState.LastWarping = iter;
+        optimState.SkipActiveSampling = true;
+        
+        % Update GP hyperparameters and variational posterior
+        [vp,hypstruct.hyp] = warp_gpandvp_vbmc(trinfo_warp,vp,gp);
+        
+        if isempty(action); action = 'warp'; else; action = [action ', warp']; end
+        
+        timer.warping = timer.warping + toc(t);
+    end    
+    
     
     %% Actively sample new points into the training set
     t = tic;
@@ -522,13 +549,14 @@ while ~isFinished_flag
     optimState.Neff = sum(optimState.nevals(optimState.X_flag));
     
     %% Input warping / reparameterization (unsupported!)
-    if options.WarpNonlinear || options.WarpRotoScaling
-        % Beware that the GP here is not updated from active sampling
-        t = tic;
-        [optimState,vp,hypstruct.hyp,hypstruct.warp,action] = ...
-            vbmc_warp(optimState,vp,gp,hypstruct.hyp,hypstruct.warp,action,options);
-        timer.warping = timer.warping + toc(t);
-    end
+%     if options.WarpNonlinear || options.WarpRotoScaling
+%         % Beware that the GP here is not updated from active sampling
+%         t = tic;
+%         [vp,optimState] = warp_rotoscaling_vbmc(vp,optimState,hypstruct.hyp,gp,options);
+%         %[optimState,vp,hypstruct.hyp,hypstruct.warp,action] = ...
+%         %    vbmc_warp(optimState,vp,gp,hypstruct.hyp,hypstruct.warp,action,options);
+%         timer.warping = timer.warping + toc(t);
+%     end
                 
     %% Train GP
     t = tic;
@@ -603,12 +631,12 @@ while ~isFinished_flag
     timer.variationalFit = timer.variationalFit + toc(t);
     
     %% Recompute warpings at end iteration (unsupported)
-    if options.WarpNonlinear || options.WarpRotoScaling
-        t = tic;
-        [optimState,vp,hypstruct.hyp] = ...
-            vbmc_rewarp(optimState,vp,gp,hypstruct.hyp,options);
-        timer.warping = timer.warping + toc(t);
-    end
+%     if options.WarpNonlinear || options.WarpRotoScaling
+%         t = tic;
+%         [optimState,vp,hypstruct.hyp] = ...
+%             vbmc_rewarp(optimState,vp,gp,hypstruct.hyp,options);
+%         timer.warping = timer.warping + toc(t);
+%     end
     
     %% Plot current iteration (to be improved)
     if options.Plot
@@ -688,6 +716,7 @@ while ~isFinished_flag
 
     [optimState,stats,isFinished_flag,exitflag,action,msg] = ...
         vbmc_termination(optimState,action,stats,options);
+    vp.stats.stable = stats.stable(optimState.iter);    % Save stability
     
     % Check if we are still warming-up
     if optimState.Warmup && iter > 1    

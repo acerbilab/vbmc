@@ -3,11 +3,11 @@ function X = gpsample_vbmc(vp,gp,Ns,origflag)
 
 if nargin < 4 || isempty(origflag); origflag = true; end
 
-if isfield(gp,'s2') && ~isempty(gp.s2)
+D = size(gp.X,2);
 
+if isfield(gp,'s2') && ~isempty(gp.s2)
     % Evaluate GP input length scale (use geometric mean)
     Ns_gp = numel(gp.post);
-    D = size(gp.X,2);
     ln_ell = zeros(D,Ns_gp);
     for s = 1:Ns_gp; ln_ell(:,s) = gp.post(s).hyp(1:D); end
     gplengthscale = exp(mean(ln_ell,2))';
