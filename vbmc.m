@@ -310,7 +310,8 @@ defopts.ActiveSearchBound = '2                  % Active search bound multiplier
 defopts.IntegrateGPMean = 'no                   % Try integrating GP mean function';
 
 %% Advanced options for unsupported/untested features (do *not* modify)
-defopts.WarpEveryIters     = '10                % Warp every this number of iterations';
+defopts.WarpEveryIters     = '5                 % Warp every this number of iterations';
+defopts.IncrementalWarpDelay = 'yes             % Increase delay between warpings';
 % defopts.WarpTolReliability = '10                % Threshold on reliability index to perform warp';
 defopts.WarpRotoScaling    = 'off               % Rotate and scale input';
 %defopts.WarpCovReg         = '@(N) 25/N         % Regularization weight towards diagonal covariance matrix for N training inputs';
@@ -486,9 +487,15 @@ while ~isFinished_flag
     end
         
     %% Input warping / reparameterization
+    if options.IncrementalWarpDelay
+        WarpDelay = options.WarpEveryIters*(optimState.WarpingCount+1);
+    else
+        WarpDelay = options.WarpEveryIters;
+    end
+    
     DoWarping = (options.WarpRotoScaling || options.WarpNonlinear) && ...
         iter > 1 && ~optimState.Warmup && ...
-        (iter - optimState.LastWarping) > options.WarpEveryIters;
+        (iter - optimState.LastWarping) > WarpDelay;
         % (stats.stable(iter-1) || optimState.funccount >= options.MaxFunEvals*2/3);
         
     if DoWarping
@@ -547,17 +554,7 @@ while ~isFinished_flag
     end
     optimState.N = optimState.Xn;  % Number of training inputs
     optimState.Neff = sum(optimState.nevals(optimState.X_flag));
-    
-    %% Input warping / reparameterization (unsupported!)
-%     if options.WarpNonlinear || options.WarpRotoScaling
-%         % Beware that the GP here is not updated from active sampling
-%         t = tic;
-%         [vp,optimState] = warp_rotoscaling_vbmc(vp,optimState,hypstruct.hyp,gp,options);
-%         %[optimState,vp,hypstruct.hyp,hypstruct.warp,action] = ...
-%         %    vbmc_warp(optimState,vp,gp,hypstruct.hyp,hypstruct.warp,action,options);
-%         timer.warping = timer.warping + toc(t);
-%     end
-                
+                    
     %% Train GP
     t = tic;
     [gp,hypstruct,Ns_gp,optimState] = ...
@@ -629,15 +626,7 @@ while ~isFinished_flag
     elbo_sd = vp_real.stats.elbo_sd;
     
     timer.variationalFit = timer.variationalFit + toc(t);
-    
-    %% Recompute warpings at end iteration (unsupported)
-%     if options.WarpNonlinear || options.WarpRotoScaling
-%         t = tic;
-%         [optimState,vp,hypstruct.hyp] = ...
-%             vbmc_rewarp(optimState,vp,gp,hypstruct.hyp,options);
-%         timer.warping = timer.warping + toc(t);
-%     end
-    
+        
     %% Plot current iteration (to be improved)
     if options.Plot
         vbmc_iterplot(vp,gp,optimState,stats,elbo);
