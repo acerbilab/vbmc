@@ -248,45 +248,50 @@ else                    % Active uncertainty sampling
                 TolFun = max(1e-12,abs(fval_old*1e-3));
             end
             
-            switch lower(options.SearchOptimizer)
-                case 'cmaes'
-                    if options.SearchCMAESVPInit
-                        [~,Sigma] = vbmc_moments(vp,0);                        
-                        %[~,idx_nearest] = min(sum(bsxfun(@minus,vp.mu,x0(:)).^2,1));
-                        %Sigma = diag(vp.sigma(idx_nearest)^2.*vp.lambda.^2);                        
-                    else
-                        X_hpd = gethpd_vbmc(gp.X,gp.y,options.HPDFrac);
-                        Sigma = cov(X_hpd,1);
-                    end
-                    insigma = sqrt(diag(Sigma));
-                    cmaes_opts = options.CMAESopts;
-                    cmaes_opts.TolFun = TolFun;
-                    cmaes_opts.MaxFunEvals = options.SearchMaxFunEvals;
-                    cmaes_opts.LBounds = LB(:);
-                    cmaes_opts.UBounds = UB(:);                
-                    [xsearch_optim,fval_optim,~,~,out_optim,bestever] = cmaes_modded(func2str(SearchAcqFcn{idxAcq}),x0(:),insigma,cmaes_opts,vp,gp,optimState,1);
-                    nevals = out_optim.evals;
-                    if options.SearchCMAESbest
-                        xsearch_optim = bestever.x;
-                        fval_optim = bestever.f;
-                    end
-                    % out_optim.evals
-                    xsearch_optim = xsearch_optim';
-                case 'fmincon'
-                    fmincon_opts.Display = 'off';
-                    fmincon_opts.TolFun = TolFun;
-                    fmincon_opts.MaxFunEvals = options.SearchMaxFunEvals;
-                    [xsearch_optim,fval_optim,~,out_optim] = fmincon(@(x) SearchAcqFcn{idxAcq}(x,vp,gp,optimState,0),x0,[],[],[],[],LB,UB,[],fmincon_opts);
-                    nevals = out_optim.funcCount;               
-                    % out_optim
-                case 'bads'
-                    bads_opts.Display = 'off';
-                    bads_opts.TolFun = TolFun;
-                    bads_opts.MaxFunEvals = options.SearchMaxFunEvals;
-                    [xsearch_optim,fval_optim,~,out_optim] = bads(@(x) SearchAcqFcn{idxAcq}(x,vp,gp,optimState,0),x0,LB,UB,LB,UB,[],bads_opts);
-                otherwise
-                    error('vbmc:UnknownOptimizer','Unknown acquisition function search optimization method.');            
-            end        
+            try
+                switch lower(options.SearchOptimizer)
+                    case 'cmaes'
+                        if options.SearchCMAESVPInit
+                            [~,Sigma] = vbmc_moments(vp,0);                        
+                            %[~,idx_nearest] = min(sum(bsxfun(@minus,vp.mu,x0(:)).^2,1));
+                            %Sigma = diag(vp.sigma(idx_nearest)^2.*vp.lambda.^2);                        
+                        else
+                            X_hpd = gethpd_vbmc(gp.X,gp.y,options.HPDFrac);
+                            Sigma = cov(X_hpd,1);
+                        end
+                        insigma = sqrt(diag(Sigma));
+                        cmaes_opts = options.CMAESopts;
+                        cmaes_opts.TolFun = TolFun;
+                        cmaes_opts.MaxFunEvals = options.SearchMaxFunEvals;
+                        cmaes_opts.LBounds = LB(:);
+                        cmaes_opts.UBounds = UB(:);                
+                        [xsearch_optim,fval_optim,~,~,out_optim,bestever] = cmaes_modded(func2str(SearchAcqFcn{idxAcq}),x0(:),insigma,cmaes_opts,vp,gp,optimState,1);
+                        nevals = out_optim.evals;
+                        if options.SearchCMAESbest
+                            xsearch_optim = bestever.x;
+                            fval_optim = bestever.f;
+                        end
+                        % out_optim.evals
+                        xsearch_optim = xsearch_optim';
+                    case 'fmincon'
+                        fmincon_opts.Display = 'off';
+                        fmincon_opts.TolFun = TolFun;
+                        fmincon_opts.MaxFunEvals = options.SearchMaxFunEvals;
+                        [xsearch_optim,fval_optim,~,out_optim] = fmincon(@(x) SearchAcqFcn{idxAcq}(x,vp,gp,optimState,0),x0,[],[],[],[],LB,UB,[],fmincon_opts);
+                        nevals = out_optim.funcCount;               
+                        % out_optim
+                    case 'bads'
+                        bads_opts.Display = 'off';
+                        bads_opts.TolFun = TolFun;
+                        bads_opts.MaxFunEvals = options.SearchMaxFunEvals;
+                        [xsearch_optim,fval_optim,~,out_optim] = bads(@(x) SearchAcqFcn{idxAcq}(x,vp,gp,optimState,0),x0,LB,UB,LB,UB,[],bads_opts);
+                    otherwise
+                        error('vbmc:UnknownOptimizer','Unknown acquisition function search optimization method.');            
+                end        
+            catch
+                fprintf('Active search failed.\n');
+                fval_optim = Inf;                
+            end
 
             
             % [fval_old, fval_optim]
@@ -426,7 +431,16 @@ else                    % Active uncertainty sampling
             vp = vp_base;
         end
         
-        if is < Ns
+        if is < Ns            
+%             w_orig = optimState.UB_orig - optimState.LB_orig;
+%             x_min = warpvars_vbmc(optimState.LB_orig + 1e-6*w_orig,'d',vp.trinfo);
+%             x_max = warpvars_vbmc(optimState.UB_orig - 1e-6*w_orig,'d',vp.trinfo);
+%             if is == 1
+%                 [optimState.LB_search;x_min]
+%                 [optimState.UB_search;x_max]
+%             end
+%             optimState.LB_search = max(optimState.LB_search,x_min);
+%             optimState.UB_search = min(optimState.UB_search,x_max);
             
             if ~isempty(gp_old); gp = gp_old; end
             

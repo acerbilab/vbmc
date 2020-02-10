@@ -132,6 +132,7 @@ if nargin == 3 && (isstruct(varargin{3}) || ischar(varargin{2}))
                         % p = 1 - (1 - z.^alpha(ii)).^beta(ii);
                         y(:,ii) = log1p(-(1 - z.^alpha(ii)).^beta(ii)) - beta(ii)*log1p(-z.^alpha(ii));
                     end
+                     y(:,idx) = bsxfun(@rdivide,bsxfun(@minus,y(:,idx),mu(idx)),delta(idx));
                 end
 
                 % Lower and upper bounded scalars with Kumaraswamy-logistic-power transform
@@ -179,7 +180,7 @@ if nargin == 3 && (isstruct(varargin{3}) || ischar(varargin{2}))
                         z = (x(:,ii) - a(ii)) / (b(ii) - a(ii));
                         y(:,ii) = log1p(-(1 - z.^alpha(ii)).^beta(ii)) - beta(ii)*log1p(-z.^alpha(ii));
                     end
-                end                
+                end
                 
                 % Unbounded with logistic-Kumaraswamy-logit transform
                 idx = trinfo.type == 10;
@@ -187,12 +188,39 @@ if nargin == 3 && (isstruct(varargin{3}) || ischar(varargin{2}))
                     alpha = trinfo.alpha;
                     beta = trinfo.beta;
                     for ii = find(idx)
-                        z = (x(:,ii)-mu(ii)) / delta(ii);
+                        z = (x(:,ii)-mu(:,ii)) ./ delta(:,ii);
                         z = exp(z)./(exp(z)+1);
-                        y(:,ii) = log1p(-(1 - z.^alpha(ii)).^beta(ii)) - beta(ii)*log1p(-z.^alpha(ii));
+                        y(:,ii) = log1p(-(1 - z.^alpha(:,ii)).^beta(:,ii)) - beta(:,ii).*log1p(-z.^alpha(:,ii));
                     end
                 end
-                                
+                
+                % Lower and upper bounded scalars with Kumaraswamy-logit inverse CDF transform
+                idx = trinfo.type == 11;
+                if any(idx)
+                    alpha = trinfo.alpha;
+                    beta = trinfo.beta;
+                    for ii = find(idx)
+                        % z = kumarinv((x(:,ii) - a(ii)) / (b(ii) - a(ii)),alpha(ii),beta(ii));
+                        % p = min(max(eps,kumarcdf(z,alpha(ii),beta(ii))),1-eps);
+                        % y(:,ii) = log(p./(1-p));
+                        z = (x(:,ii) - a(ii)) / (b(ii) - a(ii));
+                        % p = 1 - (1 - z.^alpha(ii)).^beta(ii);
+                        % y(:,ii) = 1./alpha(ii).*log1p(-(1 - z).^(1./beta(ii))) - log1p(-(1-(1-z).^(1./beta(ii))).^(1./alpha(ii)));
+                        u = (1./beta(ii)).*log1p(-z);
+                        
+                        uidx = u < log(eps)/2;
+                        % u(uidx) = 1 - 1./alpha(ii).*exp(u(uidx));
+                        y(uidx,ii) = -1./alpha(ii).*exp(u(uidx)) + log(alpha(ii)) - u(uidx);
+                        % u(~uidx) = (1 - exp(u(~uidx))).^(1/alpha(ii));
+                        y(~uidx,ii) = (1/alpha(ii)).*log1p(-exp(u(~uidx))) - log1p(-(1 - exp(u(~uidx))).^(1/alpha(ii)));
+                        usmall = abs(u) < sqrt(eps);
+                        y(usmall,ii) = (1/alpha(ii)).*log(-u(usmall)) - log1p(-u(usmall)/alpha(ii));                        
+                        
+                        % y(:,ii) = log(expm1(-1./alpha(ii).*log1p(-(1-z).^(1./beta(ii)))));
+                        y(:,ii) = bsxfun(@rdivide,bsxfun(@minus,y(:,ii),mu(ii)),delta(ii));
+                    end
+                end                
+                
                 % Rotate output
                 if ~isempty(trinfo.R_mat); y = y*trinfo.R_mat; end
                 
@@ -258,6 +286,7 @@ if nargin == 3 && (isstruct(varargin{3}) || ischar(varargin{2}))
                 if any(idx)
                     alpha = trinfo.alpha;
                     beta = trinfo.beta;
+                    y(:,idx) = bsxfun(@plus,bsxfun(@times,y(:,idx),delta(idx)),mu(idx));
                     for ii = find(idx)
                         % z = 1./(1+exp(-y(:,ii)));
                         % x(:,ii) = a(ii) + (b(ii)-a(ii))*kumarinv(z,alpha(ii),beta(ii));
@@ -323,11 +352,23 @@ if nargin == 3 && (isstruct(varargin{3}) || ischar(varargin{2}))
                     for ii = find(idx)
                         z = exp(-y(:,ii))./(1+exp(-y(:,ii)));   % 1 - logistic(z)
                         % z = (1-z.^(1/beta(ii))).^(1/alpha(ii));
-                        z = 1/alpha(ii)*log1p(-z.^(1/beta(ii))) - log1p(-(1-z.^(1/beta(ii))).^(1/alpha(ii)));
-                        x(:,ii) = z*delta(ii) + mu(ii);
+                        z = 1./alpha(:,ii).*log1p(-z.^(1./beta(:,ii))) - log1p(-(1-z.^(1./beta(:,ii))).^(1./alpha(:,ii)));
+                        x(:,ii) = z.*delta(:,ii) + mu(:,ii);
                     end
                 end
-                                                
+                
+                % Lower and upper bounded scalars with Kumaraswamy inverse CDF transform
+                idx = trinfo.type == 11;
+                if any(idx)
+                    alpha = trinfo.alpha;
+                    beta = trinfo.beta;
+                    y(:,idx) = bsxfun(@plus,bsxfun(@times,y(:,idx),delta(idx)),mu(idx));
+                    for ii = find(idx)
+                        z = 1./(1+exp(-y(:,ii)));
+                        x(:,ii) = a(ii) + (b(ii)-a(ii))*(1 - (1-z.^(alpha(ii))).^beta(ii));
+                    end
+                end
+                                                                
                 % Force to stay within bounds
                 a(isfinite(a)) = a(isfinite(a)) + eps(a(isfinite(a)));
                 b(isfinite(b)) = b(isfinite(b)) - eps(b(isfinite(b)));
@@ -403,6 +444,8 @@ if nargin == 3 && (isstruct(varargin{3}) || ischar(varargin{2}))
                         alpha = trinfo.alpha;
                         beta = trinfo.beta;
 
+                        y(:,ii) = bsxfun(@plus,bsxfun(@times,y(:,ii),delta(ii)),mu(ii));
+                        
                         z = -log1p(exp(-y(:,ii)));
                         % x = kumarinv(1./(1+exp(-y(:,ii))),alpha(ii),beta(ii));
 
@@ -426,6 +469,7 @@ if nargin == 3 && (isstruct(varargin{3}) || ischar(varargin{2}))
                         %logf = (alpha(ii)-1)*log(x) + (beta(ii)-1)*log1p(-x.^alpha(ii)) ...
                         %    + log(alpha(ii)) + log(beta(ii));
                         p(:,ii) = log(b(ii)-a(ii)) -logf -y(:,ii) + 2*z;
+                        p(:,ii) = bsxfun(@plus, p(:,ii), log(delta(ii)));
 
                         if any(~isfinite(p))
                             p(~isfinite(p)) = -Inf;
@@ -518,15 +562,57 @@ if nargin == 3 && (isstruct(varargin{3}) || ischar(varargin{2}))
                     for ii = find(idx)
                         alpha = trinfo.alpha;
                         beta = trinfo.beta;                        
-                        nf = delta(ii)/alpha(ii)/beta(ii);
+                        nf = delta(:,ii)./alpha(:,ii)./beta(:,ii);
                         
                         k = 1./(1+exp(y(:,ii)));
-                        z = (1-k.^(1/beta(ii))).^(1/alpha(ii));                        
+                        z = (1-k.^(1./beta(:,ii))).^(1./alpha(:,ii));                        
                         logk = -log1p(exp(y(:,ii)));
-                        p(:,ii) = log(nf) + y(:,ii) + (1+1/beta(ii)).*logk - log1p(-k.^(1/beta(ii))) - log1p(-z);
+                        p(:,ii) = log(nf) + y(:,ii) + (1+1./beta(:,ii)).*logk - log1p(-k.^(1./beta(:,ii))) - log1p(-z);
                     end
                 end
                 
+                % Lower and upper bounded scalars with inverse Kumaraswamy logit CDF transform
+                idx = trinfo.type == 11;
+                if any(idx)
+                    for ii = find(idx)
+                        alpha = trinfo.alpha;
+                        beta = trinfo.beta;
+
+                        y(:,ii) = bsxfun(@plus,bsxfun(@times,y(:,ii),delta(ii)),mu(ii));
+                        
+                        y_large = y(:,ii) > -log(eps)/2;
+                        
+                        z = 1./(1+exp(-y(:,ii)));
+                        u = 1 - (1-z.^(alpha(ii))).^beta(ii);
+                        
+                        u(y_large) = 1 - alpha(ii)*exp(-beta(ii)*y(y_large,ii))./(1+alpha(ii)*beta(ii)*exp(-y(y_large,ii)));
+                        
+                        
+%                        z = -log1p(exp(-y(:,ii)));
+                        %u = 1./(1 + exp(-y(:,ii)));
+                        %u = a(ii) + (b(ii)-a(ii))*(1 - (1-u.^(alpha(ii))).^beta(ii));
+%                        logf = log(alpha(ii)) + log(beta(ii)) + (alpha(ii)-1).*log(u) + (beta(ii)-1) .* log1p(-u.^alpha(ii));
+                         logf = (1-1/alpha(ii))*log1p(-(1-u).^(1/beta(ii))) + (1-1/beta(ii))*log1p(-u) ...
+                             + log(alpha(ii)) + log(beta(ii));
+                         logf(y_large) = (1-1/alpha(ii))*log1p(-alpha(ii)*exp(-y(y_large,ii))./(1+alpha(ii)*exp(-y(y_large,ii)))) ...
+                             + (1-1/beta(ii))*log(alpha(ii)*exp(-beta(ii)*y(y_large,ii))./(1+alpha(ii)*beta(ii)*exp(-y(y_large,ii)))) ...
+                             + log(alpha(ii)) + log(beta(ii));
+                         
+%                         logf = (1-1/alpha(ii))*log1p(-(1-u).^(1/beta(ii))) + (1-1/beta(ii))*(-y(:,ii)+z) ...
+%                             + log(alpha(ii)) + log(beta(ii));
+
+                        w = log1p(-z);
+                        w(y_large) = -y(y_large,ii) - log1p(exp(-y(y_large,ii)));
+                        
+                        p(:,ii) = log(b(ii)-a(ii)) + logf + log(z) + w; %-y(:,ii) + 2*z;
+                        p(:,ii) = bsxfun(@plus, p(:,ii), log(delta(ii)));
+
+                        if any(~isfinite(p))
+                            p(~isfinite(p)) = -Inf;
+                            fprintf('aaaa!');
+                        end
+                    end
+                end
 
                 %if ~isempty(trinfo.R_mat) && lower(action(1)) == 'g'
                 %    p = p*(trinfo.R_mat*diag();

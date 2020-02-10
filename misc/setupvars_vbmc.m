@@ -27,6 +27,8 @@ optimState.LB_orig = LB;
 optimState.UB_orig = UB;
 optimState.PLB_orig = PLB;
 optimState.PUB_orig = PUB;
+optimState.LBeps_orig = LB + (UB - LB)*1e-6;
+optimState.UBeps_orig = UB - (UB - LB)*1e-6;
 
 % Transform variables
 trinfo = warpvars_vbmc(nvars,LB,UB,PLB,PUB);
@@ -142,14 +144,9 @@ optimState.Cache.active = any(isfinite(optimState.Cache.y_orig));
 
 % When was the last warping action performed (number of training inputs)
 optimState.LastWarping = -Inf;
-optimState.LastNonlinearWarping = -Inf;
 
 % Number of warpings performed
 optimState.WarpingCount = 0;
-optimState.WarpingNonlinearCount = 0;
-
-% Perform rotoscaling at the end of iteration
-optimState.redoRotoscaling = false;
 
 % When GP hyperparameter sampling is switched with optimization
 if options.NSgpMax > 0

@@ -312,15 +312,12 @@ defopts.IntegrateGPMean = 'no                   % Try integrating GP mean functi
 %% Advanced options for unsupported/untested features (do *not* modify)
 defopts.WarpEveryIters     = '5                 % Warp every this number of iterations';
 defopts.IncrementalWarpDelay = 'yes             % Increase delay between warpings';
-% defopts.WarpTolReliability = '10                % Threshold on reliability index to perform warp';
+defopts.WarpTolReliability = '3                 % Threshold on reliability index to perform warp';
 defopts.WarpRotoScaling    = 'off               % Rotate and scale input';
 %defopts.WarpCovReg         = '@(N) 25/N         % Regularization weight towards diagonal covariance matrix for N training inputs';
 defopts.WarpCovReg         = '0                 % Regularization weight towards diagonal covariance matrix for N training inputs';
 defopts.WarpNonlinear      = 'off               % Nonlinear input warping';
-defopts.WarpEpoch          = '100               % Recalculate warpings after this number of fcn evals';
-defopts.WarpMinFun         = '10 + 2*D          % Minimum training points before starting warping';
-defopts.WarpNonlinearEpoch = '100               % Recalculate nonlinear warpings after this number of fcn evals';
-defopts.WarpNonlinearMinFun = '20 + 5*D         % Minimum training points before starting nonlinear warping';
+defopts.WarpMinK           = '10                % Min number of variational components to perform warp';
 defopts.ELCBOWeight        = '0                 % Uncertainty weight during ELCBO optimization';
 defopts.VarParamsBack      = '0                 % Check variational posteriors back to these previous iterations';
 defopts.AltMCEntropy       = 'no                % Use alternative Monte Carlo computation for the entropy';
@@ -495,7 +492,8 @@ while ~isFinished_flag
     
     DoWarping = (options.WarpRotoScaling || options.WarpNonlinear) && ...
         iter > 1 && ~optimState.Warmup && ...
-        (iter - optimState.LastWarping) > WarpDelay;
+        (iter - optimState.LastWarping) > WarpDelay && ...
+        vp.K >= options.WarpMinK && stats.rindex(iter-1) < options.WarpTolReliability;
         % (stats.stable(iter-1) || optimState.funccount >= options.MaxFunEvals*2/3);
         
     if DoWarping
@@ -503,10 +501,8 @@ while ~isFinished_flag
         [vp_tmp,~,~,idx_best] = ...
             best_vbmc(stats,iter-1,options.BestSafeSD,options.BestFracBack,options.RankCriterion);
         
-        % Compute warping
-        [trinfo_warp,optimState] = warp_rotoscaling_vbmc(vp_tmp,optimState,stats.gp(idx_best),options);
-        optimState.LastWarping = iter;
-        optimState.SkipActiveSampling = true;
+        % Compute input warping
+        [trinfo_warp,optimState] = warp_input_vbmc(vp_tmp,optimState,stats.gp(idx_best),options);
         
         % Update GP hyperparameters and variational posterior
         [vp,hypstruct.hyp] = warp_gpandvp_vbmc(trinfo_warp,vp,gp);
