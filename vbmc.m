@@ -166,7 +166,7 @@ defopts.IntegerVars             = '[]           % Array with indices of integer 
 defopts.UncertaintyHandling     = 'no           % Explicit noise handling (only partially supported)';
 defopts.NoiseSize               = '[]           % Base observation noise magnitude (standard deviation)';
 defopts.SpecifyTargetNoise      = 'no           % Target log joint function returns noise estimate (SD) as second output';
-defopts.MaxRepeatedObservations = '2            % Max number of consecutive repeated measurements for noisy inputs';
+defopts.MaxRepeatedObservations = '0            % Max number of consecutive repeated measurements for noisy inputs';
 defopts.RepeatedAcqDiscount     = '1            % Multiplicative discount on acquisition fcn to repeat measurement at the same location';
 defopts.FunEvalStart            = 'max(D,10)    % Number of initial target fcn evals';
 defopts.SGDStepSize             = '0.005        % Base step size for stochastic gradient descent';
@@ -305,7 +305,7 @@ defopts.SampleExtraVPMeans = '0                 % Extra variational components s
 defopts.OptimisticVariationalBound = '0         % Uncertainty weight on ELCBO during active sampling';
 defopts.ActiveImportanceSamplingVPSamples   = '100 % # importance samples from smoothed variational posterior';
 defopts.ActiveImportanceSamplingBoxSamples  = '100 % # importance samples from box-uniform centered on training inputs';
-defopts.ActiveImportanceSamplingMCMCSamples = '0   % # importance samples through MCMC';
+defopts.ActiveImportanceSamplingMCMCSamples = '200 % # importance samples through MCMC';
 defopts.ActiveSearchBound = '2                  % Active search bound multiplier';
 defopts.IntegrateGPMean = 'no                   % Try integrating GP mean function';
 
