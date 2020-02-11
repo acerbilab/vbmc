@@ -560,9 +560,15 @@ if nargin == 3 && (isstruct(varargin{3}) || ischar(varargin{2}))
                         
                         logk = -log1p(exp(-y(:,ii)));
                         log1mk = logk - y(:,ii);
-                        %z = (1-(1-k).^(1/beta(ii))).^(1/alpha(ii));
-                        % 1 - z^alpha = (1-k).^(1/beta(ii))                            
                         logz = 1/alpha(ii)*log1p(-(1-k).^(1/beta(ii)));
+                        
+                        % k small (close to zero)
+                        kzero = k < sqrt(eps);
+                        log1mk(kzero) = log1p(-k(kzero));
+                        logz(kzero) = 1/alpha(ii) * (logk(kzero)-log(beta(ii))) + 1/alpha(ii)*log1p(0.5*(1-1/beta(ii)*k(kzero)));
+                        
+                        %z = (1-(1-k).^(1/beta(ii))).^(1/alpha(ii));
+                        % 1 - z^alpha = (1-k).^(1/beta(ii))
                         p(:,ii) = log(nf) + (1/beta(ii)-1) * log1mk + (1-alpha(ii))*logz -y(:,ii)+2*logk;
                     end
                 end
