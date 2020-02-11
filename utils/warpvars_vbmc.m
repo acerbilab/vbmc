@@ -178,7 +178,18 @@ if nargin == 3 && (isstruct(varargin{3}) || ischar(varargin{2}))
                     beta = trinfo.beta;
                     for ii = find(idx)
                         z = (x(:,ii) - a(ii)) / (b(ii) - a(ii));
-                        y(:,ii) = log1p(-(1 - z.^alpha(ii)).^beta(ii)) - beta(ii)*log1p(-z.^alpha(ii));
+                        u = z.^(alpha(ii));
+                        
+                        % Small u (close to zero)
+                        uzero = u < sqrt(eps);
+                        y(uzero,ii) = log(beta(ii)) + alpha(ii)*log(z(uzero)) + 0.5*u(uzero)*(beta(ii)+1) + 0.5*((beta(ii)-1)^2/4-beta(ii))*u(uzero).^2;
+                        
+                        % Large u (close to 1)
+                        uone = u > 1 - sqrt(eps);
+                        y(uone,ii) = log(1./(1 - u(uone)).^beta(ii) - 1);
+                        
+                        % Other values
+                        y(~uzero & ~uone,ii) = log1p(-(1 - z(~uzero & ~uone).^alpha(ii)).^beta(ii)) - beta(ii)*log1p(-z(~uzero & ~uone).^alpha(ii));
                     end
                 end
                 
