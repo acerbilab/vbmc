@@ -161,7 +161,9 @@ else                    % Active uncertainty sampling
             else
                 s2 = [];
             end
-            s2 = noiseshaping_vbmc(s2,gp.y,options);
+            if options.NoiseShaping
+                s2 = noiseshaping_vbmc(s2,gp.y,options);
+            end
             sn2new(:,s) = gplite_noisefun(hyp_noise,gp.X,gp.noisefun,gp.y,s2);
         end
         gp.sn2new = mean(sn2new,2);
