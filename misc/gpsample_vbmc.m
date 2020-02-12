@@ -41,7 +41,7 @@ W = 2*(D+1);
 x0 = vbmc_rnd(vp,W,0,0);
 X = gplite_sample(gp,Ns,x0,'parallel',[],[],VarThresh);
 if origflag
-    X = warpvars_vbmc(xx,'inv',vp.trinfo);
+    X = warpvars_vbmc(X,'inv',vp.trinfo);
 end
 
 end
