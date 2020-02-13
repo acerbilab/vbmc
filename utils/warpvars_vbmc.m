@@ -35,6 +35,8 @@ end
 %% Transform variables
 if nargin == 3 && (isstruct(varargin{3}) || ischar(varargin{2}))
     
+    Tol = sqrt(eps);    % Small number
+    
     action = varargin{2};
     trinfo = varargin{3};
 
@@ -185,7 +187,7 @@ if nargin == 3 && (isstruct(varargin{3}) || ischar(varargin{2}))
                         y(uzero,ii) = log(beta(ii)) + alpha(ii)*log(z(uzero)) + 0.5*u(uzero)*(beta(ii)+1) + 0.5*((beta(ii)-1)^2/4-beta(ii))*u(uzero).^2;
                         
                         % Large u (close to 1)
-                        uone = u > 1 - sqrt(eps);
+                        uone = u > (1 - sqrt(eps));
                         y(uone,ii) = log(1./(1 - u(uone)).^beta(ii) - 1);
                         
                         % Other values
@@ -200,8 +202,23 @@ if nargin == 3 && (isstruct(varargin{3}) || ischar(varargin{2}))
                     beta = trinfo.beta;
                     for ii = find(idx)
                         z = (x(:,ii)-mu(:,ii)) ./ delta(:,ii);
-                        z = exp(z)./(exp(z)+1);
-                        y(:,ii) = log1p(-(1 - z.^alpha(:,ii)).^beta(:,ii)) - beta(:,ii).*log1p(-z.^alpha(:,ii));
+                        %z = exp(z)./(exp(z)+1);
+                        %y(:,ii) = log1p(-(1 - z.^alpha(:,ii)).^beta(:,ii)) - beta(:,ii).*log1p(-z.^alpha(:,ii));
+                        s = 1./(1+exp(-z));
+                        u = s.^alpha(ii);
+                        
+                        % Small u (near zero)
+                        uzero = u < Tol;
+                        y(uzero,ii) = log(beta(ii)) + alpha(ii)*log(s(uzero)) + beta(ii)*u(uzero);
+                        
+                        % Large u (near one)
+                        uone = u > (1 - Tol);
+                        w = 1./(1 + exp(z(uone)));
+                        y(uone,ii) = -log(alpha(ii)) + beta(ii)*z(uone) - (alpha(ii)*w).^beta(ii);
+                        
+                        % All other cases
+                        urest = ~uzero & ~uone;
+                        y(urest,ii) = log1p(-(1 - s(urest).^alpha(ii)).^beta(ii)) - beta(ii).*log1p(-s(urest).^alpha(ii));
                     end
                 end
                 
@@ -361,10 +378,26 @@ if nargin == 3 && (isstruct(varargin{3}) || ischar(varargin{2}))
                     alpha = trinfo.alpha;
                     beta = trinfo.beta;                                        
                     for ii = find(idx)
-                        z = exp(-y(:,ii))./(1+exp(-y(:,ii)));   % 1 - logistic(z)
-                        % z = (1-z.^(1/beta(ii))).^(1/alpha(ii));
-                        z = 1./alpha(:,ii).*log1p(-z.^(1./beta(:,ii))) - log1p(-(1-z.^(1./beta(:,ii))).^(1./alpha(:,ii)));
-                        x(:,ii) = z.*delta(:,ii) + mu(:,ii);
+                        % z = exp(-y(:,ii))./(1+exp(-y(:,ii)));   % 1 - logistic(z)
+                        % % z = (1-z.^(1/beta(ii))).^(1/alpha(ii));
+                        % z = 1./alpha(:,ii).*log1p(-z.^(1./beta(:,ii))) - log1p(-(1-z.^(1./beta(:,ii))).^(1./alpha(:,ii)));
+                        
+                        % Small u (~ zero)
+                        uzero = y(:,ii) < log(Tol);                        
+                        u = 1./(1 + exp(-y(uzero,ii)));
+                        x(uzero,ii) = 1/alpha(ii)*(-log1p(exp(-y(uzero,ii)))-log(beta(ii))) - log1p(-(u/beta(ii)).^(1/alpha(ii)));
+                        
+                        % Large u (~ one)
+                        uone = y(:,ii) > -log(Tol);
+                        w = 1./(1 + exp(y(uone,ii))).^(1/beta(ii));
+                        x(uone,ii) = 1/alpha(ii)*log1p(-w) + 1/beta(ii)*y(uone,ii) + log(alpha(ii));
+                        
+                        % All other cases
+                        urest = ~uzero & ~uone;
+                        z = 1./(1+exp(y(urest,ii)));
+                        x(urest,ii) = 1./alpha(:,ii).*log1p(-z.^(1./beta(:,ii))) - log1p(-(1-z.^(1./beta(:,ii))).^(1./alpha(:,ii)));
+                        
+                        x(:,ii) = x(:,ii).*delta(:,ii) + mu(:,ii);
                     end
                 end
                 
@@ -578,13 +611,45 @@ if nargin == 3 && (isstruct(varargin{3}) || ischar(varargin{2}))
                 if any(idx)
                     for ii = find(idx)
                         alpha = trinfo.alpha;
-                        beta = trinfo.beta;                        
-                        nf = delta(:,ii)./alpha(:,ii)./beta(:,ii);
+                        beta = trinfo.beta;
+
+                        lnf = log(delta(:,ii)./alpha(:,ii)./beta(:,ii));
                         
-                        k = 1./(1+exp(y(:,ii)));
-                        z = (1-k.^(1./beta(:,ii))).^(1./alpha(:,ii));                        
-                        logk = -log1p(exp(y(:,ii)));
-                        p(:,ii) = log(nf) + y(:,ii) + (1+1./beta(:,ii)).*logk - log1p(-k.^(1./beta(:,ii))) - log1p(-z);
+                        if 0
+                        
+
+                            u = 1./(1+exp(y(:,ii)));
+                            logu = -log1p(exp(y(:,ii)));
+                            z = (1-u.^(1./beta(:,ii))).^(1./alpha(:,ii));                        
+                            p(:,ii) = lnf + y(:,ii) + (1+1./beta(:,ii)).*logu - log1p(-u.^(1./beta(:,ii))) - log1p(-z);
+                            
+                        else
+
+                            p(:,ii) = lnf -y(:,ii) - 2*log1p(exp(-y(:,ii)));
+                            
+                            % Small u (~ zero)
+                            uzero = y(:,ii) < log(Tol);
+                            u = 1./(1 + exp(-y(uzero,ii)));
+                            p(uzero,ii) = p(uzero,ii) - log(u/beta(ii)) + (1/beta(ii)-1)*log1p(-u);                            
+                            t = (1 - (1-u).^(1/beta(ii))).^(1/alpha(ii));                            
+                            p(uzero,ii) = p(uzero,ii) - log1p(-t);
+                            
+                            % Large u (~ one)
+                            uone = y(:,ii) > -log(Tol);
+                            w = 1./(1 + exp(y(uone,ii)));                            
+                            p(uone,ii) = p(uone,ii) - log1p(-w.^(1/beta(ii))) + y(uone,ii) + log(alpha(ii));
+                            
+                            % All other cases
+                            urest = ~uzero & ~uone;
+                            u = 1./(1 + exp(-y(urest,ii)));
+                            p(urest,ii) = p(urest,ii) - log1p(-(1-u).^(1/beta(ii))) + (1/beta(ii)-1)*log1p(-u);
+                            t = (1 - (1-u).^(1/beta(ii))).^(1/alpha(ii));
+                            p(urest,ii) = p(urest,ii) - log1p(-t);
+                            
+                            
+                        end
+                            
+                            
                     end
                 end
                 
