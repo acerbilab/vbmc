@@ -502,12 +502,12 @@ while ~isFinished_flag
             best_vbmc(stats,iter-1,options.BestSafeSD,options.BestFracBack,options.RankCriterion);
         
         % Compute input warping
-        [trinfo_warp,optimState] = warp_input_vbmc(vp_tmp,optimState,stats.gp(idx_best),options);
+        [trinfo_warp,optimState,warp_action] = warp_input_vbmc(vp_tmp,optimState,stats.gp(idx_best),options);
         
         % Update GP hyperparameters and variational posterior
         [vp,hypstruct.hyp] = warp_gpandvp_vbmc(trinfo_warp,vp,gp);
         
-        if isempty(action); action = 'warp'; else; action = [action ', warp']; end
+        if isempty(action); action = warp_action; else; action = [action ', ' warp_action]; end
         
         timer.warping = timer.warping + toc(t);
     end    
