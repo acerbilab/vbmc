@@ -209,7 +209,8 @@ if nargin == 3 && (isstruct(varargin{3}) || ischar(varargin{2}))
                         
                         % Small u (near zero)
                         uzero = u < Tol;
-                        y(uzero,ii) = log(beta(ii)) + alpha(ii)*log(s(uzero)) + beta(ii)*u(uzero);
+                        %y(uzero,ii) = log(beta(ii)) + alpha(ii)*log(s(uzero)) + beta(ii)*u(uzero);
+                        y(uzero,ii) = log(beta(ii)) + alpha(ii)*z(uzero) + beta(ii)*u(uzero);
                         
                         % Large u (near one)
                         uone = u > (1 - Tol);
@@ -385,7 +386,8 @@ if nargin == 3 && (isstruct(varargin{3}) || ischar(varargin{2}))
                         % Small u (~ zero)
                         uzero = y(:,ii) < log(Tol);                        
                         u = 1./(1 + exp(-y(uzero,ii)));
-                        x(uzero,ii) = 1/alpha(ii)*(-log1p(exp(-y(uzero,ii)))-log(beta(ii))) - log1p(-(u/beta(ii)).^(1/alpha(ii)));
+                        %x(uzero,ii) = 1/alpha(ii)*(-log1p(exp(-y(uzero,ii)))-log(beta(ii))) - log1p(-(u/beta(ii)).^(1/alpha(ii)));
+                        x(uzero,ii) = 1/alpha(ii)*(y(uzero,ii)-log(beta(ii))) - log1p(-(u/beta(ii)).^(1/alpha(ii)));
                         
                         % Large u (~ one)
                         uone = y(:,ii) > -log(Tol);
@@ -630,7 +632,8 @@ if nargin == 3 && (isstruct(varargin{3}) || ischar(varargin{2}))
                             % Small u (~ zero)
                             uzero = y(:,ii) < log(Tol);
                             u = 1./(1 + exp(-y(uzero,ii)));
-                            p(uzero,ii) = p(uzero,ii) - log(u/beta(ii)) + (1/beta(ii)-1)*log1p(-u);                            
+                            % p(uzero,ii) = p(uzero,ii) - log(u/beta(ii)) + (1/beta(ii)-1)*log1p(-u);                            
+                            p(uzero,ii) = p(uzero,ii) - y(uzero,ii) + log(beta(ii)) + (1/beta(ii)-1)*log1p(-u);
                             t = (1 - (1-u).^(1/beta(ii))).^(1/alpha(ii));                            
                             p(uzero,ii) = p(uzero,ii) - log1p(-t);
                             
