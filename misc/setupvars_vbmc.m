@@ -27,8 +27,8 @@ optimState.LB_orig = LB;
 optimState.UB_orig = UB;
 optimState.PLB_orig = PLB;
 optimState.PUB_orig = PUB;
-optimState.LBeps_orig = LB + (UB - LB)*1e-6;
-optimState.UBeps_orig = UB - (UB - LB)*1e-6;
+optimState.LBeps_orig = LB + (UB - LB)*options.TolBoundX;
+optimState.UBeps_orig = UB - (UB - LB)*options.TolBoundX;
 
 % Transform variables
 trinfo = warpvars_vbmc(nvars,LB,UB,PLB,PUB);

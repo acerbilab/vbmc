@@ -308,6 +308,7 @@ defopts.ActiveImportanceSamplingBoxSamples  = '100 % # importance samples from b
 defopts.ActiveImportanceSamplingMCMCSamples = '200 % # importance samples through MCMC';
 defopts.ActiveSearchBound = '2                  % Active search bound multiplier';
 defopts.IntegrateGPMean = 'no                   % Try integrating GP mean function';
+defopts.TolBoundX          = '1e-5              % Tolerance on closeness to bound constraints (fraction of total range)';
 
 %% Advanced options for unsupported/untested features (do *not* modify)
 defopts.WarpEveryIters     = '5                 % Warp every this number of iterations';
