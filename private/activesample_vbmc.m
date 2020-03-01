@@ -213,8 +213,14 @@ else                    % Active uncertainty sampling
         [Xsearch,idx_cache] = getSearchPoints(NSsearch,optimState,vp,gp,options);
         Xsearch = real2int_vbmc(Xsearch,vp.trinfo,optimState.integervars);
         
+%        acqEval = @(Xs_,vp_,gp_,optimState_,transpose_flag_) ...
+%            SearchAcqFcn{idxAcq}(Xs_,vp_,gp_,optimState_,transpose_flag_);
+        acqEval = @(Xs_,vp_,gp_,optimState_,transpose_flag_) ...
+            acqwrapper_vbmc(Xs_,vp_,gp_,optimState_,transpose_flag_,...
+            SearchAcqFcn{idxAcq},optimState.acqInfo{idxAcq}); 
+        
         % Evaluate acquisition function
-        acq_fast = SearchAcqFcn{idxAcq}(Xsearch,vp,gp,optimState,0);
+        acq_fast = acqEval(Xsearch,vp,gp,optimState,0);
 
         if options.SearchCacheFrac > 0
             [~,ord] = sort(acq_fast,'ascend');
@@ -233,7 +239,7 @@ else                    % Active uncertainty sampling
         
         % Additional search via optimization
         if ~strcmpi(options.SearchOptimizer,'none')
-            fval_old = SearchAcqFcn{idxAcq}(Xacq(1,:),vp,gp,optimState,0);
+            fval_old = acqEval(Xacq(1,:),vp,gp,optimState,0);
             x0 = real2int_vbmc(Xacq(1,:),vp.trinfo,optimState.integervars);
             if all(isfinite([optimState.LB_search,optimState.UB_search]))
                 LB = min([x0;optimState.LB_search]);
@@ -267,7 +273,9 @@ else                    % Active uncertainty sampling
                         cmaes_opts.MaxFunEvals = options.SearchMaxFunEvals;
                         cmaes_opts.LBounds = LB(:);
                         cmaes_opts.UBounds = UB(:);                
-                        [xsearch_optim,fval_optim,~,~,out_optim,bestever] = cmaes_modded(func2str(SearchAcqFcn{idxAcq}),x0(:),insigma,cmaes_opts,vp,gp,optimState,1);
+%                        [xsearch_optim,fval_optim,~,~,out_optim,bestever] = cmaes_modded(func2str(SearchAcqFcn{idxAcq}),x0(:),insigma,cmaes_opts,vp,gp,optimState,1);
+                        [xsearch_optim,fval_optim,~,~,out_optim,bestever] = ...
+                            cmaes_modded('acqwrapper_vbmc',x0(:),insigma,cmaes_opts,vp,gp,optimState,1,SearchAcqFcn{idxAcq},optimState.acqInfo{idxAcq});
                         nevals = out_optim.evals;
                         if options.SearchCMAESbest
                             xsearch_optim = bestever.x;
@@ -279,14 +287,14 @@ else                    % Active uncertainty sampling
                         fmincon_opts.Display = 'off';
                         fmincon_opts.TolFun = TolFun;
                         fmincon_opts.MaxFunEvals = options.SearchMaxFunEvals;
-                        [xsearch_optim,fval_optim,~,out_optim] = fmincon(@(x) SearchAcqFcn{idxAcq}(x,vp,gp,optimState,0),x0,[],[],[],[],LB,UB,[],fmincon_opts);
+                        [xsearch_optim,fval_optim,~,out_optim] = fmincon(@(x) acqEval(x,vp,gp,optimState,0),x0,[],[],[],[],LB,UB,[],fmincon_opts);
                         nevals = out_optim.funcCount;               
                         % out_optim
                     case 'bads'
                         bads_opts.Display = 'off';
                         bads_opts.TolFun = TolFun;
                         bads_opts.MaxFunEvals = options.SearchMaxFunEvals;
-                        [xsearch_optim,fval_optim,~,out_optim] = bads(@(x) SearchAcqFcn{idxAcq}(x,vp,gp,optimState,0),x0,LB,UB,LB,UB,[],bads_opts);
+                        [xsearch_optim,fval_optim,~,out_optim] = bads(@(x) acqEval(x,vp,gp,optimState,0),x0,LB,UB,LB,UB,[],bads_opts);
                     otherwise
                         error('vbmc:UnknownOptimizer','Unknown acquisition function search optimization method.');            
                 end        
@@ -306,7 +314,7 @@ else                    % Active uncertainty sampling
             end
         end
         
-        % [acq,tr_p] = SearchAcqFcn{idxAcq}(Xacq(1,:),vp,gp,optimState,0)        
+        % [acq,tr_p] = acqEval(Xacq(1,:),vp,gp,optimState,0)        
         
         % Add random jitter
         if rand() < 1/3 && 0
@@ -319,7 +327,7 @@ else                    % Active uncertainty sampling
         
 %         % Finish search with a few MCMC iterations
 %         if 1 || options.SearchMCMC                
-%             mcmc_fun = @(x) log(-SearchAcqFcn{idxAcq}(x,vp,gp,optimState,0)/0.01);
+%             mcmc_fun = @(x) log(-acqEval(x,vp,gp,optimState,0)/0.01);
 %             Widths = max(max(sqrt(diag(Sigma)'),0.1),optimState.gplengthscale);
 %             Ns = 1;
 %             sampleopts.Thin = 1;
@@ -330,7 +338,7 @@ else                    % Active uncertainty sampling
 %             [samples,fvals,exitflag,output] = ...
 %                 slicesamplebnd_vbmc(mcmc_fun,Xacq(1,:),Ns,Widths,LB,UB,sampleopts);
 %             Xacq(1,:) = samples;
-%             fval_mcmc = SearchAcqFcn{idxAcq}(Xacq(1,:),vp,gp,optimState,0);
+%             fval_mcmc = acqEval(Xacq(1,:),vp,gp,optimState,0);
 %         end        
         
         if options.UncertaintyHandling && options.MaxRepeatedObservations > 0            
@@ -348,12 +356,12 @@ else                    % Active uncertainty sampling
                 % Use current cost of GP instead of future cost
                 old_t_algoperfuneval = optimState.t_algoperfuneval;
                 optimState.t_algoperfuneval = t_base/deltaNeff;
-                acq_train = SearchAcqFcn{idxAcq}(X_train,vp,gp,optimState,0);
+                acq_train = acqEval(X_train,vp,gp,optimState,0);
                 optimState.VarianceRegularizedAcqFcn = oldflag;
                 optimState.t_algoperfuneval = old_t_algoperfuneval;            
                 [acq_train,idx_train] = min(acq_train);            
 
-                acq_now = SearchAcqFcn{idxAcq}(Xacq(1,:),vp,gp,optimState,0);
+                acq_now = acqEval(Xacq(1,:),vp,gp,optimState,0);
 
                 % [acq_train,acq_now]
 
