@@ -64,10 +64,10 @@ ub2 = min(ub2_xx+range2/10,ub2);
 
 % Compute marginal total variation
 for i = 1:D    
-    [~,yy1,x1mesh] = kde(xx1(:,i),nkde,lb1(i),ub1(i));
+    [~,yy1,x1mesh] = kde1d(xx1(:,i),nkde,lb1(i),ub1(i));
     yy1 = yy1/(qtrapz(yy1)*(x1mesh(2)-x1mesh(1))); % Ensure normalization
     
-    [~,yy2,x2mesh] = kde(xx2(:,i),nkde,lb2(i),ub2(i));
+    [~,yy2,x2mesh] = kde1d(xx2(:,i),nkde,lb2(i),ub2(i));
     yy2 = yy2/(qtrapz(yy2)*(x2mesh(2)-x2mesh(1))); % Ensure normalization
         
     f = @(x) abs(interp1(x1mesh,yy1,x,'spline',0) - interp1(x2mesh,yy2,x,'spline',0));
