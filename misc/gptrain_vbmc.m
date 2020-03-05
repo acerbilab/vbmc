@@ -197,7 +197,7 @@ switch meanfun
         if options.gpQuadraticMeanBound
             deltay = max(options.TolSD,min(D,max(y_hpd)-min(y_hpd)));
             UB_gp(Ncov+Nnoise+1) = max(y_hpd)+deltay; 
-        end        
+        end
         if meanfun == 14
             UB_gp(Ncov+Nnoise+D+2) = log(1);        % Lower max scaling factor
             LB_gp(Ncov+Nnoise+D+2) = log(1e-3);    % Lower min scaling factor
@@ -206,6 +206,11 @@ switch meanfun
         hyp0(Ncov+Nnoise+1) = min(y);
         UB_gp(Ncov+Nnoise+1) = min(y_hpd);    % Lower maximum constant mean
     case 8
+    case 22
+        if options.gpQuadraticMeanBound
+            deltay = max(options.TolSD,min(D,max(y_hpd)-min(y_hpd)));
+            UB_gp(Ncov+Nnoise+1) = max(y_hpd)+deltay; 
+        end        
 end
 
 
@@ -221,6 +226,17 @@ hypprior.sigma(Ncov+1) = noisestd;
 if ~isempty(noisemult)
     hypprior.mu(Ncov+2) = log(noisemult);
     hypprior.sigma(Ncov+2) = noisemultstd;    
+end
+
+% Hyperpriors over mixture of quadratics mean function
+if meanfun == 22
+    deltay = max(y) - min(y);    
+    hypprior.mu(Ncov+Nnoise+2*D+2) = 0;
+    hypprior.sigma(Ncov+Nnoise+2*D+2) = 0.5*deltay;
+    hypprior.mu(Ncov+Nnoise+2*D+3) = 0;
+    hypprior.sigma(Ncov+Nnoise+2*D+3) = log(10);
+    hypprior.mu(Ncov+Nnoise+2*D+4) = 0;
+    hypprior.sigma(Ncov+Nnoise+2*D+4) = log(10);    
 end
 
 % Change bounds and hyperprior over output-dependent noise modulation

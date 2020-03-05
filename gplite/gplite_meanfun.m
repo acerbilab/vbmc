@@ -120,6 +120,13 @@ switch meanfun
     case {21,'21','posquadlinonly'}
         Nmean = 2*D;
         meanfun = 21;
+    case {22,'22','negquadmix'}
+        Nmean = 4 + 2*D;
+        meanfun = 22;
+    case {23,'23','posquadmix'}
+        Nmean = 4 + 2*D;
+        meanfun = 23;
+        
     otherwise
         if isnumeric(meanfun); meanfun = num2str(meanfun); end
         error('gplite_meanfun:UnknownMeanFun',...
@@ -144,7 +151,7 @@ if ischar(hyp)
         
         if numel(y) <= 1; y = [0;1]; end
         
-        if meanfun >= 1 && meanfun <= 15                     % m0
+        if meanfun >= 1 && meanfun <= 15 || meanfun >= 22 && meanfun <= 23 % m0
             h = max(y) - min(y);    % Height
             dm.LB(1) = min(y) - 0.5*h;
             dm.UB(1) = max(y) + 0.5*h;
@@ -166,18 +173,18 @@ if ischar(hyp)
                 dm.PUB(D+2:2*D+1) = delta.^2;                
             end
             
-        elseif meanfun >= 4 && meanfun <= 15
+        elseif meanfun >= 4 && meanfun <= 15 || meanfun >= 22 && meanfun <= 23
             
             % Redefine limits for m0 (meaning depends on mean func type)
             h = max(y) - min(y);    % Height
             switch meanfun
-                case {4,10}
+                case {4,10,22}
                     dm.LB(1) = min(y);
                     dm.UB(1) = max(y) + h;
                     dm.PLB(1) = median(y);
                     dm.PUB(1) = max(y);
                     dm.x0(1) = quantile1(y,0.9);
-                case {5,11}
+                case {5,11,23}
                     dm.LB(1) = min(y) - h;
                     dm.UB(1) = max(y);
                     dm.PLB(1) = min(y);
@@ -209,7 +216,7 @@ if ischar(hyp)
                     dm.x0(1) = median(y);
             end
             
-            if meanfun >= 4 && meanfun <= 9
+            if meanfun >= 4 && meanfun <= 9 || meanfun >= 22 && meanfun <= 23
                 dm.LB(2:D+1) = min(X) - 0.5*w;          % xm
                 dm.UB(2:D+1) = max(X) + 0.5*w;
                 dm.PLB(2:D+1) = min(X);
@@ -303,6 +310,26 @@ if ischar(hyp)
             dm.x0(D+(1:D)) = log(std(X));            
         end
         
+        if meanfun >= 22 && meanfun <= 23
+            dm.LB(2*D+2) = -3*h;            % hm
+            dm.UB(2*D+2) = 3*h;
+            dm.PLB(2*D+2) = -h;
+            dm.PUB(2*D+2) = h;
+            dm.x0(2*D+2) = 0;
+
+            dm.LB(2*D+3) = log(1e-3);       % rho
+            dm.UB(2*D+3) = log(1e3);
+            dm.PLB(2*D+3) = log(0.1);
+            dm.PUB(2*D+3) = log(10);
+            dm.x0(2*D+3) = log(1);
+            
+            dm.LB(2*D+4) = log(1e-3);       % beta
+            dm.UB(2*D+4) = log(1e3);
+            dm.PLB(2*D+4) = log(0.1);
+            dm.PUB(2*D+4) = log(10);
+            dm.x0(2*D+4) = log(1);            
+        end        
+        
         % Fixed quadratic mean location
         if meanfun >= 10 && meanfun <= 15 || meanfun >= 18 && meanfun <= 19
             if any(meanfun == [10,12,14,18])   % find max/min
@@ -341,6 +368,8 @@ if ischar(hyp)
             case 19; dm.meanfun_name = 'posquadfixonly';
             case 20; dm.meanfun_name = 'negquadlinonly';
             case 21; dm.meanfun_name = 'posquadlinonly';
+            case 22; dm.meanfun_name = 'negquadmix';
+            case 23; dm.meanfun_name = 'posquadmix';
         end
         
     end
@@ -515,8 +544,31 @@ switch meanfun
         if compute_grad
             dm(:,1:D) = (-sgn)*bsxfun(@rdivide,bsxfun(@minus,X,xm), omega.^2);
             dm(:,D+(1:D)) = (-sgn)*z2;        
+        end                
+    case {22,23}  % Mixture of negative (22) and positive (23) quadratics
+        if meanfun == 22; sgn = -1; else; sgn = 1; end
+        m0 = hyp(1);
+        xm = hyp(1+(1:D))';
+        omega = exp(hyp(D+1+(1:D)))';
+        hm = hyp(2*D+2);
+        rho2 = exp(2*hyp(2*D+3));
+        beta2 = exp(2*hyp(2*D+4));
+        
+        z2 = bsxfun(@rdivide,bsxfun(@minus,X,xm),omega).^2;
+        sumz2 = sum(z2,2);
+        alpham = exp(-0.5/rho2*sumz2);
+        kkm = alpham.*(hm - sgn*0.5*(1-1/beta2)*sumz2);
+        m = m0 + hm + (sgn*0.5/beta2)*sumz2 - kkm;
+        
+        if compute_grad
+            dx = bsxfun(@rdivide,bsxfun(@minus,X,xm),omega.^2);            
+            dm(:,1) = ones(N,1);
+            dm(:,2:D+1) = (-sgn)/beta2*dx - sgn*(1-1/beta2)*bsxfun(@times,alpham,dx) - 1/rho2*bsxfun(@times,dx,kkm);
+            dm(:,D+2:2*D+1) = (-sgn)/beta2*z2 - sgn*(1-1/beta2)*bsxfun(@times,alpham,z2) - 1/rho2*bsxfun(@times,z2,kkm); 
+            dm(:,2*D+2) = 1 - alpham;
+            dm(:,2*D+3) = -1/rho2*sumz2.*kkm;
+            dm(:,2*D+4) = (-sgn/beta2)*(1-alpham).*sumz2;            
         end
-                
         
 end
 
