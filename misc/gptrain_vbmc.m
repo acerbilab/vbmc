@@ -231,12 +231,12 @@ end
 % Hyperpriors over mixture of quadratics mean function
 if meanfun == 22
     deltay = max(y) - min(y);    
-    hypprior.mu(Ncov+Nnoise+2*D+2) = 0;
+    hypprior.mu(Ncov+Nnoise+2*D+2) = 0;                 % hm
     hypprior.sigma(Ncov+Nnoise+2*D+2) = 0.5*deltay;
-    hypprior.mu(Ncov+Nnoise+2*D+3) = 0;
-    hypprior.sigma(Ncov+Nnoise+2*D+3) = log(10);
-    hypprior.mu(Ncov+Nnoise+2*D+4) = 0;
-    hypprior.sigma(Ncov+Nnoise+2*D+4) = log(10);    
+    hypprior.mu(Ncov+Nnoise+2*D+3) = 0;                 % rho
+    hypprior.sigma(Ncov+Nnoise+2*D+3) = 1;
+    hypprior.mu(Ncov+Nnoise+2*D+4) = 0;                 % beta
+    hypprior.sigma(Ncov+Nnoise+2*D+4) = 1;    
 end
 
 % Change bounds and hyperprior over output-dependent noise modulation
