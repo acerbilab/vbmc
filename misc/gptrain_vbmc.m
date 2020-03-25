@@ -268,7 +268,7 @@ if Noutwarp > 0
             hypprior.sigma(Ncov+Nnoise+Nmean+1) = options.OutwarpThreshBase;
             hypprior.df(Ncov+Nnoise+Nmean+1) = 1;   % Half-Cauchy prior
             
-            % UB_gp(Ncov+Nnoise+Nmean+2) = 0;
+            UB_gp(Ncov+Nnoise+Nmean+2) = log(2);
             hypprior.mu(Ncov+Nnoise+Nmean+2) = 0;
             hypprior.sigma(Ncov+Nnoise+Nmean+2) = log(2);
             

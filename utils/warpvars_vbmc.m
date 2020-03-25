@@ -20,7 +20,7 @@ function varargout = warpvars_vbmc(varargin)
 %  variables Y into constrained variables X.
 %
 %  P = TRANSVARS(Y,'prob',TRINFO) returns probability multiplier for the 
-%  original pdf evaluated at f^{-1}(Y).
+%  original pdf evaluated at f^{-1}(Y), that is | df^{-1}(y) / dy |.
 %
 %  LP = TRANSVARS(Y,'logprob',TRINFO) returns log probability term for the 
 %  original log pdf evaluated at f^{-1}(Y).
