@@ -487,7 +487,7 @@ while ~isFinished_flag
         
     %% Input warping / reparameterization
     if options.IncrementalWarpDelay
-        WarpDelay = options.WarpEveryIters*(optimState.WarpingCount+1);
+        WarpDelay = options.WarpEveryIters*max(1,optimState.WarpingCount);
     else
         WarpDelay = options.WarpEveryIters;
     end
