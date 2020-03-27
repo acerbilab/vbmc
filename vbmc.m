@@ -440,11 +440,11 @@ gp = [];        hypstruct = [];     hypstruct_search = [];
 if optimState.Cache.active
     displayFormat = ' %5.0f     %5.0f  /%5.0f   %12.2f  %12.2f  %12.2f     %4.0f %10.3g       %s\n';
     displayFormat_warmup = ' %5.0f     %5.0f  /%5.0f   %s\n';
-elseif optimState.UncertaintyHandlingLevel > 0
+elseif optimState.UncertaintyHandlingLevel > 0 && options.MaxRepeatedObservations > 0
     displayFormat = ' %5.0f       %5.0f %5.0f %12.2f  %12.2f  %12.2f     %4.0f %10.3g     %s\n';
     displayFormat_warmup = ' %5.0f       %5.0f    %12.2f  %s\n';    
 else
-    displayFormat = ' %5.0f       %5.0f    %12.2f  %12.2f  %12.2f     %4.0f %10.3g     %s\n';
+    displayFormat = ' %5.0f      %5.0f   %12.2f %12.2f %12.2f     %4.0f %10.3g     %s\n';
     displayFormat_warmup = ' %5.0f       %5.0f    %12.2f  %s\n';
 end
 if prnt > 2
@@ -453,10 +453,10 @@ if prnt > 2
     else
         if options.BOWarmup
             fprintf(' Iteration   f-count     Max[f]     Action\n');
-        elseif optimState.UncertaintyHandlingLevel > 0
+        elseif optimState.UncertaintyHandlingLevel > 0 && options.MaxRepeatedObservations > 0
             fprintf(' Iteration   f-count (x-count)   Mean[ELBO]     Std[ELBO]     sKL-iter[q]   K[q]  Convergence  Action\n');
         else
-            fprintf(' Iteration   f-count     Mean[ELBO]     Std[ELBO]     sKL-iter[q]   K[q]  Convergence  Action\n');            
+            fprintf(' Iteration  f-count    Mean[ELBO]    Std[ELBO]    sKL-iter[q]   K[q]  Convergence  Action\n');            
         end
     end
 end
@@ -761,7 +761,7 @@ while ~isFinished_flag
         else
             if optimState.Cache.active
                 fprintf(displayFormat,iter,optimState.funccount,optimState.cachecount,elbo,elbo_sd,sKL,vp.K,optimState.R,action);
-            elseif optimState.UncertaintyHandlingLevel > 0
+            elseif optimState.UncertaintyHandlingLevel > 0  && options.MaxRepeatedObservations > 0
                 fprintf(displayFormat,iter,optimState.funccount,optimState.N,elbo,elbo_sd,sKL,vp.K,optimState.R,action);                
             else
                 fprintf(displayFormat,iter,optimState.funccount,elbo,elbo_sd,sKL,vp.K,optimState.R,action);
@@ -789,7 +789,7 @@ if new_final_vp_flag
     if prnt > 2
         % Recompute symmetrized KL-divergence
         sKL = max(0,0.5*sum(vbmc_kldiv(vp,vp_old,Nkl,options.KLgauss)));
-        if optimState.UncertaintyHandlingLevel > 0
+        if optimState.UncertaintyHandlingLevel > 0 && options.MaxRepeatedObservations > 0
             fprintf(displayFormat,Inf,optimState.funccount,optimState.N,elbo,elbo_sd,sKL,vp.K,stats.rindex(idx_best),'finalize');
         else
             fprintf(displayFormat,Inf,optimState.funccount,elbo,elbo_sd,sKL,vp.K,stats.rindex(idx_best),'finalize');
