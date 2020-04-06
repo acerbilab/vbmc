@@ -203,9 +203,9 @@ defopts.NSgpMaxMain        = 'Inf               % Max GP hyperparameter samples 
 defopts.WarmupNoImproThreshold = '20 + 5*nvars  % Fcn evals without improvement before stopping warmup';
 defopts.WarmupCheckMax     = 'yes               % Also check for max fcn value improvement before stopping warmup';
 defopts.StableGPSampling   = '200 + 10*nvars    % Force stable GP hyperparameter sampling (reduce samples or start optimizing)';
-defopts.StableGPvpK        = '10                % Force stable GP hyperparameter sampling after reaching this number of components';
+defopts.StableGPvpK        = 'Inf               % Force stable GP hyperparameter sampling after reaching this number of components';
 defopts.StableGPSamples    = '0                 % Number of GP samples when GP is stable (0 = optimize)';
-defopts.GPSampleThin       = '1                 % Thinning for GP hyperparameter sampling';
+defopts.GPSampleThin       = '5                 % Thinning for GP hyperparameter sampling';
 defopts.GPTrainNinit       = '1024              % Initial design points for GP hyperparameter training';
 defopts.GPTrainNinitFinal  = '64                % Final design points for GP hyperparameter training';
 defopts.GPTrainInitMethod  = 'rand              % Initial design method for GP hyperparameter training';
@@ -248,7 +248,7 @@ defopts.AlwaysRefitVarPost = 'no                % Always fully refit variational
 defopts.Warmup             = 'on                % Perform warm-up stage';
 defopts.WarmupOptions      = '[]                % Special OPTIONS struct for warmup stage';
 defopts.StopWarmupThresh   = '0.2               % Stop warm-up when ELCBO increase below threshold (per fcn eval)';
-defopts.WarmupKeepThreshold = '100*(nvars+2)    % Max log-likelihood difference for points kept after warmup';
+defopts.WarmupKeepThreshold = '10*nvars         % Max log-likelihood difference for points kept after warmup';
 defopts.WarmupKeepThresholdFalseAlarm = '100*(nvars+2) % Max log-likelihood difference for points kept after a false-alarm warmup stop';
 defopts.StopWarmupReliability = '100            % Reliability index required to stop warmup';
 defopts.SearchOptimizer    = 'cmaes             % Optimization method for active sampling';
@@ -286,6 +286,7 @@ defopts.UpperGPLengthFactor = '0                % Upper bound on GP input length
 defopts.InitDesign         = 'plausible         % Initial samples ("plausible" is uniform in the plausible box)';
 defopts.gpQuadraticMeanBound = 'yes             % Stricter upper bound on GP negative quadratic mean function';
 defopts.Bandwidth          = '0                 % Bandwidth parameter for GP smoothing (in units of plausible box)';
+defopts.FitnessShaping     = 'no                % Heuristic output warping ("fitness shaping")';
 defopts.OutwarpThreshBase  = '10*nvars          % Output warping starting threshold';
 defopts.OutwarpThreshMult  = '1.25              % Output warping threshold multiplier when failed sub-threshold check';
 defopts.OutwarpThreshTol   = '0.8               % Output warping base threshold tolerance (fraction of current threshold)';
@@ -727,12 +728,12 @@ while ~isFinished_flag
     end
     stats.warmup(iter) = optimState.Warmup;
         
-    % Check and update output warping threshold
-    if ~isempty(optimState.gpOutwarpfun) && (optimState.R < 1)
-        Xrnd = vbmc_rnd(vp,1e5);
-        ymu = gplite_pred(gp,Xrnd,[],[],1,1);
-        ydelta = max([0,optimState.ymax-min(ymu)]);
-        if any(ydelta > optimState.OutwarpDelta*options.OutwarpThreshTol) && (optimState.R < 1)
+    % Check and update fitness shaping / output warping threshold
+    if ~isempty(optimState.OutwarpDelta) && optimState.R < options.WarpTolReliability
+        Xrnd = vbmc_rnd(vp,2e4,0);
+        ymu = gplite_pred(gp,Xrnd,[],[],0,1);
+        ydelta = max([0,optimState.ymax-quantile(ymu,1e-3)])
+        if (ydelta > optimState.OutwarpDelta*options.OutwarpThreshTol) && (optimState.R < 1)
             optimState.OutwarpDelta = optimState.OutwarpDelta*options.OutwarpThreshMult;
         end
     end    
@@ -780,6 +781,7 @@ vp_old = vp;
     best_vbmc(stats,iter,options.BestSafeSD,options.BestFracBack,options.RankCriterion);
 new_final_vp_flag = idx_best ~= iter;
 gp = stats.gp(idx_best);
+vp.gp = gp;     % Add GP to variational posterior
 
 % Last variational optimization with large number of components
 [vp,elbo,elbo_sd,changedflag] = finalboost_vbmc(vp,idx_best,optimState,stats,options);
@@ -1013,7 +1015,6 @@ end
 % TO-DO list:
 % - Initialization with multiple (e.g., cell array of) variational posteriors.
 % - Combine multiple variational solutions?
-% - GP sampling at the very end?
 % - Quasi-random sampling from variational posterior (e.g., for initialization).
 % - Write a private quantile function to avoid calls to Stats Toolbox.
 % - Fix call to fmincon if Optimization Toolbox is not available.

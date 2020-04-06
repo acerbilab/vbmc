@@ -228,9 +228,6 @@ optimState.iterList.fhyp = [];
 
 optimState.delta = options.Bandwidth*(optimState.PUB-optimState.PLB);
 
-% Starting threshold on y for output warping
-optimState.OutwarpDelta = options.OutwarpThreshBase;
-
 % Posterior tempering temperature
 if ~isempty(options.Temperature); T = options.Temperature; else; T = 1; end
 if round(T) ~= T || T > 4 || T < 1
@@ -284,6 +281,12 @@ if ischar(optimState.gpOutwarpfun)
     end
 end
 
+% Starting threshold on y for output warping
+if options.FitnessShaping || ~isempty(optimState.gpOutwarpfun)
+    optimState.OutwarpDelta = options.OutwarpThreshBase;
+else
+    optimState.OutwarpDelta = [];    
+end
 
 %% Get warnings state
 

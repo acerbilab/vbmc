@@ -24,6 +24,12 @@ function [X,I] = vbmc_rnd(vp,N,origflag,balanceflag,df)
 %   element of I indicates the index of the variational mixture component 
 %   from which the n-th row of X has been generated.
 %
+%   X = VBMC_RND(VP,N,ORIGFLAG,'gp') generates random samples using the 
+%   Gaussian process the variational posterior has been fit to. This 
+%   approach is much slower than sampling from the variational posterior, 
+%   as samples are generated via Markov Chain Monte Carlo, but it can 
+%   occasionally be more precise.
+%
 %   See also VBMC, VBMC_MOMENTS, VBMC_PDF.
 
 if nargin < 3 || isempty(origflag); origflag = true; end
@@ -36,6 +42,11 @@ K = vp.K;   % Number of components
 if N < 1
     X = zeros(0,D);
     I = zeros(0,1);
+elseif ischar(balanceflag) && strcmpi(balanceflag,'gp')
+    if ~isfield(vp,'gp') || isempty(vp.gp)
+        error('Cannot sample from GP, the GP associated to the variational posterior is empty.');
+    end    
+    X = gpsample_vbmc(vp,vp.gp,N,origflag);    
 else
     w = vp.w;                       % Mixture weights
     mu_t(:,:) = vp.mu';             % MU transposed

@@ -9,8 +9,11 @@ end
 
 % Get training dataset
 [X_train,y_train,s2_train,t_train] = get_traindata_vbmc(optimState,options);
-% optimState.warp_thresh = max(y_train) - 100 - 20*size(X_train,2);
-% y_train = outputwarp(y_train,optimState,options);   % Fitness shaping
+
+% Heuristic fitness shaping
+if options.FitnessShaping
+    [y_train,s2_train] = outputwarp_vbmc(X_train,y_train,s2_train,optimState,options);
+end
 
 % Get priors, starting hyperparameters, number of samples, and mean function
 if optimState.Warmup && options.BOWarmup
