@@ -90,7 +90,8 @@ if stopWarmup
         optimState.Warmup = false;
         if isempty(action); action = 'end warm-up'; else; action = [action ', end warm-up']; end
         threshold = options.WarmupKeepThreshold * (numel(optimState.DataTrimList)+1);
-
+        optimState.LastWarmup = optimState.iter;
+        
         % Start warping
         optimState.LastWarping = optimState.iter;
         optimState.LastNonlinearWarping = optimState.iter;

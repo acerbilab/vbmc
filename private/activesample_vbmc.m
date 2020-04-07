@@ -42,7 +42,12 @@ else                    % Active uncertainty sampling
         Ns_activevar = options.ActiveVariationalSamples;
     end
     
-    if options.ActiveSampleFullUpdate && Ns > 1
+    ActiveSampleFullUpdate_flag = options.ActiveSampleFullUpdate == 1 || ...
+        options.ActiveSampleFullUpdate == 2 || ...
+        (options.ActiveSampleFullUpdate == 3 && ...
+        ((optimState.iter - options.ActiveSampleFullUpdatePastWarmup) <= optimState.LastWarmup));
+        
+    if ActiveSampleFullUpdate_flag && Ns > 1
         RecomputeVarPost_old = optimState.RecomputeVarPost;
         entropy_alpha_old = optimState.entropy_alpha;
         
@@ -454,10 +459,11 @@ else                    % Active uncertainty sampling
             
             if ~isempty(gp_old); gp = gp_old; end
             
-            if options.ActiveSampleFullUpdate > 0
+            if ActiveSampleFullUpdate_flag
                 % Quick GP update                
-                t = tic;
                 if isempty(hypstruct); hypstruct = optimState.hypstruct; end
+                
+                t = tic;
                 [gp,hypstruct,Ns_gp,optimState] = ...
                     gptrain_vbmc(hypstruct,optimState,stats,options_update);    
                 timer.gpTrain = timer.gpTrain + toc(t);
@@ -511,7 +517,7 @@ else                    % Active uncertainty sampling
         
     end
     
-    if options.ActiveSampleFullUpdate && Ns > 1
+    if ActiveSampleFullUpdate_flag && Ns > 1
         % Reset OPTIMSTATE
         optimState.RecomputeVarPost = RecomputeVarPost_old;
         optimState.entropy_alpha = entropy_alpha_old;

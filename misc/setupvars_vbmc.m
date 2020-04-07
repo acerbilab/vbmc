@@ -160,6 +160,11 @@ optimState.RecomputeVarPost = true;
 
 % Start with warm-up?
 optimState.Warmup = options.Warmup;
+if optimState.Warmup
+    optimState.LastWarmup = Inf;
+else
+    optimState.LastWarmup = 0;
+end
 
 % Number of stable function evaluations during warmup with small increment
 optimState.WarmupStableCount = 0;

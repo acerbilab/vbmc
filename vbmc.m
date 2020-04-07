@@ -301,6 +301,7 @@ defopts.AcqHedgeDecay      = '0.9               % Portfolio value decay per func
 defopts.ActiveVariationalSamples = '0           % MCMC variational steps before each active sampling';
 defopts.ScaleLowerBound    = 'yes               % Apply lower bound on variational components scale during variational sampling';
 defopts.ActiveSampleFullUpdate = 'no            % Perform GP and variational updates in-between active samples';
+defopts.ActiveSampleFullUpdatePastWarmup = '2 + floor(sqrt(nvars))   % # iters past warmup to continue update after each active sample';
 defopts.VariationalInitRepo = 'no               % Use previous variational posteriors to initialize optimization';
 defopts.SampleExtraVPMeans = '0                 % Extra variational components sampled from GP profile';
 defopts.OptimisticVariationalBound = '0         % Uncertainty weight on ELCBO during active sampling';
