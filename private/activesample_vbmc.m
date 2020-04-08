@@ -42,11 +42,13 @@ else                    % Active uncertainty sampling
         Ns_activevar = options.ActiveVariationalSamples;
     end
     
-    ActiveSampleFullUpdate_flag = options.ActiveSampleFullUpdate == 1 || ...
-        options.ActiveSampleFullUpdate == 2 || ...
-        (options.ActiveSampleFullUpdate == 3 && ...
-        ((optimState.iter - options.ActiveSampleFullUpdatePastWarmup) <= optimState.LastWarmup));
-        
+    % Perform GP (and possibly variational) update after each active sample
+    ActiveSampleFullUpdate_flag = options.ActiveSampleFullUpdate == 1 ...
+        || options.ActiveSampleFullUpdate == 2 ...
+        || (options.ActiveSampleFullUpdate == 3 && ...
+        ((optimState.iter - options.ActiveSampleFullUpdatePastWarmup) <= optimState.LastWarmup)) ...
+        || (stats.rindex(end) > options.ActiveSampleFullUpdateThreshold);
+    
     if ActiveSampleFullUpdate_flag && Ns > 1
         RecomputeVarPost_old = optimState.RecomputeVarPost;
         entropy_alpha_old = optimState.entropy_alpha;
@@ -523,12 +525,16 @@ else                    % Active uncertainty sampling
         optimState.entropy_alpha = entropy_alpha_old;
         optimState.hypstruct = hypstruct;
         
-        % Check if old variational posterior is better than current
+        % If variational posterior has changed, check if old variational 
+        % posterior is better than current
         theta0 = get_vptheta(vp0);
-        NSentFineK = ceil(evaloption_vbmc(options.NSentFineActive,vp0.K)/vp0.K);
-        elbo0 = -negelcbo_vbmc(theta0,0,vp0,gp,NSentFineK,0,1);
-        if elbo0 > vp.stats.elbo; vp = vp0; end
-        % [elbo0,vp.stats.elbo]
+        theta = get_vptheta(vp);
+        if numel(theta0) ~= numel(theta) || any(theta0 ~= theta)
+            NSentFineK = ceil(evaloption_vbmc(options.NSentFineActive,vp0.K)/vp0.K);
+            elbo0 = -negelcbo_vbmc(theta0,0,vp0,gp,NSentFineK,0,1);
+            if elbo0 > vp.stats.elbo(end); vp = vp0; end
+            % [elbo0,vp.stats.elbo]
+        end
     end
 end
 
