@@ -43,11 +43,10 @@ else                    % Active uncertainty sampling
     end
     
     % Perform GP (and possibly variational) update after each active sample
-    ActiveSampleFullUpdate_flag = options.ActiveSampleFullUpdate == 1 ...
-        || options.ActiveSampleFullUpdate == 2 ...
-        || (options.ActiveSampleFullUpdate == 3 && ...
-        ((optimState.iter - options.ActiveSampleFullUpdatePastWarmup) <= optimState.LastWarmup)) ...
-        || (stats.rindex(end) > options.ActiveSampleFullUpdateThreshold);
+    ActiveSampleFullUpdate_flag = ...
+        (options.ActiveSampleVPUpdate || options.ActiveSampleGPUpdate) && ...
+        (((optimState.iter - options.ActiveSampleFullUpdatePastWarmup) <= optimState.LastWarmup) ...
+        || (stats.rindex(end) > options.ActiveSampleFullUpdateThreshold));
     
     if ActiveSampleFullUpdate_flag && Ns > 1
         RecomputeVarPost_old = optimState.RecomputeVarPost;
@@ -465,12 +464,14 @@ else                    % Active uncertainty sampling
                 % Quick GP update                
                 if isempty(hypstruct); hypstruct = optimState.hypstruct; end
                 
-                t = tic;
-                [gp,hypstruct,Ns_gp,optimState] = ...
-                    gptrain_vbmc(hypstruct,optimState,stats,options_update);    
-                timer.gpTrain = timer.gpTrain + toc(t);
+                if options.ActiveSampleGPUpdate
+                    t = tic;
+                    [gp,hypstruct,Ns_gp,optimState] = ...
+                        gptrain_vbmc(hypstruct,optimState,stats,options_update);    
+                    timer.gpTrain = timer.gpTrain + toc(t);
+                end
                 
-                if options.ActiveSampleFullUpdate == 1
+                if options.ActiveSampleVPUpdate
                     % Quick variational optimization
                     t = tic;                
                     % Decide number of fast optimizations
