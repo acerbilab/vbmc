@@ -43,7 +43,11 @@ elseif iter > TolStableWarmupIters + 1
 end
 
 % Vector of maximum lower confidence bounds (LCB) of fcn values
-lcbmax_vec = stats.lcbmax(1:iter);
+if isfield(optimState,'lcbmax_vec') && ~isempty(optimState.lcbmax_vec)
+    lcbmax_vec = optimState.lcbmax_vec(1:iter);
+else
+    lcbmax_vec = stats.lcbmax(1:iter);
+end
 
 % Second requirement, also no substantial improvement of max fcn value 
 % in recent iters (unless already performing BO-like warmup)

@@ -313,6 +313,7 @@ defopts.ActiveImportanceSamplingMCMCSamples = '200 % # importance samples throug
 defopts.ActiveSearchBound = '2                  % Active search bound multiplier';
 defopts.IntegrateGPMean = 'no                   % Try integrating GP mean function';
 defopts.TolBoundX          = '1e-5              % Tolerance on closeness to bound constraints (fraction of total range)';
+defopts.RecomputeLCBmax     = 'no               % Recompute LCB max for each iteration based on current GP estimate';
 
 %% Advanced options for unsupported/untested features (do *not* modify)
 defopts.WarpEveryIters     = '5                 % Warp every this number of iterations';
@@ -699,8 +700,7 @@ while ~isFinished_flag
     % Record all useful stats
     stats = savestats(stats, ...
         optimState,vp,elbo,elbo_sd,varss,sKL,sKL_true,gp,hypstruct.full,...
-        Ns_gp,pruned,timer,options.Diagnostics);
-    
+        Ns_gp,pruned,timer,options.Diagnostics);    
     
     %----------------------------------------------------------------------
     %% Check termination conditions and warmup
@@ -710,7 +710,10 @@ while ~isFinished_flag
     vp.stats.stable = stats.stable(optimState.iter);    % Save stability
     
     % Check if we are still warming-up
-    if optimState.Warmup && iter > 1    
+    if optimState.Warmup && iter > 1
+        if options.RecomputeLCBmax
+        	optimState.lcbmax_vec = recompute_lcbmax(gp,optimState,stats,options)';
+        end        
         [optimState,action,trim_flag] = vbmc_warmup(optimState,stats,action,options);
         if trim_flag    % Re-update GP after trimming
             gp = gpreupdate(gp,optimState,options);
