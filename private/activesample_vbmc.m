@@ -208,7 +208,7 @@ else                    % Active uncertainty sampling
         % Prepare for importance sampling based acquisition function
         if isfield(optimState.acqInfo{idxAcq},'importance_sampling') ...
                 && optimState.acqInfo{idxAcq}.importance_sampling
-            optimState.ActiveImportanceSampling = activeimportancesampling_vbmc(vp,gp,SearchAcqFcn{idxAcq},options);
+            optimState.ActiveImportanceSampling = activeimportancesampling_vbmc(vp,gp,SearchAcqFcn{idxAcq},optimState.acqInfo{idxAcq},options);
         end
         
         %% Start active search
