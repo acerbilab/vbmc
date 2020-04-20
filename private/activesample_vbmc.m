@@ -308,9 +308,8 @@ else                    % Active uncertainty sampling
                 fprintf('Active search failed.\n');
                 fval_optim = Inf;                
             end
-
             
-            % [fval_old, fval_optim]
+            % [fval_old, fval_optim,nevals]
             
             if fval_optim < fval_old            
                 Xacq(1,:) = real2int_vbmc(xsearch_optim,vp.trinfo,optimState.integervars);
