@@ -6,7 +6,7 @@ if nargin < 3 || isempty(X); X = 100; end
 % If a single number is passed, take it as the number of samples
 if numel(X) == 1
     N = X;
-    X = vbmc_rnd(vp,Na,0);
+    X = vbmc_rnd(vp,N,0);
 else
     N = size(X,1);
 end

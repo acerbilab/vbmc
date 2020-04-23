@@ -311,6 +311,7 @@ defopts.ActiveImportanceSamplingVPSamples   = '100 % # importance samples from s
 defopts.ActiveImportanceSamplingBoxSamples  = '100 % # importance samples from box-uniform centered on training inputs';
 defopts.ActiveImportanceSamplingMCMCSamples = '100 % # importance samples through MCMC';
 defopts.ActiveImportanceSamplingMCMCThin    = '1   % Thinning for importance sampling MCMC';
+defopts.ActiveSamplefESSThresh  = '1            % fractional ESS threhsold to update GP and VP';
 defopts.ActiveSearchBound = '2                  % Active search bound multiplier';
 defopts.IntegrateGPMean = 'no                   % Try integrating GP mean function';
 defopts.TolBoundX          = '1e-5              % Tolerance on closeness to bound constraints (fraction of total range)';

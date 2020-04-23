@@ -463,24 +463,43 @@ else                    % Active uncertainty sampling
                 % Quick GP update                
                 if isempty(hypstruct); hypstruct = optimState.hypstruct; end
                 
-                if options.ActiveSampleGPUpdate
-                    t = tic;
-                    [gp,hypstruct,Ns_gp,optimState] = ...
-                        gptrain_vbmc(hypstruct,optimState,stats,options_update);    
-                    timer.gpTrain = timer.gpTrain + toc(t);
+                fESS_thresh = options.ActiveSamplefESSThresh;
+                gptmp = [];
+                if fESS_thresh < 1
+                    gptmp = gpreupdate(gp,optimState,options);                    
+                    fESS = fess_vbmc(vp,gptmp,100);
+                else
+                    fESS = 0;
                 end
                 
-                if options.ActiveSampleVPUpdate
-                    % Quick variational optimization
-                    t = tic;                
-                    % Decide number of fast optimizations
-                    Nfastopts = ceil(options_update.NSelboIncr * evaloption_vbmc(options_update.NSelbo,vp.K));
-                    if options.UpdateRandomAlpha
-                        optimState.entropy_alpha = 1 - sqrt(rand());
+                if fESS <= fESS_thresh                
+                    if options.ActiveSampleGPUpdate
+                        t = tic;
+                        [gp,hypstruct,Ns_gp,optimState] = ...
+                            gptrain_vbmc(hypstruct,optimState,stats,options_update);    
+                        timer.gpTrain = timer.gpTrain + toc(t);
+                    else
+                        if isempty(gptmp)
+                            gp = gpreupdate(gp,optimState,options);
+                        else
+                            gp = gptmp;
+                        end
                     end
-                    vp = vpoptimize_vbmc(Nfastopts,1,vp,gp,[],optimState,options_update,0);
-                    optimState.vp_repo{end+1} = get_vptheta(vp);
-                    timer.variationalFit = timer.variationalFit + toc(t);
+
+                    if options.ActiveSampleVPUpdate
+                        % Quick variational optimization
+                        t = tic;                
+                        % Decide number of fast optimizations
+                        Nfastopts = ceil(options_update.NSelboIncr * evaloption_vbmc(options_update.NSelbo,vp.K));
+                        if options.UpdateRandomAlpha
+                            optimState.entropy_alpha = 1 - sqrt(rand());
+                        end
+                        vp = vpoptimize_vbmc(Nfastopts,1,vp,gp,[],optimState,options_update,0);
+                        optimState.vp_repo{end+1} = get_vptheta(vp);
+                        timer.variationalFit = timer.variationalFit + toc(t);
+                    end
+                else
+                    gp = gptmp;
                 end
                 
             else
