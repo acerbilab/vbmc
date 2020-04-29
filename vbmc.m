@@ -313,10 +313,11 @@ defopts.ActiveImportanceSamplingMCMCSamples = '100 % # importance samples throug
 defopts.ActiveImportanceSamplingMCMCThin    = '1   % Thinning for importance sampling MCMC';
 defopts.ActiveSamplefESSThresh  = '1            % fractional ESS threhsold to update GP and VP';
 defopts.ActiveImportanceSamplingfESSThresh = '0.9 % % fractional ESS threhsold to do MCMC while active importance sampling';
-defopts.ActiveSearchBound = '2                  % Active search bound multiplier';
-defopts.IntegrateGPMean = 'no                   % Try integrating GP mean function';
+defopts.ActiveSearchBound  = '2                  % Active search bound multiplier';
+defopts.IntegrateGPMean    = 'no                   % Try integrating GP mean function';
 defopts.TolBoundX          = '1e-5              % Tolerance on closeness to bound constraints (fraction of total range)';
-defopts.RecomputeLCBmax     = 'yes              % Recompute LCB max for each iteration based on current GP estimate';
+defopts.RecomputeLCBmax    = 'yes              % Recompute LCB max for each iteration based on current GP estimate';
+defopts.BoundedTransform   = 'logit            % Input transform for bounded variables';
 
 %% Advanced options for unsupported/untested features (do *not* modify)
 defopts.WarpEveryIters     = '5                 % Warp every this number of iterations';

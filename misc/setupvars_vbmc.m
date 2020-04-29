@@ -32,6 +32,14 @@ optimState.UBeps_orig = UB - (UB - LB)*options.TolBoundX;
 
 % Transform variables
 trinfo = warpvars_vbmc(nvars,LB,UB,PLB,PUB);
+switch lower(options.BoundedTransform)
+    case 'logit'
+    case 'norminv'
+        trinfo.type(trinfo.type == 3) = 12;
+    otherwise
+        error('vbmc:UnknwonBoundedTransform','Unknown bounded transform.');
+end
+
 trinfo.x0_orig = x0;
 if ~isfield(trinfo,'R_mat'); trinfo.R_mat = []; end
 if ~isfield(trinfo,'scale'); trinfo.scale = []; end

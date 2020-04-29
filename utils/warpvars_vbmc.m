@@ -248,7 +248,16 @@ if nargin == 3 && (isstruct(varargin{3}) || ischar(varargin{2}))
                         % y(:,ii) = log(expm1(-1./alpha(ii).*log1p(-(1-z).^(1./beta(ii)))));
                         y(:,ii) = bsxfun(@rdivide,bsxfun(@minus,y(:,ii),mu(ii)),delta(ii));
                     end
-                end                
+                end
+                
+                % Lower and upper bounded scalars (cumulative normal)
+                idx = trinfo.type == 12;
+                if any(idx)
+                    z = bsxfun(@rdivide, bsxfun(@minus, x(:,idx), a(idx)), ...
+                        b(idx) - a(idx));                    
+                    y(:,idx) = -sqrt(2).*erfcinv(2*z);                    
+                    y(:,idx) = bsxfun(@rdivide,bsxfun(@minus,y(:,idx),mu(idx)),delta(idx));
+                end
                 
                 % Rotate output
                 if ~isempty(trinfo.R_mat); y = y*trinfo.R_mat; end
@@ -414,7 +423,15 @@ if nargin == 3 && (isstruct(varargin{3}) || ischar(varargin{2}))
                         x(:,ii) = a(ii) + (b(ii)-a(ii))*(1 - (1-z.^(alpha(ii))).^beta(ii));
                     end
                 end
-                                                                
+                
+                % Lower and upper bounded scalars (cumulative normal)
+                idx = trinfo.type == 12;
+                if any(idx)
+                    x(:,idx) = bsxfun(@plus,bsxfun(@times,y(:,idx),delta(idx)),mu(idx));
+                    x(:,idx) = bsxfun(@plus, a(:,idx), bsxfun(@times, ...
+                        b(idx)-a(idx), 0.5 * erfc(-x(:,idx) ./ sqrt(2))));
+                end
+                                                                                
                 % Force to stay within bounds
                 a(isfinite(a)) = a(isfinite(a)) + eps(a(isfinite(a)));
                 b(isfinite(b)) = b(isfinite(b)) - eps(b(isfinite(b)));
@@ -699,6 +716,15 @@ if nargin == 3 && (isstruct(varargin{3}) || ischar(varargin{2}))
                     end
                 end
 
+                % Lower and upper bounded scalars (cumulative normal)
+                idx = trinfo.type == 12;
+                if any(idx)
+                    y(:,idx) = bsxfun(@plus,bsxfun(@times,y(:,idx),delta(idx)),mu(idx));
+                    z = -0.5*log(2*pi) - 0.5*y(:,idx).^2;
+                    p(:,idx) = bsxfun(@plus, log(b(idx)-a(idx)), z);
+                    p(:,idx) = bsxfun(@plus, p(:,idx), log(delta(idx)));
+                end
+                
                 %if ~isempty(trinfo.R_mat) && lower(action(1)) == 'g'
                 %    p = p*(trinfo.R_mat*diag();
                 %end

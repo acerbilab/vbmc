@@ -3,7 +3,7 @@ function warpvars_vbmc_test(nvars)
 if nargin < 1 || isempty(nvars); nvars = 1; end
 
 
-for iType = [0,3,9,10]
+for iType = [0,3,9,10,12]
     
     fprintf('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\n\n');
     fprintf('Testing transformation type %d...\n',iType);
@@ -12,7 +12,7 @@ for iType = [0,3,9,10]
     switch iType
         case {0,10}
             LB = -Inf; UB = Inf; PLB = -10; PUB = 10;
-        case {3,9}
+        case {3,9,12}
             LB = -9; UB = 4; PLB = -8.99; PUB = 3.99;
     end
 
