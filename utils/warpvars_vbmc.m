@@ -258,6 +258,17 @@ if nargin == 3 && (isstruct(varargin{3}) || ischar(varargin{2}))
                     y(:,idx) = -sqrt(2).*erfcinv(2*z);                    
                     y(:,idx) = bsxfun(@rdivide,bsxfun(@minus,y(:,idx),mu(idx)),delta(idx));
                 end
+
+                % Lower and upper bounded scalars (Student-t, nu = 4)
+                idx = trinfo.type == 13;
+                if any(idx)
+                    z = bsxfun(@rdivide, bsxfun(@minus, x(:,idx), a(idx)), ...
+                        b(idx) - a(idx));                    
+                    aa = sqrt(4*z.*(1-z));
+                    q = cos(acos(aa)/3)./aa;                    
+                    y(:,idx) = sign(z - 0.5).*(2.*sqrt(q-1));
+                    y(:,idx) = bsxfun(@rdivide,bsxfun(@minus,y(:,idx),mu(idx)),delta(idx));
+                end
                 
                 % Rotate output
                 if ~isempty(trinfo.R_mat); y = y*trinfo.R_mat; end
@@ -423,7 +434,7 @@ if nargin == 3 && (isstruct(varargin{3}) || ischar(varargin{2}))
                         x(:,ii) = a(ii) + (b(ii)-a(ii))*(1 - (1-z.^(alpha(ii))).^beta(ii));
                     end
                 end
-                
+                                
                 % Lower and upper bounded scalars (cumulative normal)
                 idx = trinfo.type == 12;
                 if any(idx)
@@ -431,7 +442,17 @@ if nargin == 3 && (isstruct(varargin{3}) || ischar(varargin{2}))
                     x(:,idx) = bsxfun(@plus, a(:,idx), bsxfun(@times, ...
                         b(idx)-a(idx), 0.5 * erfc(-x(:,idx) ./ sqrt(2))));
                 end
-                                                                                
+                  
+                % Lower and upper bounded scalars (Student-t, nu = 4)
+                idx = trinfo.type == 13;
+                if any(idx)
+                    x(:,idx) = bsxfun(@plus,bsxfun(@times,y(:,idx),delta(idx)),mu(idx));
+                    t2 = x(:,idx).^2;
+                    f = 0.5 + 3/8*x(:,idx)./sqrt(1 + t2/4).*(1 - t2./(1 + t2/4)/12);
+                    x(:,idx) = bsxfun(@plus, a(:,idx), bsxfun(@times, ...
+                        b(idx)-a(idx), f));
+                end
+                
                 % Force to stay within bounds
                 a(isfinite(a)) = a(isfinite(a)) + eps(a(isfinite(a)));
                 b(isfinite(b)) = b(isfinite(b)) - eps(b(isfinite(b)));
@@ -721,6 +742,15 @@ if nargin == 3 && (isstruct(varargin{3}) || ischar(varargin{2}))
                 if any(idx)
                     y(:,idx) = bsxfun(@plus,bsxfun(@times,y(:,idx),delta(idx)),mu(idx));
                     z = -0.5*log(2*pi) - 0.5*y(:,idx).^2;
+                    p(:,idx) = bsxfun(@plus, log(b(idx)-a(idx)), z);
+                    p(:,idx) = bsxfun(@plus, p(:,idx), log(delta(idx)));
+                end
+
+                % Lower and upper bounded scalars (Student-t, nu = 4)
+                idx = trinfo.type == 13;
+                if any(idx)
+                    y(:,idx) = bsxfun(@plus,bsxfun(@times,y(:,idx),delta(idx)),mu(idx));
+                    z = log(3/8) - 5/2*log1p(y(:,idx).^2/4);
                     p(:,idx) = bsxfun(@plus, log(b(idx)-a(idx)), z);
                     p(:,idx) = bsxfun(@plus, p(:,idx), log(delta(idx)));
                 end

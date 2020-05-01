@@ -36,6 +36,8 @@ switch lower(options.BoundedTransform)
     case 'logit'
     case 'norminv'
         trinfo.type(trinfo.type == 3) = 12;
+    case 'student4'
+        trinfo.type(trinfo.type == 3) = 13;        
     otherwise
         error('vbmc:UnknwonBoundedTransform','Unknown bounded transform.');
 end
