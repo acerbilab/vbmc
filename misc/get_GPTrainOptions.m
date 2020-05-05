@@ -9,6 +9,7 @@ gptrain_options.Thin = options.GPSampleThin;    % MCMC thinning
 gptrain_options.InitMethod = options.GPTrainInitMethod;
 gptrain_options.TolOpt = options.GPTolOpt;
 gptrain_options.TolOptMCMC = options.GPTolOptMCMC;
+gptrain_options.Widths = [];
 
 % Get hyperparameter posterior covariance from previous iters
 hypcov = GetHypCov(hypstruct,optimState,stats,options);    
@@ -24,6 +25,8 @@ switch lower(options.GPHypSampler)
         else
             gptrain_options.Widths = [];
         end
+    case {'npv'}
+        gptrain_options.Sampler = 'npv';
     case {'mala'}
         gptrain_options.Sampler = 'mala';        
         if ~isempty(hypcov)

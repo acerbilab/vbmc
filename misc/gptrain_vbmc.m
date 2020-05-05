@@ -51,6 +51,11 @@ end
 
 if size(hyp0,1) ~= size(hypprior.mu,2); hyp0 = []; end
 
+if isfield(hypstruct,'hyp_vp') && ~isempty(hypstruct.hyp_vp) ...
+    && strcmpi(gptrain_options.Sampler,'npv')
+    hyp0 = hypstruct.hyp_vp;
+end
+
 % Fit GP to training set
 [gp,hypstruct.hyp,gpoutput] = gplite_train(hyp0,Ns_gp,...
     X_train,y_train, ...
@@ -80,10 +85,11 @@ elseif gp.intmeanfun == 3 || gp.intmeanfun == 4
     end
 end
     
-
-
 hypstruct.full = gpoutput.hyp_prethin; % Pre-thinning GP hyperparameters
 hypstruct.logp = gpoutput.logp;
+if isfield(gpoutput,'hyp_vp')
+    hypstruct.hyp_vp = gpoutput.hyp_vp;
+end
 
 if isfield(gpoutput,'stepsize')
     optimState.gpmala_stepsize = gpoutput.stepsize;
