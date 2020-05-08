@@ -178,13 +178,13 @@ if ischar(hyp)
             % Redefine limits for m0 (meaning depends on mean func type)
             h = max(y) - min(y);    % Height
             switch meanfun
-                case {4,10,22}
+                case {4,10,12,22}
                     dm.LB(1) = min(y);
                     dm.UB(1) = max(y) + h;
                     dm.PLB(1) = median(y);
                     dm.PUB(1) = max(y);
                     dm.x0(1) = quantile1(y,0.9);
-                case {5,11,23}
+                case {5,11,13,23}
                     dm.LB(1) = min(y) - h;
                     dm.UB(1) = max(y);
                     dm.PLB(1) = min(y);

@@ -318,6 +318,7 @@ defopts.IntegrateGPMean    = 'no                   % Try integrating GP mean fun
 defopts.TolBoundX          = '1e-5              % Tolerance on closeness to bound constraints (fraction of total range)';
 defopts.RecomputeLCBmax    = 'yes              % Recompute LCB max for each iteration based on current GP estimate';
 defopts.BoundedTransform   = 'logit            % Input transform for bounded variables';
+defopts.DoubleGP           = 'no                % Use double GP';
 
 %% Advanced options for unsupported/untested features (do *not* modify)
 defopts.WarpEveryIters     = '5                 % Warp every this number of iterations';

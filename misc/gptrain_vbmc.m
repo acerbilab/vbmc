@@ -1,6 +1,58 @@
 function [gp,hypstruct,Ns_gp,optimState] = gptrain_vbmc(hypstruct,optimState,stats,options)
 %GPTRAIN_VBMC Train Gaussian process model.
 
+if options.DoubleGP
+    
+    options.NSgpMaxWarmup = 0;
+    options.NSgpMaxMain = 0;
+    options.DoubleGP = false;
+    
+    [gp,hypstruct,Ns_gp,optimState] = gptrain_vbmc(hypstruct,optimState,stats,options);
+    
+    if isfield(optimState,'hypstruct2')
+        hypstruct2 = optimState.hypstruct2;
+    else
+        hypstruct2 = [];        
+    end
+    
+    optimState2 = optimState;
+    optimState2.gpMeanfun = 12;  % Constant mean function
+    [gp2,hypstruct2] = gptrain_vbmc(hypstruct2,optimState2,stats,options);
+    
+    optimState.hypstruct2 = hypstruct2;
+    
+    z1 = gplite_nlZ(gp.post.hyp,gp);
+    z2 = gplite_nlZ(gp2.post.hyp,gp2);    
+    H1 = hessian(@(x) gplite_nlZ(x(:),gp), gp.post.hyp'); 
+    H2 = hessian(@(x) gplite_nlZ(x(:),gp2), gp2.post.hyp');
+    N = size(gp.X,1); 
+    dd = [numel(gp.post.hyp),numel(gp2.post.hyp)]; 
+    % yy = -[z1,z2] - 0.5*2*dd; 
+    yy = -[z1,z2] + 0.5*dd*log(2*pi) - 0.5*log(abs([det(H1),det(H2)]))
+    
+    D = size(gp.X,2);
+    gp.post(2) = gp.post(1);
+    switch gp2.meanfun
+        case 1
+            gp.post(2).hyp(1:gp.Ncov+gp.Nnoise+1) = gp2.post.hyp(1:gp.Ncov+gp.Nnoise+1);
+            gp.post(2).hyp((gp.Ncov+gp.Nnoise+1)+(1:D)) = 0;
+            gp.post(2).hyp((gp.Ncov+gp.Nnoise+1+D)+(1:D)) = Inf;
+        case 12
+            [~,idx] = max(gp.y);
+            gp.post(2).hyp(1:gp.Ncov+gp.Nnoise+1) = gp2.post.hyp(1:gp.Ncov+gp.Nnoise+1);
+            gp.post(2).hyp((gp.Ncov+gp.Nnoise+1)+(1:D)) = gp.X(idx,:);
+            gp.post(2).hyp((gp.Ncov+gp.Nnoise+1+D)+(1:D)) = gp2.post.hyp((1:D)+(gp.Ncov+gp.Nnoise+1));
+    end
+    
+    gp = gplite_post(gp);
+    
+    return;
+end
+
+
+
+
+
 % Initialize HYPSTRUCT if empty
 hypfields = {'hyp','warp','logp','full','runcov'};
 for f = hypfields
