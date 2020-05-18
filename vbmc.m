@@ -857,7 +857,7 @@ if exitflag < 1 && options.RetryMaxFunEvals > 0
     options.SGDStepSize = 0.2*options.SGDStepSize;  % Increase stability
     
     try
-        [vp,elbo,elbo_sd,exitflag,output2,optimState2,stats] = vbmc(fun,x0,LB,UB,PLB,PUB,options,varargin{:});
+        [vp,elbo,elbo_sd,exitflag,output2,gp2,optimState2,stats] = vbmc(fun,x0,LB,UB,PLB,PUB,options,varargin{:});
         
         if nargout > 4
             optimState2.totaltime = toc(t0);
@@ -866,8 +866,9 @@ if exitflag < 1 && options.RetryMaxFunEvals > 0
             output2.funccount = output2.funccount + output.funccount;
             output2.retried = 'yes';
             output = output2;
+            gp = gp2;
             optimState = optimState2;
-        end        
+        end
     catch retryException
         msgText = getReport(retryException);
         warning(msgText);
