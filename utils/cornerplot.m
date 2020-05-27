@@ -79,10 +79,16 @@ if nargin > 1
             end
             if nargin > 4
                 top_margin = varargin{4};
+                
+                if nargin > 5
+                    margins = varargin{5};
+                end
             end
         end
     end
 end
+
+if isempty(top_margin); top_margin = 0; end
 
 if isempty(bounds) | all(bounds==0)
     bounds = nan(2,nDims);

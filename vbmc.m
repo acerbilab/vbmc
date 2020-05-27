@@ -293,8 +293,8 @@ defopts.OutwarpThreshTol   = '0.8               % Output warping base threshold 
 defopts.Temperature        = '1                 % Temperature for posterior tempering (allowed values T = 1,2,3,4)';
 defopts.SeparateSearchGP   = 'no                % Use separate GP with constant mean for active search';
 defopts.NoiseShaping       = 'no                % Discount observations from from extremely low-density regions';
-defopts.NoiseShapingThreshold = '20*nvars       % Threshold from max observed value to start discounting';
-defopts.NoiseShapingFactor = '0.2               % Proportionality factor of added noise wrt distance from threshold';
+defopts.NoiseShapingThreshold = '10*nvars       % Threshold from max observed value to start discounting';
+defopts.NoiseShapingFactor = '0.05              % Proportionality factor of added noise wrt distance from threshold';
 defopts.AcqHedge           = 'no                % Hedge on multiple acquisition functions';
 defopts.AcqHedgeIterWindow = '4                 % Past iterations window to judge acquisition fcn improvement';
 defopts.AcqHedgeDecay      = '0.9               % Portfolio value decay per function evaluation';
@@ -787,7 +787,7 @@ end
 
 vp_old = vp;
 
-% Pick "best" variational solution to return
+% Pick "best" variational solution to return (and real vp, if train vp differs)
 [vp,elbo,elbo_sd,idx_best] = ...
     best_vbmc(stats,iter,options.BestSafeSD,options.BestFracBack,options.RankCriterion);
 new_final_vp_flag = idx_best ~= iter;
