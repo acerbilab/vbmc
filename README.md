@@ -88,10 +88,7 @@ See the VBMC paper for more details [[1](#references)].
 
 ## Troubleshooting
 
-The VBMC toolbox is under active development and currently in its beta version (close to final).
-
-It is still in beta since we are validating the algorithm on an additional batch of model-fitting problems, and we want to include in the toolbox some semi-automated diagnostics tools for robustness. The toolbox interface (that is, details of input and output arguments of some functions) may change slightly from the beta to the final version.
-As of now, the toolbox is usable, but you should double-check your results (as you would do in any case, of course). See the FAQ for more information on [diagnostics](https://github.com/lacerbi/vbmc/wiki#troubleshooting).
+The VBMC toolbox is under active development. The toolbox has been extensively tested in several benchmarks and published papers, but as with any approximate inference technique you need to double-check your results. See the FAQ for more information on [diagnostics](https://github.com/lacerbi/vbmc/wiki#troubleshooting).
 
 If you have trouble doing something with VBMC, spot bugs or strange behavior, or you simply have some questions, please contact me at <luigi.acerbi@gmail.com>, putting 'VBMC' in the subject of the email.
 
