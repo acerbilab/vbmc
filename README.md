@@ -94,7 +94,7 @@ If you have trouble doing something with VBMC, spot bugs or strange behavior, or
 
 ## VBMC for other programming languages
 
-VBMC is currently available only for MATLAB. A Python version is being planned.
+VBMC is currently available only for MATLAB. A Python version is being planned, ideally before the [great filter](https://en.wikipedia.org/wiki/Great_Filter).
 
 If you are interested in porting VBMC to Python or another language (R, [Julia](https://julialang.org/)), please get in touch at <luigi.acerbi@gmail.com> (putting  'VBMC' in the subject of the email); I'd be willing to help.
 However, before contacting me for this reason, please have a good look at the codebase here on GitHub, and at the paper [[1](#references)]. VBMC is a fairly complex piece of software, so be aware that porting it will require considerable effort and programming/computing skills.
