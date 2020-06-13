@@ -84,6 +84,10 @@ In the figure below, we show another example VBMC run on a "lumpy" distribution.
 
 See the VBMC paper for more details [[1](#references)].
 
+## VBMC with noisy likelihoods
+
+About to appear — stay tuned!
+
 ## Troubleshooting
 
 The VBMC toolbox is under active development. The toolbox has been extensively tested in several benchmarks and published papers, but as with any approximate inference technique you need to double-check your results. See the FAQ for more information on [diagnostics](https://github.com/lacerbi/vbmc/wiki#troubleshooting).
