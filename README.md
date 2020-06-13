@@ -22,7 +22,8 @@ VBMC is effective when:
 - the model log-likelihood function is a black-box (e.g., the gradient is unavailable);
 - the likelihood is at least moderately expensive to compute (say, half a second or more per evaluation);
 - the model has up to `D = 10` continuous parameters (maybe a few more, but no more than `D = 20`);
-- the target posterior distribution is continuous and reasonably smooth (see [here](https://github.com/lacerbi/vbmc/wiki#general)).
+- the target posterior distribution is continuous and reasonably smooth (see [here](https://github.com/lacerbi/vbmc/wiki#general));
+- optionally, log-likelihood evaluations may be noisy (e.g., estimated via simulation).
 
 Conversely, if your model can be written analytically, you should exploit the powerful machinery of probabilistic programming frameworks such as [Stan](http://mc-stan.org/) or [PyMC3](https://docs.pymc.io/).
 
