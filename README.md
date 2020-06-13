@@ -52,7 +52,7 @@ The output parameters are:
 - `ELBO`, the (estimated) lower bound on the log model evidence;
 - `ELBO_SD`, the standard deviation of the estimate of the `ELBO` (*not* the error between the `ELBO` and the true log model evidence, which is generally unknown).
 
-The variational posterior `vp` can be manipulated with functions such as `vbmc_moments` (compute posterior mean and covariance), `vbmc_pdf` (evaluates the posterior density), `vbmc_rnd` (draw random samples), `vbmc_kldiv` (Kullback-Leibler divergence between two posteriors); see also [this question](https://github.com/lacerbi/vbmc/wiki#what-is-vp-and-what-do-i-do-with-it).
+The variational posterior `vp` can be manipulated with functions such as `vbmc_moments` (compute posterior mean and covariance), `vbmc_pdf` (evaluates the posterior density), `vbmc_rnd` (draw random samples), `vbmc_kldiv` (Kullback-Leibler divergence between two posteriors), `vbmc_mtv` (marginal total variation distance between two posteriors); see also [this question](https://github.com/lacerbi/vbmc/wiki#what-is-vp-and-what-do-i-do-with-it).
 
 For a tutorial with many extensive usage examples, see [**vbmc_examples.m**](https://github.com/lacerbi/vbmc/blob/master/vbmc_examples.m). You can also type `help vbmc` to display the documentation.
 
