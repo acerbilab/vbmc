@@ -729,7 +729,6 @@ while ~isFinished_flag
     
     %----------------------------------------------------------------------
     %% Check termination conditions and warmup
-
     [optimState,stats,isFinished_flag,exitflag,action,msg] = ...
         vbmc_termination(optimState,action,stats,options);
     vp.stats.stable = stats.stable(optimState.iter);    % Save stability
