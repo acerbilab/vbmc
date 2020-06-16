@@ -1,7 +1,7 @@
 # Variational Bayesian Monte Carlo (VBMC) - v1.0
 
 **News:** 
-- **Major update** VBMC v1.0 has been released! This update includes full support for noisy log-likelihood evaluations, a linear transformation of the inference space to better represent the variational posterior, and a number of tweaks to the algorithm's settings for improved performance. See the preprint (about to appear on arXiv) for more information [[2](#references)].
+- **Major update (Jun/16/2020)** VBMC v1.0 has been released! This update includes full support for noisy log-likelihood evaluations, a linear transformation of the inference space to better represent the variational posterior, and a number of tweaks to the algorithm's settings for improved performance. See the preprint (about to appear on arXiv) for more information [[2](#references)].
 
 ## What is it
 
