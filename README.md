@@ -94,9 +94,9 @@ VBMC v1.0 (June 2020) introduced support for noisy models [[3](#references)].
 To run VBMC on a noisy problem, first you need to ensure that your target function `fun` returns:
 
 - as first output, the noisy value of the log-posterior (where the noise usually comes from a stochastic evaluation of the log-likelihood);
-- as second output, an estimate of the noise in the returned log-posterior (expressed as standard deviation, SD).
+- as second output, an estimate of the noise in the returned log-posterior value (expressed as standard deviation, SD).
 
-Noisy evaluations of the log-likelihood often arise from simulation-based models, for which a direct expression of the (log) likelihood is not available. A method that conveniently computes both an unbiased estimate of the log-likelihood and an estimate of its variability entirely through simulation is [Inverse Binomial Sampling](https://github.com/lacerbi/ibs).
+Noisy evaluations of the log-likelihood often arise from simulation-based models, for which a direct expression of the (log) likelihood is not available. [Inverse Binomial Sampling](https://github.com/lacerbi/ibs) (IBS) is a method that conveniently computes both an unbiased estimate of the log-likelihood and an estimate of its variability entirely through simulation.
 
 Once you have set up `fun` as above, run VBMC by specifying that the target function is noisy
 ```
