@@ -1,7 +1,7 @@
 # Variational Bayesian Monte Carlo (VBMC) - v0.96 (beta)
 
 **News:** 
-- **Major update** VBMC v1.0 is about to be released! This update will include full support for noisy log-likelihood evaluations, a linear transformation of the inference space to better represent the variational posterior, and a number of tweaks to the algorithm's settings for improved performance.
+- **Major update** VBMC v1.0 is about to be released! This update includes full support for noisy log-likelihood evaluations, a linear transformation of the inference space to better represent the variational posterior, and a number of tweaks to the algorithm's settings for improved performance. See the preprint (about to appear on arXiv) for more information [[2](#references)].
 
 ## What is it
 
@@ -122,7 +122,7 @@ If you have trouble doing something with VBMC, spot bugs or strange behavior, or
 VBMC is currently available only for MATLAB. A Python version is being planned, ideally before the [great filter](https://en.wikipedia.org/wiki/Great_Filter).
 
 If you are interested in porting VBMC to Python or another language (R, [Julia](https://julialang.org/)), please get in touch at <luigi.acerbi@gmail.com> (putting  'VBMC' in the subject of the email); I'd be willing to help.
-However, before contacting me for this reason, please have a good look at the codebase here on GitHub, and at the paper [[1](#references)]. VBMC is a fairly complex piece of software, so be aware that porting it will require considerable effort and programming/computing skills.
+However, before contacting me for this reason, please have a good look at the codebase here on GitHub, and at the papers [[1,2](#references)]. VBMC is a fairly complex piece of software, so be aware that porting it will require considerable effort and programming/computing skills.
 
 ## References
 
