@@ -442,6 +442,8 @@ pause;
 %% Example 5: Noisy log-likelihood evaluations
 
 close all;
+folder = fileparts(which('vbmc.m'));
+addpath([folder filesep 'utils']);  % Ensure that UTILS is on the path
 
 %fprintf('\n*** Example 5: Noisy log-likelihood evaluations\n');
 %fprintf('  As in Example 2, but we assume a noisy evaluation of the log-likelihood.\n');
