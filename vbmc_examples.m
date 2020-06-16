@@ -284,7 +284,7 @@ exitflag
 fprintf('  An EXITFLAG of 0 means that the algorithm has exhausted the budget of function evals.\n');
 
 output
-fprintf('  In the OUTPUT struct:\n  - the ''convergencestatus'' field says ''%s'' (probable lack of convergence);\n  - the reliabiltiy index ''rindex'' is %.2f (rindex needs to be less than one).\n\n', ...
+fprintf('  In the OUTPUT struct:\n  - the ''convergencestatus'' field says ''%s'' (probable lack of convergence);\n  - the reliability index ''rindex'' is %.2f (rindex needs to be less than one).\n\n', ...
     output.convergencestatus,output.rindex);
 
 fprintf('  Our diagnostics tell that this run has not converged, suggesting to increase the budget.\n');
