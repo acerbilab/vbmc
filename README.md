@@ -11,7 +11,7 @@ VBMC is an approximate inference method designed to fit and evaluate computation
 - an approximate posterior distribution of the model parameters; 
 - an approximation — technically, an approximate lower bound — of the log model evidence (also known as log marginal likelihood or log Bayes factor), a metric used for [Bayesian model selection](https://en.wikipedia.org/wiki/Bayes_factor).
 
-Extensive benchmarks on both artificial test problems and a large number of real model-fitting problems from computational and cognitive neuroscience show that VBMC generally — and often vastly — outperforms existing methods for sample-efficient Bayesian inference [[1, 2](#references)].
+Extensive benchmarks on both artificial test problems and a large number of real model-fitting problems from computational and cognitive neuroscience show that VBMC generally — and often vastly — outperforms existing methods for sample-efficient Bayesian inference [[1,2](#references)].
 
 VBMC runs with virtually no tuning and it is very easy to set up for your problem (especially if you are already familiar with [BADS](https://github.com/lacerbi/bads), our model-fitting algorithm based on Bayesian optimization).
 
@@ -90,7 +90,7 @@ See the VBMC paper for more details [[1](#references)].
 
 ## VBMC with noisy likelihoods
 
-VBMC v1.0 (June 2020) introduced support for noisy models [[3](#references)]. 
+VBMC v1.0 (June 2020) introduced support for noisy models [[2](#references)]. 
 To run VBMC on a noisy problem, first you need to ensure that your target function `fun` returns:
 
 - as first output, the noisy value of the log-posterior (where the noise usually comes from a stochastic evaluation of the log-likelihood);
@@ -105,6 +105,11 @@ OPTIONS.SpecifyTargetNoise = true;
 ```
 
 For more information, see the [VBMC FAQ](https://github.com/lacerbi/vbmc/wiki#noisy-target-function) and Example 5 in the [VBMC tutorial](https://github.com/lacerbi/vbmc/blob/master/vbmc_examples.m).
+
+In the figure below, we show the difference in performance between the original VBMC (old) and VBMC v1.0 (new) when dealing with noisy target evaluations.
+
+![VBMC2020 demo](https://github.com/lacerbi/vbmc/blob/master/docs/vbmc2020-demo.gif "Fig 3: VBMC 2020 demo")
+
 
 ## Troubleshooting
 
