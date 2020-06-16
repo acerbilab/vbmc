@@ -108,11 +108,11 @@ However, before contacting me for this reason, please have a good look at the co
 ## References
 
 1. Acerbi, L. (2018). Variational Bayesian Monte Carlo. In *Advances in Neural Information Processing Systems 31*: 8222-8232. ([paper + supplement on arXiv](https://arxiv.org/abs/1810.05558), [NeurIPS Proceedings](https://papers.nips.cc/paper/8043-variational-bayesian-monte-carlo))
-2. Acerbi, L. (2019). An Exploration of Acquisition and Mean Functions in Variational Bayesian Monte Carlo. In *Proc. Machine Learning Research* 96: 1-10. 1st Symposium on Advances in Approximate Bayesian Inference, Montréal, Canada. ([paper in PMLR](http://proceedings.mlr.press/v96/acerbi19a.html))
+2. Acerbi, L. (2020). Variational Bayesian Monte Carlo with Noisy Likelihoods. *arXiv preprint* (to appear).
 
-You can cite VBMC in your work with something along the lines of
+Please cite both references if you use VBMC in your work (the 2020 paper includes a number of improvements, including but not limited to support for noisy likelihoods). You can cite VBMC in your work with something along the lines of
 
-> We estimated approximate posterior distibutions and approximate lower bounds to the model evidence of our models using Variational Bayesian Monte Carlo (VBMC; Acerbi, 2018, 2019). VBMC combines variational inference and active-sampling Bayesian quadrature to perform approximate Bayesian inference in a sample-efficient manner.
+> We estimated approximate posterior distibutions and approximate lower bounds to the model evidence of our models using Variational Bayesian Monte Carlo (VBMC; Acerbi, 2018, 2020). VBMC combines variational inference and active-sampling Bayesian quadrature to perform approximate Bayesian inference in a sample-efficient manner.
 
 Besides formal citations, you can demonstrate your appreciation for VBMC in the following ways:
 
@@ -121,6 +121,11 @@ Besides formal citations, you can demonstrate your appreciation for VBMC in the 
 - Tell me about your model-fitting problem and your experience with VBMC (positive or negative) at <luigi.acerbi@gmail.com> (putting  'VBMC' in the subject of the email).
 
 You may also want to check out [Bayesian Adaptive Direct Search](https://github.com/lacerbi/bads) (BADS), our method for fast Bayesian optimization.
+
+## Additional References
+
+3. Acerbi, L. (2019). An Exploration of Acquisition and Mean Functions in Variational Bayesian Monte Carlo. In *Proc. Machine Learning Research* 96: 1-10. 1st Symposium on Advances in Approximate Bayesian Inference, Montréal, Canada. ([paper in PMLR](http://proceedings.mlr.press/v96/acerbi19a.html))
+
 
 ### License
 
