@@ -1,23 +1,24 @@
-function [vp,elbo,elbo_sd,exitflag,output,gp,optimState,stats] = vbmc(fun,x0,LB,UB,PLB,PUB,options,varargin)
-%VBMC Posterior and model inference via Variational Bayesian Monte Carlo (v0.96)
+function [vp,elbo,elbo_sd,exitflag,output,optimState,stats] = vbmc(fun,x0,LB,UB,PLB,PUB,options,varargin)
+%VBMC Posterior and model inference via Variational Bayesian Monte Carlo (v1.0)
 %   VBMC computes a variational approximation of the full posterior and a 
 %   lower bound on the normalization constant (marginal likelhood or model
-%   evidence) for a provided unnormalized log posterior.
+%   evidence) for a provided unnormalized log posterior. As of v1.0, VBMC
+%   also supports noisy evaluations of the log posterior (see below).
 %
 %   VP = VBMC(FUN,X0,LB,UB) initializes the variational posterior in the
 %   proximity of X0 (ideally, a posterior mode) and iteratively computes
 %   a variational approximation for a given target log posterior FUN.
-%   FUN accepts input X and returns the value of the target (unnormalized) 
-%   log posterior density at X. LB and UB define a set of strict lower and 
-%   upper bounds coordinate vector, X, so that the posterior has support on 
-%   LB < X < UB. LB and UB can be scalars or vectors. If scalars, the bound 
-%   is replicated in each dimension. Use empty matrices for LB and UB if no 
-%   bounds exist. Set LB(i) = -Inf and UB(i) = Inf if the i-th coordinate
-%   is unbounded (while other coordinates may be bounded). Note that if LB 
-%   and UB contain unbounded variables, the respective values of PLB and PUB
-%   need to be specified (see below). VBMC returns a variational posterior
-%   solution VP, which can then be manipulated via other functions in the
-%   VBMC toolbox (see examples below).
+%   FUN accepts input X and returns the value of the target log-joint, that
+%   is the unnormalized log-posterior density, at X. LB and UB define a set 
+%   of strict lower and upper bounds coordinate vector, X, so that the 
+%   posterior has support on LB < X < UB. LB and UB can be scalars or 
+%   vectors. If scalars, the bound is replicated in each dimension. Use 
+%   empty matrices for LB and UB if no bounds exist. Set LB(i) = -Inf and 
+%   UB(i) = Inf if the i-th coordinate is unbounded (while other coordinates 
+%   may be bounded). Note that if LB and UB contain unbounded variables, 
+%   the respective values of PLB and PUB need to be specified (see below). 
+%   VBMC returns a variational posterior solution VP, which can then be 
+%   manipulated via other functions in the VBMC toolbox (see examples below).
 %
 %   VP = VBMC(FUN,X0,LB,UB,PLB,PUB) specifies a set of plausible lower and
 %   upper bounds such that LB < PLB < PUB < UB. Both PLB and PUB
@@ -35,6 +36,14 @@ function [vp,elbo,elbo_sd,exitflag,output,gp,optimState,stats] = vbmc(fun,x0,LB,
 %  
 %   VP = VBMC(FUN,X0,LB,UB,PLB,PUB,OPTIONS,...) passes additional arguments
 %   to FUN.
+%
+%   VBMC also supports noisy/stochastic estimates of the log-posterior,
+%   obtained through techniques such as Inverse Binomial Sampling (see 
+%   examples and references below). For noisy evaluations, FUN should 
+%   return as second agument the estimated SD (standard deviation) of the 
+%   log-likelihood noise at X. 
+%   Set OPTIONS.SpecifyTargetNoise = 1 to activate support for noisy
+%   inference (this is not automatic).
 %  
 %   VP = VBMC(FUN,VP0,...) uses variational posterior VP0 (from a previous
 %   run of VBMC) to initialize the current run. You can leave PLB and PUB
@@ -101,34 +110,38 @@ function [vp,elbo,elbo_sd,exitflag,output,gp,optimState,stats] = vbmc(fun,x0,LB,
 %   can be found here: https://github.com/lacerbi/vbmc
 %   Also, check out the FAQ: https://github.com/lacerbi/vbmc/wiki
 %
-%   References: 
+%   References (please cite both): 
 %   
-%   Acerbi, L. (2018). "Variational Bayesian Monte Carlo". In Advances in 
-%   Neural Information Processing Systems 31 (NeurIPS 2018), pp. 8213-8223.
+%   1) Acerbi, L. (2018). "Variational Bayesian Monte Carlo". In Advances 
+%      in Neural Information Processing Systems 31 (NeurIPS 2018), pp. 8213-8223.
+%   2) Acerbi, L. (2020). "Variational Bayesian Monte Carlo with Noisy
+%      Likelihoods". arXiv preprint.
 %
-%   Acerbi, L. (2019). "An Exploration of Acquisition and Mean Functions in 
-%   Variational Bayesian Monte Carlo". In Proc. Machine Learning Research 
-%   96: 1-10. 1st Symposium on Advances in Approximate Bayesian Inference, 
-%   Montréal, Canada.
+%   Additional references:
 %
-%   See also VBMC_EXAMPLES, VBMC_KLDIV, VBMC_MODE, VBMC_MOMENTS, VBMC_PDF, 
-%   VBMC_RND, VBMC_DIAGNOSTICS, @.
+%   3) Acerbi, L. (2019). "An Exploration of Acquisition and Mean Functions 
+%      in Variational Bayesian Monte Carlo". In Proc. Machine Learning 
+%      Research 96: 1-10. 1st Symposium on Advances in Approximate Bayesian 
+%      Inference, Montréal, Canada.
+%   4) van Opheusden, B.*, Acerbi, L.* & Ma, W. J. (2020). "Unbiased and 
+%      Efficient Log-Likelihood Estimation with Inverse Binomial Sampling". 
+%      arXiv preprint arXiv:2001.03985. (* equal contribution)
+%
+%   See also VBMC_EXAMPLES, VBMC_KLDIV, VBMC_MODE, VBMC_MOMENTS, VBMC_MTV,
+%   VBMC_PDF, VBMC_RND, VBMC_DIAGNOSTICS, @.
 
 %--------------------------------------------------------------------------
 % VBMC: Variational Bayesian Monte Carlo for posterior and model inference.
 % To be used under the terms of the GNU General Public License 
 % (http://www.gnu.org/copyleft/gpl.html).
 %
-%   Author (copyright): Luigi Acerbi, 2018
+%   Author (copyright): Luigi Acerbi, 2018-2020
 %   e-mail: luigi.acerbi@{gmail.com,nyu.edu,unige.ch}
 %   URL: http://luigiacerbi.com
-%   Version: 0.96 (beta)
-%   Release date: Nov 20, 2019
+%   Version: 1.00
+%   Release date: Jun 15, 2020
 %   Code repository: https://github.com/lacerbi/vbmc
 %--------------------------------------------------------------------------
-
-% The VBMC interface (such as details of input and output arguments) may 
-% undergo minor changes before reaching the stable release (1.0).
 
 
 %% Start timer
@@ -141,9 +154,10 @@ defopts.Plot                    = 'off          % Plot marginals of variational 
 defopts.MaxIter                 = '50*(2+nvars) % Max number of iterations';
 defopts.MaxFunEvals             = '50*(2+nvars) % Max number of target fcn evals';
 defopts.FunEvalsPerIter         = '5            % Number of target fcn evals per iteration';
-defopts.TolStableCount          = '50           % Required stable fcn evals for termination';
+defopts.TolStableCount          = '60           % Required stable fcn evals for termination';
 defopts.RetryMaxFunEvals        = '0            % Max number of target fcn evals on retry (0 = no retry)';
 defopts.MinFinalComponents      = '50           % Number of variational components to refine posterior at termination';
+defopts.SpecifyTargetNoise      = 'no           % Target log joint function returns noise estimate (SD) as second output';
 
 %% If called with no arguments or with 'defaults', return default options
 if nargout <= 1 && (nargin == 0 || (nargin == 1 && ischar(fun) && strcmpi(fun,'defaults')))
@@ -162,10 +176,9 @@ end
 
 %% Advanced options (do not modify unless you *know* what you are doing)
 
+defopts.UncertaintyHandling     = '[]           % Explicit noise handling';
 defopts.IntegerVars             = '[]           % Array with indices of integer variables';
-defopts.UncertaintyHandling     = 'no           % Explicit noise handling (only partially supported)';
 defopts.NoiseSize               = '[]           % Base observation noise magnitude (standard deviation)';
-defopts.SpecifyTargetNoise      = 'no           % Target log joint function returns noise estimate (SD) as second output';
 defopts.MaxRepeatedObservations = '0            % Max number of consecutive repeated measurements for noisy inputs';
 defopts.RepeatedAcqDiscount     = '1            % Multiplicative discount on acquisition fcn to repeat measurement at the same location';
 defopts.FunEvalStart            = 'max(D,10)    % Number of initial target fcn evals';
@@ -319,17 +332,16 @@ defopts.TolBoundX          = '1e-5              % Tolerance on closeness to boun
 defopts.RecomputeLCBmax    = 'yes              % Recompute LCB max for each iteration based on current GP estimate';
 defopts.BoundedTransform   = 'logit            % Input transform for bounded variables';
 defopts.DoubleGP           = 'no                % Use double GP';
-
-%% Advanced options for unsupported/untested features (do *not* modify)
 defopts.WarpEveryIters     = '5                 % Warp every this number of iterations';
 defopts.IncrementalWarpDelay = 'yes             % Increase delay between warpings';
 defopts.WarpTolReliability = '3                 % Threshold on reliability index to perform warp';
-defopts.WarpRotoScaling    = 'off               % Rotate and scale input';
-%defopts.WarpCovReg         = '@(N) 25/N         % Regularization weight towards diagonal covariance matrix for N training inputs';
+defopts.WarpRotoScaling    = 'yes               % Rotate and scale input';
 defopts.WarpCovReg         = '0                 % Regularization weight towards diagonal covariance matrix for N training inputs';
 defopts.WarpRotoCorrThresh = '0.05              % Threshold on correlation matrix for roto-scaling';
-defopts.WarpNonlinear      = 'off               % Nonlinear input warping';
 defopts.WarpMinK           = '5                 % Min number of variational components to perform warp';
+
+%% Advanced options for unsupported/untested features (do *not* modify)
+defopts.WarpNonlinear      = 'off               % Nonlinear input warping';
 defopts.ELCBOWeight        = '0                 % Uncertainty weight during ELCBO optimization';
 defopts.VarParamsBack      = '0                 % Check variational posteriors back to these previous iterations';
 defopts.AltMCEntropy       = 'no                % Use alternative Monte Carlo computation for the entropy';
@@ -410,10 +422,12 @@ if options.Warmup
     if isfield(options,'WarmupOptions')
         WarmupOptions = options.WarmupOptions;
         % Copy these fields to avoid re-update in SETUPOPTIONS_VBMC
-        copyfields = {'MaxFunEvals','TolStableCount'};
+        copyfields = {'MaxFunEvals','TolStableCount','ActiveSampleGPUpdate','ActiveSampleVPUpdate','SearchAcqFcn'};
         for f = copyfields
-            WarmupOptions.(f{:}) = options.(f{:});
-        end        
+            if ~isfield(WarmupOptions,f{:})
+                WarmupOptions.(f{:}) = options.(f{:});
+            end
+        end
         options = setupoptions_vbmc(D,options,WarmupOptions);
     end
 end
@@ -457,7 +471,13 @@ else
     displayFormat = ' %5.0f      %5.0f   %12.2f %12.2f %12.2f     %4.0f %10.3g     %s\n';
     displayFormat_warmup = ' %5.0f       %5.0f    %12.2f  %s\n';
 end
-if prnt > 2
+if prnt > 2    
+    if optimState.UncertaintyHandlingLevel > 0
+        fprintf('Beginning variational optimization assuming NOISY observations of the log-joint.\n');
+    else
+        fprintf('Beginning variational optimization assuming EXACT observations of the log-joint.\n');
+    end
+    
     if optimState.Cache.active
         fprintf(' Iteration f-count/f-cache    Mean[ELBO]     Std[ELBO]     sKL-iter[q]   K[q]  Convergence    Action\n');
     else
@@ -810,7 +830,13 @@ if new_final_vp_flag
     end
 end
 
-if ~stats.stable(idx_best); exitflag = 0; end
+% Set EXITFLAG based on stability (might check other things in the future)
+switch exitflag
+    case 0
+        if vp.stats.stable; exitflag = 1; end
+    case 1
+        if ~vp.stats.stable; exitflag = 0; end
+end
 
 % Print final message
 if prnt > 1
@@ -855,9 +881,11 @@ if exitflag < 1 && options.RetryMaxFunEvals > 0
     options.MaxFunEvals = options.RetryMaxFunEvals;
     options.RetryMaxFunEvals = 0;                   % Avoid infinite loop
     options.SGDStepSize = 0.2*options.SGDStepSize;  % Increase stability
+    options.ActiveSampleGPUpdate = true;
+    options.ActiveSampleVPUpdate = true;    
     
     try
-        [vp,elbo,elbo_sd,exitflag,output2,gp2,optimState2,stats] = vbmc(fun,x0,LB,UB,PLB,PUB,options,varargin{:});
+        [vp,elbo,elbo_sd,exitflag,output2,optimState2,stats] = vbmc(fun,x0,LB,UB,PLB,PUB,options,varargin{:});
         
         if nargout > 4
             optimState2.totaltime = toc(t0);
@@ -866,7 +894,6 @@ if exitflag < 1 && options.RetryMaxFunEvals > 0
             output2.funccount = output2.funccount + output.funccount;
             output2.retried = 'yes';
             output = output2;
-            gp = gp2;
             optimState = optimState2;
         end
     catch retryException
@@ -1023,11 +1050,3 @@ for iAcq = 1:numel(SearchAcqFcn)
 end
 
 end
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% TO-DO list:
-% - Initialization with multiple (e.g., cell array of) variational posteriors.
-% - Combine multiple variational solutions?
-% - Quasi-random sampling from variational posterior (e.g., for initialization).
-% - Write a private quantile function to avoid calls to Stats Toolbox.
-% - Fix call to fmincon if Optimization Toolbox is not available.
-% - Check that I am not using other ToolBoxes by mistake.

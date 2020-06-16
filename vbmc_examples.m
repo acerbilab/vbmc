@@ -4,6 +4,7 @@
 %  Example 2: Non-bound constraints
 %  Example 3: Extended usage and output diagnostics
 %  Example 4: Multiple runs as validation
+%  Example 5: Noisy log-likelihood evaluations
 %
 %  Note: after installation, run 
 %    vbmc('test') 
@@ -14,7 +15,7 @@
 %
 %  See also VBMC.
 
-% Luigi Acerbi 2018
+% Luigi Acerbi 2018-2020
 
 fprintf('Running some examples usage for Variational Bayesian Monte Carlo (VBMC).\n');
 fprintf('Open ''vbmc_examples.m'' in the editor to read detailed comments along the tutorial.\n');
@@ -91,7 +92,7 @@ fprintf('  Press any key to continue.\n\n');
 pause;
 
 % First, let us generate a million samples from the variational posterior:
-Xs = vbmc_rnd(vp,1e6);
+Xs = vbmc_rnd(vp,3e5);
 
 % Easily compute statistics such as moments, credible intervals, etc.
 post_mean = mean(Xs,1);                   % Posterior mean
@@ -171,7 +172,7 @@ pause;
 
 close all;
 
-Xs = vbmc_rnd(vp,1e6);  % Generate samples from the variational posterior
+Xs = vbmc_rnd(vp,3e5);  % Generate samples from the variational posterior
 
 % We compute the pdf of the approximate posterior on a 2-D grid
 plot_lb = [0 0];
@@ -436,6 +437,96 @@ stats
 
 fprintf('\n  Press any key to continue.\n\n');
 pause;
+
+
+%% Example 5: Noisy log-likelihood evaluations
+
+close all;
+
+fprintf('\n*** Example 5: Noisy log-likelihood evaluations\n');
+fprintf('  As in Example 2, but we assume a noisy evaluation of the log-likelihood.\n');
+fprintf('  Here we emulate a noisy scenario by adding random Gaussian noise to the function evaluations.\n');
+fprintf('  In practice, noisy evaluations often emerge from estimation techniques for simulation-based\n');
+fprintf('  models, such as <a href="https://github.com/lacerbi/ibs">Inverse Binomial Sampling (IBS)</a>.\n');
+fprintf('  Press any key to continue.\n\n');
+pause;
+
+llfun = @(x) rosenbrock_test(x,1);   % Log likelihood with added noise
+
+D = 2;
+
+% Since parameters are positive, we impose an exponential prior.
+prior_tau = 3*ones(1,D);            % Length scale of the exponential prior
+lpriorfun = @(x) -sum(x./prior_tau,2) -log(prod(prior_tau));
+
+% Since LLFUN has now two outputs (the log likelihood at X, and the
+% estimated SD of the log likelihood at X), we cannot directly sum the log
+% prior and the log likelihood. Thus, we use an auxiliary function LPOSTFUN
+% that does exactly this.
+
+fun = @(x) lpostfun(x,llfun,lpriorfun);     % Log joint
+
+LB = zeros(1,D);                % Lower bounds
+UB = 10*prior_tau;              % Upper bounds
+PLB = 0.1728*prior_tau;         % PLB = expinv(0.1587,prior_tau);
+PUB = 1.8407*prior_tau;         % PUB = expinv(0.8413,prior_tau);
+
+x0 = ones(1,D);             % Optimum of the Rosenbrock function
+options = vbmc('defaults');
+options.Plot = true;        % Plot iterations
+options.SpecifyTargetNoise = true;  % Noisy function evaluations 
+
+% Run VBMC
+[vp,elbo,elbo_sd] = vbmc(fun,x0,LB,UB,PLB,PUB,options);
+
+fprintf('  The true log model evidence is lnZ = -1.836.\n\n');
+
+fprintf('  We will examine now the obtained variational posterior.')
+fprintf('  Press any key to continue.\n\n');
+pause;
+
+close all;
+
+Xs = vbmc_rnd(vp,3e5);  % Generate samples from the variational posterior
+
+% We compute the pdf of the approximate posterior on a 2-D grid
+plot_lb = [0 0];
+plot_ub = quantile(Xs,0.999);
+x1 = linspace(plot_lb(1),plot_ub(1),400);
+x2 = linspace(plot_lb(2),plot_ub(2),400);
+[xa,xb] = meshgrid(x1,x2);  % Build the grid
+xx = [xa(:),xb(:)];         % Convert grids to a vertical array of 2-D points
+yy = vbmc_pdf(vp,xx);       % Compute PDF values on specified points
+
+% Plot approximate posterior pdf (works only in 1-D and 2-D)
+surf(x1,x2,reshape(yy,[numel(x1),numel(x2)]),'EdgeColor','none');
+xlabel('x_1');
+ylabel('x_2');
+zlabel('Approximate posterior pdf');
+set(gca,'TickDir','out');
+set(gcf,'Color','w');
+
+% Compute and plot approximate posterior mean
+hold on;
+post_mean = mean(Xs,1);
+h(1) = plot3(post_mean(1),post_mean(2),vbmc_pdf(vp,post_mean),'dk');
+
+% Find and plot approximate posterior mode
+post_mode = vbmc_mode(vp);
+h(2) = plot3(post_mode(1),post_mode(2),vbmc_pdf(vp,post_mode),'xr');
+
+hl = legend(h,'Approximate posterior mean','Approximate posterior mode');
+set(hl,'Location','NorthEast','Box','off');
+
+% We do not particularly recommend to use the posterior mode as parameter 
+% estimate (also known as maximum-a-posterior or MAP estimate), because it 
+% tends to be more brittle (especially in the VBMC approximation) than the 
+% posterior mean.
+
+fprintf('  Have a look at the 3-D visualization of the approximate posterior.');
+fprintf('  Press any key to continue.\n\n');
+pause;
+
 
 fprintf('  This is all for this tutorial.\n');
 fprintf('  You can read more detailed comments by opening the file ''vbmc_examples.m'' in the editor.\n\n');

@@ -16,7 +16,9 @@ For any other question, clarification, or troubleshooting, check out:
 
 ==============================================================================================
 
-The algorithm is described in the following reference:
+The algorithm is described in the following references:
 
-Acerbi, L. (2018). Variational Bayesian Monte Carlo. To appear in Advances 
-in Neural Information Processing Systems 31. arXiv preprint arXiv:1810.05558
+1) Acerbi, L. (2018). "Variational Bayesian Monte Carlo". In Advances in Neural Information 
+   Processing Systems 31 (NeurIPS 2018), pp. 8213-8223.
+2) Acerbi, L. (2020). "Variational Bayesian Monte Carlo with Noisy Likelihoods". arXiv 
+   preprint.

@@ -114,6 +114,11 @@ if options.MaxFunEvals < options.MinFunEvals
     options.MinFunEvals = options.MinFunEvals;
 end
 
+% Use SPECIFYTARGETNOISE to set UNCERTAINTYHANDLING
+if isempty(options.UncertaintyHandling)
+    options.UncertaintyHandling = options.SpecifyTargetNoise;
+end
+
 if ~isempty(options.NoiseSize) && options.NoiseSize(1) <= 0
      error('vbmc:OptionsError','OPTIONS.NoiseSize, if specified, needs to be a positive scalar for numerical stability.');
 end
@@ -133,7 +138,16 @@ if options.UncertaintyHandling
     end
     if ~any(strcmp('TolStableCount',updated))
         options.TolStableCount = ceil(options.TolStableCount*1.5);
-    end    
+    end
+    if ~any(strcmp('ActiveSampleGPUpdate',updated))
+        options.ActiveSampleGPUpdate = true;
+    end
+    if ~any(strcmp('ActiveSampleVPUpdate',updated))
+        options.ActiveSampleVPUpdate = true;
+    end
+    if ~any(strcmp('SearchAcqFcn',updated))
+        options.SearchAcqFcn = {@acqviqr_vbmc};
+    end
 %     if ~any(strcmp('TolStableWarmup',updated))
 %         options.TolStableWarmup = options.TolStableWarmup*2;
 %     end    

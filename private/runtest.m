@@ -7,7 +7,7 @@ function failed = runtest()
 %  See also VBMC, VBMC_EXAMPLES.
 
 tolerr = [0.5 0.5];     % Error tolerance
-RunTime = 60;           % Ballpark runtime s on my laptop (fluctuates!)
+RunTime = 300;          % Ballpark runtime s on my laptop (fluctuates!)
 specs = 'i7-6700HQ CPU @ 2.60GHz, 16 GB RAM';
 t = tic;
 
@@ -32,6 +32,16 @@ PLB = -6; PUB = -0.05;
 lnZ = -nvars*log(2); mubar = -2/sqrt(2*pi)*(1:nvars);
 fun = @(x) sum(-0.5*(x./(1:numel(x))).^2) - sum(log(1:numel(x))) - 0.5*numel(x)*log(2*pi);
 [exitflag(id),err(id,:)] = testblock(fun,x0,LB,UB,PLB,PUB,lnZ,mubar);
+
+id = 3;
+nvars = 2;
+txt{id} = ['Test with noisy multivariate half-normal distribution (D = ' num2str(nvars) ', constrained)'];
+fprintf('%s.\n', txt{id});
+x0 = -ones(1,nvars);                   % Initial point
+LB = -nvars*10; UB = 0;
+PLB = -6; PUB = -0.05;
+lnZ = -nvars*log(2); mubar = -2/sqrt(2*pi)*(1:nvars);
+[exitflag(id),err(id,:)] = testblock(@noisefun,x0,LB,UB,PLB,PUB,lnZ,mubar,1);
 
 % fun = @(x) sum(-abs(x)./(1:numel(x))) - sum(log(1:numel(x))) - numel(x)*log(2);
 
@@ -60,11 +70,16 @@ end
 end
 
 %--------------------------------------------------------------------------
-function [exitflag,err] = testblock(fun,x0,LB,UB,PLB,PUB,lnZ,mubar)
+function [exitflag,err] = testblock(fun,x0,LB,UB,PLB,PUB,lnZ,mubar,noiseflag)
+
+if nargin < 9 || isempty(noiseflag); noiseflag = false; end
 
 options = vbmc('defaults');             % Default options
 options.MaxFunEvals = 100;
 options.Plot = false;
+if noiseflag
+    options.SpecifyTargetNoise = true;
+end
 
 [vp,elbo,elbo_sd,exitflag,output,optimState,stats] = ...
     vbmc(fun,x0,LB,UB,PLB,PUB,options);
@@ -78,4 +93,10 @@ err(1) = abs(elbo - lnZ);
 
 
 fprintf('\n');
+end
+
+%--------------------------------------------------------------------------
+function [y,s] = noisefun(x)
+    y = sum(-0.5*(x./(1:numel(x))).^2) - sum(log(1:numel(x))) - 0.5*numel(x)*log(2*pi) + randn([size(x,1),1]);
+    s = 1;
 end

@@ -1,6 +1,6 @@
 % MATLAB installation script for VBMC
 %
-% Copyright (c) by Luigi Acerbi 2018
+% Copyright (c) by Luigi Acerbi 2018-2020
 
 fprintf('Installing VBMC...\n');
 
