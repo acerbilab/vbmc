@@ -7,11 +7,11 @@
 
 > *What if there was a model-fitting method similar to Bayesian optimization (e.g., [BADS](https://github.com/lacerbi/bads)), which, instead of returning just the optimal parameter vector, would also return its uncertainty (even better, the full posterior distribution of the parameters), and maybe even a metric than can be used for Bayesian model comparison?*
 
-VBMC is an approximate inference method designed to fit and evaluate computational models with a limited budget of likelihood evaluations (e.g., for computationally expensive models). Specifically, VBMC simultaneously computes:
+VBMC is an approximate inference method designed to fit and evaluate computational models with a limited budget of potentially noisy likelihood evaluations (e.g., for computationally expensive models). Specifically, VBMC simultaneously computes:
 - an approximate posterior distribution of the model parameters; 
 - an approximation — technically, an approximate lower bound — of the log model evidence (also known as log marginal likelihood or log Bayes factor), a metric used for [Bayesian model selection](https://en.wikipedia.org/wiki/Bayes_factor).
 
-Extensive benchmarks on both artificial test problems and a large number of real model-fitting problems from computational and cognitive neuroscience show that, with the exception of the easiest cases, VBMC vastly outperforms existing inference methods for expensive models [[1, 2](#references)].
+Extensive benchmarks on both artificial test problems and a large number of real model-fitting problems from computational and cognitive neuroscience show that VBMC generally — and often vastly — outperforms existing methods for sample-efficient Bayesian inference [[1, 2](#references)].
 
 VBMC runs with virtually no tuning and it is very easy to set up for your problem (especially if you are already familiar with [BADS](https://github.com/lacerbi/bads), our model-fitting algorithm based on Bayesian optimization).
 
@@ -23,7 +23,7 @@ VBMC is effective when:
 - the likelihood is at least moderately expensive to compute (say, half a second or more per evaluation);
 - the model has up to `D = 10` continuous parameters (maybe a few more, but no more than `D = 20`);
 - the target posterior distribution is continuous and reasonably smooth (see [here](https://github.com/lacerbi/vbmc/wiki#general));
-- optionally, log-likelihood evaluations may be noisy (e.g., estimated via simulation).
+- optionally, log-likelihood evaluations may be noisy (e.g., estimated [via simulation](https://github.com/lacerbi/ibs)).
 
 Conversely, if your model can be written analytically, you should exploit the powerful machinery of probabilistic programming frameworks such as [Stan](http://mc-stan.org/) or [PyMC3](https://docs.pymc.io/).
 
@@ -42,7 +42,7 @@ The VBMC interface is similar to that of MATLAB optimizers. The basic usage is:
 [VP,ELBO,ELBO_SD] = vbmc(FUN,X0,LB,UB,PLB,PUB);
 ```
 with input parameters:
-- `FUN`, a function handle to the log posterior distribution of your model (that is, log prior plus log likelihood of a dataset and model, for a given input parameter vector);
+- `FUN`, a function handle to the (unnormalized) log posterior distribution of your model (that is, log prior plus log likelihood of a dataset and model, for a given input parameter vector);
 - `X0`, the starting point of the inference (a row vector);
 - `LB` and `UB`, hard lower and upper bounds for the parameters;
 - `PLB` and `PUB`, *plausible* lower and upper bounds, that is a box that ideally brackets a region of high posterior density.
@@ -72,7 +72,7 @@ VBMC combines two machine learning techniques in a novel way:
 - [variational inference](https://en.wikipedia.org/wiki/Variational_Bayesian_methods), a method to perform approximate Bayesian inference;
 - Bayesian quadrature, a technique to estimate the value of expensive integrals.
 
-VBMC iteratively builds an approximation of the true, expensive target posterior via a [Gaussian process](https://en.wikipedia.org/wiki/Gaussian_process) (GP), and it matches a variational distribution — an expressive mixture of Gaussians — to the GP. 
+VBMC iteratively builds an approximation of the true, expensive target posterior via a [Gaussian process](https://distill.pub/2019/visual-exploration-gaussian-processes/) (GP), and it matches a variational distribution — an expressive mixture of Gaussians — to the GP. 
 
 This matching process entails optimization of the *expected lower bound* (ELBO), that is a lower bound on the log marginal likelihood (LML), also known as log model evidence. Crucially, we estimate the ELBO via Bayesian quadrature, which is fast and does not require further evaluation of the true target posterior.
 
@@ -90,7 +90,21 @@ See the VBMC paper for more details [[1](#references)].
 
 ## VBMC with noisy likelihoods
 
-About to appear — stay tuned!
+VBMC v1.0 (June 2020) introduced support for noisy models [[3](#references)]. 
+To run VBMC on a noisy problem, first you need to ensure that your target function `fun` returns:
+
+- as first output, the noisy value of the log-posterior (where the noise usually comes from a stochastic evaluation of the log-likelihood);
+- as second output, an estimate of the noise in the returned log-posterior value (expressed as standard deviation, SD).
+
+Noisy evaluations of the log-likelihood often arise from simulation-based models, for which a direct expression of the (log) likelihood is not available. [Inverse Binomial Sampling](https://github.com/lacerbi/ibs) (IBS) is a method that conveniently computes both an unbiased estimate of the log-likelihood and an estimate of its variability entirely through simulation.
+
+Once you have set up `fun` as above, run VBMC by specifying that the target function is noisy
+```
+OPTIONS.SpecifyTargetNoise = true;
+[VP,ELBO,ELBO_SD] = vbmc(FUN,X0,LB,UB,PLB,PUB,OPTIONS);
+```
+
+For more information, see the [VBMC FAQ](https://github.com/lacerbi/vbmc/wiki#noisy-target-function) and Example 5 in the [VBMC tutorial](https://github.com/lacerbi/vbmc/blob/master/vbmc_examples.m).
 
 ## Troubleshooting
 
@@ -108,11 +122,11 @@ However, before contacting me for this reason, please have a good look at the co
 ## References
 
 1. Acerbi, L. (2018). Variational Bayesian Monte Carlo. In *Advances in Neural Information Processing Systems 31*: 8222-8232. ([paper + supplement on arXiv](https://arxiv.org/abs/1810.05558), [NeurIPS Proceedings](https://papers.nips.cc/paper/8043-variational-bayesian-monte-carlo))
-2. Acerbi, L. (2019). An Exploration of Acquisition and Mean Functions in Variational Bayesian Monte Carlo. In *Proc. Machine Learning Research* 96: 1-10. 1st Symposium on Advances in Approximate Bayesian Inference, Montréal, Canada. ([paper in PMLR](http://proceedings.mlr.press/v96/acerbi19a.html))
+2. Acerbi, L. (2020). Variational Bayesian Monte Carlo with Noisy Likelihoods. *arXiv preprint* (to appear).
 
-You can cite VBMC in your work with something along the lines of
+Please cite both references if you use VBMC in your work (the 2018 paper introduced the framework, and the 2020 paper includes a number of major improvements, including but not limited to support for noisy likelihoods). You can cite VBMC in your work with something along the lines of
 
-> We estimated approximate posterior distibutions and approximate lower bounds to the model evidence of our models using Variational Bayesian Monte Carlo (VBMC; Acerbi, 2018, 2019). VBMC combines variational inference and active-sampling Bayesian quadrature to perform approximate Bayesian inference in a sample-efficient manner.
+> We estimated approximate posterior distibutions and approximate lower bounds to the model evidence of our models using Variational Bayesian Monte Carlo (VBMC; Acerbi, 2018, 2020). VBMC combines variational inference and active-sampling Bayesian quadrature to perform approximate Bayesian inference in a sample-efficient manner.
 
 Besides formal citations, you can demonstrate your appreciation for VBMC in the following ways:
 
@@ -121,6 +135,11 @@ Besides formal citations, you can demonstrate your appreciation for VBMC in the 
 - Tell me about your model-fitting problem and your experience with VBMC (positive or negative) at <luigi.acerbi@gmail.com> (putting  'VBMC' in the subject of the email).
 
 You may also want to check out [Bayesian Adaptive Direct Search](https://github.com/lacerbi/bads) (BADS), our method for fast Bayesian optimization.
+
+### Additional references
+
+3. Acerbi, L. (2019). An Exploration of Acquisition and Mean Functions in Variational Bayesian Monte Carlo. In *Proc. Machine Learning Research* 96: 1-10. 1st Symposium on Advances in Approximate Bayesian Inference, Montréal, Canada. ([paper in PMLR](http://proceedings.mlr.press/v96/acerbi19a.html))
+
 
 ### License
 
