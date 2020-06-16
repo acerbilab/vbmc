@@ -104,6 +104,8 @@ OPTIONS.SpecifyTargetNoise = true;
 [VP,ELBO,ELBO_SD] = vbmc(FUN,X0,LB,UB,PLB,PUB,OPTIONS);
 ```
 
+For more information, see the [VBMC FAQ](https://github.com/lacerbi/vbmc/wiki#noisy-target-function) and Example 5 in the [VBMC tutorial](https://github.com/lacerbi/vbmc/blob/master/vbmc_examples.m).
+
 ## Troubleshooting
 
 The VBMC toolbox is under active development. The toolbox has been extensively tested in several benchmarks and published papers, but as with any approximate inference technique you need to double-check your results. See the FAQ for more information on [diagnostics](https://github.com/lacerbi/vbmc/wiki#troubleshooting).
