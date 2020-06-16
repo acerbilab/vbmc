@@ -139,7 +139,7 @@ function [vp,elbo,elbo_sd,exitflag,output,optimState,stats] = vbmc(fun,x0,LB,UB,
 %   e-mail: luigi.acerbi@{gmail.com,nyu.edu,unige.ch}
 %   URL: http://luigiacerbi.com
 %   Version: 1.00
-%   Release date: Jun 15, 2020
+%   Release date: Jun 16, 2020
 %   Code repository: https://github.com/lacerbi/vbmc
 %--------------------------------------------------------------------------
 
