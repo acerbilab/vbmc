@@ -2,6 +2,7 @@
 
 **News:** 
 - **Major update (Jun/16/2020)** VBMC v1.0 has been released! (see [tweeprint](https://twitter.com/AcerbiLuigi/status/1273242222385868800?s=20)) This update includes full support for noisy log-likelihood evaluations, a linear transformation of the inference space to better represent the variational posterior, and a number of tweaks to the algorithm's settings for improved performance. See the [new preprint](https://arxiv.org/abs/2006.08655) for more information [[2](#references)].
+- The original VBMC paper has been published at *NeurIPS* 2018 [[1](#references)], and an exploration of various VBMC features has been published in *PMLR* [[3](#additional-references)]. VBMC has been presented at seminars in Oxford (UK), Bristol (UK), NYU (NY) and online conferences. See [here](https://github.com/lacerbi/infbench/blob/master/presentations/acerbi-oxford2018nov.pdf) for slides, and [here](https://nyu.zoom.us/rec/share/4PRRd6rs9EdLbYnPtnjtRqJxG7S6T6a81iMdqKJfmk9OM2jTgTpG2P-y3brHBJfn) for a recorded talk (at CDS@NYU) with implausible automated captions.
 
 ## What is it
 
