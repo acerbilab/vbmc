@@ -115,7 +115,7 @@ function [vp,elbo,elbo_sd,exitflag,output,optimState,stats] = vbmc(fun,x0,LB,UB,
 %   1) Acerbi, L. (2018). "Variational Bayesian Monte Carlo". In Advances 
 %      in Neural Information Processing Systems 31 (NeurIPS 2018), pp. 8213-8223.
 %   2) Acerbi, L. (2020). "Variational Bayesian Monte Carlo with Noisy
-%      Likelihoods". arXiv preprint.
+%      Likelihoods". arXiv preprint arXiv:2006.08655.
 %
 %   Additional references:
 %
