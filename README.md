@@ -129,7 +129,7 @@ However, before contacting me for this reason, please have a good look at the co
 ## References
 
 1. Acerbi, L. (2018). Variational Bayesian Monte Carlo. In *Advances in Neural Information Processing Systems 31*: 8222-8232. ([paper + supplement on arXiv](https://arxiv.org/abs/1810.05558), [NeurIPS Proceedings](https://papers.nips.cc/paper/8043-variational-bayesian-monte-carlo))
-2. Acerbi, L. (2020). Variational Bayesian Monte Carlo with Noisy Likelihoods. To appear in *Advances in Neural Information Processing Systems 31*. arXiv preprint arXiv:2006.08655 ([preprint on arXiv](https://arxiv.org/abs/2006.08655)).
+2. Acerbi, L. (2020). Variational Bayesian Monte Carlo with Noisy Likelihoods. To appear in *Advances in Neural Information Processing Systems 33*. arXiv preprint arXiv:2006.08655 ([preprint on arXiv](https://arxiv.org/abs/2006.08655)).
 
 Please cite both references if you use VBMC in your work (the 2018 paper introduced the framework, and the 2020 paper includes a number of major improvements, including but not limited to support for noisy likelihoods). You can cite VBMC in your work with something along the lines of
 
