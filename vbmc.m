@@ -1,4 +1,5 @@
-function [vp,elbo,elbo_sd,exitflag,output,optimState,stats] = vbmc(fun,x0,LB,UB,PLB,PUB,options,varargin)
+function [vp,elbo,elbo_sd,exitflag,output,optimState,stats,vp_train] = ...
+    vbmc(fun,x0,LB,UB,PLB,PUB,options,varargin)
 %VBMC Posterior and model inference via Variational Bayesian Monte Carlo (v1.0)
 %   VBMC computes a variational approximation of the full posterior and a 
 %   lower bound on the normalization constant (marginal likelhood or model
@@ -808,7 +809,7 @@ vp_old = vp;
 
 % Pick "best" variational solution to return (and real vp, if train vp differs)
 [vp,elbo,elbo_sd,idx_best] = ...
-    best_vbmc(stats,iter,options.BestSafeSD,options.BestFracBack,options.RankCriterion);
+    best_vbmc(stats,iter,options.BestSafeSD,options.BestFracBack,options.RankCriterion,0);
 new_final_vp_flag = idx_best ~= iter;
 gp = stats.gp(idx_best);
 vp.gp = gp;     % Add GP to variational posterior
@@ -817,15 +818,22 @@ vp.gp = gp;     % Add GP to variational posterior
 [vp,elbo,elbo_sd,changedflag] = finalboost_vbmc(vp,idx_best,optimState,stats,options);
 if changedflag; new_final_vp_flag = true; end
 
-if new_final_vp_flag
-    if prnt > 2
-        % Recompute symmetrized KL-divergence
-        sKL = max(0,0.5*sum(vbmc_kldiv(vp,vp_old,Nkl,options.KLgauss)));
-        if optimState.UncertaintyHandlingLevel > 0 && options.MaxRepeatedObservations > 0
-            fprintf(displayFormat,Inf,optimState.funccount,optimState.N,elbo,elbo_sd,sKL,vp.K,stats.rindex(idx_best),'finalize');
-        else
-            fprintf(displayFormat,Inf,optimState.funccount,elbo,elbo_sd,sKL,vp.K,stats.rindex(idx_best),'finalize');
-        end
+if new_final_vp_flag && prnt > 2
+    % Recompute symmetrized KL-divergence
+    sKL = max(0,0.5*sum(vbmc_kldiv(vp,vp_old,Nkl,options.KLgauss)));
+end
+
+% Convert training variational posterior to real variational posterior
+vp_train = vp;
+vp = vptrain2real(vp_train,1);
+elbo = vp.stats.elbo;
+elbo_sd = vp.stats.elbo_sd;
+
+if new_final_vp_flag && prnt > 2
+    if optimState.UncertaintyHandlingLevel > 0 && options.MaxRepeatedObservations > 0
+        fprintf(displayFormat,Inf,optimState.funccount,optimState.N,elbo,elbo_sd,sKL,vp.K,stats.rindex(idx_best),'finalize');
+    else
+        fprintf(displayFormat,Inf,optimState.funccount,elbo,elbo_sd,sKL,vp.K,stats.rindex(idx_best),'finalize');
     end
 end
 

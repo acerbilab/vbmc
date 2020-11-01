@@ -4,6 +4,15 @@ function [vp,hyp_warped] = warp_gpandvp_vbmc(trinfo,vp_old,gp_old)
 D = size(gp_old.X,2);
 trinfo_old = vp_old.trinfo;
 
+% Temperature scaling
+if isfield(vp_old,'temperature') && ~isempty(vp_old.temperature)
+    T = vp_old.temperature;
+else
+    T = 1;
+end
+
+
+
 %% Update GP hyperparameters
 
 warpfun = @(x) warpvars_vbmc(warpvars_vbmc(x,'i',trinfo_old),'d',trinfo);
@@ -33,7 +42,7 @@ for s = 1:Ns_gp
             m0 = hyp(Ncov+Nnoise+1);
             dy_old = warpvars_vbmc(gp_old.X,'logp',trinfo_old);
             dy = warpvars_vbmc(warpfun(gp_old.X),'logp',trinfo);            
-            m0w = m0 + mean(dy) - mean(dy_old);
+            m0w = m0 + (mean(dy) - mean(dy_old))/T;
             
             hyp_warped(Ncov+Nnoise+1,s) = m0w;
         
@@ -49,7 +58,7 @@ for s = 1:Ns_gp
             % Warp maximum
             dy_old = warpvars_vbmc(xm,'logpdf',trinfo_old)';
             dy = warpvars_vbmc(xmw,'logpdf',trinfo)';
-            m0w = m0 + dy - dy_old;
+            m0w = m0 + (dy - dy_old)/T;
             
             hyp_warped(Ncov+Nnoise+1,s) = m0w;
             hyp_warped(Ncov+Nnoise+1+(1:D),s) = xmw';
@@ -81,7 +90,7 @@ vp.sigma(1,:) = sigmaw;
 dy_old = warpvars_vbmc(mu,'logpdf',trinfo_old)';
 dy = warpvars_vbmc(muw,'logpdf',trinfo)';
 
-ww = vp_old.w .* exp(dy - dy_old);
+ww = vp_old.w .* exp((dy - dy_old)/T);
 vp.w = ww ./ sum(ww);
 
 end

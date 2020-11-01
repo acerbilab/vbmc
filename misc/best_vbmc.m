@@ -1,4 +1,4 @@
-function [vp,elbo,elbo_sd,idx_best] = best_vbmc(stats,idx,SafeSD,FracBack,RankCriterion)
+function [vp,elbo,elbo_sd,idx_best] = best_vbmc(stats,idx,SafeSD,FracBack,RankCriterion,RealFlag)
 %VBMC_BEST Return best variational posterior from stats structure.
 
 % Check up to this iteration (default, last)
@@ -12,6 +12,9 @@ if nargin < 4 || isempty(FracBack); FracBack = 0.25; end
 
 % Use new ranking criterion method to pick best solution
 if nargin < 5 || isempty(RankCriterion); RankCriterion = false; end
+
+% Convert training variational posterior to real posterior
+if nargin < 6 || isempty(RealFlag); RealFlag = true; end
 
 if stats.stable(idx)
     % If the current iteration is stable, return it
@@ -66,7 +69,11 @@ else
 end
 
 % Return best variational posterior, its ELBO and SD
-vp = vptrain2real(stats.vp(idx_best),1);
+if RealFlag
+    vp = vptrain2real(stats.vp(idx_best),1);
+else
+    vp = stats.vp(idx_best);
+end
 elbo = stats.elbo(idx_best);
 elbo_sd = stats.elbo_sd(idx_best);
 vp.stats.stable = stats.stable(idx_best);

@@ -71,13 +71,20 @@ optimState.trinfo = trinfo;
 
 %% Apply warping
 
+% Temperature scaling
+if isfield(optimState,'temperature') && ~isempty(optimState.temperature)
+    T = optimState.temperature;
+else
+    T = 1;
+end
+
 % Adjust stored points after warping
 idx_n = 1:optimState.Xn;
 X_orig = optimState.X_orig(idx_n,:);
 y_orig = optimState.y_orig(idx_n);
 X = warpvars_vbmc(X_orig,'dir',trinfo);
 dy = warpvars_vbmc(X,'logp',trinfo);
-y = y_orig + dy;
+y = y_orig + dy/T;
 optimState.X(idx_n,:) = X;
 optimState.y(idx_n) = y;
 

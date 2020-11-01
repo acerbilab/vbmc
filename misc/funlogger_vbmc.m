@@ -132,7 +132,7 @@ switch lower(state)
             if isfield(optimState,'temperature') && ~isempty(optimState.temperature)
                 fval_orig = fval_orig / optimState.temperature;
                 fsd = fsd / optimState.temperature;
-            end            
+            end
             
         catch fun_error
             warning(['funlogger_vbmc:FuncError',...
@@ -216,6 +216,13 @@ if nargin < 6; fsd = []; end
 
 duplicate_flag = all(bsxfun(@eq,x,optimState.X),2);
 
+% Tempered posterior
+if isfield(optimState,'temperature') && ~isempty(optimState.temperature)
+    T = optimState.temperature;
+else
+    T = 1;
+end
+
 if any(duplicate_flag)    
     if sum(duplicate_flag) > 1; error('More than one match.'); end    
     idx = find(duplicate_flag);    
@@ -229,7 +236,8 @@ if any(duplicate_flag)
     else
         optimState.y_orig(idx) = (N*optimState.y_orig(idx) + fval_orig)/(N+1);
     end
-    fval = optimState.y_orig(idx) + warpvars_vbmc(x,'logp',optimState.trinfo);
+    
+    fval = optimState.y_orig(idx) + warpvars_vbmc(x,'logp',optimState.trinfo)/T;
     optimState.y(optimState.Xn) = fval;
     % if ~isempty(fsd); optimState.S(idx) = sqrt((N^2*optimState.S(idx)^2 + fsd^2)/(N+1)^2); end
     optimState.funevaltime(idx) = (N*optimState.funevaltime(idx) + t)/(N+1);
@@ -255,7 +263,7 @@ else
     optimState.X_orig(optimState.Xn,:) = x_orig;
     optimState.X(optimState.Xn,:) = x;
     optimState.y_orig(optimState.Xn) = fval_orig;
-    fval = fval_orig + warpvars_vbmc(x,'logp',optimState.trinfo);
+    fval = fval_orig + warpvars_vbmc(x,'logp',optimState.trinfo)/T;
     optimState.y(optimState.Xn) = fval;
     if ~isempty(fsd); optimState.S(optimState.Xn) = fsd; end
     optimState.X_flag(optimState.Xn) = true;
