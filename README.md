@@ -1,6 +1,7 @@
 # Variational Bayesian Monte Carlo (VBMC) - v1.0
 
 **News:** 
+- **New paper accepted (Sep/25/2020)** The "Variational Bayesian Monte Carlo with Noisy Likelihoods" paper [[2](#references)] has been accepted at *NeurIPS* 2020! This is the second VBMC paper at *NeurIPS*. The revised version of the manuscript is available [on arXiv](https://arxiv.org/abs/2006.08655).
 - **Major update (Jun/16/2020)** VBMC v1.0 has been released! (see [tweeprint](https://twitter.com/AcerbiLuigi/status/1273242222385868800?s=20)) This update includes full support for noisy log-likelihood evaluations, a linear transformation of the inference space to better represent the variational posterior, and a number of tweaks to the algorithm's settings for improved performance. See the [new preprint](https://arxiv.org/abs/2006.08655) for more information [[2](#references)].
 - The original VBMC paper has been published at *NeurIPS* 2018 [[1](#references)], and an exploration of various VBMC features has been published in *PMLR* [[3](#additional-references)]. VBMC has been presented at seminars in Oxford (UK), Bristol (UK), NYU (NY) and online conferences. See [here](https://github.com/lacerbi/infbench/blob/master/presentations/acerbi-oxford2018nov.pdf) for slides, and [here](https://nyu.zoom.us/rec/share/4PRRd6rs9EdLbYnPtnjtRqJxG7S6T6a81iMdqKJfmk9OM2jTgTpG2P-y3brHBJfn) for a recorded talk (at CDS@NYU) with implausible automated captions.
 
@@ -12,7 +13,7 @@ VBMC is an approximate inference method designed to fit and evaluate computation
 - an approximate posterior distribution of the model parameters; 
 - an approximation — technically, an approximate lower bound — of the log model evidence (also known as log marginal likelihood or log Bayes factor), a metric used for [Bayesian model selection](https://en.wikipedia.org/wiki/Bayes_factor).
 
-Extensive benchmarks on both artificial test problems and a large number of real model-fitting problems from computational and cognitive neuroscience show that VBMC generally — and often vastly — outperforms existing methods for sample-efficient Bayesian inference [[1,2](#references)].
+Extensive benchmarks on both artificial test problems and a large number of real model-fitting problems from computational and cognitive neuroscience show that VBMC generally — and often vastly — outperforms alternative methods for sample-efficient Bayesian inference [[1,2](#references)].
 
 VBMC runs with virtually no tuning and it is very easy to set up for your problem (especially if you are already familiar with [BADS](https://github.com/lacerbi/bads), our model-fitting algorithm based on Bayesian optimization).
 
@@ -128,7 +129,7 @@ However, before contacting me for this reason, please have a good look at the co
 ## References
 
 1. Acerbi, L. (2018). Variational Bayesian Monte Carlo. In *Advances in Neural Information Processing Systems 31*: 8222-8232. ([paper + supplement on arXiv](https://arxiv.org/abs/1810.05558), [NeurIPS Proceedings](https://papers.nips.cc/paper/8043-variational-bayesian-monte-carlo))
-2. Acerbi, L. (2020). Variational Bayesian Monte Carlo with Noisy Likelihoods. *arXiv preprint* arXiv:2006.08655 ([preprint on arXiv](https://arxiv.org/abs/2006.08655)).
+2. Acerbi, L. (2020). Variational Bayesian Monte Carlo with Noisy Likelihoods. To appear in *Advances in Neural Information Processing Systems 33*. arXiv preprint arXiv:2006.08655 ([preprint on arXiv](https://arxiv.org/abs/2006.08655)).
 
 Please cite both references if you use VBMC in your work (the 2018 paper introduced the framework, and the 2020 paper includes a number of major improvements, including but not limited to support for noisy likelihoods). You can cite VBMC in your work with something along the lines of
 
