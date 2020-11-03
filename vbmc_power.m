@@ -16,7 +16,7 @@ if K > 1
     lambda = vp.lambda;
     
     % Power posterior parameters
-    Kp = K^2;
+    Kp = K^n;
     wp = zeros(1,Kp);
     mup = zeros(D,Kp);
     sigmap = zeros(1,Kp);    
