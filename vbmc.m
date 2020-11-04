@@ -532,7 +532,7 @@ while ~isFinished_flag
     if DoWarping
         t = tic;        
         [vp_tmp,~,~,idx_best] = ...
-            best_vbmc(stats,iter-1,options.BestSafeSD,options.BestFracBack,options.RankCriterion);
+            best_vbmc(stats,iter-1,options.BestSafeSD,options.BestFracBack,options.RankCriterion,0);
         
         % Compute input warping
         [trinfo_warp,optimState,warp_action] = warp_input_vbmc(vp_tmp,optimState,stats.gp(idx_best),options);

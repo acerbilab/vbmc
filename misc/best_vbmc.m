@@ -14,7 +14,7 @@ if nargin < 4 || isempty(FracBack); FracBack = 0.25; end
 if nargin < 5 || isempty(RankCriterion); RankCriterion = false; end
 
 % Convert training variational posterior to real posterior
-if nargin < 6 || isempty(RealFlag); RealFlag = true; end
+if nargin < 6 || isempty(RealFlag); RealFlag = false; end
 
 if stats.stable(idx)
     % If the current iteration is stable, return it
