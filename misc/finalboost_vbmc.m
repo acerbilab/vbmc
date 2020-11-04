@@ -46,6 +46,10 @@ if do_boost
     options.NSentFine = NSentFineBoost;
     options.MaxIterStochastic = Inf;
     optimState.entropy_alpha = 0;
+    
+    if isfield(vp,'temperature') && ~isempty(vp.temperature)
+        optimState.temperature = vp.temperature;
+    end
         
     stable_flag = vp.stats.stable;
     vp = vpoptimize_vbmc(Nfastopts,Nslowopts,vp,gp_idx,Knew,optimState,options);
