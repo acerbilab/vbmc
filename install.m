@@ -4,9 +4,10 @@
 
 fprintf('Installing VBMC...\n');
 
-me = mfilename;                                 % what is my filename
-pathstr = fileparts(which(me));                 % get my location
-addpath(pathstr);                               % add to the path
+me = mfilename;                             % what is my filename
+pathstr = fileparts(which(me));             % get my location
+addpath(pathstr);                           % add base folder to the path
+addpath([pathstr filesep() 'shared']);      % add shared folder to the path
 
 try
     failed_install_flag = savepath;             % save path

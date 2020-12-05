@@ -74,8 +74,8 @@ function [nlogL,nlogLvar,exitflag,output] = ibslike(fun,params,respMat,designMat
 %   Authors (copyright): Luigi Acerbi and Bas van Opheusden, 2020
 %   e-mail: luigi.acerbi@{gmail.com,nyu.edu}, basvanopheusden@nyu.edu
 %   URL: http://luigiacerbi.com
-%   Version: 0.91
-%   Release date: May 06, 2020
+%   Version: 0.93
+%   Release date: Oct 14, 2020
 %   Code repository: https://github.com/lacerbi/ibs
 %--------------------------------------------------------------------------
 
@@ -161,19 +161,29 @@ Trials = (1:Ntrials)';
 funcCount = 0;
 
 simdata = []; elapsed_time = [];
+
+% Use vectorized or loop version?
 if ischar(options.Vectorized) && options.Vectorized(1) == 'a'
-    % First full simulation to determine computation time
-    fun_clock = tic;
-    if isempty(designMat)    % Pass only trial indices
-        simdata = fun(params,Trials(:),varargin{:});
-    else                    % Pass full design matrix per trial
-        simdata = fun(params,designMat(Trials(:),:),varargin{:});   
+    if options.Nreps == 1
+        vectorized_flag = false;
+    else
+        % First full simulation to determine computation time
+        fun_clock = tic;
+        if isempty(designMat)    % Pass only trial indices
+            simdata = fun(params,Trials(:),varargin{:});
+        else                    % Pass full design matrix per trial
+            simdata = fun(params,designMat(Trials(:),:),varargin{:});   
+        end
+        elapsed_time = toc(fun_clock);
+        vectorized_flag = elapsed_time < options.VectorizedThreshold;
+        funcCount = 1;
     end
-    elapsed_time = toc(fun_clock);
-    vectorized_flag = elapsed_time < options.VectorizedThreshold;
-    funcCount = 1;
 else
     vectorized_flag = logical(options.Vectorized);
+    if options.Nreps == 1 && vectorized_flag
+        vectorized_flag = false;
+        warning('Vectorized IBS requires OPTIONS.Nreps > 1. Switching to non-vectorized algorithm.');
+    end
 end
 
 if vectorized_flag
@@ -350,7 +360,7 @@ for iter = 1:MaxIter
         Rmin = min(Ridx(T));    % Find repeat still ongoing
         if Rmin > size(K_mat,1); continue; end
         [LL_temp,Psi_tab] = get_LL_from_K(Psi_tab,K_mat(Rmin,:));
-        nLL_temp = -sum(LL_temp,2);
+        nLL_temp = -sum(LL_temp,1);
         if nLL_temp > options.NegLogLikeThreshold
             idx_move = Ridx == Rmin;
             Ridx(idx_move) = Rmin+1;
