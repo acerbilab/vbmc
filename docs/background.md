@@ -10,6 +10,9 @@ The goal of VBMC is to perform Bayesian inference, that is to compute:
 - the *posterior distribution* p(θ|*D*) for a given model, model parameters θ and dataset *D*;
 - the *marginal likelihood* (also known as *model evidence*) p(*D*) = ∫p(D|θ)p(θ)dθ.
 
-If you are not familiar with Bayesian inference, you might want to start with the first chapter(s) of the *Bayesian Data Analysis* (BDA) book, available for free [here](https://users.aalto.fi/~ave/BDA3.pdf).
+If you are not familiar with Bayesian inference, you might want to start with the first chapter(s) of the *Bayesian Data Analysis* (BDA) book, available for free [here](https://users.aalto.fi/~ave/BDA3.pdf). A great introduction to the marginal likelihood, and its usage as a principled metric for model selection that automatically corrects for model complexity ("Bayesian Occam's razor"), can be found in Chapter 28 of MacKay's book, available [here](http://www.inference.org.uk/itprnn/book.pdf).
 
-> Gelman, A., Carlin, J. B., Stern, H. S., Dunson, D. B., Vehtari, A., & Rubin, D. B. (2013). Bayesian data analysis (Third edition). CRC press.
+**References:**
+- Gelman A, Carlin JB, Stern HS, Dunson DB, Vehtari A, Rubin, DB (2013). Bayesian data analysis (Third edition). CRC press.
+- MacKay DJ, Mac Kay DJ (2003). Information theory, inference and learning algorithms. Cambridge university press.
+
