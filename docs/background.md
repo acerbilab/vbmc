@@ -29,9 +29,8 @@ Crucially, the GP is a probabilistic model that gives us a posterior mean and po
 
 To familiarize yourself with Gaussian processes, have a look at this Distill article, [A Visual Exploration of Gaussian Processes](https://distill.pub/2019/visual-exploration-gaussian-processes/).
 
-## Active sampling and Bayesian optimization
-
-## Variational inference
+## Active sampling (and Bayesian optimization)
 
 ## Bayesian quadrature
 
+## Variational inference
