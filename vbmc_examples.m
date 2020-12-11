@@ -318,7 +318,7 @@ pause;
 
 fprintf('  Finally, note that you can tell VBMC to automatically retry a run which did not converge.\n');
 fprintf('  To do so, set the RetryMaxFunEvals options to a nonzero value (e.g., equal to MaxFunEvals).\n');
-fprintf('  Check this section in the vbmc_exmples.m file for more details.\n');
+fprintf('  Check this section in the vbmc_examples.m file for more details.\n');
 
 % The following code snippet automatically reruns VBMC on the same problem
 % with a better initialization if the first run does not converge:
