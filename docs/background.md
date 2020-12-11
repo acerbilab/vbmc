@@ -8,7 +8,7 @@ The goal of this document is to provide useful material and links to references 
 
 The goal of VBMC is to perform Bayesian inference, that is to compute:
 - the *posterior distribution* p(θ|*D*) for a given model, model parameters θ and dataset *D*;
-- the *marginal likelihood* (also known as *model evidence*) p(*D*) = ∫p(D|θ)p(θ)dθ.
+- the *marginal likelihood* (also known as *model evidence*) p(*D*) = ∫p(*D*|θ)p(θ)dθ.
 
 If you are not familiar with Bayesian inference, you might want to start with the first chapter(s) of the *Bayesian Data Analysis* (BDA) book, available for free [here](https://users.aalto.fi/~ave/BDA3.pdf). 
 
@@ -17,4 +17,10 @@ A great introduction to the marginal likelihood, and its usage as a principled m
 **References:**
 - Gelman A, Carlin JB, Stern HS, Dunson DB, Vehtari A, Rubin, DB (2013). Bayesian data analysis (Third edition). CRC press.
 - MacKay DJ, Mac Kay DJ (2003). Information theory, inference and learning algorithms. Cambridge university press.
+
+## Gaussian processes
+
+VBMC approximates the log joint distribution *f*(θ) = log p(*D*|θ)p(θ) with a *Gaussian process*. Gaussian processes (GPs) are flexible distributions over functions with many nice mathematical properties — in particular, we can often peform calculations involving GPs analytically. In VBMC, we perform GP regression — that is, we observe a few evaluations of *f*(θ) at some points, and infer the posterior GP compatible with those observations (in particular, the GP gives us a posterior mean and posterior variance prediction at each point). The GP model built this way is also known as a *surrogate* model of *f*, which we can use in place of the original (unknown) *f*.
+
+To familiarize yourself with Gaussian processes, have a look at this Distill article, [A Visual Exploration of Gaussian Processes](https://distill.pub/2019/visual-exploration-gaussian-processes/).
 
