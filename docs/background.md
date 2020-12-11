@@ -18,7 +18,7 @@ A great introduction to the marginal likelihood, and its usage as a principled m
 
 **References:**
 - Gelman A, Carlin JB, Stern HS, Dunson DB, Vehtari A, Rubin, DB (2013). Bayesian data analysis (Third edition). CRC press.
-- MacKay DJ, Mac Kay DJ (2003). Information theory, inference and learning algorithms. Cambridge university press.
+- MacKay DJ (2003). Information theory, inference and learning algorithms. Cambridge university press.
 
 ## Gaussian processes
 
