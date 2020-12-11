@@ -20,7 +20,10 @@ A great introduction to the marginal likelihood, and its usage as a principled m
 
 ## Gaussian processes
 
-VBMC approximates the log joint distribution *f*(θ) = log p(*D*|θ)p(θ) with a *Gaussian process*. Gaussian processes (GPs) are flexible distributions over functions with many nice mathematical properties — in particular, we can often peform calculations involving GPs analytically. In VBMC, we perform GP regression — that is, we observe a few evaluations of *f*(θ) at some points, and infer the posterior GP compatible with those observations (in particular, the GP gives us a posterior mean and posterior variance prediction at each point). The GP model built this way is also known as a *surrogate* model of *f*, which we can use in place of the original (unknown) *f*.
+VBMC approximates the log joint distribution *f*(θ) = log p(*D*|θ)p(θ) with a *Gaussian process*. 
 
-To familiarize yourself with Gaussian processes, have a look at this Distill article, [A Visual Exploration of Gaussian Processes](https://distill.pub/2019/visual-exploration-gaussian-processes/).
+Gaussian processes (GPs) are flexible distributions over functions with many nice mathematical properties — for example, we can often peform calculations involving GPs analytically. In VBMC, we perform GP regression — that is, we observe a few evaluations of *f*(θ) at some points, and infer the posterior GP compatible with those observations. The GP model built this way is also known as a *surrogate* model of *f*, which we can use in place of the original (unknown) *f*. 
+Crucially, the GP is a probabilistic model that gives us a posterior mean and posterior variance prediction at each point.
+
+To familiarize yourself with Gaussian processes, you could have a look at this Distill article, [A Visual Exploration of Gaussian Processes](https://distill.pub/2019/visual-exploration-gaussian-processes/).
 
