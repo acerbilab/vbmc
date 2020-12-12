@@ -17,7 +17,15 @@ The goal of VBMC is to perform Bayesian inference, that is to compute:
 - the *posterior distribution* p(θ|*D*) for a given model, model parameters θ and dataset *D*;
 - the *marginal likelihood* (also known as *model evidence*) p(*D*) = ∫p(*D*|θ)p(θ)dθ.
 
-Other probabilistic objects that are referred often are: the *prior* p(θ), the *likelihood* p(*D*|θ), and the *joint* density p(*D*,θ) = p(*D*|θ)p(θ) (or their logarithms). Also note that in the paper and in the documentation, the terms probability density and probability distribution are used interchangeably (somewhat improperly).
+Related probabilistic objects and concepts that are referred often are: the *prior* p(θ), the *likelihood* p(*D*|θ), and the *joint* density p(*D*,θ) = p(*D*|θ)p(θ) (or their logarithms). Also note that in the paper and in the documentation, the terms probability density and probability distribution are used interchangeably (somewhat improperly).
+
+### 1.1 Approximate Bayesian inference
+
+VBMC performs *approximate* Bayesian inference, in the sense that it computes an approximation of the posterior q(θ) ≈ p(θ|*D*), and an approximation of the marginal likelihood, as we will explain later. VBMC has two layers of approximation: first, it approximates the log joint with a [Gaussian process](#gaussian-processes) surrogate model. Second, it fits a [variational posterior](#variational-inference) to the Gaussian process surrogate. Both these steps are explained below.
+
+The key feature of VBMC is that it performs *sample-efficient* approximate Bayesian inference, i.e. it needs only a relatively small number of evaluations of the log-joint distribution. This is in contrast to most other approaches to approximate inference, which can require a very large of number of evaluations. Thus, VBMC shines when for some reason the budget of evaluations is somewhat limited (e.g., evaluating the log-joint, whose main contribution is usually the log-likelihood, is somewhat costly).
+
+Another useful property of VBMC is that it can deal with *noisy* evaluations of the log-joint.
 
 #### Resources:
 
@@ -25,11 +33,6 @@ Other probabilistic objects that are referred often are: the *prior* p(θ), the 
 - Book: A great introduction to the marginal likelihood, and its usage as a principled metric for model selection that automatically corrects for model complexity ("Bayesian Occam's razor"), can be found in Chapter 28 of MacKay's book, available [here](http://www.inference.org.uk/itprnn/book.pdf).
 - Video: A general introduction to Bayesian inference in machine learning is given in [this lecture](https://www.youtube.com/watch?v=mgBrXnjF8R4) by Zoubin Ghahramani (the first 30 minutes or so).
 
-### 1.1 Approximate Bayesian inference
-
-VBMC performs *approximate* Bayesian inference, in the sense that it computes an approximation of the posterior q(θ) ≈ p(θ|*D*), and an approximation of the marginal likelihood. VBMC has two layers of approximation: first, it approximates the log joint with a [Gaussian process](#gaussian-processes) surrogate model. Second, it fits a [variational posterior](#variational-inference) to the Gaussian process surrogate. Both these steps are explained below.
-
-The key feature of VBMC is that it performs *sample-efficient* approximate Bayesian inference, i.e. it needs only a relatively small number of evaluations of the log-joint distribution (as opposed to most other approaches to approximate inference). Another useful property is that it can deal with *noisy* evaluations of the log-joint.
 
 #### References:
 - Gelman A, Carlin JB, Stern HS, Dunson DB, Vehtari A, Rubin, DB (2013). Bayesian data analysis (Third edition). CRC press ([PDF](https://users.aalto.fi/~ave/BDA3.pdf)).
