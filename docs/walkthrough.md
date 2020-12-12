@@ -19,9 +19,11 @@ The goal of VBMC is to perform Bayesian inference, that is to compute:
 
 Other probabilistic objects that are referred often are: the *prior* p(θ), the *likelihood* p(*D*|θ), and the *joint* density p(*D*,θ) = p(*D*|θ)p(θ) (or their logarithms). Also note that in the paper and in the documentation, the terms probability density and probability distribution are used interchangeably (somewhat improperly).
 
-If you are not familiar with Bayesian inference, you might want to start with the first chapter(s) of the *Bayesian Data Analysis* (BDA) book, available for free [here](https://users.aalto.fi/~ave/BDA3.pdf). 
+#### Resources:
 
-A great introduction to the marginal likelihood, and its usage as a principled metric for model selection that automatically corrects for model complexity ("Bayesian Occam's razor"), can be found in Chapter 28 of MacKay's book, available [here](http://www.inference.org.uk/itprnn/book.pdf).
+- Book: If you are not familiar with Bayesian inference, you might want to start with the first chapter(s) of the *Bayesian Data Analysis* (BDA) book, available for free [here](https://users.aalto.fi/~ave/BDA3.pdf). 
+- Book: A great introduction to the marginal likelihood, and its usage as a principled metric for model selection that automatically corrects for model complexity ("Bayesian Occam's razor"), can be found in Chapter 28 of MacKay's book, available [here](http://www.inference.org.uk/itprnn/book.pdf).
+- Video: A general introduction to Bayesian inference in machine learning is given in [this lecture](https://www.youtube.com/watch?v=mgBrXnjF8R4) by Zoubin Ghahramani (the first 30 minutes or so).
 
 ### 1.1 Approximate Bayesian inference
 
