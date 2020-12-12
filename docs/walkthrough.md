@@ -18,7 +18,7 @@ A great introduction to the marginal likelihood, and its usage as a principled m
 
 ### Bayesian inference in VBMC
 
-VBMC performs *approximate* Bayesian inference, in the sense that it computes an approximation of the posterior q(θ) ≈ p(θ|*D*), and an approximation of the marginal likelihood. VBMC has two layers of approximation: first, it approximates the log joint with a [Gaussian process]() surrogate model. Second, it fits a [variational posterior]() to the Gaussian process surrogate. Both these terms are explained below.
+VBMC performs *approximate* Bayesian inference, in the sense that it computes an approximation of the posterior q(θ) ≈ p(θ|*D*), and an approximation of the marginal likelihood. VBMC has two layers of approximation: first, it approximates the log joint with a [Gaussian process](#gaussian-processes) surrogate model. Second, it fits a [variational posterior](#variational-inference) to the Gaussian process surrogate. Both these terms are explained below.
 
 #### References:
 - Gelman A, Carlin JB, Stern HS, Dunson DB, Vehtari A, Rubin, DB (2013). Bayesian data analysis (Third edition). CRC press.
