@@ -46,12 +46,12 @@ The GP bible is the Gaussian Processes for Machine Learning book, available [onl
 VBMC uses the standard *squared exponential* (or rescaled Gaussian) kernel, and a standard Gaussian likelihood (observation noise for the function values). The observation noise takes a small value when the log-joint is deterministic, or otherwise is specified by the user when VBMC is applied to a noisy/stochatic function.
 VBMC also uses a *negative quadratic* mean function, which is akin to a prior assumption for the posterior to be Gaussian (note that this can be overridden by data — the posterior in VBMC is *not* restricted to be Gaussian). We tried a few other mean functions, with little success ([Acerbi, 2019](http://proceedings.mlr.press/v96/acerbi19a.html)).
 
+In VBMC, the GP hyperparameters (e.g., GP kernel length scales, location and scale of the GP mean function, etc.) are approximately marginalized by sampling from the hyperparameter posterior via Markov Chain Monte Carlo (see below).
+Since hyperparameter marginalization becomes expensive with larger GPs, in later iterations VBMC switches to *maximizing* the GP marginal likelihood, which yields a single point estimate (see Section 5.4.1 of Rasmussen & Williams).
 
 #### References:
 - Rasmussen CE, Williams CK (2006). Gaussian processes for machine learning. MIT press ([PDF](http://www.gaussianprocess.org/gpml/chapters/RW.pdf)).
 - Acerbi L (2019). An Exploration of Acquisition and Mean Functions in Variational Bayesian Monte Carlo. PMLR ([link](http://proceedings.mlr.press/v96/acerbi19a.html)).
-
-### Training the Gaussian Process
 
 ## Active sampling and Bayesian optimization
 
