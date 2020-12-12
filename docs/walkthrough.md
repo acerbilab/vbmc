@@ -13,9 +13,11 @@ The goal of this walkthrough is to provide useful material and references to bui
 
 ## 1. Bayesian inference
 
-The goal of VBMC is to perform Bayesian inference, that is to compute:
+The goal of VBMC is to perform Bayesian inference for a given model and dataset, that is to compute:
 - the *posterior distribution* p(θ|*D*) for a given model, model parameters θ and dataset *D*;
 - the *marginal likelihood* (also known as *model evidence*) p(*D*) = ∫p(*D*|θ)p(θ)dθ.
+
+The posterior distribution encodes our uncertainty over model parameters, while the marginal likelihood is a principled metric for model selection that automatically corrects for model complexity ("Bayesian Occam's razor").
 
 Related probabilistic objects and concepts that are referred often are: the *prior* p(θ), the *likelihood* p(*D*|θ), and the *joint* density p(*D*,θ) = p(*D*|θ)p(θ) (or their logarithms). Also note that in the paper and in the documentation, the terms probability density and probability distribution are used interchangeably (somewhat improperly).
 
@@ -30,7 +32,7 @@ Another useful property of VBMC is that it can deal with *noisy* evaluations of 
 #### Resources:
 
 - Book: If you are not familiar with Bayesian inference, you might want to start with the first chapter(s) of the *Bayesian Data Analysis* (BDA) book, available for free [here](https://users.aalto.fi/~ave/BDA3.pdf). 
-- Book: A great introduction to the marginal likelihood, and its usage as a principled metric for model selection that automatically corrects for model complexity ("Bayesian Occam's razor"), can be found in Chapter 28 of MacKay's book, available [here](http://www.inference.org.uk/itprnn/book.pdf).
+- Book: A great discussion of the marginal likelihood (and "Bayesian Occam's razor") can be found in Chapter 28 of MacKay's book, available [here](http://www.inference.org.uk/itprnn/book.pdf).
 - Video: A general introduction to Bayesian inference in machine learning is given in [this lecture](https://www.youtube.com/watch?v=mgBrXnjF8R4) by Zoubin Ghahramani (the first 30 minutes or so).
 
 
