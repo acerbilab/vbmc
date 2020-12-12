@@ -20,6 +20,8 @@ A great introduction to the marginal likelihood, and its usage as a principled m
 
 VBMC performs *approximate* Bayesian inference, in the sense that it computes an approximation of the posterior q(θ) ≈ p(θ|*D*), and an approximation of the marginal likelihood. VBMC has two layers of approximation: first, it approximates the log joint with a [Gaussian process](#gaussian-processes) surrogate model. Second, it fits a [variational posterior](#variational-inference) to the Gaussian process surrogate. Both these steps are explained below.
 
+The key feature of VBMC is that it is sample-efficient, i.e. it tries to perform only a small number of evaluations of the log-joint distribution (as opposed to most other approaches to approximate inference). Another useful property is that it can deal with *noisy* evaluations of the log-joint.
+
 #### References:
 - Gelman A, Carlin JB, Stern HS, Dunson DB, Vehtari A, Rubin, DB (2013). Bayesian data analysis (Third edition). CRC press ([PDF](https://users.aalto.fi/~ave/BDA3.pdf)).
 - MacKay DJ (2003). Information theory, inference and learning algorithms. Cambridge university press ([PDF](http://www.inference.org.uk/itprnn/book.pdf)).
@@ -31,12 +33,19 @@ VBMC first approximates the log joint distribution *f*(θ) = log p(*D*|θ)p(θ) 
 Gaussian processes (GPs) are flexible distributions over functions with many nice mathematical properties — for example, we can often perform calculations involving GPs analytically. In VBMC, we perform GP regression — that is, we observe a few evaluations of *f*(θ) at some points, and infer the posterior GP compatible with those observations. The GP model built this way is also known as a *surrogate* model of *f*, which we can use in place of the original (unknown) *f*. 
 Crucially, the GP is a probabilistic model that gives us a posterior mean and posterior variance prediction at each point.
 
-One crucial aspect of the GP model is the *kernel* or covariance function K(θ,θ') defined between two points of the input space. See [here](https://stats.stackexchange.com/questions/228552/covariance-functions-or-kernels-what-exactly-are-they/). VBMC uses the standard *squared exponential* (or rescaled Gaussian) kernel.
+One crucial aspect of the GP model is the *kernel* or covariance function *k*(θ,θ') defined between two points of the input space. 
+In loose terms, a kernel or covariance function *k*(θ,θ') specifies the statistical relationship between two points θ, θ' in the input space; that is, how markedly a change in the value of the GP at θ correlates with a change in the GP at θ'. In some sense, you can think of *k*(⋅,⋅) as defining a similarity between inputs. 
 
 To familiarize yourself with GPs and covariance functions, have a look at this Distill article, [A Visual Exploration of Gaussian Processes](https://distill.pub/2019/visual-exploration-gaussian-processes/), and at the [kernel cookbook](https://www.cs.toronto.edu/~duvenaud/cookbook/).
 Plenty of more material about GPs can be found at the [GP model zoo](https://jejjohnson.github.io/gp_model_zoo/intro/).
 
 The GP bible is the Gaussian Processes for Machine Learning book, available [online](http://www.gaussianprocess.org/gpml/chapters/RW.pdf). For VBMC, the most relevant parts are Chapter 2 (all), Chapter 4 (sections 4.1 and 4.2) and Chapter 5 (sections 5.1, 5.2, 5.4.1).
+
+### Gaussian processes in VBMC
+
+
+VBMC uses the standard *squared exponential* (or rescaled Gaussian) kernel.
+
 
 #### References:
 - Rasmussen CE, Williams CK (2006). Gaussian processes for machine learning. MIT press ([PDF](http://www.gaussianprocess.org/gpml/chapters/RW.pdf)).
