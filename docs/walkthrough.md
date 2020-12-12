@@ -27,7 +27,7 @@ VBMC performs *approximate* Bayesian inference, in the sense that it computes an
 
 The key feature of VBMC is that it is *sample-efficient*, i.e. it works with only a relatively small number of evaluations of the log-joint distribution. This is in contrast to most other approaches to approximate inference, which can require a very large of number of evaluations (easily 10-100x more than VBMC). Thus, VBMC shines when a solution is needed with only a relatively small number of evaluations (e.g., when the model is somewhat expensive to evaluate — although it does not necessarily have to be *very* expensive). Even when the researcher could afford more time-consuming methods, VBMC can still be a useful tool of the [Bayesian workflow](https://arxiv.org/abs/2011.01808) to quickly get solutions when prototyping new models.
 
-Another useful property of VBMC is that it can easily deal with *noisy* evaluations of the log-joint. Some other approximate inference methods can deal with noisy evaluations as well, but it can get tricky.
+Another useful property of VBMC is that it can easily deal with *noisy* evaluations of the log-joint. Some other approximate inference methods can deal with noisy evaluations as well, but it can get tricky and very expensive in terms of evaluations.
 
 #### Resources:
 
