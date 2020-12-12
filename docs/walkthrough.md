@@ -16,7 +16,11 @@ If you are not familiar with Bayesian inference, you might want to start with th
 
 A great introduction to the marginal likelihood, and its usage as a principled metric for model selection that automatically corrects for model complexity ("Bayesian Occam's razor"), can be found in Chapter 28 of MacKay's book, available [here](http://www.inference.org.uk/itprnn/book.pdf).
 
-**References:**
+### Bayesian inference in VBMC
+
+VBMC performs *approximate* Bayesian inference, in the sense that it computes an approximation of the posterior q(θ) ≈ p(θ|*D*), and an approximation of the marginal likelihood. VBMC has two layers of approximation: first, it approximates the log joint with a [Gaussian process]() surrogate model. Second, it fits a [variational posterior]() to the Gaussian process surrogate. Both these terms are explained below.
+
+#### References:
 - Gelman A, Carlin JB, Stern HS, Dunson DB, Vehtari A, Rubin, DB (2013). Bayesian data analysis (Third edition). CRC press.
 - MacKay DJ (2003). Information theory, inference and learning algorithms. Cambridge university press.
 
