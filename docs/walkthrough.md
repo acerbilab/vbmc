@@ -1,7 +1,7 @@
 # A gentle introduction to Variational Bayesian Monte Carlo (work in progress)
 
 Variational Bayesian Monte Carlo (VBMC, from now on) is a fairly complex algorithm that combines several machine learning ideas.
-The goal of this walkthrough is to provide useful material and references to build the necessary background knowledge to understand the principles behind VBMC and how the algorithm works.
+The goal of this walkthrough is to build the necessary background knowledge to understand the principles behind VBMC and how the algorithm works.
 
 #### Table of contents
 
