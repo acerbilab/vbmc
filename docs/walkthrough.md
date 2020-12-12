@@ -8,7 +8,7 @@ The goal of this walkthrough is to provide useful material and references to bui
 
 1. [Bayesian inference](#1-bayesian-inference)    
 1.1 [Approximate Bayesian inference](#11-approximate-bayesian-inference)
-2. [Gaussian processes](#2-gaussian-processes)
+2. [Gaussian processes](#2-gaussian-processes)    
 2.1 [Details of GPs in VBMC](#21-details-of-gps-in-vbmc)
 3. [Active sampling and Bayesian optimization](#3-active-sampling-and-bayesian-optimization)
 
