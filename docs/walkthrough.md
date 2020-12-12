@@ -1,8 +1,8 @@
-# Background to understand Variational Bayesian Monte Carlo (work in progress)
+# A gentle introduction to Variational Bayesian Monte Carlo (work in progress)
 
-Variational Bayesian Monte Carlo (VBMC from now on) is a fairly complex algorithm that combines several machine learning ideas.
-If you are not fully familiar with these key concepts, understanding how VBMC works can be quite challenging. 
-The goal of this document is to provide useful material and links to references to build the necessary background knowledge to understand the principles behind VBMC.
+Variational Bayesian Monte Carlo (VBMC, from now on) is a fairly complex algorithm that combines several machine learning ideas.
+If you are not fully familiar with these key concepts, understanding how VBMC works can be challenging. 
+The goal of this walkthrough is to provide useful material and references to build the necessary background knowledge to understand the principles behind VBMC.
 
 ## Bayesian inference
 
@@ -27,7 +27,11 @@ VBMC first approximates the log joint distribution *f*(θ) = log p(*D*|θ)p(θ) 
 Gaussian processes (GPs) are flexible distributions over functions with many nice mathematical properties — for example, we can often perform calculations involving GPs analytically. In VBMC, we perform GP regression — that is, we observe a few evaluations of *f*(θ) at some points, and infer the posterior GP compatible with those observations. The GP model built this way is also known as a *surrogate* model of *f*, which we can use in place of the original (unknown) *f*. 
 Crucially, the GP is a probabilistic model that gives us a posterior mean and posterior variance prediction at each point.
 
+One crucial aspect of the GP model is the *kernel* or covariance function K(θ,θ') defined between two points of the input space. See [here](https://stats.stackexchange.com/questions/228552/covariance-functions-or-kernels-what-exactly-are-they/).
+
 To familiarize yourself with Gaussian processes, have a look at this Distill article, [A Visual Exploration of Gaussian Processes](https://distill.pub/2019/visual-exploration-gaussian-processes/).
+
+### Training the Gaussian Process
 
 ## Active sampling and Bayesian optimization
 
