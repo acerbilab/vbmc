@@ -6,7 +6,7 @@ The goal of this walkthrough is to provide useful material and references to bui
 #### Table of contents
 
 1. [Bayesian inference](#1-bayesian-inference)    
-1.1 [Approximate Bayesian inference](#11-approximate-bayesian-inference)
+1.1 [Sample-efficient approximate Bayesian inference](#11-sample-efficient-approximate-bayesian-inference)
 2. [Gaussian processes](#2-gaussian-processes)    
 2.1 [Details of GPs in VBMC](#21-details-of-gps-in-vbmc)
 3. [Active sampling and Bayesian optimization](#3-active-sampling-and-bayesian-optimization)
@@ -21,11 +21,11 @@ The posterior distribution encodes our uncertainty over model parameters, while 
 
 Related probabilistic objects and concepts that are referred often are: the *prior* p(θ), the *likelihood* p(*D*|θ), and the *joint* density p(*D*,θ) = p(*D*|θ)p(θ) (or their logarithms). Also note that in the paper and in the documentation, the terms probability density and probability distribution are used interchangeably (somewhat improperly).
 
-### 1.1 Approximate Bayesian inference
+### 1.1 Sample-efficient approximate Bayesian inference
 
-VBMC performs *approximate* Bayesian inference, in the sense that it computes an approximation of the posterior q(θ) ≈ p(θ|*D*), and an approximation of the marginal likelihood, as we will explain later. VBMC has two layers of approximation: first, it approximates the log joint with a [Gaussian process](#gaussian-processes) surrogate model. Second, it fits a [variational posterior](#variational-inference) to the Gaussian process surrogate. Both these steps are explained below.
+VBMC performs *approximate* Bayesian inference, in the sense that it computes an approximation of the posterior q(θ) ≈ p(θ|*D*), and an approximation of the marginal likelihood, as we will explain later. VBMC has two layers of approximation: first, it approximates the log joint with a [Gaussian process](#gaussian-processes) surrogate model. Second, it fits a [variational posterior](#variational-inference) to the Gaussian process surrogate. Both these steps are explained in the sections below.
 
-The key feature of VBMC is that it performs *sample-efficient* approximate Bayesian inference, i.e. it needs only a relatively small number of evaluations of the log-joint distribution. This is in contrast to most other approaches to approximate inference, which can require a very large of number of evaluations. Thus, VBMC shines when for some reason the budget of evaluations is somewhat limited (e.g., evaluating the log-joint, whose main contribution is usually the log-likelihood, is somewhat costly).
+The key feature of VBMC is that it is *sample-efficient*, i.e. it works with only a relatively small number of evaluations of the log-joint distribution. This is in contrast to most other approaches to approximate inference, which can require a very large of number of evaluations (easily 10-100x more than VBMC). Thus, VBMC shines when a solution is needed with only a relatively small number of evaluations (e.g., when the model is somewhat expensive to evaluate — although it does not necessarily have to be *very* expensive). Even when the researcher can afford more time-consuming methods, VBMC can still be a useful tool in the modeling pipeline to quickly get solutions when prototyping new models.
 
 Another useful property of VBMC is that it can deal with *noisy* evaluations of the log-joint.
 
