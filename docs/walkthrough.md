@@ -4,7 +4,15 @@ Variational Bayesian Monte Carlo (VBMC, from now on) is a fairly complex algorit
 If you are not fully familiar with these key concepts, understanding how VBMC works can be challenging. 
 The goal of this walkthrough is to provide useful material and references to build the necessary background knowledge to understand the principles behind VBMC.
 
-## Bayesian inference
+#### Table of contents
+
+1. [Bayesian inference](#bayesian-inference)
+  1.1 [Approximate Bayesian inference](#approximate-bayesian-inference)
+2. [Gaussian processes](#gaussian-processes)
+  2.1 [Details of GPs in VBMC](#details-of-gps-in-vbmc)
+3. [Active sampling and Bayesian optimization](#active-sampling-and-bayesian-optimization)
+
+## 1. Bayesian inference
 
 The goal of VBMC is to perform Bayesian inference, that is to compute:
 - the *posterior distribution* p(θ|*D*) for a given model, model parameters θ and dataset *D*;
@@ -16,7 +24,7 @@ If you are not familiar with Bayesian inference, you might want to start with th
 
 A great introduction to the marginal likelihood, and its usage as a principled metric for model selection that automatically corrects for model complexity ("Bayesian Occam's razor"), can be found in Chapter 28 of MacKay's book, available [here](http://www.inference.org.uk/itprnn/book.pdf).
 
-### Approximate Bayesian inference
+### 1.1 Approximate Bayesian inference
 
 VBMC performs *approximate* Bayesian inference, in the sense that it computes an approximation of the posterior q(θ) ≈ p(θ|*D*), and an approximation of the marginal likelihood. VBMC has two layers of approximation: first, it approximates the log joint with a [Gaussian process](#gaussian-processes) surrogate model. Second, it fits a [variational posterior](#variational-inference) to the Gaussian process surrogate. Both these steps are explained below.
 
@@ -26,7 +34,7 @@ The key feature of VBMC is that it performs *sample-efficient* approximate Bayes
 - Gelman A, Carlin JB, Stern HS, Dunson DB, Vehtari A, Rubin, DB (2013). Bayesian data analysis (Third edition). CRC press ([PDF](https://users.aalto.fi/~ave/BDA3.pdf)).
 - MacKay DJ (2003). Information theory, inference and learning algorithms. Cambridge university press ([PDF](http://www.inference.org.uk/itprnn/book.pdf)).
 
-## Gaussian processes
+## 2. Gaussian processes
 
 VBMC first approximates the log joint distribution *f*(θ) = log p(*D*|θ)p(θ) with a *Gaussian process*. Let's see what that means.
 
@@ -41,7 +49,7 @@ Plenty of more material about GPs can be found at the [GP model zoo](https://jej
 
 The GP bible is the Gaussian Processes for Machine Learning book, available [online](http://www.gaussianprocess.org/gpml/chapters/RW.pdf). For VBMC, the most relevant parts are Chapter 2 (all), Chapter 4 (sections 4.1 and 4.2) and Chapter 5 (sections 5.1, 5.2, 5.4.1).
 
-### Details of GPs in VBMC
+### 2.1 Details of GPs in VBMC
 
 VBMC uses the standard *squared exponential* (or rescaled Gaussian) kernel, and a standard Gaussian likelihood (observation noise for the function values). The observation noise takes a small value when the log-joint is deterministic, or otherwise is specified by the user when VBMC is applied to a noisy/stochatic function.
 VBMC also uses a *negative quadratic* mean function, which is akin to a prior assumption for the posterior to be Gaussian (note that this can be overridden by data — the posterior in VBMC is *not* restricted to be Gaussian). We tried a few other mean functions, with little success ([Acerbi, 2019](http://proceedings.mlr.press/v96/acerbi19a.html)).
@@ -53,12 +61,12 @@ Since hyperparameter marginalization becomes expensive with larger GPs, in later
 - Rasmussen CE, Williams CK (2006). Gaussian processes for machine learning. MIT press ([PDF](http://www.gaussianprocess.org/gpml/chapters/RW.pdf)).
 - Acerbi L (2019). An Exploration of Acquisition and Mean Functions in Variational Bayesian Monte Carlo. PMLR ([link](http://proceedings.mlr.press/v96/acerbi19a.html)).
 
-## Active sampling and Bayesian optimization
+## 3. Active sampling and Bayesian optimization
 
 
 
-## Bayesian quadrature
+## 4. Bayesian quadrature
 
-## Variational inference
+## 5. Variational inference
 
-## Markov Chain Monte Carlo (extra)
+## 6. Markov Chain Monte Carlo (extra)
