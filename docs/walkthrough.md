@@ -16,11 +16,11 @@ If you are not familiar with Bayesian inference, you might want to start with th
 
 A great introduction to the marginal likelihood, and its usage as a principled metric for model selection that automatically corrects for model complexity ("Bayesian Occam's razor"), can be found in Chapter 28 of MacKay's book, available [here](http://www.inference.org.uk/itprnn/book.pdf).
 
-### Bayesian inference in VBMC
+### Approximate Bayesian inference
 
 VBMC performs *approximate* Bayesian inference, in the sense that it computes an approximation of the posterior q(θ) ≈ p(θ|*D*), and an approximation of the marginal likelihood. VBMC has two layers of approximation: first, it approximates the log joint with a [Gaussian process](#gaussian-processes) surrogate model. Second, it fits a [variational posterior](#variational-inference) to the Gaussian process surrogate. Both these steps are explained below.
 
-The key feature of VBMC is that it is sample-efficient, i.e. it tries to perform only a small number of evaluations of the log-joint distribution (as opposed to most other approaches to approximate inference). Another useful property is that it can deal with *noisy* evaluations of the log-joint.
+The key feature of VBMC is that it performs *sample-efficient* approximate Bayesian inference, i.e. it needs only a relatively small number of evaluations of the log-joint distribution (as opposed to most other approaches to approximate inference). Another useful property is that it can deal with *noisy* evaluations of the log-joint.
 
 #### References:
 - Gelman A, Carlin JB, Stern HS, Dunson DB, Vehtari A, Rubin, DB (2013). Bayesian data analysis (Third edition). CRC press ([PDF](https://users.aalto.fi/~ave/BDA3.pdf)).
@@ -28,10 +28,10 @@ The key feature of VBMC is that it is sample-efficient, i.e. it tries to perform
 
 ## Gaussian processes
 
-VBMC first approximates the log joint distribution *f*(θ) = log p(*D*|θ)p(θ) with a *Gaussian process*. 
+VBMC first approximates the log joint distribution *f*(θ) = log p(*D*|θ)p(θ) with a *Gaussian process*. Let's see what that means.
 
-Gaussian processes (GPs) are flexible distributions over functions with many nice mathematical properties — for example, we can often perform calculations involving GPs analytically. In VBMC, we perform GP regression — that is, we observe a few evaluations of *f*(θ) at some points, and infer the posterior GP compatible with those observations. The GP model built this way is also known as a *surrogate* model of *f*, which we can use in place of the original (unknown) *f*. 
-Crucially, the GP is a probabilistic model that gives us a posterior mean and posterior variance prediction at each point.
+Gaussian processes (GPs) are flexible distributions over functions with many nice mathematical properties — for example, we can often perform calculations involving GPs analytically. In VBMC, we perform GP regression — that is, we observe a few evaluations of *f*(θ) at some points, and infer the posterior GP (a posterior distribution over functions) compatible with those observations. The GP model built this way is also known as a *surrogate* model of *f*, which we can use in place of the original (unknown) *f*. 
+Crucially, the GP is a probabilistic model that gives us a posterior mean and posterior variance prediction for the function at each point.
 
 One crucial aspect of the GP model is the *kernel* or covariance function *k*(θ,θ') defined between two points of the input space. 
 In loose terms, a kernel or covariance function *k*(θ,θ') specifies the statistical relationship between two points θ, θ' in the input space; that is, how markedly a change in the value of the GP at θ correlates with a change in the GP at θ'. In some sense, you can think of *k*(⋅,⋅) as defining a similarity between inputs. 
@@ -41,14 +41,15 @@ Plenty of more material about GPs can be found at the [GP model zoo](https://jej
 
 The GP bible is the Gaussian Processes for Machine Learning book, available [online](http://www.gaussianprocess.org/gpml/chapters/RW.pdf). For VBMC, the most relevant parts are Chapter 2 (all), Chapter 4 (sections 4.1 and 4.2) and Chapter 5 (sections 5.1, 5.2, 5.4.1).
 
-### Gaussian processes in VBMC
+### Details of GPs in VBMC
 
-
-VBMC uses the standard *squared exponential* (or rescaled Gaussian) kernel.
+VBMC uses the standard *squared exponential* (or rescaled Gaussian) kernel, and a standard Gaussian likelihood (observation noise for the function values). The observation noise takes a small value when the log-joint is deterministic, or otherwise is specified by the user when VBMC is applied to a noisy/stochatic function.
+VBMC also uses a *negative quadratic* mean function, which is akin to a prior assumption for the posterior to be Gaussian (note that this can be overridden by data — the posterior in VBMC is *not* restricted to be Gaussian). We tried a few other mean functions, with little success ([Acerbi, 2019](http://proceedings.mlr.press/v96/acerbi19a.html)).
 
 
 #### References:
 - Rasmussen CE, Williams CK (2006). Gaussian processes for machine learning. MIT press ([PDF](http://www.gaussianprocess.org/gpml/chapters/RW.pdf)).
+- Acerbi L (2019). An Exploration of Acquisition and Mean Functions in Variational Bayesian Monte Carlo. PMLR ([link](http://proceedings.mlr.press/v96/acerbi19a.html)).
 
 ### Training the Gaussian Process
 
