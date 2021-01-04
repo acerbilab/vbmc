@@ -31,7 +31,8 @@ Another useful property of VBMC is that it can easily deal with *noisy* evaluati
 
 #### Resources:
 
-- Book: If you are not familiar with Bayesian inference, you might want to start with the first chapter(s) of the *Bayesian Data Analysis* (BDA) book, available for free [here](https://users.aalto.fi/~ave/BDA3.pdf). 
+- Book: If you are not familiar with Bayesian inference, you might want to start with the first chapter(s) of the *Bayesian Data Analysis* (BDA) book, available for free [here](https://users.aalto.fi/~ave/BDA3.pdf).
+- Book: A crash-course in Bayesian inference consists of Chapters 2 and 7 of *Probabilistic Machine Learning: An Introduction*, available for free [here](https://github.com/probml/pml-book/releases/latest/download/pml1.pdf). (To fully understand Chapter 7 you may have to read parts of previous Chapters.)
 - Book: A great discussion of the marginal likelihood (and "Bayesian Occam's razor") can be found in Chapter 28 of MacKay's book, available [here](http://www.inference.org.uk/itprnn/book.pdf).
 - Video: An introduction to Bayesian inference in machine learning is given in [this lecture](https://www.youtube.com/watch?v=mgBrXnjF8R4) by Zoubin Ghahramani (the first 30 minutes or so).
 
