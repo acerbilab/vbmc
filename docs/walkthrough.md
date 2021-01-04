@@ -40,6 +40,7 @@ Another useful property of VBMC is that it can easily deal with *noisy* evaluati
 #### References:
 - Gelman A, Carlin JB, Stern HS, Dunson DB, Vehtari A, Rubin, DB (2013). Bayesian data analysis (Third edition). CRC press ([PDF](https://users.aalto.fi/~ave/BDA3.pdf)).
 - MacKay DJ (2003). Information theory, inference and learning algorithms. Cambridge university press ([PDF](http://www.inference.org.uk/itprnn/book.pdf)).
+- Murphy, KP (2021). Probabilistic Machine Learning: An introduction. MIT Press ([webpage](https://probml.github.io/pml-book/book1.html), [PDF](https://github.com/probml/pml-book/releases/latest/download/pml1.pdf)).
 
 ## 2. Gaussian processes
 
