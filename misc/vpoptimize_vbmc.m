@@ -30,7 +30,8 @@ if ~isfield(optimState,'entropy_alpha'); optimState.entropy_alpha = 0; end
 
 % Set up empty stats structs for optimization
 Ntheta = numel(get_vptheta(vp0_vec(1)));
-elbostats = eval_fullelcbo(Nslowopts*2,Ntheta);
+Ns = numel(gp.post);
+elbostats = eval_fullelcbo(Nslowopts*2,Ntheta,K,Ns);
 
 % For the moment no gradient available for variance
 gradient_available = (compute_var == 0);
@@ -217,6 +218,10 @@ H = elbostats.H(idx);
 varss = elbostats.varss(idx);
 varG = elbostats.varG(idx);
 varH = elbostats.varH(idx);
+I_sk = zeros(Ns,K);
+J_sjk = zeros(Ns,K,K);
+I_sk(:,:) = elbostats.I_sk(idx,:,:);
+J_sjk(:,:,:) = elbostats.J_sjk(idx,:,:,:);
 vp = vp0_fine(idx);
 vp = rescale_params(vp,elbostats.theta(idx,:));
 vp.temperature = optimState.temperature;
@@ -265,6 +270,8 @@ if vp.optimize_weights
             varH = elbostats.varH(1);
             pruned = pruned + 1;
             alreadychecked(idx) = [];
+            I_sk(:,idx) = [];
+            J_sjk(:,:,idx) = [];
         else
             alreadychecked(idx) = true;
         end
@@ -278,7 +285,8 @@ vp.stats.elogjoint_sd = sqrt(varG); % Error on expected log joint
 vp.stats.entropy = H;               % Entropy
 vp.stats.entropy_sd = sqrt(varH);   % Error on the entropy
 vp.stats.stable = false;            % Unstable until proven otherwise
-
+vp.stats.I_sk = I_sk;               % Expected log joint per component
+vp.stats.J_sjk = J_sjk;             % Covariance of expected log joint
 
 % L = vpbndloss(elbostats.theta(idx,:),vp,thetabnd,thetabnd.TolCon)
 % if L > 0
@@ -298,8 +306,10 @@ end
 function elbostats = eval_fullelcbo(idx,theta,vp,gp,elbostats,beta,options,entropy_alpha)
 %EVAL_FULLELCBO Evaluate full expected lower confidence bound.
 
-if nargin == 2
+if nargin == 4
     D = theta;
+    K = vp;
+    Ns = gp;
     elbostats.nelbo = Inf(1,idx);
     elbostats.G = NaN(1,idx);
     elbostats.H = NaN(1,idx);
@@ -309,6 +319,8 @@ if nargin == 2
     elbostats.varss = NaN(1,idx);
     elbostats.nelcbo = Inf(1,idx);
     elbostats.theta = NaN(idx,D);
+    elbostats.I_sk = NaN(idx,Ns,K);
+    elbostats.J_sjk = NaN(idx,Ns,K,K);    
 else
     
     % Number of samples per component for MC approximation of the entropy
@@ -322,7 +334,7 @@ else
     end
     
     theta = theta(:)';
-    [nelbo,~,G,H,varF,~,varss,varG,varH] = ...
+    [nelbo,~,G,H,varF,~,varss,varG,varH,I_sk,J_sjk] = ...
         negelcbo_vbmc(theta,0,vp,gp,NSentFineK,0,computevar_flag,options.AltMCEntropy,[],entropy_alpha);
     nelcbo = nelbo + beta*sqrt(varF);
 
@@ -335,6 +347,8 @@ else
     elbostats.varss(idx) = varss;
     elbostats.nelcbo(idx) = nelcbo;
     elbostats.theta(idx,1:numel(theta)) = theta;
+    elbostats.I_sk(idx,:,1:K) = I_sk;
+    elbostats.J_sjk(idx,:,1:K,1:K) = J_sjk;    
 end
 
 end

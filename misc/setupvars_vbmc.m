@@ -152,8 +152,11 @@ optimState.sn2hpd = Inf;
 % Does the starting cache contain function values?
 optimState.Cache.active = any(isfinite(optimState.Cache.y_orig));
 
-% When was the last warping action performed (number of training inputs)
+% When was the last warping action performed (number of iterations)
 optimState.LastWarping = -Inf;
+
+% When was the last warping action performed and not undone (number of iterations)
+optimState.LastSuccessfulWarping = -Inf;
 
 % Number of warpings performed
 optimState.WarpingCount = 0;

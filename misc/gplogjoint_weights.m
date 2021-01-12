@@ -1,4 +1,4 @@
-function [F,dF,varF,dvarF,varss] = gplogjoint_weights(vp,grad_flag,avg_flag,jacobian_flag,compute_var)
+function [F,dF,varF,dvarF,varss,I_sk,J_sjk] = gplogjoint_weights(vp,grad_flag,avg_flag,jacobian_flag,compute_var)
 %GPLOGJOINT_WEIGHTS Expected variational log joint probability via GP approximation
 
 % VP is a struct with the variational posterior
@@ -29,8 +29,8 @@ end
 
 K = vp.K;           % Number of components
 w(1,:) = vp.w;
-I_sk = vp.I_sk;
-J_sjk = vp.J_sjk;
+I_sk = vp.stats.I_sk;
+J_sjk = vp.stats.J_sjk;
 
 Ns = size(I_sk,1);            % Hyperparameter samples
 

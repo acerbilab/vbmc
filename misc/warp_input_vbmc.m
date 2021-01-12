@@ -1,70 +1,76 @@
-function [trinfo,optimState,warp_action] = warp_input_vbmc(vp,optimState,gp,options)
+function [trinfo,optimState,warp_action] = warp_input_vbmc(vp,optimState,gp,options,trinfo)
 %WARP_INPUT_VBMC Perform input warping of variables.
+
+if nargin < 5; trinfo = []; end
 
 GPsample_flag = false;
 
-trinfo = vp.trinfo;
-trinfo_old = trinfo;
+trinfo_old = vp.trinfo;
 D = vp.D;
 
-if ~isempty(trinfo.R_mat); R_mat_old = trinfo.R_mat; else; R_mat_old = eye(D); end
-if ~isempty(trinfo.scale); scale_old = trinfo.scale; else; scale_old = ones(1,D); end
+if isempty(trinfo)
 
-if GPsample_flag
-    % Sample from GP
-    Ns = 1e3*D;
-    X_old = gpsample_vbmc(vp,gp,Ns,0);
-elseif options.WarpNonlinear
-    X_old = vbmc_rnd(vp,2e4,0,0);
-end
+    trinfo = vp.trinfo;
 
-%% Compute nonlinear warping
-if options.WarpNonlinear    
-    X_rev = warpvars_vbmc(X_old,'inv',trinfo_old);
-    Nq = 1e3;
-    qq = linspace(0.5/Nq,1-0.5/Nq,Nq);
-    X_q = quantile(X_rev,qq);
-    trinfo = warp_reparam_vbmc(X_q,trinfo,optimState.N,100);
-end
+    if ~isempty(trinfo.R_mat); R_mat_old = trinfo.R_mat; else; R_mat_old = eye(D); end
+    if ~isempty(trinfo.scale); scale_old = trinfo.scale; else; scale_old = ones(1,D); end
 
-%% Compute rotation and scaling in transformed space
-if options.WarpRotoScaling
-    if options.WarpNonlinear
-        X_rev = warpvars_vbmc(X_rev,'d',trinfo);        
-        vp_Sigma = cov(X_rev);          % Compute covariance matrix
-    elseif GPsample_flag
-        % Reverse rotation and scaling
-        X_rev = bsxfun(@times,X_old,scale_old)*R_mat_old';
-        vp_Sigma = cov(X_rev);          % Compute covariance matrix
-    else
-        % Get covariance matrix analytically
-        [~,VV] = vbmc_moments(vp,0);
-        vp_Sigma = R_mat_old*(diag(scale_old)*VV*diag(scale_old))*R_mat_old';
+    if GPsample_flag
+        % Sample from GP
+        Ns = 1e3*D;
+        X_old = gpsample_vbmc(vp,gp,Ns,0);
+    elseif options.WarpNonlinear
+        X_old = vbmc_rnd(vp,2e4,0,0);
     end
 
-    % Remove low-correlation entries
-    if options.WarpRotoCorrThresh > 0
-        vp_corr = vp_Sigma ./ sqrt(bsxfun(@times,diag(vp_Sigma),diag(vp_Sigma)'));
-        mask_idx = abs(vp_corr) > options.WarpRotoCorrThresh;
-        vp_Sigma(~mask_idx) = 0;
+    %% Compute nonlinear warping
+    if options.WarpNonlinear    
+        X_rev = warpvars_vbmc(X_old,'inv',trinfo_old);
+        Nq = 1e3;
+        qq = linspace(0.5/Nq,1-0.5/Nq,Nq);
+        X_q = quantile(X_rev,qq);
+        trinfo = warp_reparam_vbmc(X_q,trinfo,optimState.N,100);
     end
 
-    % Regularization of covariance matrix towards diagonal
-    if isnumeric(options.WarpCovReg)
-        w_reg = options.WarpCovReg;
-    else
-        w_reg = options.WarpCovReg(optimState.N);
-    end
-    w_reg = max(0,min(1,w_reg));
-    vp_Sigma = (1-w_reg)*vp_Sigma + w_reg*diag(diag(vp_Sigma));
+    %% Compute rotation and scaling in transformed space
+    if options.WarpRotoScaling
+        if options.WarpNonlinear
+            X_rev = warpvars_vbmc(X_rev,'d',trinfo);        
+            vp_Sigma = cov(X_rev);          % Compute covariance matrix
+        elseif GPsample_flag
+            % Reverse rotation and scaling
+            X_rev = bsxfun(@times,X_old,scale_old)*R_mat_old';
+            vp_Sigma = cov(X_rev);          % Compute covariance matrix
+        else
+            % Get covariance matrix analytically
+            [~,VV] = vbmc_moments(vp,0);
+            vp_Sigma = R_mat_old*(diag(scale_old)*VV*diag(scale_old))*R_mat_old';
+        end
 
-    % Compute whitening transform (rotoscaling)
-    [U,S] = svd(vp_Sigma);
-    if det(U) < 0; U(:,1) = -U(:,1); end
-    %scale = fliplr(sqrt(diag(S+eps))');        
-    scale = sqrt(diag(S+eps))';        
-    trinfo.R_mat = U;
-    trinfo.scale = scale;
+        % Remove low-correlation entries
+        if options.WarpRotoCorrThresh > 0
+            vp_corr = vp_Sigma ./ sqrt(bsxfun(@times,diag(vp_Sigma),diag(vp_Sigma)'));
+            mask_idx = abs(vp_corr) > options.WarpRotoCorrThresh;
+            vp_Sigma(~mask_idx) = 0;
+        end
+
+        % Regularization of covariance matrix towards diagonal
+        if isnumeric(options.WarpCovReg)
+            w_reg = options.WarpCovReg;
+        else
+            w_reg = options.WarpCovReg(optimState.N);
+        end
+        w_reg = max(0,min(1,w_reg));
+        vp_Sigma = (1-w_reg)*vp_Sigma + w_reg*diag(diag(vp_Sigma));
+
+        % Compute whitening transform (rotoscaling)
+        [U,S] = svd(vp_Sigma);
+        if det(U) < 0; U(:,1) = -U(:,1); end
+        %scale = fliplr(sqrt(diag(S+eps))');        
+        scale = sqrt(diag(S+eps))';        
+        trinfo.R_mat = U;
+        trinfo.scale = scale;
+    end
 end
 
 optimState.trinfo = trinfo;
@@ -133,15 +139,13 @@ if ~isempty(optimState.SearchCache)
     optimState.SearchCache = warpfun(optimState.SearchCache);
 end
 
-% Increase warping counter
-optimState.WarpingCount = optimState.WarpingCount + 1;
-
 % Major change, fully recompute variational posterior and skip active sampling
 optimState.RecomputeVarPost = true;
 optimState.SkipActiveSampling = true;
 
-% Last warping iteration
-optimState.LastWarping = optimState.iter;
+optimState.WarpingCount = optimState.WarpingCount + 1;  % Increase warping counter
+optimState.LastWarping = optimState.iter;               % Last warping iteration
+optimState.LastSuccessfulWarping = optimState.iter;     % Unless it gets undone
 
 % Reset GP hyperparameters
 optimState.RunMean = [];

@@ -1,4 +1,4 @@
-function [F,dF,G,H,varF,dH,varGss,varG,varH] = negelcbo_vbmc(theta,beta,vp,gp,Ns,compute_grad,compute_var,altent_flag,thetabnd,entropy_alpha)
+function [F,dF,G,H,varF,dH,varGss,varG,varH,I_sk,J_sjk] = negelcbo_vbmc(theta,beta,vp,gp,Ns,compute_grad,compute_var,altent_flag,thetabnd,entropy_alpha)
 %NEGELCBO_VBMC Negative evidence lower confidence bound objective
 %
 % Note that THETA is a vector of *transformed* variational parameters:
@@ -14,6 +14,7 @@ if nargin < 9; thetabnd = []; end
 if nargin < 10 || isempty(entropy_alpha); entropy_alpha = 0; end
 if isempty(beta) || ~isfinite(beta); beta = 0; end
 if isempty(compute_var); compute_var = beta ~=0 || nargout > 4; end
+separate_K = nargout > 9; % Return expected log joint per component
 
 if compute_grad && beta ~= 0 && compute_var ~= 2
     error('negelcbo_vbmc:vargrad', ...
@@ -50,36 +51,64 @@ grad_flags = compute_grad*[vp.optimize_mu,vp.optimize_sigma,vp.optimize_lambda,v
 % Only weight optimization?
 onlyweights_flag = vp.optimize_weights && ~vp.optimize_mu && ~vp.optimize_sigma && ~vp.optimize_lambda;
 
-if onlyweights_flag
-    if compute_var
-        if compute_grad
-            [G,dG,varG,dvarG] = gplogjoint_weights(vp,1,avg_flag,jacobian_flag,compute_var);
-        else
-            [G,~,varG] = gplogjoint_weights(vp,0,avg_flag,jacobian_flag,compute_var);        
-        end
-    else
-        [G,dG] = gplogjoint_weights(vp,compute_grad,avg_flag,jacobian_flag,0);                
+if separate_K
+    if compute_grad
+        error('Computing the gradient of variational parameters and requesting per-component results at the same time.'); 
     end
-    varGss = NaN;
-else
-    if compute_var
-        if compute_grad
-            [G,dG,varG,dvarG,varGss] = gplogjoint(vp,gp,grad_flags,avg_flag,jacobian_flag,compute_var);
-        elseif numel(gp) > 1
-            [G,varG] = gplogjoint_multi(vp,gp,avg_flag,compute_var);
-            varGss = [];
+    
+    if onlyweights_flag
+        if compute_var
+            [G,~,varG,~,~,I_sk,J_sjk] = gplogjoint_weights(vp,0,avg_flag,jacobian_flag,compute_var);        
         else
-            [G,~,varG,~,varGss] = gplogjoint(vp,gp,grad_flags,avg_flag,jacobian_flag,compute_var);        
+            [G,dG,~,~,~,I_sk] = gplogjoint_weights(vp,compute_grad,avg_flag,jacobian_flag,0);
+            J_sjk = [];
         end
+        varGss = NaN;
     else
-        [G,dG] = gplogjoint(vp,gp,grad_flags,avg_flag,jacobian_flag,0);
-        varGss = 0; varG = 0;
+        if compute_var
+            if numel(gp) > 1
+                error('Multiple GPs not supported anymore.');
+                % [G,varG] = gplogjoint_multi(vp,gp,avg_flag,compute_var);
+                % varGss = [];
+            else
+                [G,~,varG,~,varGss,I_sk,J_sjk] = gplogjoint(vp,gp,grad_flags,avg_flag,jacobian_flag,compute_var);        
+            end
+        else
+            [G,dG,~,~,~,I_sk] = gplogjoint(vp,gp,grad_flags,avg_flag,jacobian_flag,0);
+            varGss = 0; varG = 0; J_sjk = [];
+        end
+    end
+else
+    if onlyweights_flag
+        if compute_var
+            if compute_grad
+                [G,dG,varG,dvarG] = gplogjoint_weights(vp,1,avg_flag,jacobian_flag,compute_var);
+            else
+                [G,~,varG] = gplogjoint_weights(vp,0,avg_flag,jacobian_flag,compute_var);        
+            end
+        else
+            [G,dG] = gplogjoint_weights(vp,compute_grad,avg_flag,jacobian_flag,0);                
+        end
+        varGss = NaN;
+    else
+        if compute_var
+            if compute_grad
+                [G,dG,varG,dvarG,varGss] = gplogjoint(vp,gp,grad_flags,avg_flag,jacobian_flag,compute_var);
+            elseif numel(gp) > 1
+                [G,varG] = gplogjoint_multi(vp,gp,avg_flag,compute_var);
+                varGss = [];
+            else
+                [G,~,varG,~,varGss] = gplogjoint(vp,gp,grad_flags,avg_flag,jacobian_flag,compute_var);        
+            end
+        else
+            [G,dG] = gplogjoint(vp,gp,grad_flags,avg_flag,jacobian_flag,0);
+            varGss = 0; varG = 0;
+        end
     end
 end
 
 % Entropy term
 if Ns > 0   % Use Monte Carlo approximation
-    tic
     if altent_flag  % Alternative entropy approximation via upper bound
         [H,dH] = entmcub_vbmc(vp,Ns,grad_flags,jacobian_flag);        
     else

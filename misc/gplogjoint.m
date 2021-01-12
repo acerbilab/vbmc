@@ -1,4 +1,4 @@
-function [F,dF,varF,dvarF,varss] = gplogjoint(vp,gp,grad_flags,avg_flag,jacobian_flag,compute_var,separate_K)
+function [F,dF,varF,dvarF,varss,I_sk,J_sjk] = gplogjoint(vp,gp,grad_flags,avg_flag,jacobian_flag,compute_var,separate_K)
 %GPLOGJOINT Expected variational log joint probability via GP approximation
 
 % VP is a struct with the variational posterior
@@ -11,7 +11,7 @@ if nargin < 3; grad_flags = []; end
 if nargin < 4 || isempty(avg_flag); avg_flag = true; end
 if nargin < 5 || isempty(jacobian_flag); jacobian_flag = true; end
 if nargin < 6; compute_var = []; end
-if nargin < 7 || isempty(separate_K); separate_K = false; end
+if nargin < 7 || isempty(separate_K); separate_K = nargout > 5; end
 if isempty(compute_var); compute_var = nargout > 2; end
 
 % Check if gradient computation is required
@@ -81,7 +81,7 @@ end
 % Store contribution to the log joint separately for each component?
 if separate_K
     I_sk = zeros(Ns,K);
-    if compute_var; J_sjk = zeros(Ns,K,K); end    
+    if compute_var; J_sjk = zeros(Ns,K,K); else; J_sjk = []; end    
 end
 
 % varF_diag = zeros(1,Nhyp);
@@ -417,7 +417,7 @@ for s = 1:Ns
                 % Off-diagonal elements are symmetric (count twice)
                 if j == k
                     varF(s) = varF(s) + w(k)^2*max(eps,J_jk);                                        
-                    if separate_K; J_sjk(k,k) = J_jk; end            
+                    if separate_K; J_sjk(s,k,k) = J_jk; end            
                 else
                     varF(s) = varF(s) + 2*w(j)*w(k)*J_jk;
                     if separate_K; J_sjk(s,j,k) = J_jk; J_sjk(s,k,j) = J_jk; end            
@@ -499,12 +499,6 @@ if Ns > 1 && avg_flag
     end
     F = Fbar;
     if any(grad_flags); dF = sum(dF,2)/Ns; end
-end
-
-% Return log joint contributions separately if requested
-if separate_K
-    F = I_sk;
-    if compute_var; varF = J_sjk; end
 end
 
 end

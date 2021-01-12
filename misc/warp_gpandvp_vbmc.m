@@ -11,8 +11,6 @@ else
     T = 1;
 end
 
-
-
 %% Update GP hyperparameters
 
 warpfun = @(x) warpvars_vbmc(warpvars_vbmc(x,'i',trinfo_old),'d',trinfo);

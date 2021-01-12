@@ -82,7 +82,7 @@ if iter >= TolStableIters && ...
             if isempty(action); action = 'entropy switch'; else; action = [action ', entropy switch']; end 
         else
             % Allow termination only if distant from last warping
-            if (iter - optimState.LastWarping) >= TolStableIters/3            
+            if (iter - optimState.LastSuccessfulWarping) >= TolStableIters/3          
                 isFinished_flag = true;
                 exitflag = 1;
                 msg = 'Inference terminated: variational solution stable for OPTIONS.TolStableCount fcn evaluations.';

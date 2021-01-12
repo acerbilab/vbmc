@@ -98,6 +98,7 @@ if stopWarmup
         
         % Start warping
         optimState.LastWarping = optimState.iter;
+        optimState.LastSuccessfulWarping = optimState.iter;
         optimState.LastNonlinearWarping = optimState.iter;
     else
         % This may be a false alarm; prune and continue

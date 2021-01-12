@@ -1,6 +1,6 @@
 function [vp,elbo,elbo_sd,exitflag,output,optimState,stats,vp_train] = ...
     vbmc(fun,x0,LB,UB,PLB,PUB,options,varargin)
-%VBMC Posterior and model inference via Variational Bayesian Monte Carlo (v1.0)
+%VBMC Posterior and model inference via Variational Bayesian Monte Carlo (v1.01)
 %   VBMC computes a variational approximation of the full posterior and a 
 %   lower bound on the normalization constant (marginal likelhood or model
 %   evidence) for a provided unnormalized log posterior. As of v1.0, VBMC
@@ -116,7 +116,8 @@ function [vp,elbo,elbo_sd,exitflag,output,optimState,stats,vp_train] = ...
 %   1) Acerbi, L. (2018). "Variational Bayesian Monte Carlo". In Advances 
 %      in Neural Information Processing Systems 31 (NeurIPS 2018), pp. 8213-8223.
 %   2) Acerbi, L. (2020). "Variational Bayesian Monte Carlo with Noisy
-%      Likelihoods". arXiv preprint arXiv:2006.08655.
+%      Likelihoods". In Advances in Neural Information Processing Systems 33 
+%      (NeurIPS 2020).
 %
 %   Additional references:
 %
@@ -126,7 +127,7 @@ function [vp,elbo,elbo_sd,exitflag,output,optimState,stats,vp_train] = ...
 %      Inference, Montréal, Canada.
 %   4) van Opheusden, B.*, Acerbi, L.* & Ma, W. J. (2020). "Unbiased and 
 %      Efficient Log-Likelihood Estimation with Inverse Binomial Sampling". 
-%      arXiv preprint arXiv:2001.03985. (* equal contribution)
+%      PLoS Computational Biology 16(12): e1008483. (* equal contribution)
 %
 %   See also VBMC_EXAMPLES, VBMC_KLDIV, VBMC_MODE, VBMC_MOMENTS, VBMC_MTV,
 %   VBMC_PDF, VBMC_RND, VBMC_DIAGNOSTICS, @.
@@ -136,11 +137,11 @@ function [vp,elbo,elbo_sd,exitflag,output,optimState,stats,vp_train] = ...
 % To be used under the terms of the GNU General Public License 
 % (http://www.gnu.org/copyleft/gpl.html).
 %
-%   Author (copyright): Luigi Acerbi, 2018-2020
-%   e-mail: luigi.acerbi@{gmail.com,nyu.edu,unige.ch}
+%   Author (copyright): Luigi Acerbi, 2018-2021
+%   e-mail: luigi.acerbi@{helsinki.fi,gmail.com}
 %   URL: http://luigiacerbi.com
-%   Version: 1.00
-%   Release date: Jun 16, 2020
+%   Version: 1.01
+%   Release date: Jan 12, 2021
 %   Code repository: https://github.com/lacerbi/vbmc
 %--------------------------------------------------------------------------
 
@@ -340,6 +341,8 @@ defopts.WarpRotoScaling    = 'yes               % Rotate and scale input';
 defopts.WarpCovReg         = '0                 % Regularization weight towards diagonal covariance matrix for N training inputs';
 defopts.WarpRotoCorrThresh = '0.05              % Threshold on correlation matrix for roto-scaling';
 defopts.WarpMinK           = '5                 % Min number of variational components to perform warp';
+defopts.WarpUndoCheck      = 'yes               % Immediately undo warp if not improving ELBO';
+defopts.WarpTolImprovement = '0.1               % Improvement of ELBO required to keep a warp propsal';
 
 %% Advanced options for unsupported/untested features (do *not* modify)
 defopts.WarpNonlinear      = 'off               % Nonlinear input warping';
@@ -534,6 +537,12 @@ while ~isFinished_flag
         [vp_tmp,~,~,idx_best] = ...
             best_vbmc(stats,iter-1,options.BestSafeSD,options.BestFracBack,options.RankCriterion,0);
         
+        % Store variables in case warp needs to be undone
+        optimState_old = optimState;
+        gp_old = gp;
+        hypstruct_old = hypstruct;
+        elbo_old = elbo;
+        
         % Compute input warping
         [trinfo_warp,optimState,warp_action] = warp_input_vbmc(vp_tmp,optimState,stats.gp(idx_best),options);
         
@@ -543,7 +552,56 @@ while ~isFinished_flag
         if isempty(action); action = warp_action; else; action = [action ', ' warp_action]; end
         
         timer.warping = timer.warping + toc(t);
-    end    
+                
+        if options.WarpUndoCheck
+            % Train GP
+            t = tic;
+            [gp,hypstruct,~,optimState] = ...
+                gptrain_vbmc(hypstruct,optimState,stats,options);    
+            timer.gpTrain = timer.gpTrain + toc(t);
+
+            % Optimize variational parameters
+            t = tic;
+            if ~vp.optimize_mu  % Variational components fixed to training inputs
+                vp.mu = gp.X';
+                Knew = size(vp.mu,2);
+            else
+                % Update number of variational mixture components
+                Knew = vp.K;
+            end
+
+            % Decide number of fast/slow optimizations
+            Nfastopts = ceil(evaloption_vbmc(options.NSelbo,Knew));
+            Nslowopts = options.ElboStarts; % Full optimizations
+
+            % Run optimization of variational parameters
+            vp = vpoptimize_vbmc(Nfastopts,Nslowopts,vp,gp,Knew,optimState,options,prnt);
+            optimState.vpK = vp.K;
+            optimState.H = vp.stats.entropy;   % Save current entropy
+
+            % Compute ELBO from real variational posterior (might differ from training posterior)
+            vp_real = vptrain2real(vp,0,options);
+            elbo = vp_real.stats.elbo;
+            
+            timer.variationalFit = timer.variationalFit + toc(t);
+
+            % Keep warping only if it substantially improves ELBO
+            if elbo < elbo_old + options.WarpTolImprovement
+                % Undo input warping
+                vp = vp_old;
+                gp = gp_old;
+                optimState = optimState_old;
+                hypstruct = hypstruct_old;
+                
+                % Still keep track of failed warping (failed warp counts twice)
+                optimState.WarpingCount = optimState.WarpingCount + 2;
+                optimState.LastWarping = optimState.iter;
+                
+                if isempty(action); action = 'undo'; else; action = [action ', undo']; end
+            end            
+            
+        end
+    end
     
     
     %% Actively sample new points into the training set
@@ -583,7 +641,7 @@ while ~isFinished_flag
     end
     optimState.N = optimState.Xn;  % Number of training inputs
     optimState.Neff = sum(optimState.nevals(optimState.X_flag));
-                    
+    
     %% Train GP
     t = tic;
     [gp,hypstruct,Ns_gp,optimState] = ...
@@ -594,9 +652,6 @@ while ~isFinished_flag
     if Ns_gp == options.StableGPSamples && optimState.StopSampling == 0
         optimState.StopSampling = optimState.N;
     end
-        
-    % Estimate of GP noise around the top high posterior density region
-    optimState.sn2hpd = estimate_GPnoise(gp);
     
 %     if ~exist('wsabi_hyp','var'); wsabi_hyp = zeros(1,D+1); end    
 %     priorMu = (optimState.PLB + optimState.PUB)/2;
@@ -767,8 +822,8 @@ while ~isFinished_flag
         if (ydelta > optimState.OutwarpDelta*options.OutwarpThreshTol) && (optimState.R < 1)
             optimState.OutwarpDelta = optimState.OutwarpDelta*options.OutwarpThreshMult;
         end
-    end    
-    
+    end
+        
     if options.AcqHedge         % Update hedge values        
         optimState.hedge = acqhedge_vbmc('upd',optimState.hedge,stats,options);        
     end    

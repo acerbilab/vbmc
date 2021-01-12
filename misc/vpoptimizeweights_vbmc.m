@@ -39,7 +39,7 @@ elbostats = eval_fullelcbo(1,Ntheta);
 vbtrain_options = optimoptions('fminunc','GradObj','on','Display','off');
 
 % Compute separate contributions to the log joint
-[vp.I_sk,~,vp.J_sjk] = gplogjoint(vp,gp,0,0,0,1,1);
+[~,~,~,~,~,vp.stats.I_sk,vp.stats.J_sjk] = gplogjoint(vp,gp,0,0,0,1,1);
 
 vp0 = rescale_params(vp);
 theta0 = log(vp0.w(:));
