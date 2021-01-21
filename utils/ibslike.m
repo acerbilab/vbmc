@@ -72,11 +72,11 @@ function [nlogL,nlogLvar,exitflag,output] = ibslike(fun,params,respMat,designMat
 % To be used under the terms of the MIT License 
 % (https://opensource.org/licenses/MIT).
 %
-%   Authors (copyright): Luigi Acerbi and Bas van Opheusden, 2020
+%   Authors (copyright): Luigi Acerbi and Bas van Opheusden, 2020-2021
 %   e-mail: luigi.acerbi@helsinki.fi, svo@princeton.edu
 %   URL: http://luigiacerbi.com
-%   Version: 0.95
-%   Release date: Jan 5, 2021
+%   Version: 0.96
+%   Release date: Jan 21, 2021
 %   Code repository: https://github.com/lacerbi/ibs
 %--------------------------------------------------------------------------
 
@@ -96,6 +96,7 @@ defopts.MaxIter         = 1e5;          % Maximum number of iterations (per tria
 defopts.ReturnPositive  = false;        % If true, the first returned output is the *positive* log-likelihood
 defopts.ReturnStd       = false;        % If true, the second returned output is the standard deviation of the estimate
 defopts.MaxTime         = Inf;          % Maximum time for a IBS call (in seconds)
+defopts.TrialWeights    = [];           % Vector of per-trial weights to yield a weighted sum of log-likelihood
 
 %% If called with no arguments or with 'defaults', return default options
 if nargout <= 1 && (nargin == 0 || (nargin == 1 && ischar(fun) && strcmpi(fun,'defaults')))
@@ -158,6 +159,14 @@ if ~isnumeric(options.MaxTime) || ~isscalar(options.MaxTime) || ...
     error('ibslike:MaxTime','OPTIONS.MaxTime should be a positive scalar (or Inf).');
 end
 
+% WEIGHT vector should be a scalar or same as number of trials
+weights = options.TrialWeights(:);
+if isempty(weights); weights = 1; end
+
+if numel(weights) ~= 1 && numel(weights) ~= Ntrials
+    error('ibslike:NumWeights','OPTIONS.TrialWeights should be empty, a scalar or an array of weights with as many elements as the number of trials.');
+end
+
 Trials = (1:Ntrials)';
 funcCount = 0;
 
@@ -213,10 +222,10 @@ if nargout > 2
 end
 
 % Return negative log-likelihood and variance summed over trials
-nlogL = sum(nlogL);
+nlogL = sum(nlogL.*weights);
 if options.ReturnPositive; nlogL = -nlogL; end
 if nargout > 1
-    nlogLvar = sum(nlogLvar);
+    nlogLvar = sum(nlogLvar.*(weights.^2));
     if options.ReturnStd    % Return standard deviation instead of variance
         nlogLvar = sqrt(nlogLvar);
     end
