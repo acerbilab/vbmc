@@ -1,6 +1,6 @@
 function [vp,elbo,elbo_sd,exitflag,output,optimState,stats,vp_train] = ...
     vbmc(fun,x0,LB,UB,PLB,PUB,options,varargin)
-%VBMC Posterior and model inference via Variational Bayesian Monte Carlo (v1.01)
+%VBMC Posterior and model inference via Variational Bayesian Monte Carlo (v1.0.2)
 %   VBMC computes a variational approximation of the full posterior and a 
 %   lower bound on the normalization constant (marginal likelhood or model
 %   evidence) for a provided unnormalized log posterior. As of v1.0, VBMC
@@ -140,8 +140,8 @@ function [vp,elbo,elbo_sd,exitflag,output,optimState,stats,vp_train] = ...
 %   Author (copyright): Luigi Acerbi, 2018-2021
 %   e-mail: luigi.acerbi@{helsinki.fi,gmail.com}
 %   URL: http://luigiacerbi.com
-%   Version: 1.01
-%   Release date: Jan 12, 2021
+%   Version: 1.0.2
+%   Release date: Feb 2, 2021
 %   Code repository: https://github.com/lacerbi/vbmc
 %--------------------------------------------------------------------------
 
@@ -149,6 +149,7 @@ function [vp,elbo,elbo_sd,exitflag,output,optimState,stats,vp_train] = ...
 %% Start timer
 
 t0 = tic;
+vbmc_version = '1.0.2';
 
 %% Basic default options
 defopts.Display                 = 'iter         % Level of display ("iter", "notify", "final", or "off")';
@@ -173,6 +174,12 @@ end
 %% If called with one argument which is 'test', run test
 if nargout <= 1 && nargin == 1 && ischar(fun) && strcmpi(fun,'test')
     vp = runtest();
+    return;
+end
+
+%% If called with one argument which is 'version', return version
+if nargout <= 1 && nargin == 1 && ischar(fun) && strcmpi(fun,'version')
+    vp = vbmc_version;
     return;
 end
 
@@ -342,7 +349,10 @@ defopts.WarpCovReg         = '0                 % Regularization weight towards 
 defopts.WarpRotoCorrThresh = '0.05              % Threshold on correlation matrix for roto-scaling';
 defopts.WarpMinK           = '5                 % Min number of variational components to perform warp';
 defopts.WarpUndoCheck      = 'yes               % Immediately undo warp if not improving ELBO';
-defopts.WarpTolImprovement = '0.1               % Improvement of ELBO required to keep a warp propsal';
+defopts.WarpTolImprovement = '0.1               % Improvement of ELBO required to keep a warp proposal';
+defopts.WarpTolSDMultiplier = '2                % Multiplier tolerance of ELBO SD after warp proposal';
+defopts.WarpTolSDBase      = '1                 % Base tolerance on ELBO SD after warp proposal';
+
 
 %% Advanced options for unsupported/untested features (do *not* modify)
 defopts.WarpNonlinear      = 'off               % Nonlinear input warping';
@@ -542,6 +552,7 @@ while ~isFinished_flag
         gp_old = gp;
         hypstruct_old = hypstruct;
         elbo_old = elbo;
+        elbo_sd_old = elbo_sd;
         
         % Compute input warping
         [trinfo_warp,optimState,warp_action] = warp_input_vbmc(vp_tmp,optimState,stats.gp(idx_best),options);
@@ -582,11 +593,18 @@ while ~isFinished_flag
             % Compute ELBO from real variational posterior (might differ from training posterior)
             vp_real = vptrain2real(vp,0,options);
             elbo = vp_real.stats.elbo;
+            elbo_sd = vp_real.stats.elbo_sd;
             
             timer.variationalFit = timer.variationalFit + toc(t);
 
+            % [elbo elbo_old]
+            % [elbo_sd elbo_sd_old]
+                
             % Keep warping only if it substantially improves ELBO
-            if elbo < elbo_old + options.WarpTolImprovement
+            % and uncertainty does not blow up too much
+            if (elbo < (elbo_old + options.WarpTolImprovement)) || ...
+                (elbo_sd > (elbo_sd_old*options.WarpTolSDMultiplier + options.WarpTolSDBase))            
+            
                 % Undo input warping
                 vp = vp_old;
                 gp = gp_old;

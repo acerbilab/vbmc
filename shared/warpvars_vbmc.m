@@ -894,13 +894,19 @@ else
         if isfinite(lb(i)) && isfinite(ub(i)) && lb(i) < ub(i); trinfo.type(i) = 3; end
     end
     
-    % Centering (used only for unbounded variables)
+    % Centering (at the end of the transform)
     trinfo.mu = zeros(1,nvars);
     trinfo.delta = ones(1,nvars);
+    
+    % Get transformed PLB and PUB
+    plb = warpvars_vbmc(plb,'d',trinfo);
+    pub = warpvars_vbmc(pub,'d',trinfo);
+    
+    % Center in transformed space
     for i = 1:nvars
         if isfinite(plb(i)) && isfinite(pub(i))
             trinfo.mu(i) = 0.5*(plb(i)+pub(i));
-            trinfo.delta(i) = pub(i)-plb(i);
+            trinfo.delta(i) = (pub(i)-plb(i));
         end
     end
         

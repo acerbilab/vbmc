@@ -73,6 +73,26 @@ if isempty(trinfo)
     end
 end
 
+% Update shift and scaling and plausible bounds
+trinfo.mu = zeros(1,D);
+trinfo.delta = ones(1,D);
+Nrnd = 1e5;    
+xx = bsxfun(@plus,bsxfun(@times,rand(Nrnd,D),optimState.PUB_orig-optimState.PLB_orig),optimState.PLB_orig);
+yy = warpvars_vbmc(xx,'d',trinfo);
+
+% Quantile-based estimate of plausible bounds
+plb = quantile(yy,0.05);
+pub = quantile(yy,0.95);
+delta_temp = pub-plb;
+plb = plb - delta_temp/9;
+pub = pub + delta_temp/9;
+
+% Rescale to normalized plausible range
+trinfo.mu = 0.5*(plb+pub);
+trinfo.delta = (pub-plb);
+optimState.PLB = -0.5*ones(1,D);
+optimState.PUB = 0.5*ones(1,D);
+
 optimState.trinfo = trinfo;
 
 %% Apply warping
@@ -94,19 +114,9 @@ y = y_orig + dy/T;
 optimState.X(idx_n,:) = X;
 optimState.y(idx_n) = y;
 
-% Update plausible bounds
+% Update plausible bounds (no need, done above)
 warpfun = @(x) warpvars_vbmc(x,'d',trinfo);
 if 0
-    xx = warpfun(X_old);
-    optimState.PLB = quantile(xx,0.05);
-    optimState.PUB = quantile(xx,0.95);
-elseif 0
-    mu = 0.5*(optimState.PLB_orig + optimState.PUB_orig);
-    sigma = 0.5*(optimState.PUB_orig - optimState.PLB_orig)/sqrt(D);    
-    [~,~,pw(:,:)] = unscent_warp(warpfun,mu,sigma);
-    optimState.PLB = min(pw);
-    optimState.PUB = max(pw);
-else
     Nrnd = 1e3;    
     xx = bsxfun(@plus,bsxfun(@times,rand(Nrnd,D),optimState.PUB_orig-optimState.PLB_orig),optimState.PLB_orig);
     yy = warpfun(xx);
