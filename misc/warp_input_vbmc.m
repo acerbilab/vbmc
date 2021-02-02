@@ -45,6 +45,7 @@ if isempty(trinfo)
             % Get covariance matrix analytically
             [~,VV] = vbmc_moments(vp,0);
             vp_Sigma = R_mat_old*(diag(scale_old)*VV*diag(scale_old))*R_mat_old';
+            vp_Sigma = diag(trinfo.delta)*vp_Sigma*diag(trinfo.delta);
         end
 
         % Remove low-correlation entries
@@ -88,10 +89,13 @@ plb = plb - delta_temp/9;
 pub = pub + delta_temp/9;
 
 % Rescale to normalized plausible range
-trinfo.mu = 0.5*(plb+pub);
-trinfo.delta = (pub-plb);
-optimState.PLB = -0.5*ones(1,D);
-optimState.PUB = 0.5*ones(1,D);
+% trinfo.mu = 0.5*(plb+pub);
+% trinfo.delta = (pub-plb);
+%optimState.PLB = -0.5*ones(1,D);
+%optimState.PUB = 0.5*ones(1,D);
+
+optimState.PLB = plb;
+optimState.PUB = pub;
 
 optimState.trinfo = trinfo;
 

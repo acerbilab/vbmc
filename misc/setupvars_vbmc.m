@@ -31,6 +31,7 @@ optimState.LBeps_orig = LB + (UB - LB)*options.TolBoundX;
 optimState.UBeps_orig = UB - (UB - LB)*options.TolBoundX;
 
 % Transform variables
+%LB = -5*ones(size(LB)); UB = 5*ones(size(UB)); PLB = [-0.1,-1]; PUB = [0.1,1];
 trinfo = warpvars_vbmc(nvars,LB,UB,PLB,PUB);
 switch lower(options.BoundedTransform)
     case 'logit'

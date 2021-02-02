@@ -596,9 +596,13 @@ while ~isFinished_flag
             elbo_sd = vp_real.stats.elbo_sd;
             
             timer.variationalFit = timer.variationalFit + toc(t);
-
-            % [elbo elbo_old]
-            % [elbo_sd elbo_sd_old]
+            
+            % Compute symmetrized KL-divergence between old and new posteriors
+            %Nkl = 1e5;
+            %sKL = max(0,0.5*sum(vbmc_kldiv(vp,vp_old,Nkl,options.KLgauss)))
+            
+            %[elbo elbo_old]
+            %[elbo_sd elbo_sd_old]
                 
             % Keep warping only if it substantially improves ELBO
             % and uncertainty does not blow up too much
