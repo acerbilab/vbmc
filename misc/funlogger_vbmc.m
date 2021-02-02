@@ -136,7 +136,10 @@ switch lower(state)
             
         catch fun_error
             warning(['funlogger_vbmc:FuncError',...
-                'Error in executing the logged function ''' func2str(fun) ''' with input: ' mat2str(x)]);
+                'Error in executing the logged function ''' func2str(fun) ''' with input: ' mat2str(x)]);            
+            fprintf('Error identifier: %s\nMessage: %s\n',fun_error.identifier,fun_error.message);
+            fprintf('File: %s\n',fun_error.stack(1).file);
+            fprintf('Function: %s, line %d.\n',fun_error.stack(1).name,fun_error.stack(1).line);            
             rethrow(fun_error);
         end
         
