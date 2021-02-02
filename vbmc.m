@@ -172,8 +172,10 @@ if nargout <= 1 && (nargin == 0 || (nargin == 1 && ischar(fun) && strcmpi(fun,'d
 end
 
 %% If called with one argument which is 'test', run test
-if nargout <= 1 && nargin == 1 && ischar(fun) && strcmpi(fun,'test')
-    vp = runtest();
+if nargout <= 1 && (nargin == 1 || nargin == 2) && ischar(fun) && strcmpi(fun,'test')
+    % Can run a test with a specific OPTIONS struct (otherwise use defaults)
+    if nargin == 2; options = x0; else; options = []; end
+    vp = runtest(options);
     return;
 end
 
