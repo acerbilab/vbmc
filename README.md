@@ -1,4 +1,4 @@
-# Variational Bayesian Monte Carlo (VBMC) - v1.0.1
+# Variational Bayesian Monte Carlo (VBMC) - v1.0.2
 
 **News:** 
 - **VBMC at NeurIPS (Dec/10/2020)** The new VBMC paper will be presented at *NeurIPS* 2020. See more information about the paper and a short video presentation [here](https://nips.cc/virtual/2020/public/poster_5d40954183d62a82257835477ccad3d2.html).
@@ -118,13 +118,13 @@ In the figure below, we show the difference in performance between the original 
 
 The VBMC toolbox is under active development. The toolbox has been extensively tested in several benchmarks and published papers, but as with any approximate inference technique you need to double-check your results. See the FAQ for more information on [diagnostics](https://github.com/lacerbi/vbmc/wiki#troubleshooting).
 
-If you have trouble doing something with VBMC, spot bugs or strange behavior, or you simply have some questions, please contact me at <luigi.acerbi@gmail.com>, putting 'VBMC' in the subject of the email.
+If you have trouble doing something with VBMC, spot bugs or strange behavior, or you simply have some questions, please contact me at <luigi.acerbi@helsinki.fi>, putting 'VBMC' in the subject of the email.
 
 ## VBMC for other programming languages
 
-VBMC is currently available only for MATLAB. A Python version is being planned, ideally before the [great filter](https://en.wikipedia.org/wiki/Great_Filter).
+VBMC is currently available only for MATLAB. We started working on a Python version in early 2021, but the whole port is going to take a while.
 
-If you are interested in porting VBMC to Python or another language (R, [Julia](https://julialang.org/)), please get in touch at <luigi.acerbi@gmail.com> (putting  'VBMC' in the subject of the email); I'd be willing to help.
+If you are interested in helping porting VBMC to Python or another language (R, [Julia](https://julialang.org/)), please get in touch.
 However, before contacting me for this reason, please have a good look at the codebase here on GitHub, and at the papers [[1,2](#references)]. VBMC is a fairly complex piece of software, so be aware that porting it will require considerable effort and programming/computing skills.
 
 ## References
@@ -140,7 +140,7 @@ Besides formal citations, you can demonstrate your appreciation for VBMC in the 
 
 - *Star* the VBMC repository on GitHub;
 - [Follow me on Twitter](https://twitter.com/AcerbiLuigi) for updates about VBMC and other projects I am involved with;
-- Tell me about your model-fitting problem and your experience with VBMC (positive or negative) at <luigi.acerbi@gmail.com> (putting  'VBMC' in the subject of the email).
+- Tell me about your model-fitting problem and your experience with VBMC (positive or negative) at <luigi.acerbi@helsinki.fi> (putting  'VBMC' in the subject of the email).
 
 You may also want to check out [Bayesian Adaptive Direct Search](https://github.com/lacerbi/bads) (BADS), our method for fast Bayesian optimization.
 
