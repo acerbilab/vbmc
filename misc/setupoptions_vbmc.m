@@ -1,5 +1,7 @@
-function [options,updated] = setupoptions_vbmc(nvars,defopts,options)
+function [options,updated] = setupoptions_vbmc(nvars,defopts,options,skipextra_flag)
 %SETUPOPTIONS_VBMC Initialize OPTIONS struct for VBMC.
+
+if nargin < 4 || isempty(skipextra_flag); skipextra_flag = false; end
 
 D = nvars;  % Both D and NVARS are accepted as number of dimensions
 
@@ -62,6 +64,7 @@ evalfields = {'MaxFunEvals','MaxIter','FunEvalStart','FunEvalsPerIter','SGDStepS
 
 % Evaluate string options
 for f = evalfields
+    if ~isfield(options,f{:}); continue; end    
     if ischar(options.(f{:}))
         try
             options.(f{:}) = eval(options.(f{:}));
@@ -79,11 +82,16 @@ end
 % Make cell arrays
 cellfields = {'SearchAcqFcn'};
 for f = cellfields
+    if ~isfield(options,f{:}); continue; end
     if ischar(options.(f{:})) || isa(options.(f{:}), 'function_handle')
         options.(f{:}) = {options.(f{:})};
     end
 end
 
+
+%% Extra OPTIONS checks (only for full VBMC)
+
+if skipextra_flag; return; end
 
 % Check if MATLAB's Optimization Toolbox (TM) is available
 if isempty(options.OptimToolbox)

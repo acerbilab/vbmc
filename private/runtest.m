@@ -66,6 +66,18 @@ PLB = -6; PUB = -0.05;
 lnZ = -nvars*log(2); mubar = -2/sqrt(2*pi)*(1:nvars);
 [exitflag(id),err(id,:)] = testblock(@noisefun,x0,LB,UB,PLB,PUB,lnZ,mubar,options,1);
 
+id = 6;
+nvars = 1;
+txt{id} = [num2str(id) '. Test with uniform distribution (D = ' num2str(nvars) ', constrained)'];
+fprintf('%s.\n', txt{id});
+x0 = 0.5*ones(1,nvars);                   % Initial point
+LB = zeros(1,nvars); UB = ones(1,nvars);
+PLB = 0.05; PUB = 0.95;
+lnZ = 0; mubar = 0.5*ones(1,nvars);
+fun = @(x) 0;
+[exitflag(id),err(id,:)] = testblock(fun,x0,LB,UB,PLB,PUB,lnZ,mubar,options,0);
+
+
 % fun = @(x) sum(-abs(x)./(1:numel(x))) - sum(log(1:numel(x))) - numel(x)*log(2);
 
 failed = 0;
@@ -79,7 +91,8 @@ for i = 1:numel(txt)
         failed = failed + 1;
     end 
 end
-fprintf('\nTotal runtime: %.1f s.\tBallpark runtime on a reference computer: %.1f s.\n(Reference computer specs: %s.)\n',toc(t),RunTime,specs);
+vbmc_version = vbmc('version');
+fprintf('\nVBMC version: %s.\nTotal runtime: %.1f s.\tBallpark runtime on a reference computer: %.1f s.\n(Reference computer specs: %s.)\n',vbmc_version,toc(t),RunTime,specs);
 fprintf('===========================================================================\n');
 fprintf('\n');
 
@@ -123,6 +136,12 @@ function [y,s] = noisefun(x)
     s = 1;
 end
 
+function [y,s] = noiseuniform_fun(x)
+    sigma = 1;
+    n = size(x,1);
+    y = sigma*randn([n,1]);
+    s = sigma*ones(n,1);
+end
 
 %--------------------------------------------------------------------------
 

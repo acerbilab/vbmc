@@ -1,6 +1,6 @@
 function [vp,elbo,elbo_sd,exitflag,output,optimState,stats,vp_train] = ...
     vbmc(fun,x0,LB,UB,PLB,PUB,options,varargin)
-%VBMC Posterior and model inference via Variational Bayesian Monte Carlo (v1.0.2)
+%VBMC Posterior and model inference via Variational Bayesian Monte Carlo (v1.0.3).
 %   VBMC computes a variational approximation of the full posterior and a 
 %   lower bound on the normalization constant (marginal likelhood or model
 %   evidence) for a provided unnormalized log posterior. As of v1.0, VBMC
@@ -140,8 +140,8 @@ function [vp,elbo,elbo_sd,exitflag,output,optimState,stats,vp_train] = ...
 %   Author (copyright): Luigi Acerbi, 2018-2021
 %   e-mail: luigi.acerbi@{helsinki.fi,gmail.com}
 %   URL: http://luigiacerbi.com
-%   Version: 1.0.2
-%   Release date: Feb 2, 2021
+%   Version: 1.0.3
+%   Release date: Mar 13, 2021
 %   Code repository: https://github.com/lacerbi/vbmc
 %--------------------------------------------------------------------------
 
@@ -149,7 +149,7 @@ function [vp,elbo,elbo_sd,exitflag,output,optimState,stats,vp_train] = ...
 %% Start timer
 
 t0 = tic;
-vbmc_version = '1.0.2';
+vbmc_version = '1.0.3';
 
 %% Basic default options
 defopts.Display                 = 'iter         % Level of display ("iter", "notify", "final", or "off")';
@@ -541,7 +541,8 @@ while ~isFinished_flag
     DoWarping = (options.WarpRotoScaling || options.WarpNonlinear) && ...
         iter > 1 && ~optimState.Warmup && ...
         (iter - optimState.LastWarping) > WarpDelay && ...
-        vp.K >= options.WarpMinK && stats.rindex(iter-1) < options.WarpTolReliability;
+        vp.K >= options.WarpMinK && stats.rindex(iter-1) < options.WarpTolReliability && ...
+        vp.D > 1;
         % (stats.stable(iter-1) || optimState.funccount >= options.MaxFunEvals*2/3);
         
     if DoWarping
