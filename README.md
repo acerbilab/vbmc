@@ -1,4 +1,4 @@
-# Variational Bayesian Monte Carlo (VBMC) - v1.0.3
+# Variational Bayesian Monte Carlo (VBMC) - v1.0.4
 
 **News:** 
 - **VBMC at NeurIPS (Dec/10/2020)** The new VBMC paper will be presented at *NeurIPS* 2020. See more information about the paper and a short video presentation [here](https://nips.cc/virtual/2020/public/poster_5d40954183d62a82257835477ccad3d2.html).
