@@ -1,6 +1,6 @@
-function [vp,elbo,elbo_sd,exitflag,output,optimState,stats,vp_train] = ...
+function [vp,elbo,elbo_sd,exitflag,output,samples,optimState,stats,vp_train] = ...
     vbmc(fun,x0,LB,UB,PLB,PUB,options,varargin)
-%VBMC Posterior and model inference via Variational Bayesian Monte Carlo (v1.0.3).
+%VBMC Posterior and model inference via Variational Bayesian Monte Carlo (v1.0.4).
 %   VBMC computes a variational approximation of the full posterior and a 
 %   lower bound on the normalization constant (marginal likelhood or model
 %   evidence) for a provided unnormalized log posterior. As of v1.0, VBMC
@@ -140,8 +140,8 @@ function [vp,elbo,elbo_sd,exitflag,output,optimState,stats,vp_train] = ...
 %   Author (copyright): Luigi Acerbi, 2018-2021
 %   e-mail: luigi.acerbi@{helsinki.fi,gmail.com}
 %   URL: http://luigiacerbi.com
-%   Version: 1.0.3
-%   Release date: Mar 13, 2021
+%   Version: 1.0.4
+%   Release date: Mar 27, 2021
 %   Code repository: https://github.com/lacerbi/vbmc
 %--------------------------------------------------------------------------
 
@@ -943,7 +943,24 @@ if nargout > 4
     output.overhead = optimState.totaltime / optimState.totalfunevaltime - 1;    
 end
 
-if nargout > 6
+if nargout > 5
+    % Prepare SAMPLES struct
+    idx = 1:optimState.Xn;    
+    samples.X = optimState.X_orig(idx,:);    
+    if isfield(optimState,'temperature') && ~isempty(optimState.temperature)
+        T = optimState.temperature;
+    else
+        T = 1;
+    end
+    samples.y = optimState.y_orig(idx,:)*T;
+    if isfield(optimState,'S') && ~isempty(optimState.S)
+        samples.y_sd = optimState.S(idx,:)*T;
+    end
+    samples.active_flag = optimState.X_flag(idx,:);
+    samples.nevals = optimState.nevals(idx,:);
+end
+
+if nargout > 7
     % Remove GP from stats struct unless diagnostic run
     if ~options.Diagnostics
         stats = rmfield(stats,'gp');
@@ -972,7 +989,7 @@ if exitflag < 1 && options.RetryMaxFunEvals > 0
     options.ActiveSampleVPUpdate = true;    
     
     try
-        [vp,elbo,elbo_sd,exitflag,output2,optimState2,stats] = vbmc(fun,x0,LB,UB,PLB,PUB,options,varargin{:});
+        [vp,elbo,elbo_sd,exitflag,output2,samples2,optimState2,stats] = vbmc(fun,x0,LB,UB,PLB,PUB,options,varargin{:});
         
         if nargout > 4
             optimState2.totaltime = toc(t0);
@@ -980,6 +997,7 @@ if exitflag < 1 && options.RetryMaxFunEvals > 0
             output2.iterations = output2.iterations + output.iterations;
             output2.funccount = output2.funccount + output.funccount;
             output2.retried = 'yes';
+            samples = samples2;
             output = output2;
             optimState = optimState2;
         end

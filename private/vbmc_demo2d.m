@@ -4,7 +4,7 @@ function stats = vbmc_demo2d(fun,stats,plotbnd)
 if nargin < 1 || isempty(fun); fun = @rosenbrock_test; end
 if nargin < 2 || isempty(stats)
     rng(0);
-    [~,~,~,~,~,~,stats] = vbmc(fun,[-1 -1],-Inf,Inf,-3,3);
+    [~,~,~,~,~,~,~,stats] = vbmc(fun,[-1 -1],-Inf,Inf,-3,3);
 end
 if nargin < 3 || isempty(plotbnd)
     vp = stats.vp(end);

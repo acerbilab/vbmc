@@ -38,6 +38,7 @@ else
             opts = optimoptions('fmincon','GradObj','off','Display','off');
             LB = vp.trinfo.lb_orig + sqrt(eps);
             UB = vp.trinfo.ub_orig - sqrt(eps);
+            x0 = min(max(x0,LB),UB);
             [xmin(k,:),ff(k)] = fmincon(@nlnpdf,x0,[],[],[],[],LB,UB,[],opts);        
         else
             opts = optimoptions('fminunc','GradObj','off','Display','off');
