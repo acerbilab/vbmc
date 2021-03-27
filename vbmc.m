@@ -149,7 +149,7 @@ function [vp,elbo,elbo_sd,exitflag,output,samples,optimState,stats,vp_train] = .
 %% Start timer
 
 t0 = tic;
-vbmc_version = '1.0.3';
+vbmc_version = '1.0.4';
 
 %% Basic default options
 defopts.Display                 = 'iter         % Level of display ("iter", "notify", "final", or "off")';
