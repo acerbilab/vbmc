@@ -94,6 +94,8 @@ if N > N0
         end
 
     end
+else
+    Xs = [];
 end
 
 X = [x0;Xs];
