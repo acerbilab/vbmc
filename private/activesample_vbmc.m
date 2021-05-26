@@ -417,7 +417,7 @@ else                    % Active uncertainty sampling
             try
                 [ynew,optimState,idx_new] = funlogger_vbmc(funwrapper,xnew,optimState,'iter');
             catch func_error
-                pause
+                % pause
             end
         else
             [ynew,optimState,idx_new] = funlogger_vbmc(funwrapper,xnew,optimState,'add',y_orig);
