@@ -1,4 +1,5 @@
 function [x,f,xtab,ftab,iter] = fminadam(fun,x0,LB,UB,TolFun,MaxIter,master_stepsize)
+%FMINADAM Function minimization via a modified ADAM algorithm.
 
 if nargin < 3; LB = []; end
 if nargin < 4; UB = []; end

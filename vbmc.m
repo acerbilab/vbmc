@@ -1,6 +1,6 @@
 function [vp,elbo,elbo_sd,exitflag,output,samples,optimState,stats,vp_train] = ...
     vbmc(fun,x0,LB,UB,PLB,PUB,options,varargin)
-%VBMC Posterior and model inference via Variational Bayesian Monte Carlo (v1.0.5).
+%VBMC Posterior and model inference via Variational Bayesian Monte Carlo (v1.0.6).
 %   VBMC computes a variational approximation of the full posterior and a 
 %   lower bound on the normalization constant (marginal likelhood or model
 %   evidence) for a provided unnormalized log posterior. As of v1.0, VBMC
@@ -140,8 +140,8 @@ function [vp,elbo,elbo_sd,exitflag,output,samples,optimState,stats,vp_train] = .
 %   Author (copyright): Luigi Acerbi, 2018-2021
 %   e-mail: luigi.acerbi@{helsinki.fi,gmail.com}
 %   URL: http://luigiacerbi.com
-%   Version: 1.0.5
-%   Release date: June 7, 2021
+%   Version: 1.0.6
+%   Release date: June 18, 2021
 %   Code repository: https://github.com/lacerbi/vbmc
 %--------------------------------------------------------------------------
 
@@ -149,7 +149,7 @@ function [vp,elbo,elbo_sd,exitflag,output,samples,optimState,stats,vp_train] = .
 %% Start timer
 
 t0 = tic;
-vbmc_version = '1.0.4';
+vbmc_version = '1.0.6';
 
 %% Basic default options
 defopts.Display                 = 'iter         % Level of display ("iter", "notify", "final", or "off")';
@@ -252,7 +252,6 @@ defopts.CacheFrac          = '0.5               % Fraction of search points from
 defopts.StochasticOptimizer = 'adam             % Stochastic optimizer for varational parameters';
 defopts.TolFunStochastic   = '1e-3              % Stopping threshold for stochastic optimization';
 defopts.MaxIterStochastic  = '100*(2+nvars)     % Max iterations for stochastic optimization';
-defopts.GPStochasticStepsize = 'off               % Set stochastic optimization stepsize via GP hyperparameters';
 defopts.TolSD              = '0.1               % Tolerance on ELBO uncertainty for stopping (iff variational posterior is stable)';
 defopts.TolsKL             = '0.01*sqrt(nvars)  % Stopping threshold on change of variational posterior per training point';
 defopts.TolStableWarmup    = '15                % Number of stable fcn evals for stopping warmup';
@@ -302,7 +301,6 @@ defopts.TolWeight          = '1e-2              % Threshold mixture component we
 defopts.PruningThresholdMultiplier = '@(K) 1/sqrt(K)   % Multiplier to threshold for pruning mixture weights';
 defopts.AnnealedGPMean     = '@(N,NMAX) 0       % Annealing for hyperprior width of GP negative quadratic mean';
 defopts.ConstrainedGPMean  = 'no                % Strict hyperprior for GP negative quadratic mean';
-defopts.EmpiricalGPPrior   = 'no                % Empirical Bayes prior over some GP hyperparameters';
 defopts.TolGPNoise         = 'sqrt(1e-5)        % Minimum GP observation noise';
 defopts.GPLengthPriorMean  = 'sqrt(D/6)         % Prior mean over GP input length scale (in plausible units)';
 defopts.GPLengthPriorStd   = '0.5*log(1e3)      % Prior std over GP input length scale (in plausible units)';
@@ -338,11 +336,9 @@ defopts.ActiveImportanceSamplingMCMCThin    = '1   % Thinning for importance sam
 defopts.ActiveSamplefESSThresh  = '1            % fractional ESS threhsold to update GP and VP';
 defopts.ActiveImportanceSamplingfESSThresh = '0.9 % % fractional ESS threhsold to do MCMC while active importance sampling';
 defopts.ActiveSearchBound  = '2                  % Active search bound multiplier';
-defopts.IntegrateGPMean    = 'no                   % Try integrating GP mean function';
 defopts.TolBoundX          = '1e-5              % Tolerance on closeness to bound constraints (fraction of total range)';
 defopts.RecomputeLCBmax    = 'yes              % Recompute LCB max for each iteration based on current GP estimate';
 defopts.BoundedTransform   = 'logit            % Input transform for bounded variables';
-defopts.DoubleGP           = 'no                % Use double GP';
 defopts.WarpEveryIters     = '5                 % Warp every this number of iterations';
 defopts.IncrementalWarpDelay = 'yes             % Increase delay between warpings';
 defopts.WarpTolReliability = '3                 % Threshold on reliability index to perform warp';
@@ -653,7 +649,7 @@ while ~isFinished_flag
             gp_search = gp;
         end
         % Performe active sampling
-        if options.VarActiveSample
+        if options.VarActiveSample % Unused
             % FIX TIMER HERE IF USING THIS
             [optimState,vp,t_active,t_func] = ...
                 variationalactivesample_vbmc(optimState,new_funevals,funwrapper,vp,vp_old,gp_search,options);
@@ -936,7 +932,7 @@ if prnt > 1
 end
 
 if nargout > 4
-    output = vbmc_output(vp,optimState,msg,stats,idx_best);
+    output = vbmc_output(vp,optimState,msg,stats,idx_best,vbmc_version);
     
     % Compute total running time and fractional overhead
     optimState.totaltime = toc(t0);    

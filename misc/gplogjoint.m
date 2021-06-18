@@ -61,9 +61,6 @@ quadraticfixedonly_meanfun = gp.meanfun == 18;
 quadraticlinonly_meanfun = gp.meanfun == 20;
 quadraticmix_meanfun = gp.meanfun == 22;
 
-% Integrated mean function being used?
-integrated_meanfun = isfield(gp,'intmeanfun') && gp.intmeanfun > 0;
-
 F = zeros(1,Ns);
 % Check which gradients are computed
 if grad_flags(1); mu_grad = zeros(D,K,Ns); else, mu_grad = []; end
@@ -95,28 +92,6 @@ end
 Xt = zeros(D,N,K);
 for k = 1:K
     Xt(:,:,k) = bsxfun(@minus, mu(:,k), gp.X');
-end
-
-% Precompute expensive integrated mean function vectors
-if integrated_meanfun && gp.intmeanfun == 4
-    tril_mat = tril(true(D),-1); 
-    tril_vec = tril_mat(:);
-    mumu_mat = zeros(K,D*(D-1)/2);
-    for k = 1:K
-        mumu_tril = mu(:,k)*mu(:,k)';
-        mumu_vec = mumu_tril(:);
-        mumu_mat(k,:) = mumu_vec(tril_vec)';
-    end
-    if grad_flags(1)
-        for k = 1:K
-            dmumu{k} = zeros(D,D*(D-1)/2);
-            idx = 0;
-            for d = 1:D-1
-                dmumu{k}(:,idx+(1:D-d)) = [zeros(d-1,D-d); mu(d+1:D,k)'; mu(d,k)*eye(D-d)];
-                idx = idx + D-d;
-            end
-        end
-    end
 end
 
 % Loop over hyperparameter samples
@@ -177,18 +152,7 @@ for s = 1:Ns
         xm = hyp(Ncov+Nnoise+(1:D));
         omega = exp(hyp(Ncov+Nnoise+D+(1:D)));            
     end
-    
-    % GP integrated mean function parameters
-    if integrated_meanfun
-        betabar = gp.post(s).intmean.betabar';
-        KinvHtbetabar = gp.post(s).intmean.HKinv'*betabar;
-        if compute_var
-            plus_idx = gp.intmeanfun_var > 0;
-            HKinv = gp.post(s).intmean.HKinv(plus_idx,:);
-            Tplusinv = gp.post(s).intmean.Tplusinv;
-        end
-    end
-    
+        
     alpha = gp.post(s).alpha;
     L = gp.post(s).L;
     Lchol = gp.post(s).Lchol;
@@ -235,15 +199,6 @@ for s = 1:Ns
             nu_k = -0.5*sum(1./omega.^2 .* (mu(:,k).^2 + sigma(k)^2*lambda.^2 + delta.^2),1);
             I_k = I_k + nu_k;            
         end
-        if integrated_meanfun
-            switch gp.intmeanfun
-                case 1; u_k = 1;
-                case 2; u_k = [1,mu(:,k)'];                  
-                case 3; u_k = [1,mu(:,k)',(mu(:,k).^2 + sigma(k)^2*lambda.^2)'];
-                case 4; u_k = [1,mu(:,k)',(mu(:,k).^2 + sigma(k)^2*lambda.^2)',mumu_mat(k,:)];                    
-            end
-            I_k = I_k + u_k*betabar - z_k*KinvHtbetabar;
-        end
                 
         F(s) = F(s) + w(k)*I_k;
         if separate_K; I_sk(s,k) = I_k; end
@@ -267,15 +222,6 @@ for s = 1:Ns
             if quadraticonly_meanfun
                 mu_grad(:,k,s) = mu_grad(:,k,s) - w(k)./omega.^2.*mu(:,k);                
             end
-            if integrated_meanfun
-                switch gp.intmeanfun
-                    case 1; du_dmu = zeros(D,1);
-                    case 2; du_dmu = [zeros(D,1),eye(D)];
-                    case 3; du_dmu = [zeros(D,1),eye(D),diag(2*mu(:,k))];
-                    case 4; du_dmu = [zeros(D,1),eye(D),diag(2*mu(:,k)),dmumu{k}];
-                end
-                mu_grad(:,k,s) = mu_grad(:,k,s) + w(k)*(du_dmu*betabar - dz_dmu*KinvHtbetabar);
-            end
         end
         
         if grad_flags(2)
@@ -296,15 +242,6 @@ for s = 1:Ns
             if quadsqexp_meanfun
                 sigma_grad(k,s) = sigma_grad(k,s) - w(k)*sigma(k)*sum(lambda.^2./tau2_mfun,1)*nu_k_se ...
                     + w(k)*sigma(k)*sum((mu(:,k) - xm_se).^2.*lambda.^2./tau2_mfun.^2,1)*nu_k_se;
-            end
-            if integrated_meanfun
-                switch gp.intmeanfun
-                    case 1; du_dsigma = 0;
-                    case 2; du_dsigma = zeros(1,1+D);
-                    case 3; du_dsigma = [zeros(1,1+D),(2*sigma(k)*lambda.^2)'];
-                    case 4; du_dsigma = [zeros(1,1+D),(2*sigma(k)*lambda.^2)',zeros(1,D*(D-1)/2)];
-                end
-                sigma_grad(k,s) = sigma_grad(k,s) + w(k)*(du_dsigma*betabar - dz_dsigma*KinvHtbetabar);
             end
         end
 
@@ -327,15 +264,6 @@ for s = 1:Ns
                 lambda_grad(:,s) = lambda_grad(:,s) - w(k)*sigma(k)^2*lambda./tau2_mfun*nu_k_se ...
                     + w(k)*sigma(k)^2*(mu(:,k) - xm_se).^2.*lambda./tau2_mfun.^2*nu_k_se;                
             end
-            if integrated_meanfun
-                switch gp.intmeanfun
-                    case 1; du_dlambda = zeros(D,1);
-                    case 2; du_dlambda = zeros(D,1+D);
-                    case 3; du_dlambda = [zeros(D,1+D),diag(2*sigma(k)^2*lambda)];
-                    case 4; du_dlambda = [zeros(D,1+D),diag(2*sigma(k)^2*lambda),zeros(D,D*(D-1)/2)];
-                end
-                lambda_grad(:,s) = lambda_grad(:,s) + w(k)*(du_dlambda*betabar - dz_dlambda*KinvHtbetabar);
-            end
         end
         
         if grad_flags(4)
@@ -351,9 +279,7 @@ for s = 1:Ns
                 invKzk = -L*z_k';                
             end
             J_kk = nf_kk - z_k*invKzk;
-            
-            if integrated_meanfun; error('Integrated basis function unsupported with diagonal covariance only.'); end
-            
+                        
             varF(s) = varF(s) + w(k)^2*max(eps,J_kk);    % Correct for numerical error
             if separate_K; J_sjk(s,k,k) = J_kk; end            
             
@@ -396,22 +322,7 @@ for s = 1:Ns
                     J_jk = exp(lnnf_jk -0.5*sum(delta_jk.^2,1)) ...
                      + z_k*(L*z_j');
                 end
-                
-                % Contribution to the variance of integrated mean function
-                if integrated_meanfun
-                    switch gp.intmeanfun
-                        case 1; u_j = 1;
-                        case 2; u_j = [1,mu(:,j)'];
-                        case 3; u_j = [1,mu(:,j)',(mu(:,j).^2 + sigma(j)^2*lambda.^2)'];
-                        case 4; u_j = [1,mu(:,j)',(mu(:,j).^2 + sigma(j)^2*lambda.^2)',mumu_mat(j,:)];
-                    end
-                    u_j = u_j(plus_idx);
-                    J_jk = J_jk + u_k(plus_idx)*(Tplusinv*u_j') ...
-                        + (z_k*HKinv')*(Tplusinv*(HKinv*z_j')) ...
-                        - u_k(plus_idx)*(Tplusinv*(HKinv*z_j')) ...
-                        - (z_k*HKinv')*(Tplusinv*u_j');
-                end
-                
+                                
 %                 J(j,k) = w(j)*w(k)*J_jk;
                 
                 % Off-diagonal elements are symmetric (count twice)

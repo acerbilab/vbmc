@@ -1,4 +1,4 @@
-function output = vbmc_output(vp,optimState,msg,stats,idx_best)
+function output = vbmc_output(vp,optimState,msg,stats,idx_best,vbmc_version)
 %VBMC_OUTPUT Create OUTPUT struct for VBMC.
 
 output.function = func2str(optimState.fun);
@@ -21,6 +21,7 @@ end
 output.overhead = NaN;
 output.rngstate = rng;
 output.algorithm = 'Variational Bayesian Monte Carlo';
+output.version = vbmc_version;
 output.message = msg;
 
 output.elbo = vp.stats.elbo;

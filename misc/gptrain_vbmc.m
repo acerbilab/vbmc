@@ -1,58 +1,6 @@
 function [gp,hypstruct,Ns_gp,optimState] = gptrain_vbmc(hypstruct,optimState,stats,options)
 %GPTRAIN_VBMC Train Gaussian process model.
 
-if options.DoubleGP
-    
-    options.NSgpMaxWarmup = 0;
-    options.NSgpMaxMain = 0;
-    options.DoubleGP = false;
-    
-    [gp,hypstruct,Ns_gp,optimState] = gptrain_vbmc(hypstruct,optimState,stats,options);
-    
-    if isfield(optimState,'hypstruct2')
-        hypstruct2 = optimState.hypstruct2;
-    else
-        hypstruct2 = [];        
-    end
-    
-    optimState2 = optimState;
-    optimState2.gpMeanfun = 12;  % Constant mean function
-    [gp2,hypstruct2] = gptrain_vbmc(hypstruct2,optimState2,stats,options);
-    
-    optimState.hypstruct2 = hypstruct2;
-    
-    z1 = gplite_nlZ(gp.post.hyp,gp);
-    z2 = gplite_nlZ(gp2.post.hyp,gp2);    
-    H1 = hessian(@(x) gplite_nlZ(x(:),gp), gp.post.hyp'); 
-    H2 = hessian(@(x) gplite_nlZ(x(:),gp2), gp2.post.hyp');
-    N = size(gp.X,1); 
-    dd = [numel(gp.post.hyp),numel(gp2.post.hyp)]; 
-    % yy = -[z1,z2] - 0.5*2*dd; 
-    yy = -[z1,z2] + 0.5*dd*log(2*pi) - 0.5*log(abs([det(H1),det(H2)]))
-    
-    D = size(gp.X,2);
-    gp.post(2) = gp.post(1);
-    switch gp2.meanfun
-        case 1
-            gp.post(2).hyp(1:gp.Ncov+gp.Nnoise+1) = gp2.post.hyp(1:gp.Ncov+gp.Nnoise+1);
-            gp.post(2).hyp((gp.Ncov+gp.Nnoise+1)+(1:D)) = 0;
-            gp.post(2).hyp((gp.Ncov+gp.Nnoise+1+D)+(1:D)) = Inf;
-        case 12
-            [~,idx] = max(gp.y);
-            gp.post(2).hyp(1:gp.Ncov+gp.Nnoise+1) = gp2.post.hyp(1:gp.Ncov+gp.Nnoise+1);
-            gp.post(2).hyp((gp.Ncov+gp.Nnoise+1)+(1:D)) = gp.X(idx,:);
-            gp.post(2).hyp((gp.Ncov+gp.Nnoise+1+D)+(1:D)) = gp2.post.hyp((1:D)+(gp.Ncov+gp.Nnoise+1));
-    end
-    
-    gp = gplite_post(gp);
-    
-    return;
-end
-
-
-
-
-
 % Initialize HYPSTRUCT if empty
 hypfields = {'hyp','warp','logp','full','runcov'};
 for f = hypfields
@@ -62,7 +10,7 @@ end
 % Get training dataset
 [X_train,y_train,s2_train,t_train] = get_traindata_vbmc(optimState,options);
 
-% Heuristic fitness shaping
+% Heuristic fitness shaping (unused)
 if options.FitnessShaping
     [y_train,s2_train] = outputwarp_vbmc(X_train,y_train,s2_train,optimState,options);
 end
@@ -113,29 +61,6 @@ end
     X_train,y_train, ...
     optimState.gpCovfun,meanfun,optimState.gpNoisefun,...
     s2_train,hypprior,gptrain_options);
-
-if gp.intmeanfun == 0 && options.IntegrateGPMean
-    gp_intmean = trainintmeangp_vbmc(gp,optimState,stats,options);    
-    errorflag = check_quadcoefficients_vbmc(gp_intmean);
-    if ~errorflag; gp = gp_intmean; end
-    
-elseif gp.intmeanfun == 3 || gp.intmeanfun == 4    
-
-    % Check for posite-definiteness of negative quadratic basis function
-    errorflag = check_quadcoefficients_vbmc(gp);
-
-    % If the coefficients are not negative, redo the fit
-    if errorflag
-        optimState_temp = optimState;
-        optimState.gpMeanfun = 18;
-        optimState.intMeanfun = 1;
-        [gp,hypstruct,Ns_gp,optimState] = gptrain_vbmc([],optimState,stats,options);
-        optimState.gpMeanfun = optimState_temp.gpMeanfun;
-        optimState.intMeanfun = optimState_temp.intMeanfun;
-        hypstruct.hyp = [];
-        return;
-    end
-end
     
 hypstruct.full = gpoutput.hyp_prethin; % Pre-thinning GP hyperparameters
 hypstruct.logp = gpoutput.logp;
@@ -317,7 +242,7 @@ if numel(optimState.gpNoisefun)>2 && optimState.gpNoisefun(3) == 1
     hypprior.sigma(Ncov+3) = log(10);
 end
 
-% Priors and bounds for output warping hyperparameters
+% Priors and bounds for output warping hyperparameters (not used)
 if Noutwarp > 0
     outwarp_delta = optimState.OutwarpDelta;
     
@@ -355,77 +280,25 @@ if Noutwarp > 0
     
 end
 
+% VBMC used to have an empirical Bayes prior on some GP hyperparameters,
+% such as input length scales, based on statistics of the GP training
+% inputs. However, this approach could lead to instabilities. From the 2020 
+% paper, we switched to a fixed prior based on the plausible bounds.
 
-% Empirical Bayes hyperprior on GP hyperparameters
-if options.EmpiricalGPPrior
-    hypprior.mu(1:D) = log(std(X_hpd));
-    hypprior.sigma(1:D) = max(2,log(hpd_range) - log(std(X_hpd)));
-    
-    %hypprior.mu(D+1) = log(std(y_hpd)) + 0.25*D*log(2*pi);
-    %hypprior.sigma(D+1) = log(10);
-    switch meanfun
-        case 1
-            hypprior.mu(Ncov+Nnoise+1) = quantile(y_hpd,0.25);
-            hypprior.sigma(Ncov+Nnoise+1) = 0.5*(max(y_hpd)-min(y_hpd));
-        case 4
-            hypprior.mu(Ncov+Nnoise+1) = max(y_hpd);
-            hypprior.sigma(Ncov+Nnoise+1) = max(y_hpd)-min(y_hpd);
+hypprior.mu(1:D) = log(options.GPLengthPriorMean*(optimState.PUB - optimState.PLB));
+hypprior.sigma(1:D) = options.GPLengthPriorStd;
 
-            sigma_omega = options.AnnealedGPMean(neff,optimState.MaxFunEvals);
-            if sigma_omega > 0 && isfinite(sigma_omega)
-                hypprior.mu(Ncov+Nnoise+1+D+(1:D)) = log(hpd_range);
-                hypprior.sigma(Ncov+Nnoise+1+D+(1:D)) = sigma_omega;
-            end
-
-            if options.ConstrainedGPMean
-                hypprior.mu(Ncov+Nnoise+1) = NaN;
-                hypprior.sigma(Ncov+Nnoise+1) = NaN;
-
-                hypprior.mu(Ncov+Nnoise+1+(1:D)) = 0.5*(optimState.PUB + optimState.PLB);
-                hypprior.sigma(Ncov+Nnoise+1+(1:D)) = 0.5*(optimState.PUB - optimState.PLB);
-
-                hypprior.mu(Ncov+Nnoise+1+D+(1:D)) = log(0.5*(optimState.PUB - optimState.PLB));
-                hypprior.sigma(Ncov+Nnoise+1+D+(1:D)) = 0.01;            
-            end                    
-
-        case 6
-            hypprior.mu(Ncov+Nnoise+1) = min(y) - std(y_hpd);
-            hypprior.sigma(Ncov+Nnoise+1) = std(y_hpd);
-            
-        case 8
-            
-    end
-    
-else
-    
-    if numel(options.GPLengthPriorMean) == 1    
-        hypprior.mu(1:D) = log(options.GPLengthPriorMean*(optimState.PUB - optimState.PLB));
-    elseif numel(options.GPLengthPriorMean) == 2
-        lpmu = log(options.GPLengthPriorMean);
-        pmu = exp(rand()*(lpmu(2)-lpmu(1)) + lpmu(1)); 
-        hypprior.mu(1:D) = log(pmu*(optimState.PUB - optimState.PLB));        
-    end
-    hypprior.sigma(1:D) = options.GPLengthPriorStd;
-    
-%      switch meanfun
-%          case {4,6}
-%              hypprior.mu(Ncov+Nnoise+1+D+(1:D)) = log(0.5*(optimState.PUB - optimState.PLB));
-%              hypprior.sigma(Ncov+Nnoise+1+D+(1:D)) = log(100);            
-%      end
-    
-    if meanfun == 14
-        hypprior.mu(Ncov+Nnoise+D+2) = log(0.1);
-        hypprior.sigma(Ncov+Nnoise+D+2) = log(10);
-        hypprior.mu(Ncov+Nnoise+D+3) = log(0.1);
-        hypprior.sigma(Ncov+Nnoise+D+3) = log(100);
-    end
-
+if meanfun == 14
+    hypprior.mu(Ncov+Nnoise+D+2) = log(0.1);
+    hypprior.sigma(Ncov+Nnoise+D+2) = log(10);
+    hypprior.mu(Ncov+Nnoise+D+3) = log(0.1);
+    hypprior.sigma(Ncov+Nnoise+D+3) = log(100);
 end
 
 hypprior.LB = LB_gp;
 hypprior.UB = UB_gp;
 
-if warpflag
+if warpflag % Unused
     warning('Warping priors need fixing; need to fill in mean function priors.');
     hyp0 = [hyp0;zeros(2*D,1)];    
     hypprior.mu = [hypprior.mu, zeros(1,2*D)];
@@ -437,45 +310,6 @@ if warpflag
     hypprior.UB = [hypprior.UB, UB_warp];
 end
 
-
-%% Integrated mean function
-
-if optimState.intMeanfun > 0
-    H = gplite_intmeanfun(zeros(1,D),optimState.intMeanfun);
-    Nb = size(H,1);    
-    bb = zeros(1,Nb);   % Prior mean over basis function coefficients
-    BB = Inf(1,Nb);     % Prior variance over basis function coefficients
-    if optimState.intMeanfun == 1
-        bb(1) = max(y_train);
-        BB(1) = 1e3;
-    else
-        bb(1) = max(y_train);
-        BB(1) = 1e3;            
-    end
-    if optimState.intMeanfun > 1
-        bb(1+(1:D)) = 0;
-        BB(1+(1:D)) = 1e3;
-    end
-    if optimState.intMeanfun > 2
-        bb(1+D+(1:D)) = 0;
-        BB(1+D+(1:D)) = 1e3;            
-    end
-    if optimState.intMeanfun > 3
-        bb(1+2*D+(1:D*(D-1)/2)) = 0;
-        BB(1+2*D+(1:D*(D-1)/2)) = 1e4;
-    end
-    
-    if isfield(optimState,'betabarmap')
-        bb = optimState.betabarmap;
-        BB = optimState.betabarvar;
-        hyp0 = optimState.hypbeta;
-    end
-    
-    % Fix variance for under-determined training set
-    if size(X_train,1) <= Nb + Nhyp; BB(isinf(BB)) = 1e3; end
-        
-    meanfun = {meanfun,optimState.intMeanfun,bb,BB};
-end
 
 %% Number of GP hyperparameter samples
 

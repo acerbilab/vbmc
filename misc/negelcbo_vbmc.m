@@ -16,6 +16,8 @@ if isempty(beta) || ~isfinite(beta); beta = 0; end
 if isempty(compute_var); compute_var = beta ~=0 || nargout > 4; end
 separate_K = nargout > 9; % Return expected log joint per component
 
+% altent_flag and entropy_alpha are unused (kept here for retrocompatibility)
+
 if compute_grad && beta ~= 0 && compute_var ~= 2
     error('negelcbo_vbmc:vargrad', ...
         'Computation of the gradient of ELBO with full variance not supported.');
@@ -66,13 +68,7 @@ if separate_K
         varGss = NaN;
     else
         if compute_var
-            if numel(gp) > 1
-                error('Multiple GPs not supported anymore.');
-                % [G,varG] = gplogjoint_multi(vp,gp,avg_flag,compute_var);
-                % varGss = [];
-            else
-                [G,~,varG,~,varGss,I_sk,J_sjk] = gplogjoint(vp,gp,grad_flags,avg_flag,jacobian_flag,compute_var);        
-            end
+            [G,~,varG,~,varGss,I_sk,J_sjk] = gplogjoint(vp,gp,grad_flags,avg_flag,jacobian_flag,compute_var);        
         else
             [G,dG,~,~,~,I_sk] = gplogjoint(vp,gp,grad_flags,avg_flag,jacobian_flag,0);
             varGss = 0; varG = 0; J_sjk = [];
@@ -94,9 +90,6 @@ else
         if compute_var
             if compute_grad
                 [G,dG,varG,dvarG,varGss] = gplogjoint(vp,gp,grad_flags,avg_flag,jacobian_flag,compute_var);
-            elseif numel(gp) > 1
-                [G,varG] = gplogjoint_multi(vp,gp,avg_flag,compute_var);
-                varGss = [];
             else
                 [G,~,varG,~,varGss] = gplogjoint(vp,gp,grad_flags,avg_flag,jacobian_flag,compute_var);        
             end
@@ -108,28 +101,12 @@ else
 end
 
 % Entropy term
-if Ns > 0   % Use Monte Carlo approximation
-    if altent_flag  % Alternative entropy approximation via upper bound
-        [H,dH] = entmcub_vbmc(vp,Ns,grad_flags,jacobian_flag);        
-    else
-        [H,dH] = entmc_vbmc(vp,Ns,grad_flags,jacobian_flag);
-    end
+if Ns > 0   
+    % Monte Carlo approximation
+    [H,dH] = entmc_vbmc(vp,Ns,grad_flags,jacobian_flag);
 else
-    % Deterministic approximation via lower/upper bound on the entropy
-    alpha = entropy_alpha;
-    if alpha == 0
-        [H,dH] = entlb_vbmc(vp,grad_flags,jacobian_flag);
-    elseif alpha == 1
-        [H,dH] = entub_vbmc(vp,grad_flags,jacobian_flag);
-    else
-        [Hl,dHl] = entlb_vbmc(vp,grad_flags,jacobian_flag);
-        [Hu,dHu] = entub_vbmc(vp,grad_flags,jacobian_flag);
-        H = (1-alpha)*Hl + alpha*Hu;
-        dH = (1-alpha)*dHl + alpha*dHu;
-        %[Htrue] = entmc_vbmc(vp,1e3,grad_flags,jacobian_flag);
-        %[Hl,Hu,Htrue]
-    end
-    
+    % Deterministic approximation via lower bound on the entropy
+    [H,dH] = entlb_vbmc(vp,grad_flags,jacobian_flag);    
 end
 
 %H_check = gmment_num(theta,lambda);

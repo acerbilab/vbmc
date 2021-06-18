@@ -51,21 +51,6 @@ acq = zeros(Nx,Ns);
 
 %% Compute integrated acquisition function via importance sampling
 
-% Integrated mean function being used?
-integrated_meanfun = isfield(gp,'intmeanfun') && gp.intmeanfun > 0;
-
-if integrated_meanfun
-    % Evaluate basis functions
-    plus_idx = gp.intmeanfun_var > 0;
-    if multipleinputs_flag
-        Ha = zeros(Na,D);
-    else
-        Ha = optimState.ActiveImportanceSampling.Ha;
-    end
-    Hs = gplite_intmeanfun(Xs,gp.intmeanfun);
-    Hs = Hs(plus_idx,:);
-end
-
 for s = 1:Ns    
     hyp = gp.post(s).hyp;
     L = gp.post(s).L;
@@ -98,16 +83,7 @@ for s = 1:Ns
     else
         C = Ka_mat' + Ks_mat'*(L*Kax_mat');        
     end
-    
-    if integrated_meanfun
-        HKinv = gp.post(s).intmean.HKinv(plus_idx,:);
-        Tplusinv = gp.post(s).intmean.Tplusinv;
-        if multipleinputs_flag
-            Ha(:,:) = optimState.ActiveImportanceSampling.Ha(:,:,s);
-        end
-        C = C + (Hs' - Ks_mat'*HKinv')*(Tplusinv*Ha) + (Ks_mat'*HKinv' - Hs')*(Tplusinv*(HKinv*Kax_mat'));
-    end
-        
+            
     tau2 = bsxfun(@rdivide,C.^2,ys2(:,s));
     s_pred = sqrt(max(bsxfun(@minus,optimState.ActiveImportanceSampling.fs2a(:,s)',tau2),0));
     

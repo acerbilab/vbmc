@@ -114,45 +114,12 @@ for iOpt = 1:Nslowopts
                     scaling_factor = min(0.1,options.SGDStepSize);
                 end
                 
-                if options.GPStochasticStepsize
-                    % Set Adam master stepsizes from GP hyperparameters
-                    ll_ker = zeros(vp.D,numel(gp.post)); % GP kernel length scale
-                    ll_mnf = zeros(vp.D,numel(gp.post)); % GP mean fcn length scale
-                    
-                    % Compute mean length scales from samples
-                    for iSample = 1:numel(gp.post)
-                        ll_ker(:,iSample) = exp(gp.post(iSample).hyp(1:vp.D));
-                        switch gp.meanfun
-                            case 1; ll_mnf(:,iSample) = Inf(vp.D,1);
-                            case 4; ll_mnf(:,iSample) = exp(gp.post(iSample).hyp(end-vp.D+1:end));
-                            case 6; ll_mnf(:,iSample) = exp(gp.post(iSample).hyp(end-vp.D:end-1));
-                            case 8
-                                omega = exp(gp.post(iSample).hyp(end-3*vp.D:end-2*vp.D-1));
-                                omega_se = exp(gp.post(iSample).hyp(end-vp.D:end-1));
-                                ll_mnf(:,iSample) = min(omega,omega_se);
-                        end
-                    end                    
-                    ll_ker = mean(ll_ker,2);   
-                    ll_mnf = mean(ll_mnf,2);
-                    % [ll_ker'; ll_mnf']
-                    
-                    % For each dim, take minimum length scale (bounded)
-                    ll = max(min(min(ll_ker,ll_mnf),0.1),0.001);
-                    
-                    % Compute stepsize for variational optimization
-                    ssize = [];
-                    if vp.optimize_mu; ssize = repmat(ll,[K,1]); end
-                    % if vp.optimize_sigma; ssize = [ssize; scaling_factor*ones(K,1)]; end
-                    if vp.optimize_sigma; ssize = [ssize; min(min(ll),scaling_factor)*ones(K,1)]; end
-                    if vp.optimize_lambda; ssize = [ssize; ll]; end
-                    % if vp.optimize_weights; ssize = [ssize; min(min(ll),scaling_factor)*ones(K,1)]; end
-                    if vp.optimize_weights; ssize = [ssize; scaling_factor*ones(K,1)]; end
-                    master_stepsize.max = ssize;
-                    master_stepsize.min = min(master_stepsize.max,master_stepsize.min);                    
-                else
-                    % Fixed master stepsize
-                    master_stepsize.max = scaling_factor;         
-                end
+                % Fixed master stepsize
+                master_stepsize.max = scaling_factor;
+
+                % Note: We tried to adapt the stepsizes guided by the GP 
+                % hyperparameters, but did not seem to help (the former 
+                % experimental option was "GPStochasticStepsize").
                 
                 master_stepsize.max = max(master_stepsize.min,master_stepsize.max);
                 master_stepsize.decay = 200;
@@ -167,10 +134,6 @@ for iOpt = 1:Nslowopts
                     elbostats = eval_fullelcbo(iOpt_mid,theta_lst(idx_mid,:),vp0,gp,elbostats,elcbo_beta,options,optimState.entropy_alpha);
                     % [idx_mid,numel(fval_lst)]
                 end
-%             case 'fmincon'
-%                 vbtrain_options.TolFun = options.TolFunStochastic;
-%                 [thetaopt,~,~,output] = ...
-%                     fmincon(vbtrainmc_fun,thetaopt,[],[],[],[],vp.LB_theta,vp.UB_theta,[],vbtrain_options);
 
             case 'cmaes'
                 
@@ -287,18 +250,6 @@ vp.stats.entropy_sd = sqrt(varH);   % Error on the entropy
 vp.stats.stable = false;            % Unstable until proven otherwise
 vp.stats.I_sk = I_sk;               % Expected log joint per component
 vp.stats.J_sjk = J_sjk;             % Covariance of expected log joint
-
-% L = vpbndloss(elbostats.theta(idx,:),vp,thetabnd,thetabnd.TolCon)
-% if L > 0
-%     lnscale = bsxfun(@plus,log(vp.sigma),log(vp.lambda));    
-%     thetaext = [vp.mu(:)',lnscale(:)'];
-%     outflag = thetaext < thetabnd.lb(:)' | thetaext > thetabnd.ub(:)';
-%     [thetaext;thetabnd.lb(:)'; thetabnd.ub(:)';outflag]    
-% end
-
-
-% idx
-% elbostats
 
 end
 

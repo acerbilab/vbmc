@@ -15,10 +15,11 @@ if isempty(gp)
     
 else                    % Active uncertainty sampling
     
+    % One or multiple acquisition functions (most commonly only one)
     SearchAcqFcn = options.SearchAcqFcn;
-    gp_old = [];
     
-    if options.AcqHedge && numel(SearchAcqFcn) > 1        
+    % Use "hedge" strategy to propose an acquisition function? (unused)
+    if options.AcqHedge && numel(SearchAcqFcn) > 1
         % Choose acquisition function via hedge strategy
         optimState.hedge = acqhedge_vbmc('acq',optimState.hedge,[],options);
         idxAcq = optimState.hedge.chosen;        
@@ -34,7 +35,7 @@ else                    % Active uncertainty sampling
     % t_base = timer_iter.activeSampling + timer_iter.variationalFit + timer_iter.finalize;
     gpTrain_vec = [stats.timer.gpTrain];
 
-    if options.ActiveVariationalSamples > 0
+    if options.ActiveVariationalSamples > 0 % Unused
         options_activevar = options;
         options_activevar.TolWeight = 0;
         options_activevar.NSentFine = options.NSent;
@@ -49,6 +50,8 @@ else                    % Active uncertainty sampling
         || (stats.rindex(end) > options.ActiveSampleFullUpdateThreshold));
     
     if ActiveSampleFullUpdate_flag && Ns > 1
+        % Temporarily change options for local updates        
+        
         RecomputeVarPost_old = optimState.RecomputeVarPost;
         entropy_alpha_old = optimState.entropy_alpha;
         
@@ -74,19 +77,13 @@ else                    % Active uncertainty sampling
 
     % if Ns > 1; vp_old = vp; end
     
+    %% Active sampling loop (sequentially acquire Ns new points)
     for is = 1:Ns
-        
-        intmeangpSearch = 0;
-        
-        if intmeangpSearch
-            gp_old = gp;
-            gp = trainintmeangp_vbmc(gp,optimState,options);
-        end
-        
+                
         optimState.N = optimState.Xn;  % Number of training inputs
         optimState.Neff = sum(optimState.nevals(optimState.X_flag));        
                 
-        if options.ActiveVariationalSamples > 0
+        if options.ActiveVariationalSamples > 0 % Unused
             [vp,~,output] = vpsample_vbmc(Ns_activevar,0,vp,gp,optimState,options_activevar,options.ScaleLowerBound);
             if isfield(output,'stepsize'); optimState.mcmc_stepsize = output.stepsize; end
 %            output.stepsize
@@ -98,7 +95,7 @@ else                    % Active uncertainty sampling
         end
                 
         Nextra = evaloption_vbmc(options.SampleExtraVPMeans,vp.K);        
-        if Nextra > 0
+        if Nextra > 0   % Unused
             vp_base = vp;
             NsFromGP = 4e3;
             Nextra = evaloption_vbmc(options.SampleExtraVPMeans,vp.K);
@@ -145,6 +142,8 @@ else                    % Active uncertainty sampling
         end
         
         if ~options.AcqHedge
+            % If multiple acquisition functions are provided and not
+            % following a "hedge" strategy, pick one at random
             idxAcq = randi(numel(SearchAcqFcn));
         end
 
@@ -215,7 +214,7 @@ else                    % Active uncertainty sampling
         
         optimState.acqrand = rand();    % Seed for random acquisition fcn
         
-        % Create search set from cache and randomly generated
+        % Create fast search set from cache and randomly generated
         [Xsearch,idx_cache] = getSearchPoints(NSsearch,optimState,vp,gp,options);
         Xsearch = real2int_vbmc(Xsearch,vp.trinfo,optimState.integervars);
         
@@ -319,32 +318,7 @@ else                    % Active uncertainty sampling
             end
         end
         
-        % [acq,tr_p] = acqEval(Xacq(1,:),vp,gp,optimState,0)        
-        
-        % Add random jitter
-        if rand() < 1/3 && 0
-            X_hpd = gethpd_vbmc(gp.X,gp.y,options.HPDFrac);
-            Sigma = diag(var(X_hpd))*exp(randn());
-            Xacq(1,:) = mvnrnd(Xacq(1,:),Sigma);
-            Xacq(1,:) = real2int_vbmc(Xacq(1,:),vp.trinfo,optimState.integervars);
-        end
-        
-        
-%         % Finish search with a few MCMC iterations
-%         if 1 || options.SearchMCMC                
-%             mcmc_fun = @(x) log(-acqEval(x,vp,gp,optimState,0)/0.01);
-%             Widths = max(max(sqrt(diag(Sigma)'),0.1),optimState.gplengthscale);
-%             Ns = 1;
-%             sampleopts.Thin = 1;
-%             sampleopts.Burnin = 10;
-%             sampleopts.Display = 'off';
-%             sampleopts.Diagnostics = false;
-%             LB = -Inf; UB = Inf;
-%             [samples,fvals,exitflag,output] = ...
-%                 slicesamplebnd_vbmc(mcmc_fun,Xacq(1,:),Ns,Widths,LB,UB,sampleopts);
-%             Xacq(1,:) = samples;
-%             fval_mcmc = acqEval(Xacq(1,:),vp,gp,optimState,0);
-%         end        
+        % [acq,tr_p] = acqEval(Xacq(1,:),vp,gp,optimState,0)      
         
         if options.UncertaintyHandling && options.MaxRepeatedObservations > 0            
             if optimState.RepeatedObservationsStreak >= options.MaxRepeatedObservations
@@ -378,26 +352,6 @@ else                    % Active uncertainty sampling
                 end
             end
         end
-        
-        if options.UncertaintyHandling && rand() < 0           
-            acqpeak = @acqfsn2reg_vbmc;
-            
-            % Evaluate acquisition function on training set
-            X_train = get_traindata_vbmc(optimState,options);
-
-            % Disable variance-based regularization first
-            oldflag = optimState.VarianceRegularizedAcqFcn;
-            optimState.VarianceRegularizedAcqFcn = false;
-            % Use current cost of GP instead of future cost
-            old_t_algoperfuneval = optimState.t_algoperfuneval;
-            optimState.t_algoperfuneval = t_base/deltaNeff;
-            acq_train = acqpeak(X_train,vp,gp,optimState,0);
-            optimState.VarianceRegularizedAcqFcn = oldflag;
-            optimState.t_algoperfuneval = old_t_algoperfuneval;            
-            [acq_train,idx_train] = min(acq_train);
-            Xacq(1,:) = X_train(idx_train,:);
-        end
-        
         
         y_orig = [NaN; optimState.Cache.y_orig(:)]; % First position is NaN (not from cache)
         yacq = y_orig(idx_cache_acq+1);
@@ -436,6 +390,7 @@ else                    % Active uncertainty sampling
         tnew = optimState.funevaltime(idx_new);
         
         if 1
+            % Store acquisition information (mostly for debug)
             if ~isfield(optimState,'acqtable'); optimState.acqtable = []; end
             [~,~,fmu,fs2] = gplite_pred(gp,xnew);
             v = [idxAcq,ynew,fmu,sqrt(fs2)];
@@ -446,7 +401,10 @@ else                    % Active uncertainty sampling
             vp = vp_base;
         end
         
-        if is < Ns            
+        if is < Ns
+            % If not the last sample, update GP and possibly other things
+            % (no need perform updates after the last sample)
+            
 %             w_orig = optimState.UB_orig - optimState.LB_orig;
 %             x_min = warpvars_vbmc(optimState.LB_orig + 1e-6*w_orig,'d',vp.trinfo);
 %             x_max = warpvars_vbmc(optimState.UB_orig - 1e-6*w_orig,'d',vp.trinfo);
@@ -456,10 +414,11 @@ else                    % Active uncertainty sampling
 %             end
 %             optimState.LB_search = max(optimState.LB_search,x_min);
 %             optimState.UB_search = min(optimState.UB_search,x_max);
-            
-            if ~isempty(gp_old); gp = gp_old; end
-            
+                        
             if ActiveSampleFullUpdate_flag
+                % If performing full updates with active sampling, the GP
+                % hyperparameters are updated after each acquisition
+                
                 % Quick GP update                
                 if isempty(hypstruct); hypstruct = optimState.hypstruct; end
                 
@@ -503,9 +462,12 @@ else                    % Active uncertainty sampling
                 end
                 
             else
+                % If NOT performing full updates with active sampling, only
+                % the GP posterior is updated (but not the hyperparameters)
+                
                 % Perform simple rank-1 update if no noise and first sample
                 t = tic;
-                update1 = (isempty(s2new) || optimState.nevals(idx_new) == 1) && ~options.NoiseShaping && ~options.IntegrateGPMean;
+                update1 = (isempty(s2new) || optimState.nevals(idx_new) == 1) && ~options.NoiseShaping;
                 if update1
                     gp = gplite_post(gp,xnew,ynew,[],[],[],s2new,1);
                     gp.t(end+1) = tnew;
