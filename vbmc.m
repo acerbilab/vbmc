@@ -1,6 +1,6 @@
 function [vp,elbo,elbo_sd,exitflag,output,samples,optimState,stats,vp_train] = ...
     vbmc(fun,x0,LB,UB,PLB,PUB,options,varargin)
-%VBMC Posterior and model inference via Variational Bayesian Monte Carlo (v1.0.6).
+%VBMC Posterior and model inference via Variational Bayesian Monte Carlo (v1.0.7).
 %   VBMC computes a variational approximation of the full posterior and a 
 %   lower bound on the normalization constant (marginal likelhood or model
 %   evidence) for a provided unnormalized log posterior. As of v1.0, VBMC
@@ -140,8 +140,8 @@ function [vp,elbo,elbo_sd,exitflag,output,samples,optimState,stats,vp_train] = .
 %   Author (copyright): Luigi Acerbi, 2018-2021
 %   e-mail: luigi.acerbi@{helsinki.fi,gmail.com}
 %   URL: http://luigiacerbi.com
-%   Version: 1.0.6
-%   Release date: June 18, 2021
+%   Version: 1.0.7
+%   Release date: June 23, 2021
 %   Code repository: https://github.com/lacerbi/vbmc
 %--------------------------------------------------------------------------
 
@@ -149,7 +149,7 @@ function [vp,elbo,elbo_sd,exitflag,output,samples,optimState,stats,vp_train] = .
 %% Start timer
 
 t0 = tic;
-vbmc_version = '1.0.6';
+vbmc_version = '1.0.7';
 
 %% Basic default options
 defopts.Display                 = 'iter         % Level of display ("iter", "notify", "final", or "off")';

@@ -95,7 +95,9 @@ for j = 1:K
         
         if grad_flags(4)
             w_grad(j) = w_grad(j) - sum(log(q_j))/Ns;
-            w_grad(:) = w_grad(:) - w(j)*sum(norm_jl(1,1,:,j)./q_j)/Ns;
+            % w_grad(:) = w_grad(:) - w(j)*sum(norm_jl(1,1,:,j)./q_j)/Ns;
+            % Fix by Chengkun Li
+            w_grad(:) = w_grad(:) - w(j)*squeeze(sum(norm_jl(1,1,:,:)./q_j,3))/Ns;
         end
         
     end
