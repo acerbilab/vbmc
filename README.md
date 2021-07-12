@@ -128,9 +128,9 @@ However, before contacting me for this reason, please have a good look at the co
 
 ## Presentations
 
-Work related to VBMC has been presented at seminars in Oxford (UK), Bristol (UK), NYU (NY, USA), Helsinki (Finland), Brown University (RI, USA), NTNU (Trondheim, Norway) etc., and at several conferences. Recent presentations cover both VBMC papers (2018, 2020) and related work on simulator-based inference, packaged as ``Practical sample-efficient Bayesian inference for models with and without likelihoods''.
-- [Slides](https://github.com/lacerbi/infbench/blob/master/presentations/acerbi-einsteinml-apr2021.pdf) from a talk given at the [Einstein Machine Learning group](https://einsteinmed.org/deparments/system-computational-biology/machine-learning.aspx) (Albert Einstein college of medicine, NY, USA)  in April 2021.
-- An (earlier) [recorded talk](https://www.youtube.com/watch?v=OslB0Q6kJBM) given at the [Finnish Center for Artificial Intelligence (FCAI)](https://fcai.fi/) (Helsinki, Finland) in September 2020.
+Work related to VBMC has been presented at seminars in Oxford (UK), Bristol (UK), NYU (NY, USA), Helsinki (Finland), Brown University (RI, USA), NTNU (Trondheim, Norway) etc., and at several conferences. Recent presentations cover both VBMC papers (2018, 2020) and related work on simulator-based inference, with titles such as ``Practical sample-efficient Bayesian inference for models with and without likelihoods''.
+- See [here](https://github.com/lacerbi/infbench/blob/master/presentations/acerbi-einsteinml-apr2021.pdf) for slides from a talk given at the [Einstein Machine Learning group](https://einsteinmed.org/deparments/system-computational-biology/machine-learning.aspx) (Albert Einstein college of medicine, NY, USA)  in April 2021.
+- See [here](https://www.youtube.com/watch?v=OslB0Q6kJBM) for an (earlier) recorded talk given at the [Finnish Center for Artificial Intelligence (FCAI)](https://fcai.fi/) (Helsinki, Finland) in September 2020.
 
 
 ## References
