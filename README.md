@@ -1,10 +1,9 @@
 # Variational Bayesian Monte Carlo (VBMC) - v1.0.7
 
 **News:** 
-- **VBMC at NeurIPS (Dec/10/2020)** The new VBMC paper will be presented at *NeurIPS* 2020. See more information about the paper and a short video presentation [here](https://nips.cc/virtual/2020/public/poster_5d40954183d62a82257835477ccad3d2.html).
-- **New paper accepted (Sep/25/2020)** The "Variational Bayesian Monte Carlo with Noisy Likelihoods" paper [[2](#references)] has been accepted at *NeurIPS* 2020! This is the second VBMC paper at *NeurIPS*. The revised version of the manuscript is available [on arXiv](https://arxiv.org/abs/2006.08655). 
+- **New paper at NeurIPS (Sep/25/2020)** The "Variational Bayesian Monte Carlo with Noisy Likelihoods" paper [[2](#references)] has been accepted at *NeurIPS* 2020! This is the second VBMC paper at *NeurIPS*. The paper is available in the [NeurIPS proceedings](https://proceedings.neurips.cc/paper/2020/hash/5d40954183d62a82257835477ccad3d2-Abstract.html) and [on arXiv](https://arxiv.org/abs/2006.08655). 
 - **Major update (Jun/16/2020)** VBMC v1.0 has been released! (see [tweeprint](https://twitter.com/AcerbiLuigi/status/1273242222385868800?s=20)) This update includes full support for noisy log-likelihood evaluations, a linear transformation of the inference space to better represent the variational posterior, and a number of tweaks to the algorithm's settings for improved performance. See the [new preprint](https://arxiv.org/abs/2006.08655) for more information [[2](#references)].
-- The original VBMC paper has been published at *NeurIPS* 2018 [[1](#references)], and an exploration of various VBMC features has been published in *PMLR* [[3](#additional-references)]. VBMC has been presented at seminars in Oxford (UK), Bristol (UK), NYU (NY) and online conferences. See [here](https://github.com/lacerbi/infbench/blob/master/presentations/acerbi-oxford2018nov.pdf) for slides, and [here](https://nyu.zoom.us/rec/share/4PRRd6rs9EdLbYnPtnjtRqJxG7S6T6a81iMdqKJfmk9OM2jTgTpG2P-y3brHBJfn) for a recorded talk (at CDS@NYU) with implausible automated captions.
+- The original VBMC paper has been published at *NeurIPS* 2018 [[1](#references)], and an exploration of various VBMC features has been published in *PMLR* [[3](#additional-references)].
 
 ## What is it
 
@@ -126,6 +125,13 @@ VBMC is currently available only for MATLAB. We started working on a Python vers
 
 If you are interested in helping porting VBMC to Python or another language (R, [Julia](https://julialang.org/)), please get in touch.
 However, before contacting me for this reason, please have a good look at the codebase here on GitHub, and at the papers [[1,2](#references)]. VBMC is a fairly complex piece of software, so be aware that porting it will require considerable effort and programming/computing skills.
+
+## Presentations
+
+VBMC has now been presented at seminars in Oxford (UK), Bristol (UK), NYU (NY), Helsinki (Finland), Brown University (RI), etc., and online conferences. Recent presentations cover both VBMC papers (2018, 2020) and related work.
+- See [here](https://github.com/lacerbi/infbench/raw/master/presentations/acerbi-einsteinml-apr2021.pdf) for slides.
+- See [here](https://www.youtube.com/watch?v=OslB0Q6kJBM) for an (earlier) recorded talk given at the Finnish Center for Artificial Intelligence (FCAI).
+
 
 ## References
 
