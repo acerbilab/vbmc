@@ -1033,7 +1033,7 @@ stats.elbo(iter) = elbo;
 stats.elbo_sd(iter) = elbo_sd;
 stats.sKL(iter) = sKL;
 if ~isempty(sKL_true)
-    stats.sKL_true = sKL_true;
+    stats.sKL_true(iter) = sKL_true;
 end
 stats.gpNoise_hpd(iter) = sqrt(optimState.sn2hpd);
 stats.gpSampleVar(iter) = varss;
