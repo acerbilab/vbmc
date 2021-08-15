@@ -122,7 +122,7 @@ If you have trouble doing something with VBMC, spot bugs or strange behavior, or
 
 ## VBMC for other programming languages
 
-VBMC is currently available only for MATLAB. We started working on a Python version in early 2021, but the whole port is going to take a while.
+VBMC is currently available only for MATLAB. We started working on a Python version in 2021 with support from the [Finnish Centre for Artificial Intelligence (FCAI)](https://fcai.fi/).
 
 If you are interested in helping porting VBMC to Python or another language (R, [Julia](https://julialang.org/)), please get in touch.
 However, before contacting me for this reason, please have a good look at the codebase here on GitHub, and at the papers [[1,2](#references)]. VBMC is a fairly complex piece of software, so be aware that porting it will require considerable effort and programming/computing skills.
@@ -155,6 +155,10 @@ You may also want to check out [Bayesian Adaptive Direct Search](https://github.
 
 3. Acerbi, L. (2019). An Exploration of Acquisition and Mean Functions in Variational Bayesian Monte Carlo. In *Proc. Machine Learning Research* 96: 1-10. 1st Symposium on Advances in Approximate Bayesian Inference, Montréal, Canada. ([paper in PMLR](http://proceedings.mlr.press/v96/acerbi19a.html))
 
+
+### Acknowledgments
+
+The ongoing Python port is being supported by the Academy of Finland Flagship programme: [Finnish Centre for Artificial Intelligence (FCAI)](https://fcai.fi/).
 
 ### License
 
