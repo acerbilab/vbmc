@@ -1,7 +1,7 @@
 # Variational Bayesian Monte Carlo (VBMC) - v1.0.7
 
 **News:** 
-- Added a [Presentations](https://github.com/lacerbi/vbmc#presentations) section with links to (relatively) recent slides and video recordings of VBMC related work.
+- Added a [Presentations](#presentations) section with links to (relatively) recent slides and video recordings of VBMC related work.
 - **New paper at NeurIPS (Sep/25/2020)** The "Variational Bayesian Monte Carlo with Noisy Likelihoods" paper [[2](#references)] has been accepted at *NeurIPS* 2020! This is the second VBMC paper at *NeurIPS*. The paper is available in the [NeurIPS proceedings](https://proceedings.neurips.cc/paper/2020/hash/5d40954183d62a82257835477ccad3d2-Abstract.html) and [on arXiv](https://arxiv.org/abs/2006.08655). 
 - **Major update (Jun/16/2020)** VBMC v1.0 has been released! (see [tweeprint](https://twitter.com/AcerbiLuigi/status/1273242222385868800?s=20)) This update includes full support for noisy log-likelihood evaluations, a linear transformation of the inference space to better represent the variational posterior, and a number of tweaks to the algorithm's settings for improved performance. See the [new preprint](https://arxiv.org/abs/2006.08655) for more information [[2](#references)].
 - The original VBMC paper has been published at *NeurIPS* 2018 [[1](#references)], and an exploration of various VBMC features has been published in *PMLR* [[3](#additional-references)].
@@ -93,7 +93,7 @@ See the VBMC paper for more details [[1](#references)].
 
 ## VBMC with noisy likelihoods
 
-VBMC v1.0 (June 2020) introduced support for noisy models [[2](#references)]. See the [presentations](https://github.com/lacerbi/vbmc#presentations) section below for recorded talks that discuss the new version of VBMC.
+VBMC v1.0 (June 2020) introduced support for noisy models [[2](#references)]. See the [presentations](#presentations) section below for recorded talks that discuss the new version of VBMC.
 To run VBMC on a noisy problem, first you need to ensure that your target function `fun` returns:
 
 - as first output, the noisy value of the log-posterior (where the noise usually comes from a stochastic evaluation of the log-likelihood);
