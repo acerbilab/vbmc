@@ -93,7 +93,7 @@ See the VBMC paper for more details [[1](#references)].
 
 ## VBMC with noisy likelihoods
 
-VBMC v1.0 (June 2020) introduced support for noisy models [[2](#references)]. See [here](https://nips.cc/virtual/2020/public/poster_5d40954183d62a82257835477ccad3d2.html) for a short video introducing the new version of VBMC, presented at *NeurIPS 2020*.
+VBMC v1.0 (June 2020) introduced support for noisy models [[2](#references)]. See the [presentations](https://github.com/lacerbi/vbmc#presentations) section below for recorded talks that discuss the new version of VBMC.
 To run VBMC on a noisy problem, first you need to ensure that your target function `fun` returns:
 
 - as first output, the noisy value of the log-posterior (where the noise usually comes from a stochastic evaluation of the log-likelihood);
