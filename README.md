@@ -122,7 +122,7 @@ If you have trouble doing something with VBMC, spot bugs or strange behavior, or
 
 ## VBMC for other programming languages
 
-VBMC is currently available only for MATLAB. We started working on a Python version in 2021 with support from the [Finnish Centre for Artificial Intelligence (FCAI)](https://fcai.fi/).
+VBMC is currently available only for MATLAB. We started working on a Python version in 2021 with support from the [Finnish Center for Artificial Intelligence FCAI](https://fcai.fi/).
 
 If you are interested in helping porting VBMC to Python or another language (R, [Julia](https://julialang.org/)), please get in touch.
 However, before contacting me for this reason, please have a good look at the codebase here on GitHub, and at the papers [[1,2](#references)]. VBMC is a fairly complex piece of software, so be aware that porting it will require considerable effort and programming/computing skills.
