@@ -106,7 +106,16 @@ if Ns > 0
     [H,dH] = entmc_vbmc(vp,Ns,grad_flags,jacobian_flag);
 else
     % Deterministic approximation via lower bound on the entropy
-    [H,dH] = entlb_vbmc(vp,grad_flags,jacobian_flag);    
+    if any(grad_flags) || 1
+        [H,dH] = entlb_vbmc(vp,grad_flags,jacobian_flag);
+    else
+        % This should be experimented - unused for now
+        % No gradient, compute both lower bounds and take the highest
+        H1 = entlb_vbmc(vp,grad_flags,jacobian_flag);
+        H2 = entlb2_vbmc(vp,grad_flags,jacobian_flag);
+        H = max([H1,H2]);
+        dH = [];
+    end
 end
 
 %H_check = gmment_num(theta,lambda);

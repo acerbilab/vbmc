@@ -188,6 +188,16 @@ J_sjk(:,:,:) = elbostats.J_sjk(idx,:,:,:);
 vp = vp0_fine(idx);
 vp = rescale_params(vp,elbostats.theta(idx,:));
 vp.temperature = optimState.temperature;
+ 
+% t = linspace(0.01,0.99,99);
+% for i = 1:numel(t)
+%     y(i) = entlb2_vbmc(vp,[],[],t(i));
+% end
+% plot(t,y);
+% [ymax,idx] = max(y);
+%[H, entlb_vbmc(vp), entlb2_vbmc(vp), t(idx), ymax]
+% [H, entlb_vbmc(vp), entlb2_vbmc(vp)]
+
 
 %% Potentially prune mixture components
 
