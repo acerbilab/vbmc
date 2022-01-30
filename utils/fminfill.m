@@ -12,6 +12,9 @@ if nargin < 8; options = []; end
 N0 = size(x0,1);
 N = options.FunEvals;
 
+if isfield(options,'Method'); Method = options.Method; else; Method = []; end
+if isempty(Method); Method = 'sobol'; end
+
 nvars = max([size(x0,2),numel(LB),numel(UB),numel(PLB),numel(PUB)]);
 
 if isempty(tprior)
@@ -44,14 +47,16 @@ end
 if N > N0
     % First test hyperparameters on a space-filling initial design
     S = [];
-    if nvars <= 40   % Sobol generator handles up to 40 variables
-        MaxSeed = 997;
-        seed = randi(MaxSeed);                  % Random seed
-        try
-            S = (sobol_generate(nvars,N-N0,seed))';
-            S = S(:,randperm(nvars));   % Randomly permute columns
-        catch
-            % Failed to generate Sobol sequence
+    if strcmpi(Method,'sobol')
+        if nvars <= 40   % Sobol generator handles up to 40 variables
+            MaxSeed = 997;
+            seed = randi(MaxSeed);                  % Random seed
+            try
+                S = (sobol_generate(nvars,N-N0,seed))';
+                S = S(:,randperm(nvars));   % Randomly permute columns
+            catch
+                % Failed to generate Sobol sequence
+            end
         end
     end
     if isempty(S)       % Just use random sampling
@@ -90,7 +95,7 @@ if N > N0
 
     end
 else
-    Xs = [];    
+    Xs = [];
 end
 
 X = [x0;Xs];
@@ -126,25 +131,43 @@ end
 %--------------------------------------------------------------------------
 function x = uuinv(p,B,w)
 %UUINV Inverse of mixture of uniforms cumulative distribution function (cdf).
+% The mixture is:
+% w \text{Uniform}(B(2), B(3)) + 
+% \frac{1 - w}{2} (\text{Uniform}(B(1), B(2)) + \text{Uniform}(B(3), B(4))
 
 x = zeros(size(p));
-L1 = B(4) - B(1);
-L2 = B(3) - B(2);
+L = B(4) - B(1) + B(2) - B(3);
 
+if w == 1
+    x = p * (B(3)- B(2)) + B(2);
+elseif L == 0
+    % Degenerate to mixture of delta and uniform distributions
+    idx1 = p <= (1 - w) / 2;
+    x(idx1) = B(1);
+
+    if w ~= 0
+        idx2 = (p <= (1 - w) / 2 + w) & ~idx1;
+        x(idx2) = (p(idx2) - (1 - w) / 2) * (B(3) - B(2)) / w + B(2);
+    end
+
+    idx3 = p > (1 - w) / 2 + w;
+    x(idx3) = B(4);
+else
 % First step
-idx1 = p <= (1-w) * (B(2) - B(1)) / L1;
-x(idx1) = B(1) + p(idx1) * L1 / (1 - w);
+    idx1 = p <= (1-w) * (B(2) - B(1)) / L;
+    x(idx1) = B(1) + p(idx1) * L / (1 - w);
 
 % Second step
-idx2 = (p <= (1-w) * (B(3) - B(1)) / L1 + w) & ~idx1;
-x(idx2) = (p(idx2) * L1 * L2 + B(1)*(1-w)*L2 + w*B(2)*L1) / (L1*w + L2*(1-w));
-
+    idx2 = (p <= (1-w) * (B(2) - B(1)) / L + w) & ~idx1;
+    if w ~= 0 
+        x(idx2) = (p(idx2) - (1 - w) * (B(2) - B(1)) / L) * (B(3) - B(2)) / w + B(2);
+    end
 % Third step
-idx3 = p > (1-w) * (B(3) - B(1)) / L1 + w;
-x(idx3) = (p(idx3) - w + B(1)*(1-w)/L1) * L1/(1-w);
+    idx3 = p > (1-w) * (B(2) - B(1)) / L + w;
+    x(idx3) = (p(idx3) - w - (1 - w) * (B(2) - B(1)) / L) * L / (1 - w) + B(3);
 
 x(p < 0 | p > 1) = NaN;
-
+end
 end
 
 %--------------------------------------------------------------------------
