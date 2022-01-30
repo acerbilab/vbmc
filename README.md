@@ -1,4 +1,4 @@
-# Variational Bayesian Monte Carlo (VBMC) - v1.0.7
+# Variational Bayesian Monte Carlo (VBMC) - v1.0.8
 
 **News:** 
 - Added a [Presentations](#presentations) section with links to (relatively) recent slides and video recordings of VBMC related work.
