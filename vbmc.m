@@ -314,9 +314,6 @@ defopts.OutwarpThreshMult  = '1.25              % Output warping threshold multi
 defopts.OutwarpThreshTol   = '0.8               % Output warping base threshold tolerance (fraction of current threshold)';
 defopts.Temperature        = '1                 % Temperature for posterior tempering (allowed values T = 1,2,3,4)';
 defopts.SeparateSearchGP   = 'no                % Use separate GP with constant mean for active search';
-defopts.NoiseShaping       = 'no                % Discount observations from from extremely low-density regions';
-defopts.NoiseShapingThreshold = '10*nvars       % Threshold from max observed value to start discounting';
-defopts.NoiseShapingFactor = '0.05              % Proportionality factor of added noise wrt distance from threshold';
 defopts.AcqHedge           = 'no                % Hedge on multiple acquisition functions';
 defopts.AcqHedgeIterWindow = '4                 % Past iterations window to judge acquisition fcn improvement';
 defopts.AcqHedgeDecay      = '0.9               % Portfolio value decay per function evaluation';
@@ -351,6 +348,13 @@ defopts.WarpTolImprovement = '0.1               % Improvement of ELBO required t
 defopts.WarpTolSDMultiplier = '2                % Multiplier tolerance of ELBO SD after warp proposal';
 defopts.WarpTolSDBase      = '1                 % Base tolerance on ELBO SD after warp proposal';
 
+% Low-density noise options
+defopts.NoiseShaping       = 'no                % Discount observations from from extremely low-density regions';
+defopts.NoiseShapingThreshold = '10*nvars       % Threshold from max observed value to start discounting';
+defopts.NoiseShapingFactor = '0.15              % Proportionality factor of added noise wrt distance from threshold';
+defopts.NoiseShapingMin    = 'sqrt(1e-3)        % Minimum added noise';
+defopts.NoiseShapingMed    = '1                 % Added noise at threshold';
+defopts.NoiseShapingMaxRatio = 'Inf             % Maximum ratio of max/min added noise';
 
 %% Advanced options for unsupported/untested features (do *not* modify)
 defopts.WarpNonlinear      = 'off               % Nonlinear input warping';
