@@ -123,7 +123,7 @@ for s = 1:Ns
         % Compute log probability of test inputs
         if ~isempty(ystar) && nargout > 4
             if outwarp_flag; error('output warping unsupported'); end
-            lp(:,s) = -(ystar-ymu(:,s)).^2./(sn2_star*sn2_mult)/2-log(2*pi*sn2_star*sn2_mult)/2;
+            lp(:,s) = -0.5*(ystar-ymu(:,s)).^2./ys2(:,s) - 0.5*log(2*pi*ys2(:,s));
         end
     end
     

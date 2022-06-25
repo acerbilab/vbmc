@@ -300,6 +300,17 @@ else                    % Active uncertainty sampling
                         bads_opts.TolFun = TolFun;
                         bads_opts.MaxFunEvals = options.SearchMaxFunEvals;
                         [xsearch_optim,fval_optim,~,out_optim] = bads(@(x) acqEval(x,vp,gp,optimState,0),x0,LB,UB,LB,UB,[],bads_opts);
+                    case 'slicesample'
+                        samplefun = @(x) -acqEval(x,vp,gp,optimState,0);                        
+                        sampleopts.Thin = 1;
+                        sampleopts.Burnin = 10+D;
+                        sampleopts.Display = 'off';
+                        sampleopts.Diagnostics = false;
+                        Widths = (UB - LB)/sqrt(12);
+                        [xsearch_optim,fval_optim,~,out_optim] = ...
+                            slicesamplebnd(samplefun,x0,1,Widths,LB,UB,sampleopts);
+                        [x0;xsearch_optim]
+                        
                     otherwise
                         error('vbmc:UnknownOptimizer','Unknown acquisition function search optimization method.');            
                 end        
