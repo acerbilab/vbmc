@@ -31,14 +31,13 @@ optimState.LBeps_orig = LB + (UB - LB)*options.TolBoundX;
 optimState.UBeps_orig = UB - (UB - LB)*options.TolBoundX;
 
 % Transform variables
-%LB = -5*ones(size(LB)); UB = 5*ones(size(UB)); PLB = [-0.1,-1]; PUB = [0.1,1];
-trinfo = warpvars_vbmc(nvars,LB,UB,PLB,PUB);
 switch lower(options.BoundedTransform)
     case 'logit'
+        trinfo = warpvars_vbmc(nvars,LB,UB,PLB,PUB,3);
     case 'norminv'
-        trinfo.type(trinfo.type == 3) = 12;
+        trinfo = warpvars_vbmc(nvars,LB,UB,PLB,PUB,12);
     case 'student4'
-        trinfo.type(trinfo.type == 3) = 13;        
+        trinfo = warpvars_vbmc(nvars,LB,UB,PLB,PUB,13);
     otherwise
         error('vbmc:UnknwonBoundedTransform','Unknown bounded transform.');
 end

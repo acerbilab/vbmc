@@ -864,6 +864,12 @@ else
     else
         plb = []; pub = [];
     end
+    if nargin > 5
+        bounded_type = varargin{6};
+    else
+        % Default bounded type is logit
+        bounded_type = 3;
+    end
             
     % Empty LB and UB are Infs
     if isempty(lb); lb = -Inf; end
@@ -891,7 +897,7 @@ else
     for i = 1:nvars
         if isfinite(lb(i)) && isinf(ub(i)); trinfo.type(i) = 1; end
         if isinf(lb(i)) && isfinite(ub(i)); trinfo.type(i) = 2; end
-        if isfinite(lb(i)) && isfinite(ub(i)) && lb(i) < ub(i); trinfo.type(i) = 3; end
+        if isfinite(lb(i)) && isfinite(ub(i)) && lb(i) < ub(i); trinfo.type(i) = bounded_type; end
     end
     
     % Centering (at the end of the transform)
