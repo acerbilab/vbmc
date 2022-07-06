@@ -34,7 +34,7 @@ optimState.UBeps_orig = UB - (UB - LB)*options.TolBoundX;
 switch lower(options.BoundedTransform)
     case 'logit'
         trinfo = warpvars_vbmc(nvars,LB,UB,PLB,PUB,3);
-    case 'norminv'
+    case {'norminv','probit'}
         trinfo = warpvars_vbmc(nvars,LB,UB,PLB,PUB,12);
     case 'student4'
         trinfo = warpvars_vbmc(nvars,LB,UB,PLB,PUB,13);
