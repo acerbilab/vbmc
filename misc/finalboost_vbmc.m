@@ -47,6 +47,11 @@ if do_boost
     options.MaxIterStochastic = Inf;
     optimState.entropy_alpha = 0;
     
+    % Switch back to stochastic optimization for final boost
+    if strcmpi(options.StochasticOptimizer,'fminunc')
+        options.StochasticOptimizer = 'adam';
+    end
+    
     if isfield(vp,'temperature') && ~isempty(vp.temperature)
         optimState.temperature = vp.temperature;
     end
