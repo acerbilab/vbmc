@@ -1,4 +1,4 @@
-function [H,dH] = entmc_vbmc(vp,Ns,grad_flags,jacobian_flag)
+function [H,dH] = entmc_vbmc(vp,Ns,grad_flags,jacobian_flag,frozen_epsilon)
 %ENTMC_VBMC Monte Carlo estimate of entropy of variational posterior
 
 if nargin < 2 || isempty(Ns); Ns = 10; end
@@ -12,6 +12,9 @@ if isscalar(grad_flags); grad_flags = ones(1,4)*grad_flags; end
 
 % By default assume variational parameters were transformed (before the call)
 if nargin < 4 || isempty(jacobian_flag); jacobian_flag = true; end
+
+% Provided frozen samples from unit normal (D x K x Ns)
+if nargin < 5; frozen_epsilon = []; end
 
 D = vp.D;           % Number of dimensions
 K = vp.K;           % Number of components
@@ -48,10 +51,15 @@ epsilon = zeros(D,1,Ns);
 % Loop over mixture components for generating samples
 for j = 1:K
 
-    % Draw Monte Carlo samples from the j-th component
-    % epsilon = randn(D,1,Ns);
-    epsilon(:,1,1:Ns/2) = randn(D,1,Ns/2);  % Antithetic sampling
-    epsilon(:,1,Ns/2+1:end) = -epsilon(:,1,1:Ns/2);
+    if isempty(frozen_epsilon)
+        % Draw Monte Carlo samples from the j-th component
+        % epsilon = randn(D,1,Ns);
+        epsilon(:,1,1:Ns/2) = randn(D,1,Ns/2);  % Antithetic sampling
+        epsilon(:,1,Ns/2+1:end) = -epsilon(:,1,1:Ns/2);
+    else
+        % Use frozen samples
+        epsilon(:,1,:) = frozen_epsilon(:,j,:);
+    end
     xi = bsxfun(@plus, bsxfun(@times, bsxfun(@times, epsilon, lambda), sigma(j)), mu_4(:,1,1,j));
     
     Xs = reshape(xi,[D,Ns])';

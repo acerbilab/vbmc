@@ -68,14 +68,14 @@ for iOpt = 1:Nslowopts
     if vp.optimize_weights; theta0 = [theta0; log(vp0.w(:))]; end
     % theta0 = min(vp.UB_theta',max(vp.LB_theta', theta0));
 
-    vbtrainmc_fun = @(theta_) negelcbo_vbmc(theta_,elcbo_beta,vp0,gp,NSentK,1,compute_var,options.AltMCEntropy,thetabnd,optimState.entropy_alpha);
+    vbtrainmc_fun = @(theta_) negelcbo_vbmc(theta_,elcbo_beta,vp0,gp,NSentK,1,compute_var,options.AltMCEntropy,thetabnd,optimState.entropy_alpha,[]);
 
     if NSentK == 0
         % Fast optimization via deterministic entropy approximation
         TolOpt = options.DetEntTolOpt;
         vbtrain_options.TolFun = TolOpt;
         vbtrain_options.MaxFunEvals = 50*(vp.D+2);
-        vbtrain_fun = @(theta_) negelcbo_vbmc(theta_,elcbo_beta,vp0,gp,0,compute_grad,compute_var,0,thetabnd,optimState.entropy_alpha);
+        vbtrain_fun = @(theta_) negelcbo_vbmc(theta_,elcbo_beta,vp0,gp,0,compute_grad,compute_var,0,thetabnd,optimState.entropy_alpha,[]);
         try
             [thetaopt,~,~,output] = fminunc(vbtrain_fun,theta0(:)',vbtrain_options);
             % output.funcCount
@@ -101,7 +101,7 @@ for iOpt = 1:Nslowopts
         end
         % output, % pause
     else
-        % Optimization via unbiased stochastic entropy approximation
+        % Stochastic optimization via Monte Carlo entropy approximation
         thetaopt = theta0(:)';
                 
         switch lower(options.StochasticOptimizer)
@@ -150,11 +150,27 @@ for iOpt = 1:Nslowopts
                 cmaes_opts.Noise.on = 1;    % Noisy evaluations
                 try
                     thetaopt = cmaes_modded('negelcbo_vbmc',theta0(:),insigma,cmaes_opts, ...
-                        elcbo_beta,vp0,gp,NSentK,0,compute_var,options.AltMCEntropy,thetabnd,optimState.entropy_alpha); 
+                        elcbo_beta,vp0,gp,NSentK,0,compute_var,options.AltMCEntropy,thetabnd,optimState.entropy_alpha,[]); 
                 catch
                     pause
                 end
                 thetaopt = thetaopt(:)';
+                
+            case 'fminunc'
+                % Deterministic "frozen" Monte Carlo approximation
+                NSentK = ceil(NSentK/2)*2;  % Make sure NsentK is even
+                frozen_epsilon = zeros(vp.D,K,NSentK);
+                frozen_epsilon(:,:,1:NSentK/2) = randn(vp.D,K,NSentK/2);  % Antithetic sampling
+                frozen_epsilon(:,:,NSentK/2+1:end) = -frozen_epsilon(:,:,1:NSentK/2);                
+                
+                vbtrainmc_fun = @(theta_) negelcbo_vbmc(theta_,elcbo_beta,vp0,gp,NSentK,1,compute_var,options.AltMCEntropy,thetabnd,optimState.entropy_alpha,frozen_epsilon);
+                fminunc_opts = optimoptions('fminunc');
+                fminunc_opts.TolFun = options.TolFunStochastic;
+                fminunc_opts.MaxFunEvals = options.MaxIterStochastic;
+                fminunc_opts.Display = 'off';
+                
+                % MaxIter = min(options.MaxIterStochastic,1e4);
+                thetaopt = fminunc(vbtrainmc_fun,thetaopt,fminunc_opts);                
                 
             otherwise
                 error('vbmc:VPoptimize','Unknown stochastic optimizer.');

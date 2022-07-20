@@ -1,4 +1,4 @@
-function [F,dF,G,H,varF,dH,varGss,varG,varH,I_sk,J_sjk] = negelcbo_vbmc(theta,beta,vp,gp,Ns,compute_grad,compute_var,altent_flag,thetabnd,entropy_alpha)
+function [F,dF,G,H,varF,dH,varGss,varG,varH,I_sk,J_sjk] = negelcbo_vbmc(theta,beta,vp,gp,Ns,compute_grad,compute_var,altent_flag,thetabnd,entropy_alpha,frozen_samples)
 %NEGELCBO_VBMC Negative evidence lower confidence bound objective
 %
 % Note that THETA is a vector of *transformed* variational parameters:
@@ -12,6 +12,7 @@ if nargin < 7; compute_var = []; end
 if nargin < 8 || isempty(altent_flag); altent_flag = false; end
 if nargin < 9; thetabnd = []; end
 if nargin < 10 || isempty(entropy_alpha); entropy_alpha = 0; end
+if nargin < 11; frozen_samples = []; end
 if isempty(beta) || ~isfinite(beta); beta = 0; end
 if isempty(compute_var); compute_var = beta ~=0 || nargout > 4; end
 separate_K = nargout > 9; % Return expected log joint per component
@@ -103,7 +104,7 @@ end
 % Entropy term
 if Ns > 0   
     % Monte Carlo approximation
-    [H,dH] = entmc_vbmc(vp,Ns,grad_flags,jacobian_flag);
+    [H,dH] = entmc_vbmc(vp,Ns,grad_flags,jacobian_flag,frozen_samples);
 else
     % Deterministic approximation via lower bound on the entropy
     [H,dH] = entlb_vbmc(vp,grad_flags,jacobian_flag);    
