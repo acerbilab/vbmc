@@ -38,8 +38,8 @@ if onlyvp_flag
     
     Na = options.ActiveImportanceSamplingMCMCSamples;
     Xa = vbmc_rnd(vp,Na,0);
-    [~,~,fmu,fs2] = gplite_pred(gp,Xa,[],[],1,0);        
-        
+    [~,~,fmu,fs2] = gplite_pred(gp,Xa,[],[],1,0);
+    
     if isfield(acqinfo,'mcmc_importance_sampling') && acqinfo.mcmc_importance_sampling
         
         % Compute fractional effective sample size (ESS)
