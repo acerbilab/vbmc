@@ -20,6 +20,7 @@ onlyvp_flag = isfield(acqinfo,'variational_importance_sampling') ...
     && acqinfo.variational_importance_sampling;
 
 D = size(gp.X,2);
+
 Ns_gp = numel(gp.post); % # GP hyperparameter samples
 
 % Input space bounds and typical scales (for MCMC only)
@@ -36,7 +37,20 @@ ActiveImportanceSampling.fs2a = [];
 if onlyvp_flag
     %% Step 0: Simply sample from the variational posterior
     
-    Na = options.ActiveImportanceSamplingMCMCSamples;
+    if ischar(options.ActiveImportanceSamplingMCMCSamples)
+        K = vp.K;
+        nvars = D;
+        Na = ceil(eval(options.ActiveImportanceSamplingMCMCSamples));
+    elseif isscalar(options.ActiveImportanceSamplingMCMCSamples)
+        Na = ceil(options.ActiveImportanceSamplingMCMCSamples);
+    else
+        Na = 0;
+    end
+    
+    if ~isfinite(Na) || ~isscalar(Na) || Na <= 0
+        error('OPTIONS.ActiveImportanceSamplingMCMCSamples should be (or evaluate to) a positive integer.');
+    end
+    
     Xa = vbmc_rnd(vp,Na,0);
     [~,~,fmu,fs2] = gplite_pred(gp,Xa,[],[],1,0);        
         
@@ -234,6 +248,7 @@ end
 
 % Precompute cross-kernel matrix on importance points
 Kax_mat = zeros(size(ActiveImportanceSampling.Xa,1),size(gp.X,1),Ns_gp);
+Ctmp_mat = zeros(size(gp.X,1),size(ActiveImportanceSampling.Xa,1),Ns_gp);
 for s = 1:Ns_gp
     if size(ActiveImportanceSampling.Xa,3) == 1
         Xa = ActiveImportanceSampling.Xa;
@@ -241,6 +256,9 @@ for s = 1:Ns_gp
         Xa(:,:) = ActiveImportanceSampling.Xa(:,:,s);
     end
     hyp = gp.post(s).hyp;
+    L = gp.post(s).L;
+    Lchol = gp.post(s).Lchol;
+    sn2_eff = 1/gp.post(s).sW(1)^2;
     if gp.covfun(1) == 1    % Hard-coded SE-ard for speed
         ell = exp(hyp(1:D))';
         sf2 = exp(2*hyp(D+1));        
@@ -249,8 +267,15 @@ for s = 1:Ns_gp
     else
         error('Other covariance functions not supported yet.');
     end
+    
+    if Lchol
+        Ctmp_mat(:,:,s) = (L\(L'\Kax_mat(:,:,s)'))/sn2_eff;
+    else
+        Ctmp_mat(:,:,s) = (L*Kax_mat(:,:,s)');        
+    end    
 end
 ActiveImportanceSampling.Kax_mat = Kax_mat;
+ActiveImportanceSampling.Ctmp_mat = Ctmp_mat;
 
 % Precompute integrated mean basis function on importance points
 if isfield(gp,'intmeanfun') && gp.intmeanfun > 0
