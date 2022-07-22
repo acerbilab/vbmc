@@ -165,6 +165,7 @@ for iOpt = 1:Nslowopts
                 
                 vbtrainmc_fun = @(theta_) negelcbo_vbmc(theta_,elcbo_beta,vp0,gp,NSentK,1,compute_var,options.AltMCEntropy,thetabnd,optimState.entropy_alpha,frozen_epsilon);
                 fminunc_opts = optimoptions('fminunc');
+                fminunc_opts.GradObj = 'on';
                 fminunc_opts.TolFun = options.TolFunStochastic;
                 fminunc_opts.MaxFunEvals = options.MaxIterStochastic;
                 fminunc_opts.Display = 'off';
