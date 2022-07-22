@@ -99,10 +99,9 @@ for s = 1:Ns
     
     tau2 = bsxfun(@rdivide,C.^2,ys2(:,s));
     s_pred = sqrt(max(bsxfun(@minus,optimState.ActiveImportanceSampling.fs2a(:,s)',tau2),0));
-    
-    lnw = optimState.ActiveImportanceSampling.lnw(s,:);
-       
+           
     % lnw is zeros (VIQR uses simple Monte Carlo, no importance sampling)
+    % lnw = optimState.ActiveImportanceSampling.lnw(s,:);
     % zz = bsxfun(@plus,lnw,u*s_pred + log1p(-exp(-2*u*s_pred)));
     zz = u*s_pred + log1p(-exp(-2*u*s_pred));
     lnmax = max(zz,[],2);
