@@ -59,7 +59,7 @@ end
 
 for s = 1:Ns    
     hyp = gp.post(s).hyp;
-    L = gp.post(s).L;
+    %L = gp.post(s).L;
     Lchol = gp.post(s).Lchol;
     %sn2_eff = 1/gp.post(s).sW(1)^2;
     
