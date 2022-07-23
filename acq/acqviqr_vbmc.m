@@ -59,31 +59,36 @@ end
 
 for s = 1:Ns    
     hyp = gp.post(s).hyp;
-    L = gp.post(s).L;
+    %L = gp.post(s).L;
     Lchol = gp.post(s).Lchol;
-    sn2_eff = 1/gp.post(s).sW(1)^2;
+    %sn2_eff = 1/gp.post(s).sW(1)^2;
     
     % Compute cross-kernel matrix Ks_mat
     if gp.covfun(1) == 1    % Hard-coded SE-ard for speed
         ell = exp(hyp(1:D))';
         sf2 = exp(2*hyp(D+1));
-        Ks_mat = sq_dist(gp.X*diag(1./ell),Xs*diag(1./ell));
+        Xs_ell = bsxfun(@rdivide,Xs,ell);
+        
+        Ks_mat = sq_dist(bsxfun(@rdivide,gp.X,ell),Xs_ell);
         Ks_mat = sf2 * exp(-Ks_mat/2);
         
-        Ka_mat = sq_dist(Xa*diag(1./ell),Xs*diag(1./ell));
+        Ka_mat = sq_dist(Xs_ell,bsxfun(@rdivide,Xa,ell));        
         Ka_mat = sf2 * exp(-Ka_mat/2);
         
         %Kax_mat = sq_dist(Xa*diag(1./ell),gp.X*diag(1./ell));
         %Kax_mat = sf2 * exp(-Kax_mat/2);        
-        Kax_mat(:,:) = optimState.ActiveImportanceSampling.Kax_mat(:,:,s);
+        %Kax_mat(:,:) = optimState.ActiveImportanceSampling.Kax_mat(:,:,s);
+        Ctmp_mat(:,:) = optimState.ActiveImportanceSampling.Ctmp_mat(:,:,s);
     else
         error('Other covariance functions not supported yet.');
     end
     
     if Lchol
-        C = Ka_mat' - Ks_mat'*(L\(L'\Kax_mat'))/sn2_eff;
+        % C = Ka_mat - Ks_mat'*(L\(L'\Kax_mat'))/sn2_eff;
+        C = Ka_mat - Ks_mat'*Ctmp_mat;
     else
-        C = Ka_mat' + Ks_mat'*(L*Kax_mat');        
+        % C = Ka_mat + Ks_mat'*(L*Kax_mat');
+        C = Ka_mat + Ks_mat'*Ctmp_mat;
     end
     
     if integrated_meanfun
@@ -94,10 +99,11 @@ for s = 1:Ns
     
     tau2 = bsxfun(@rdivide,C.^2,ys2(:,s));
     s_pred = sqrt(max(bsxfun(@minus,optimState.ActiveImportanceSampling.fs2a(:,s)',tau2),0));
-    
-    lnw = optimState.ActiveImportanceSampling.lnw(s,:);
-        
-    zz = bsxfun(@plus,lnw,u*s_pred + log1p(-exp(-2*u*s_pred)));
+           
+    % lnw is zeros (VIQR uses simple Monte Carlo, no importance sampling)
+    % lnw = optimState.ActiveImportanceSampling.lnw(s,:);
+    % zz = bsxfun(@plus,lnw,u*s_pred + log1p(-exp(-2*u*s_pred)));
+    zz = u*s_pred + log1p(-exp(-2*u*s_pred));
     lnmax = max(zz,[],2);
     acq(:,s) = log(sum(exp(bsxfun(@minus,zz,lnmax)),2)) + lnmax;    
 end
