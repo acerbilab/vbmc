@@ -44,7 +44,7 @@ Nmean = gp.Nmean;
 
 Ns = numel(gp.post);            % Hyperparameter samples
 
-if all(gp.meanfun ~= [0,1,4,6,8,10,12,14,16,18,20,22])
+if all(gp.meanfun ~= [0,1,4,6,8,10,12,14,16,18,20,22,24])
     error('gplogjoint:UnsupportedMeanFun', ...
         'Log joint computation currently only supports zero, constant, negative quadratic, negative quadratic (fixed/isotropic), negative quadratic-only, or squared exponential mean functions.');
 end
@@ -54,12 +54,13 @@ quadratic_meanfun = gp.meanfun == 4 || gp.meanfun == 10 || gp.meanfun == 12;
 fixediso_meanfun = gp.meanfun == 10;
 fixed_meanfun = gp.meanfun == 12 || gp.meanfun == 14;
 sqexp_meanfun = gp.meanfun == 6;
-quadsqexp_meanfun = gp.meanfun == 8 || gp.meanfun == 14;
+quadsqexp_meanfun = gp.meanfun == 8 || gp.meanfun == 14 || gp.meanfun == 24;
 quadsqexpconstrained_meanfun = gp.meanfun == 14;
 quadraticonly_meanfun = gp.meanfun == 16;
 quadraticfixedonly_meanfun = gp.meanfun == 18;
 quadraticlinonly_meanfun = gp.meanfun == 20;
 quadraticmix_meanfun = gp.meanfun == 22;
+quadraticseprop_meanfun = gp.meanfun == 24;
 
 F = zeros(1,Ns);
 % Check which gradients are computed
@@ -109,7 +110,7 @@ for s = 1:Ns
     else
         m0 = 0;
     end
-    if quadratic_meanfun || sqexp_meanfun || quadsqexp_meanfun || quadsqexpconstrained_meanfun || quadraticmix_meanfun
+    if quadratic_meanfun || sqexp_meanfun || quadsqexp_meanfun || quadsqexpconstrained_meanfun || quadraticmix_meanfun || quadraticseprop_meanfun
         if fixediso_meanfun
             xm(:,1) = gp.meanfun_extras(1:D)';
             omega = exp(hyp(Ncov+Nnoise+2));
@@ -136,10 +137,14 @@ for s = 1:Ns
         omega_se = omega*exp(hyp(Ncov+Nnoise+D+2));
         h_se = exp(hyp(Ncov+Nnoise+D+3));
         m0 = m0 - h_se;
-    elseif quadsqexp_meanfun
+    elseif quadsqexp_meanfun && ~quadraticseprop_meanfun
         xm_se = hyp(Ncov+Nnoise+2*D+1+(1:D));
         omega_se = exp(hyp(Ncov+Nnoise+3*D+1+(1:D)));
-        h_se = hyp(Ncov+Nnoise+4*D+2);        
+        h_se = hyp(Ncov+Nnoise+4*D+2);
+    elseif quadraticseprop_meanfun
+        xm_se = xm;
+        omega_se = omega*exp(hyp(Ncov+Nnoise+2*D+2));
+        h_se = hyp(Ncov+Nnoise+2*D+3);
     end
     if quadraticonly_meanfun
         omega = exp(hyp(Ncov+Nnoise+(1:D)));

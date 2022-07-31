@@ -44,7 +44,7 @@ for s = 1:Ns_gp
             
             hyp_warped(Ncov+Nnoise+1,s) = m0w;
         
-        case 4
+        case {4, 8, 14, 24}
             % Warp quadratic mean
             m0 = hyp(Ncov+Nnoise+1);
             xm = hyp(Ncov+Nnoise+1+(1:D))';
@@ -61,6 +61,31 @@ for s = 1:Ns_gp
             hyp_warped(Ncov+Nnoise+1,s) = m0w;
             hyp_warped(Ncov+Nnoise+1+(1:D),s) = xmw';
             hyp_warped(Ncov+Nnoise+1+D+(1:D),s) = log(omegaw)';            
+            
+            if gp_old.meanfun == 8
+                % Warp squared exponential mean
+                xm_se = hyp(Ncov+Nnoise+2*D+1+(1:D))';
+                omega_se = exp(hyp(Ncov+Nnoise+3*D+1+(1:D)))';
+                h_se = hyp(Ncov+Nnoise+4*D+2);
+            
+                % Warp location and scale (se)
+                [xmw_se,omegaw_se] = unscent_warp(warpfun,xm_se,omega_se);
+                
+                hyp_warped(Ncov+Nnoise+2*D+1+(1:D),s) = xmw_se';
+                hyp_warped(Ncov+Nnoise+3*D+1+(1:D),s) = log(omegaw_se)';            
+                hyp_warped(Ncov+Nnoise+4*D+1,s) = h_se;
+            elseif gp_old.meanfun == 14
+                % Warp squared exponential mean (constrained)
+                alpha_se = exp(hyp(D+2));   % Rescaling for the squared exponential
+                % omega_se = alpha_se*omega;
+                h_se = exp(hyp(D+3));
+            elseif gp_old.meanfun == 24
+                % Warp squared exponential mean (proportional)
+                alpha_se = exp(hyp(Ncov+Nnoise+2*D+2));
+                h_se = hyp(Ncov+Nnoise+2*D+3);                
+                hyp_warped(Ncov+Nnoise+2*D+2,s) = log(alpha_se);
+                hyp_warped(Ncov+Nnoise+2*D+3,s) = h_se;
+            end
             
         otherwise
             error('Unsupported GP mean function for input warping.');

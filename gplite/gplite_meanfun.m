@@ -126,6 +126,12 @@ switch meanfun
     case {23,'23','posquadmix'}
         Nmean = 4 + 2*D;
         meanfun = 23;
+    case {24,'24','negquadseprop'}
+        Nmean = 3 + 2*D;
+        meanfun = 24;
+    case {25,'25','posquadseprop'}
+        Nmean = 3 + 2*D;
+        meanfun = 25;
         
     otherwise
         if isnumeric(meanfun); meanfun = num2str(meanfun); end
@@ -173,18 +179,18 @@ if ischar(hyp)
                 dm.PUB(D+2:2*D+1) = delta.^2;                
             end
             
-        elseif meanfun >= 4 && meanfun <= 15 || meanfun >= 22 && meanfun <= 23
+        elseif meanfun >= 4 && meanfun <= 15 || meanfun >= 22 && meanfun <= 25
             
             % Redefine limits for m0 (meaning depends on mean func type)
             h = max(y) - min(y);    % Height
             switch meanfun
-                case {4,10,12,22}
+                case {4,10,12,22,24}
                     dm.LB(1) = min(y);
                     dm.UB(1) = max(y) + h;
                     dm.PLB(1) = median(y);
                     dm.PUB(1) = max(y);
                     dm.x0(1) = quantile1(y,0.9);
-                case {5,11,13,23}
+                case {5,11,13,23,25}
                     dm.LB(1) = min(y) - h;
                     dm.UB(1) = max(y);
                     dm.PLB(1) = min(y);
@@ -216,7 +222,7 @@ if ischar(hyp)
                     dm.x0(1) = median(y);
             end
             
-            if meanfun >= 4 && meanfun <= 9 || meanfun >= 22 && meanfun <= 23
+            if meanfun >= 4 && meanfun <= 9 || meanfun >= 22 && meanfun <= 25
                 dm.LB(2:D+1) = min(X) - 0.5*w;          % xm
                 dm.UB(2:D+1) = max(X) + 0.5*w;
                 dm.PLB(2:D+1) = min(X);
@@ -288,6 +294,27 @@ if ischar(hyp)
                 dm.PUB(D+3) = log(100);
                 dm.x0(D+3) = log(1);
             end
+            
+            if meanfun == 24 || meanfun == 25
+                dm.LB(2*D+2) = log(0.01);      % alpha_se
+                dm.UB(2*D+2) = log(10);
+                dm.PLB(2*D+2) = log(0.1);
+                dm.PUB(2*D+2) = log(1);
+                dm.x0(2*D+2) = log(0.5);
+                
+                if meanfun == 24
+                    hbest = max(y) - quantile1(y,0.8);                    
+                else
+                    hbest = quantile1(y,0.2) - min(y);
+                end
+                
+                dm.LB(2*D+3) = -h;      % h_se
+                dm.UB(2*D+3) = h;
+                dm.PLB(2*D+3) = -hbest;
+                dm.PUB(2*D+3) = hbest;
+                dm.x0(2*D+3) = 0;
+            end
+            
             
         elseif meanfun >=16 && meanfun <= 19
             dm.LB(1:D) = log(w) + log(ToL);   % omega
@@ -370,6 +397,8 @@ if ischar(hyp)
             case 21; dm.meanfun_name = 'posquadlinonly';
             case 22; dm.meanfun_name = 'negquadmix';
             case 23; dm.meanfun_name = 'posquadmix';
+            case 24; dm.meanfun_name = 'negquadseprop';
+            case 25; dm.meanfun_name = 'posquadseprop';
         end
         
     end
@@ -569,6 +598,30 @@ switch meanfun
             dm(:,2*D+3) = -1/rho2*sumz2.*kkm;
             dm(:,2*D+4) = (-sgn/beta2)*(1-alpham).*sumz2;            
         end
+        
+    case {24,25}  % Sum of negative (24) or positive (25) quadratic and proportional squared exponential
+        if meanfun == 24; sgn = -1; else; sgn = 1; end        
+        m0 = hyp(1);
+        xm = hyp(1+(1:D))';
+        omega = exp(hyp(1+D+(1:D)))';
+        z2 = bsxfun(@rdivide,bsxfun(@minus,X,xm),omega).^2;
+        
+        alpha_se = exp(hyp(2*D+2));   % Rescaling for the squared exponential
+        % omega_se = alpha_se*omega;
+        h_se = hyp(2*D+3);
+        z2_se = z2 ./ alpha_se^2;
+        se0 = exp(-0.5*sum(z2_se,2));
+        se = h_se*se0;
+        
+        m = m0 + (sgn*0.5)*sum(z2,2) - sgn*se;
+        if compute_grad
+            dm(:,1) = ones(N,1);
+            dm(:,1+(1:D)) = (-sgn)*bsxfun(@rdivide,bsxfun(@minus,X,xm), omega.^2) ...
+                - sgn*bsxfun(@times, bsxfun(@rdivide,bsxfun(@minus,X,xm), (alpha_se*omega).^2), se);
+            dm(:,1+D+(1:D)) = (-sgn)*z2 - sgn*bsxfun(@times, z2_se, se);
+            dm(:,2*D+2) = -sgn*sum(z2_se,2).*se;
+            dm(:,2*D+3) = -sgn*se0;
+        end        
         
 end
 

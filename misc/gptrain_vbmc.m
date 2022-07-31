@@ -182,7 +182,7 @@ LB_gp(Ncov+1) = log(MinNoise);     % Increase minimum noise
 switch meanfun
     case 1
         UB_gp(Ncov+Nnoise+1) = min(y_hpd);    % Lower maximum constant mean
-    case {4,10,12,14}
+    case {4,8,10,12,14,22,24}
         if options.gpQuadraticMeanBound
             deltay = max(options.TolSD,min(D,max(y_hpd)-min(y_hpd)));
             UB_gp(Ncov+Nnoise+1) = max(y_hpd)+deltay; 
@@ -194,14 +194,7 @@ switch meanfun
     case 6
         hyp0(Ncov+Nnoise+1) = min(y);
         UB_gp(Ncov+Nnoise+1) = min(y_hpd);    % Lower maximum constant mean
-    case 8
-    case 22
-        if options.gpQuadraticMeanBound
-            deltay = max(options.TolSD,min(D,max(y_hpd)-min(y_hpd)));
-            UB_gp(Ncov+Nnoise+1) = max(y_hpd)+deltay; 
-        end        
 end
-
 
 % Set priors over hyperparameters (might want to double-check this)
 hypprior = [];
