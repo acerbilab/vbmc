@@ -287,6 +287,7 @@ defopts.WeightedHypCov     = 'on                % Use weighted hyperparameter po
 defopts.TolCovWeight       = '0                 % Minimum weight for weighted hyperparameter posterior covariance';
 defopts.GPHypSampler       = 'slicesample       % MCMC sampler for GP hyperparameters';
 defopts.CovSampleThresh    = '10                % Switch to covariance sampling below this threshold of stability index';
+defopts.DetEntropyFcn      = '@entlb_vbmc       % Deterministic approximation of the entropy function';
 defopts.DetEntTolOpt       = '1e-3              % Optimality tolerance for optimization of deterministic entropy';
 defopts.EntropySwitch      = 'off               % Switch from deterministic entropy to stochastic entropy when reaching stability';
 defopts.EntropyForceSwitch = '0.8               % Force switch to stochastic entropy at this fraction of total fcn evals';
@@ -619,7 +620,7 @@ while ~isFinished_flag
                 optimState.LastWarping = optimState.iter;
                 
                 if isempty(action); action = 'undo'; else; action = [action ', undo']; end
-            end            
+            end
             
         end
     end
@@ -665,6 +666,7 @@ while ~isFinished_flag
     
     %% Train GP
     t = tic;
+    
     [gp,hypstruct,Ns_gp,optimState] = ...
         gptrain_vbmc(hypstruct,optimState,stats,options);    
     timer.gpTrain = timer.gpTrain + toc(t);

@@ -523,7 +523,7 @@ else                    % Active uncertainty sampling
         theta = get_vptheta(vp);
         if numel(theta0) ~= numel(theta) || any(theta0 ~= theta)
             NSentFineK = ceil(evaloption_vbmc(options.NSentFineActive,vp0.K)/vp0.K);
-            elbo0 = -negelcbo_vbmc(theta0,0,vp0,gp,NSentFineK,0,1);
+            elbo0 = -negelcbo_vbmc(theta0,0,vp0,gp,NSentFineK,0,1,options.DetEntropyFcn);
             if elbo0 > vp.stats.elbo(end); vp = vp0; end
             % [elbo0,vp.stats.elbo]
         end

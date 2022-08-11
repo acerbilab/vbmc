@@ -44,13 +44,13 @@ vbtrain_options = optimoptions('fminunc','GradObj','on','Display','off');
 vp0 = rescale_params(vp);
 theta0 = log(vp0.w(:));
 
-vbtrainmc_fun = @(theta_) negelcbo_vbmc(theta_,elcbo_beta,vp0,gp,NSentK,1,compute_var,options.AltMCEntropy,thetabnd);
+vbtrainmc_fun = @(theta_) negelcbo_vbmc(theta_,elcbo_beta,vp0,gp,NSentK,1,compute_var,options.DetEntropyFcn,thetabnd);
 
 if NSentK == 0
     % Fast optimization via deterministic entropy approximation
     TolOpt = options.DetEntTolOpt;
     vbtrain_options.TolFun = TolOpt;
-    vbtrain_fun = @(theta_) negelcbo_vbmc(theta_,elcbo_beta,vp0,gp,0,1,compute_var,0,thetabnd);
+    vbtrain_fun = @(theta_) negelcbo_vbmc(theta_,elcbo_beta,vp0,gp,0,1,compute_var,options.DetEntropyFcn,thetabnd);
     try
         [thetaopt,~,~,output] = fminunc(vbtrain_fun,theta0(:)',vbtrain_options);
     catch
@@ -66,7 +66,7 @@ if NSentK == 0
         cmaes_opts.TolHistFun = 1e-7;
         cmaes_opts.MaxFunEvals = 200*vp.D;            
         thetaopt = cmaes_modded('negelcbo_vbmc',theta0(:),insigma,cmaes_opts, ...
-            elcbo_beta,vp0,gp,0,1,compute_var,0,thetabnd); 
+            elcbo_beta,vp0,gp,0,1,compute_var,options.DetEntropyFcn,thetabnd); 
         thetaopt = thetaopt(:)';
     end
     % output, % pause
@@ -95,7 +95,7 @@ else
             cmaes_opts.Noise.on = 1;    % Noisy evaluations
             try
                 thetaopt = cmaes_modded('negelcbo_vbmc',theta0(:),insigma,cmaes_opts, ...
-                    elcbo_beta,vp0,gp,NSentK,0,compute_var,options.AltMCEntropy,thetabnd); 
+                    elcbo_beta,vp0,gp,NSentK,0,compute_var,options.DetEntropyFcn,thetabnd); 
             catch
                 pause
             end
@@ -170,7 +170,7 @@ else
         
     theta = theta(:)';
     [nelbo,~,G,H,varF,~,varss,varG,varH] = ...
-        negelcbo_vbmc(theta,0,vp,gp,NSentFineK,0,1,options.AltMCEntropy,[]);
+        negelcbo_vbmc(theta,0,vp,gp,NSentFineK,0,1,options.DetEntropyFcn,[]);
     nelcbo = nelbo + beta*sqrt(varF);
 
     elbostats.nelbo(idx) = nelbo;

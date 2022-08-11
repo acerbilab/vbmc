@@ -68,14 +68,14 @@ for iOpt = 1:Nslowopts
     if vp.optimize_weights; theta0 = [theta0; log(vp0.w(:))]; end
     % theta0 = min(vp.UB_theta',max(vp.LB_theta', theta0));
 
-    vbtrainmc_fun = @(theta_) negelcbo_vbmc(theta_,elcbo_beta,vp0,gp,NSentK,1,compute_var,options.AltMCEntropy,thetabnd,optimState.entropy_alpha);
+    vbtrainmc_fun = @(theta_) negelcbo_vbmc(theta_,elcbo_beta,vp0,gp,NSentK,1,compute_var,options.DetEntropyFcn,thetabnd,optimState.entropy_alpha);
 
     if NSentK == 0
         % Fast optimization via deterministic entropy approximation
         TolOpt = options.DetEntTolOpt;
         vbtrain_options.TolFun = TolOpt;
         vbtrain_options.MaxFunEvals = 50*(vp.D+2);
-        vbtrain_fun = @(theta_) negelcbo_vbmc(theta_,elcbo_beta,vp0,gp,0,compute_grad,compute_var,0,thetabnd,optimState.entropy_alpha);
+        vbtrain_fun = @(theta_) negelcbo_vbmc(theta_,elcbo_beta,vp0,gp,0,compute_grad,compute_var,options.DetEntropyFcn,thetabnd,optimState.entropy_alpha);
         try
             [thetaopt,~,~,output] = fminunc(vbtrain_fun,theta0(:)',vbtrain_options);
             % output.funcCount
@@ -96,7 +96,7 @@ for iOpt = 1:Nslowopts
             cmaes_opts.TolHistFun = 1e-7;
             cmaes_opts.MaxFunEvals = 200*(vp.D+2);            
             thetaopt = cmaes_modded('negelcbo_vbmc',theta0(:),insigma,cmaes_opts, ...
-                elcbo_beta,vp0,gp,0,0,compute_var,0,thetabnd,optimState.entropy_alpha); 
+                elcbo_beta,vp0,gp,0,0,compute_var,options.DetEntropyFcn,thetabnd,optimState.entropy_alpha); 
             thetaopt = thetaopt(:)';
         end
         % output, % pause
@@ -150,7 +150,8 @@ for iOpt = 1:Nslowopts
                 cmaes_opts.Noise.on = 1;    % Noisy evaluations
                 try
                     thetaopt = cmaes_modded('negelcbo_vbmc',theta0(:),insigma,cmaes_opts, ...
-                        elcbo_beta,vp0,gp,NSentK,0,compute_var,options.AltMCEntropy,thetabnd,optimState.entropy_alpha); 
+                        elcbo_beta,vp0,gp,NSentK,0,compute_var,options.DetEntropyFcn,thetabnd, ...
+                        optimState.entropy_alpha);
                 catch
                     pause
                 end
@@ -286,7 +287,7 @@ else
     
     theta = theta(:)';
     [nelbo,~,G,H,varF,~,varss,varG,varH,I_sk,J_sjk] = ...
-        negelcbo_vbmc(theta,0,vp,gp,NSentFineK,0,computevar_flag,options.AltMCEntropy,[],entropy_alpha);
+        negelcbo_vbmc(theta,0,vp,gp,NSentFineK,0,computevar_flag,options.DetEntropyFcn,[],entropy_alpha);
     nelcbo = nelbo + beta*sqrt(varF);
 
     elbostats.nelbo(idx) = nelbo;

@@ -73,7 +73,7 @@ if Ninit > 0
     % Quickly estimate ELCBO at each candidate variational posterior
     for iOpt = 1:numel(vp0_vec)
         [theta0,vp0_vec(iOpt)] = get_vptheta(vp0_vec(iOpt),vp.optimize_mu,vp.optimize_sigma,vp.optimize_lambda,vp.optimize_weights);        
-        [nelbo_tmp,~,~,~,varF_tmp] = negelcbo_vbmc(theta0,0,vp0_vec(iOpt),gp,NSentKFast,0,compute_var,options.AltMCEntropy,thetabnd);
+        [nelbo_tmp,~,~,~,varF_tmp] = negelcbo_vbmc(theta0,0,vp0_vec(iOpt),gp,NSentKFast,0,compute_var,options.DetEntropyFcn,thetabnd,[]);
         nelcbo_fill(iOpt) = nelbo_tmp + elcbo_beta*sqrt(varF_tmp);
     end
 

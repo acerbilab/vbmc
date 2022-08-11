@@ -55,7 +55,7 @@ UB(idx_fixed) = theta0(idx_fixed);
 try
     switch lower(options.VariationalSampler)
         case 'slicesample'
-            vpmcmc_fun = @(theta_) -negelcbo_vbmc(theta_,elcbo_beta,vp,gp,NSentK,0,compute_var,0,thetabnd);
+            vpmcmc_fun = @(theta_) -negelcbo_vbmc(theta_,elcbo_beta,vp,gp,NSentK,0,compute_var,options.DetEntropyFcn,thetabnd);
             [samples,fvals,exitflag,output] = ...
                 slicesample_vbmc(vpmcmc_fun,theta0,Ns,Widths,LB,UB,sampleopts);
         case 'malasample'
@@ -63,7 +63,7 @@ try
                 sampleopts.Stepsize = optimState.mcmc_stepsize; 
                 output.stepsize = sampleopts.Stepsize;
             end
-            vpmcmc_fun = @(theta_) vpmcmcgrad_fun(theta_,elcbo_beta,vp,gp,NSentK,compute_var,thetabnd);
+            vpmcmc_fun = @(theta_) vpmcmcgrad_fun(theta_,elcbo_beta,vp,gp,NSentK,compute_var,options.DetEntropyFcn,thetabnd);
             [samples,fvals,exitflag,output] = ...
                 malasample_vbmc(vpmcmc_fun,theta0,Ns,Widths,LB,UB,sampleopts);
             % output.accept_rate
@@ -76,7 +76,7 @@ vp = rescale_params(vp,samples(end,:));
 end
 
 function [logp,dlogp] = vpmcmcgrad_fun(theta,elcbo_beta,vp,gp,NSentK,compute_var,thetabnd)
-    [nlogp,ndlogp] = negelcbo_vbmc(theta,elcbo_beta,vp,gp,NSentK,1,compute_var,0,thetabnd);
+    [nlogp,ndlogp] = negelcbo_vbmc(theta,elcbo_beta,vp,gp,NSentK,1,compute_var,options.DetEntropyFcn,thetabnd);
     logp = -nlogp;
     dlogp = -ndlogp;
 end
