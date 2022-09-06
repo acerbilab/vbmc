@@ -1,4 +1,4 @@
-function failed = runtest(options)
+function failed = runtest_vbmc(options)
 %RUNTEST Test Variational Bayesian Monte Carlo (VBMC).
 %  RUNTEST executes a few runs of the VBMC inference algorithm to
 %  check that it is installed correctly, and returns the number of failed

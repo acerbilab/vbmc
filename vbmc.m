@@ -151,6 +151,9 @@ function [vp,elbo,elbo_sd,exitflag,output,samples,optimState,stats,vp_train] = .
 t0 = tic;
 vbmc_version = '1.0.10';
 
+% Check that all VBMC subfolders are on the MATLAB path
+add2path();
+
 %% Basic default options
 defopts.Display                 = 'iter         % Level of display ("iter", "notify", "final", or "off")';
 defopts.Plot                    = 'off          % Plot marginals of variational posterior at each iteration';
@@ -175,7 +178,7 @@ end
 if nargout <= 1 && (nargin == 1 || nargin == 2) && ischar(fun) && strcmpi(fun,'test')
     % Can run a test with a specific OPTIONS struct (otherwise use defaults)
     if nargin == 2; options = x0; else; options = []; end
-    vp = runtest(options);
+    vp = runtest_vbmc(options);
     return;
 end
 
@@ -192,7 +195,7 @@ defopts.IntegerVars             = '[]           % Array with indices of integer 
 defopts.NoiseSize               = '[]           % Base observation noise magnitude (standard deviation)';
 defopts.MaxRepeatedObservations = '0            % Max number of consecutive repeated measurements for noisy inputs';
 defopts.RepeatedAcqDiscount     = '1            % Multiplicative discount on acquisition fcn to repeat measurement at the same location';
-defopts.FunEvalStart            = 'max(D,10)    % Number of initial target fcn evals';
+defopts.FunEvalStart            = '10*ceil((D+1)/10) % Number of initial target fcn evals';
 defopts.SGDStepSize             = '0.005        % Base step size for stochastic gradient descent';
 defopts.SkipActiveSamplingAfterWarmup  = 'no    % Skip active sampling the first iteration after warmup';
 defopts.RankCriterion           = 'yes          % Use ranking criterion to pick best non-converged solution';
@@ -367,9 +370,6 @@ if strcmpi(fun,'all')
     vp = defopts;
     return;
 end
-
-%% Check that all VBMC subfolders are on the MATLAB path
-add2path();
 
 %% Input arguments
 
@@ -1056,7 +1056,7 @@ end
 function add2path()
 %ADD2PATH Adds VBMC subfolders to MATLAB path.
 
-subfolders = {'acq','ent','gplite','misc','shared','utils'};
+subfolders = {'acq','ent','gplite','misc','shared','test','utils'};
 % subfolders = {'acq','ent','gplite','misc','utils','warp'};
 pathCell = regexp(path, pathsep, 'split');
 baseFolder = fileparts(mfilename('fullpath'));
