@@ -1,4 +1,4 @@
-# Variational Bayesian Monte Carlo (VBMC) - v1.0.10
+# Variational Bayesian Monte Carlo (VBMC) - v1.0.11
 
 **News:** 
 - Added a [Presentations](#presentations) section with links to (relatively) recent slides and video recordings of VBMC related work.
@@ -138,6 +138,26 @@ Work related to VBMC has been presented at seminars in Oxford (UK), Bristol (UK)
 
 1. Acerbi, L. (2018). Variational Bayesian Monte Carlo. In *Advances in Neural Information Processing Systems 31*: 8222-8232. ([paper + supplement on arXiv](https://arxiv.org/abs/1810.05558), [NeurIPS Proceedings](https://papers.nips.cc/paper/8043-variational-bayesian-monte-carlo))
 2. Acerbi, L. (2020). Variational Bayesian Monte Carlo with Noisy Likelihoods. In *Advances in Neural Information Processing Systems 33*: 8211-8222 ([paper + supplement on arXiv](https://arxiv.org/abs/2006.08655), [NeurIPS Proceedings](https://papers.nips.cc/paper/2020/hash/5d40954183d62a82257835477ccad3d2-Abstract.html)).
+
+```
+@article{acerbi2018variational,
+  title={{V}ariational {B}ayesian {M}onte {C}arlo},
+  author={Acerbi, Luigi},
+  journal={Advances in Neural Information Processing Systems},
+  volume={31},
+  pages={8222--8232},
+  year={2018}
+}
+
+@article{acerbi2020variational,
+  title={{V}ariational {B}ayesian {M}onte {C}arlo with noisy likelihoods},
+  author={Acerbi, Luigi},
+  journal={Advances in Neural Information Processing Systems},
+  volume={33},
+  pages={8211--8222},
+  year={2020}
+}
+```
 
 Please cite both references if you use VBMC in your work (the 2018 paper introduced the framework, and the 2020 paper includes a number of major improvements, including but not limited to support for noisy likelihoods). You can cite VBMC in your work with something along the lines of
 

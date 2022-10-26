@@ -8,8 +8,6 @@ K = vp.K;
 
 Nstar = size(Xstar,1);
 
-add_jitter = true;
-
 % Compute moments
 %X_mean = mean(X,1);
 %X_cov = cov(X);
@@ -40,11 +38,12 @@ end
 for iOpt = 1:Nopts
     vp0_vec(iOpt) = vp;
     vp0_vec(iOpt).K = Knew;
-        
+    
     mu = mu0;
     sigma = sigma0;
     lambda = lambda0;
     if vp.optimize_weights; w = w0; end
+    add_jitter = true;
     
     switch type
         
