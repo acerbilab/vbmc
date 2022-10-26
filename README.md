@@ -150,7 +150,7 @@ Work related to VBMC has been presented at seminars in Oxford (UK), Bristol (UK)
 }
 
 @article{acerbi2020variational,
-  title={Variational {B}ayesian {M}onte {C}arlo with noisy likelihoods},
+  title={{V}ariational {B}ayesian {M}onte {C}arlo with noisy likelihoods},
   author={Acerbi, Luigi},
   journal={Advances in Neural Information Processing Systems},
   volume={33},
