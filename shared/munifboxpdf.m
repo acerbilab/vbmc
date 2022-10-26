@@ -16,10 +16,10 @@ function y = munifboxpdf(x,a,b)
 %                           X(i)
 %                          
 %   X can be a matrix, where each row is a separate point and each column
-%   is a different dimension. Similarly, A, B, C, and D can also be
-%   matrices of the same size as X.
+%   is a different dimension. Similarly, A and B can also be matrices of 
+%   the same size as X.
 %
-%  See also MUNIFBOXRND.
+%   See also MUNIFBOXRND.
 
 % Luigi Acerbi 2022
 

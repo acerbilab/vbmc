@@ -15,12 +15,12 @@
 %
 %  See also VBMC.
 
-% Luigi Acerbi 2018-2020
+% Luigi Acerbi 2018-2022
 
 fprintf('Running some examples usage for Variational Bayesian Monte Carlo (VBMC).\n');
 fprintf('Open ''vbmc_examples.m'' in the editor to read detailed comments along the tutorial.\n');
 
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Example 1: Basic usage
 
 close all;
@@ -114,6 +114,7 @@ cornerplot(Xs,{'x_1','x_2'});
 fprintf('  Press any key to continue.\n\n');
 pause;
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Example 2: Bound parameters
 
 close all;
@@ -212,6 +213,7 @@ fprintf('  Have a look at the 3-D visualization of the approximate posterior.');
 fprintf('  Press any key to continue.\n\n');
 pause;
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Example 3: Extended usage and output diagnostics
 
 close all;
@@ -331,6 +333,7 @@ fprintf('  Press any key to continue.\n\n');
 pause;
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Example 4: Multiple runs as validation
 
 close all;
@@ -439,19 +442,156 @@ fprintf('\n  Press any key to continue.\n\n');
 pause;
 
 
-%% Example 5: Noisy log-likelihood evaluations
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Example 5: Prior distributions
+
+close all;
+
+fprintf('\n*** Example 5: Choosing the prior\n');
+fprintf('  A discussion on the priors to be used with VBMC.');
+fprintf('  Press any key to continue.\n\n'); 
+pause;
+
+
+fprintf('  In Bayesian inference - and in VBMC - you *need* a prior over parameters, p(theta).\n');
+fprintf('  The prior needs to be a proper probability density function (pdf), i.e. a normalized distribution.\n');
+fprintf('  A common choice is an independent or factorized prior:\n');
+fprintf('        p(theta) = prod(p(theta)) ==> log(p(theta)) = sum(log(p(theta)))\n');
+fprintf('    - Choose the prior p(theta(i)) separately for each parameter.\n');
+fprintf('    - Independent prior does not  mean that the posterior is independent!\n ');
+fprintf('  Press any key to continue.\n\n');
+
+pause
+
+fprintf('  In VBMC, the (log) prior is passed together with the (log) likelihood to form the log joint.\n');
+fprintf('  In general, you can use whatever log prior you want which is appropriate for your problem.\n');
+fprintf('  First, we describe a few choices that can be helpful for *bounded* parameters.\n');
+fprintf('  Press any key to continue.\n\n');
+
+fprintf('  *** Bounded parameters:\n\n');
+fprintf('  The first simple choice is a non-informative uniformly flat prior between the hard bounds.\n');
+fprintf('  This is implemented in the `munifboxpdf` (multivariate uniform-box) function.\n');
+fprintf('  We plot the marginal pdf of the prior for two-dimensional problem (see plot, 1st row).\n\n');
+fprintf('  Press any key to continue.\n\n');
+
+D = 2;
+lb = [-3,-6];
+ub = [3,6];
+plb = [-2,-3];
+pub = [2,3];
+
+parameter_names{1} = 'x_1';
+parameter_names{2} = 'x_2';
+ylims = [0,0.25];
+
+figure(1);
+for d = 1:D
+    x = linspace(lb(d)-1,ub(d)+1,1e3)';
+    subplot(3,D,d);
+    plot(x, munifboxpdf(x,lb(d),ub(d)), 'k-', 'LineWidth', 1);
+    set(gca,'TickDir','out');
+    xlabel(parameter_names{d})
+    ylabel('prior pdf')
+    ylim(ylims);
+    box off;
+    if d == 1; title('Uniform prior'); end
+end
+set(gcf,'Color','w');
+pause;
+
+fprintf('  Alternatively, for each parameter we can define the prior to be flat within a range,\n');
+fprintf('  where a reasonable choice is the "plausible" range, and then falls to zero towards the hard bounds.\n');
+fprintf('  This is a trapezoidal or "tent" prior, implemented by the provided `mtrapezpdf` function (see plot, 2nd row).\n\n');
+fprintf('  Press any key to continue.\n\n');
+
+figure(1);
+for d = 1:D
+    x = linspace(lb(d)-1,ub(d)+1,1e3)';
+    subplot(3,D,d+D);
+    plot(x, mtrapezpdf(x,lb(d),plb(d),pub(d),ub(d)), 'k-', 'LineWidth', 1);
+    set(gca,'TickDir','out');
+    xlabel(parameter_names{d})
+    ylabel('prior pdf')
+    ylim(ylims);
+    box off;
+    if d == 1; title('Trapezoidal prior'); end
+end
+set(gcf,'Color','w');
+pause;
+
+fprintf('  Finally, we can use a *smoothed* trapezoidal prior with soft transitions at the edges\n');
+fprintf('  (obtained using cubic splines). This prior is better behaved numerically\n');
+fprintf('  as it is continuous with continuous derivatives (i.e., no sharp edges),\n');
+fprintf('  so we recommend it over the simple trapezoidal prior.\n');
+fprintf('  The spline-smoothed trapezoidal prior is implemented in the `msplinetrapezpdf` function (see plot, 3rd row).\n\n');
+fprintf('  Press any key to continue.\n\n');
+
+figure(1);
+for d = 1:D
+    x = linspace(lb(d)-1,ub(d)+1,1e3)';
+    subplot(3,D,d+2*D);
+    plot(x, msplinetrapezpdf(x,lb(d),plb(d),pub(d),ub(d)), 'k-', 'LineWidth', 1);
+    set(gca,'TickDir','out');
+    xlabel(parameter_names{d})
+    ylabel('prior pdf')
+    ylim(ylims);    
+    box off;
+    if d == 1; title('Smoothed trapezoidal prior'); end
+end
+set(gcf,'Color','w');
+pause;
+
+
+fprintf('  *** Unbounded parameters:\n\n');
+fprintf('  If your variables are *unbounded*, you could use standard priors such as the normal distribution\n');
+fprintf('  or a Student''s t distribution with 3-7 degrees of freedom.\n\n');
+fprintf('  As an alternative to these common choices, we also provide a smoothbox distribution\n');
+fprintf('  which is uniform within an interval (typically, the plausible range) and then falls with\n');
+fprintf('  Gaussian tails with scale sigma outside the interval.\n');
+
+close all;
+D = 2;
+lb = -inf(1,D);
+ub = inf(1,D);
+plb = [0,-2];
+pub = [5,1];
+
+% We recommend setting sigma as a fraction of the plausible range. 
+% For example sigma set to 4/10 of the plausible range assigns ~50% 
+% (marginal) probability to the plateau of the distribution.
+% Also similar fractions (e.g., half of the range) would be reasonable.
+% Do not set sigma too small with respect to the plausible range, as it 
+% might cause issues.
+
+prange = pub - plb;
+sigma = 0.4*prange;
+
+figure(1);
+for d = 1:D
+    subplot(1,D,d);
+    x = linspace(plb(d) - 2*prange(d), pub(d) + 2*prange(d), 1e3)';
+    y = msmoothboxpdf(x, plb(d), pub(d), sigma(d));
+    plot(x, y, 'k-', 'LineWidth', 1);
+    set(gca,'TickDir','out');
+    xlabel(parameter_names{d})
+    ylabel('prior pdf')
+    ylim(ylims);    
+    box off;
+    if d == 1; title('Smoothed box prior (unbounded parameters)'); end
+end
+set(gcf,'Color','w');
+
+fprintf('\n  Press any key to continue.\n\n');
+pause;
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Example 6: Noisy log-likelihood evaluations
 
 close all;
 folder = fileparts(which('vbmc.m'));
 addpath([folder filesep 'utils']);  % Ensure that UTILS is on the path
 
-%fprintf('\n*** Example 5: Noisy log-likelihood evaluations\n');
-%fprintf('  As in Example 2, but we assume a noisy evaluation of the log-likelihood.\n');
-%fprintf('  Here we emulate a noisy scenario by adding random Gaussian noise to the function evaluations.\n');
-%fprintf('  In practice, noisy evaluations often emerge from estimation techniques for simulation-based\n');
-%fprintf('  models, such as <a href="https://github.com/lacerbi/ibs">Inverse Binomial Sampling (IBS)</a>.\n');
-%fprintf('  Press any key to continue.\n\n');
-fprintf('\n*** Example 5: Noisy log-likelihood evaluations\n');
+fprintf('\n*** Example 6: Noisy log-likelihood evaluations\n');
 fprintf('  Example application of VBMC to a scenario where the log-likelihood evaluations are noisy.\n\n');
 fprintf('  Here we show how to recover the posterior distribution for a model for which we can\n');
 fprintf('  only generate simulated data. To estimate the log-likelihood via simulation, we use\n');
@@ -498,9 +638,10 @@ llfun = @(theta) ibslike(@psycho_gen,theta,R,S,options_ibs);
 
 D = 3;
 
-% We use a trapezoidal or "tent" prior over the parameters (flat between 
-% PLB and PUB, and linearly decreasing to 0 towards LB and UB). 
-lpriorfun = @(x) log(mtrapezpdf(x,LB,PLB,PUB,UB));
+% We use a smoothed "tent" or trapezoidal prior over the parameters. This 
+% prior is flat between PLB and PUB, and decreases smoothly to 0 towards LB 
+% and UB. The prior is implemented using cubic splines, hence the name.
+lpriorfun = @(x) log(msplinetrapezpdf(x,LB,PLB,PUB,UB));
 
 % Since LLFUN has now two outputs (the log likelihood at X, and the
 % estimated SD of the log likelihood at X), we cannot directly sum the log
@@ -529,8 +670,8 @@ Xs = vbmc_rnd(vp,3e5);  % Generate samples from the variational posterior
 close all;
 cornerplot(Xs,{'\eta (log noise)','bias','lapse'},[eta,bias,lapse]);
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 fprintf('  This is all for this tutorial.\n');
 fprintf('  You can read more detailed comments by opening the file ''vbmc_examples.m'' in the editor.\n\n');
 fprintf('  Type ''help vbmc'' for additional documentation on VBMC, or consult the <a href="https://github.com/lacerbi/vbmc">Github page</a> or <a href="https://github.com/lacerbi/vbmc/wiki">online FAQ</a>.\n\n');
-

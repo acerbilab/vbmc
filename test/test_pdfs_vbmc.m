@@ -39,7 +39,19 @@ test_pdf1_normalization(pdf1,lb,ub,tolerr,name);
 test_pdf2_normalization(pdf2,lb,ub,tolerr,name);
 test_rnd(pdfrnd,pdf1,a,b,n,tolrmse,name);
 
-close all;
+%% Test multivariate smoothbox distribution
+sigma = [0.7,0.45];
+pdf1 = @(x) msmoothboxpdf(x,a(1),b(1),sigma(1));
+pdf2 = @(x) msmoothboxpdf(x,a,b,sigma);
+pdfrnd = @(n) msmoothboxrnd(a,b,sigma,n);
+name = 'msmoothbox';
+lb = [-5,-7];
+ub = [5,0];
+test_pdf1_normalization(pdf1,lb,ub,tolerr,name);
+test_pdf2_normalization(pdf2,lb,ub,tolerr,name);
+test_rnd(pdfrnd,pdf1,a,b,n,tolrmse,name);
+
+%close all;
 
 end
 
