@@ -4,7 +4,8 @@
 %  Example 2: Non-bound constraints
 %  Example 3: Extended usage and output diagnostics
 %  Example 4: Multiple runs as validation
-%  Example 5: Noisy log-likelihood evaluations
+%  Example 5: Prior distributions
+%  Example 6: Noisy log-likelihood evaluations
 %
 %  Note: after installation, run 
 %    vbmc('test') 
