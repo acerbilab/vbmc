@@ -19,31 +19,8 @@ function y = munifboxpdf(x,a,b)
 %   is a different dimension. Similarly, A and B can also be matrices of 
 %   the same size as X.
 %
-%   See also MUNIFBOXRND.
+%   See also MUNIFBOXLOGPDF, MUNIFBOXRND.
 
 % Luigi Acerbi 2022
 
-[N,D] = size(x);
-
-if D > 1
-    if isscalar(a); a = a*ones(1,D); end
-    if isscalar(b); b = b*ones(1,D); end
-end
-
-if size(a,2) ~= D || size(b,2) ~= D
-    error('munifboxpdf:SizeError', ...
-        'A, B should be scalars or have the same number of columns as X.');
-end
-
-if size(a,1) == 1; a = repmat(a,[N,1]); end
-if size(b,1) == 1; b = repmat(b,[N,1]); end
-
-if any(a(:) >= b(:))
-    error('munifboxpdf:OrderError', ...
-        'For all elements of A and B, the order A < B should hold.');
-end
-
-nf = prod(b - a,2);
-y = 1 ./ nf .* ones(N,1);
-idx = any(bsxfun(@lt, x, a),2) | any(bsxfun(@gt, x, b),2);
-y(idx) = 0;
+y = exp(munifboxlogpdf(x,a,b));

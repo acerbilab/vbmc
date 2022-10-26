@@ -472,50 +472,66 @@ fprintf('  Press any key to continue.\n\n');
 fprintf('  *** Bounded parameters:\n\n');
 fprintf('  The first simple choice is a non-informative uniformly flat prior between the hard bounds.\n');
 fprintf('  This is implemented in the `munifboxpdf` (multivariate uniform-box) function.\n');
-fprintf('  We plot the marginal pdf of the prior for two-dimensional problem (see plot, 1st row).\n\n');
+fprintf('  We plot the pdf of the prior for a one-dimensional problem (see plot, 1st row),\n');
+fprintf('  the prior pdf to the left and the log pdf, as requested by VBMC, to the right\n');
+fprintf('  (implemented by the `munifboxlogpdf` function).\n\n');
 fprintf('  Press any key to continue.\n\n');
 
-D = 2;
-lb = [-3,-6];
-ub = [3,6];
-plb = [-2,-3];
-pub = [2,3];
+lb = -3;
+ub = 3;
+plb = -2;
+pub = 2;
 
-parameter_names{1} = 'x_1';
-parameter_names{2} = 'x_2';
-ylims = [0,0.25];
+ylims = [0,0.25; -20, 0];
 
 figure(1);
-for d = 1:D
-    x = linspace(lb(d)-1,ub(d)+1,1e3)';
-    subplot(3,D,d);
-    plot(x, munifboxpdf(x,lb(d),ub(d)), 'k-', 'LineWidth', 1);
+for i = 1:2
+    x = linspace(lb-1,ub+1,1e3)';
+    switch i
+        case 1; y = munifboxpdf(x,lb,ub);
+        case 2; y = munifboxlogpdf(x,lb,ub);
+    end     
+    subplot(3,2,i);
+    plot(x, max(y,ylims(i,1)), 'k-', 'LineWidth', 1);    
     set(gca,'TickDir','out');
-    xlabel(parameter_names{d})
-    ylabel('prior pdf')
-    ylim(ylims);
+    xlabel('x_1')
+    switch i
+        case 1; ylabel('prior pdf');
+        case 2; ylabel('prior log pdf');
+    end
+    xlim([x(1),x(end)]);
+    ylim(ylims(i,:));
     box off;
-    if d == 1; title('Uniform prior'); end
+    if i == 1; title('Uniform prior'); end
 end
 set(gcf,'Color','w');
 pause;
 
 fprintf('  Alternatively, for each parameter we can define the prior to be flat within a range,\n');
 fprintf('  where a reasonable choice is the "plausible" range, and then falls to zero towards the hard bounds.\n');
-fprintf('  This is a trapezoidal or "tent" prior, implemented by the provided `mtrapezpdf` function (see plot, 2nd row).\n\n');
+fprintf('  This is a trapezoidal or "tent" prior, implemented by the provided `mtrapezpdf` and `mtrapezlogpdf`\n');
+fprintf('  functions (see plot, 2nd row).\n\n');
 fprintf('  Press any key to continue.\n\n');
 
 figure(1);
-for d = 1:D
-    x = linspace(lb(d)-1,ub(d)+1,1e3)';
-    subplot(3,D,d+D);
-    plot(x, mtrapezpdf(x,lb(d),plb(d),pub(d),ub(d)), 'k-', 'LineWidth', 1);
+for i = 1:2
+    x = linspace(lb-1,ub+1,1e3)';
+    switch i
+        case 1; y = mtrapezpdf(x,lb,plb,pub,ub);
+        case 2; y = mtrapezlogpdf(x,lb,plb,pub,ub);
+    end
+    subplot(3,2,i+2);
+    plot(x, max(y,ylims(i,1)), 'k-', 'LineWidth', 1);
     set(gca,'TickDir','out');
-    xlabel(parameter_names{d})
-    ylabel('prior pdf')
-    ylim(ylims);
+    xlabel('x_1')
+    switch i
+        case 1; ylabel('prior pdf');
+        case 2; ylabel('prior log pdf');
+    end
+    xlim([x(1),x(end)]);
+    ylim(ylims(i,:));
     box off;
-    if d == 1; title('Trapezoidal prior'); end
+    if i == 1; title('Trapezoidal prior'); end
 end
 set(gcf,'Color','w');
 pause;
@@ -524,20 +540,29 @@ fprintf('  Finally, we can use a *smoothed* trapezoidal prior with soft transiti
 fprintf('  (obtained using cubic splines). This prior is better behaved numerically\n');
 fprintf('  as it is continuous with continuous derivatives (i.e., no sharp edges),\n');
 fprintf('  so we recommend it over the simple trapezoidal prior.\n');
-fprintf('  The spline-smoothed trapezoidal prior is implemented in the `msplinetrapezpdf` function (see plot, 3rd row).\n\n');
+fprintf('  The spline-smoothed trapezoidal prior is implemented in the `msplinetrapezpdf` and\n');
+fprintf('  `msplinetrapezlogpdf` functions (see plot, 3rd row).\n\n');
 fprintf('  Press any key to continue.\n\n');
 
 figure(1);
-for d = 1:D
-    x = linspace(lb(d)-1,ub(d)+1,1e3)';
-    subplot(3,D,d+2*D);
-    plot(x, msplinetrapezpdf(x,lb(d),plb(d),pub(d),ub(d)), 'k-', 'LineWidth', 1);
+for i = 1:2
+    x = linspace(lb-1,ub+1,1e3)';
+    switch i
+        case 1; y = msplinetrapezpdf(x,lb,plb,pub,ub);
+        case 2; y = msplinetrapezlogpdf(x,lb,plb,pub,ub);
+    end
+    subplot(3,2,i+4);
+    plot(x, max(y,ylims(i,1)), 'k-', 'LineWidth', 1);
     set(gca,'TickDir','out');
-    xlabel(parameter_names{d})
-    ylabel('prior pdf')
-    ylim(ylims);    
+    xlabel('x_1')
+    switch i
+        case 1; ylabel('prior pdf');
+        case 2; ylabel('prior log pdf');
+    end
+    xlim([x(1),x(end)]);
+    ylim(ylims(i,:));
     box off;
-    if d == 1; title('Smoothed trapezoidal prior'); end
+    if i == 1; title('Smoothed trapezoidal prior'); end
 end
 set(gcf,'Color','w');
 pause;
@@ -549,13 +574,13 @@ fprintf('  or a Student''s t distribution with 3-7 degrees of freedom.\n\n');
 fprintf('  As an alternative to these common choices, we also provide a smoothbox distribution\n');
 fprintf('  which is uniform within an interval (typically, the plausible range) and then falls with\n');
 fprintf('  Gaussian tails with scale sigma outside the interval.\n');
+fprintf('  Find the implementation in `msmoothboxpdf` and `msmoothboxlogpdf`.\n');
 
 close all;
-D = 2;
-lb = -inf(1,D);
-ub = inf(1,D);
-plb = [0,-2];
-pub = [5,1];
+lb = -inf;
+ub = inf;
+plb = -1;
+pub = 3;
 
 % We recommend setting sigma as a fraction of the plausible range. 
 % For example sigma set to 4/10 of the plausible range assigns ~50% 
@@ -568,21 +593,53 @@ prange = pub - plb;
 sigma = 0.4*prange;
 
 figure(1);
-for d = 1:D
-    subplot(1,D,d);
-    x = linspace(plb(d) - 2*prange(d), pub(d) + 2*prange(d), 1e3)';
-    y = msmoothboxpdf(x, plb(d), pub(d), sigma(d));
-    plot(x, y, 'k-', 'LineWidth', 1);
+for i = 1:2
+    x = linspace(plb - 2*prange, pub + 2*prange, 1e3)';
+    switch i
+        case 1; y = msmoothboxpdf(x, plb, pub, sigma);
+        case 2; y = msmoothboxlogpdf(x, plb, pub, sigma);
+    end
+    subplot(1,2,i);
+    plot(x, max(y,ylims(i,1)), 'k-', 'LineWidth', 1);
     set(gca,'TickDir','out');
-    xlabel(parameter_names{d})
-    ylabel('prior pdf')
-    ylim(ylims);    
+    xlabel('x_1')
+    switch i
+        case 1; ylabel('prior pdf');
+        case 2; ylabel('prior log pdf');
+    end
+    xlim([x(1),x(end)]);
+    ylim(ylims(i,:));
     box off;
-    if d == 1; title('Smoothed box prior (unbounded parameters)'); end
+    if i == 1; title('Smoothed box prior (unbounded parameters)'); end
 end
 set(gcf,'Color','w');
 
 fprintf('\n  Press any key to continue.\n\n');
+pause;
+
+fprintf('  To conclude, we rerun inference on a bounded problem, using one of the priors\n');
+fprintf('  (smoothed trapezoidal) introduced in this section. See code for details.\n\n');
+fprintf('  Press any key to continue.\n\n');
+pause;
+
+D = 2;  % Still in 2-D
+LB = zeros(1,D);
+UB = 10*ones(1,D);
+PLB = 0.1*ones(1,D);
+PUB = 3*ones(1,D);
+
+% Define the log prior and log likelihood
+lpriorfun = @(x) msplinetrapezlogpdf(x,LB,PLB,PUB,UB);
+llfun = @rosenbrock_test;
+fun = @(x) llfun(x) + lpriorfun(x);
+
+x0 = ones(1,D);
+options = vbmc('defaults');
+[vp,elbo,elbo_sd] = vbmc(fun,x0,LB,UB,PLB,PUB,options);
+Xs = vbmc_rnd(vp,3e5);
+cornerplot(Xs,{'x_1','x_2'});
+
+fprintf('  Press any key to continue.\n\n');
 pause;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -639,10 +696,12 @@ llfun = @(theta) ibslike(@psycho_gen,theta,R,S,options_ibs);
 
 D = 3;
 
-% We use a smoothed "tent" or trapezoidal prior over the parameters. This 
-% prior is flat between PLB and PUB, and decreases smoothly to 0 towards LB 
-% and UB. The prior is implemented using cubic splines, hence the name.
-lpriorfun = @(x) log(msplinetrapezpdf(x,LB,PLB,PUB,UB));
+% We use a smoothed "tent" or trapezoidal prior over the parameters (see
+% Example 5 in this file). This prior is flat between PLB and PUB, and 
+% decreases smoothly to 0 towards LB and UB. The prior is implemented 
+% using cubic splines, hence the name. Note that we pass the function that 
+% directly computes the log pdf.
+lpriorfun = @(x) msplinetrapezlogpdf(x,LB,PLB,PUB,UB);
 
 % Since LLFUN has now two outputs (the log likelihood at X, and the
 % estimated SD of the log likelihood at X), we cannot directly sum the log
