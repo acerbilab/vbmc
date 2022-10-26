@@ -22,46 +22,8 @@ function y = msplinetrapezpdf(x,a,b,c,d)
 %   is a different dimension. Similarly, A, B, C, and D can also be
 %   matrices of the same size as X.
 %
-%   See also MSPLINETRAPEZRND.
+%   See also MSPLINETRAPEZLOGPDF, MSPLINETRAPEZRND.
 
 % Luigi Acerbi 2022
 
-[N,D] = size(x);
-
-if D > 1
-    if isscalar(a); a = a*ones(1,D); end
-    if isscalar(b); b = b*ones(1,D); end
-    if isscalar(c); c = c*ones(1,D); end
-    if isscalar(d); d = d*ones(1,D); end
-end
-
-if size(a,2) ~= D || size(b,2) ~= D || size(c,2) ~= D || size(d,2) ~= D
-    error('msplinetrapezpdf:SizeError', ...
-        'A, B, C, D should be scalars or have the same number of columns as X.');
-end
-
-if size(a,1) == 1; a = repmat(a,[N,1]); end
-if size(b,1) == 1; b = repmat(b,[N,1]); end
-if size(c,1) == 1; c = repmat(c,[N,1]); end
-if size(d,1) == 1; d = repmat(d,[N,1]); end
-
-y = zeros(size(x));
-% Normalization factor
-% nf = c - b + 0.5*(d - c + b - a);
-nf = 0.5*(c - b + d - a);
-
-for ii = 1:D    
-    idx = x(:,ii) >= a(:,ii) & x(:,ii) < b(:,ii);
-    z = (x(idx,ii) - a(idx,ii))./(b(idx,ii) - a(idx,ii));    
-    y(idx,ii) = (-2*z.^3 + 3*z.^2) ./ nf(idx,ii);
-    
-    idx = x(:,ii) >= b(:,ii) & x(:,ii) < c(:,ii);
-    y(idx,ii) = 1 ./ nf(idx,ii);
-    
-    idx = x(:,ii) >= c(:,ii) & x(:,ii) < d(:,ii);
-    z = 1 - (x(idx,ii) - c(idx,ii)) ./ (d(idx,ii) - c(idx,ii));    
-    y(idx,ii) = (-2*z.^3 + 3*z.^2) ./ nf(idx,ii);
-end
-
-y = prod(y,2);
-
+y = exp(msplinetrapezlogpdf(x,a,b,c,d));
