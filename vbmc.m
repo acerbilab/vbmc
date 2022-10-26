@@ -141,7 +141,7 @@ function [vp,elbo,elbo_sd,exitflag,output,samples,optimState,stats,vp_train] = .
 %   e-mail: luigi.acerbi@{helsinki.fi,gmail.com}
 %   URL: http://luigiacerbi.com
 %   Version: 1.0.11
-%   Release date: Sep 06, 2022
+%   Release date: Oct 26, 2022
 %   Code repository: https://github.com/lacerbi/vbmc
 %--------------------------------------------------------------------------
 
