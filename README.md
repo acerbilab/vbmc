@@ -139,6 +139,24 @@ Work related to VBMC has been presented at seminars in Oxford (UK), Bristol (UK)
 1. Acerbi, L. (2018). Variational Bayesian Monte Carlo. In *Advances in Neural Information Processing Systems 31*: 8222-8232. ([paper + supplement on arXiv](https://arxiv.org/abs/1810.05558), [NeurIPS Proceedings](https://papers.nips.cc/paper/8043-variational-bayesian-monte-carlo))
 2. Acerbi, L. (2020). Variational Bayesian Monte Carlo with Noisy Likelihoods. In *Advances in Neural Information Processing Systems 33*: 8211-8222 ([paper + supplement on arXiv](https://arxiv.org/abs/2006.08655), [NeurIPS Proceedings](https://papers.nips.cc/paper/2020/hash/5d40954183d62a82257835477ccad3d2-Abstract.html)).
 
+Please cite both references if you use VBMC in your work (the 2018 paper introduced the framework, and the 2020 paper includes a number of major improvements, including but not limited to support for noisy likelihoods). You can cite VBMC in your work with something along the lines of
+
+> We estimated approximate posterior distibutions and approximate lower bounds to the model evidence of our models using Variational Bayesian Monte Carlo (VBMC; Acerbi, 2018, 2020). VBMC combines variational inference and active-sampling Bayesian quadrature to perform approximate Bayesian inference in a sample-efficient manner.
+
+Besides formal citations, you can demonstrate your appreciation for VBMC in the following ways:
+
+- *Star* the VBMC repository on GitHub;
+- [Follow me on Twitter](https://twitter.com/AcerbiLuigi) for updates about VBMC and other projects I am involved with;
+- Tell me about your model-fitting problem and your experience with VBMC (positive or negative) at <luigi.acerbi@helsinki.fi> (putting  'VBMC' in the subject of the email).
+
+You may also want to check out [Bayesian Adaptive Direct Search](https://github.com/lacerbi/bads) (BADS), our method for fast Bayesian optimization.
+
+### Additional references
+
+3. Acerbi, L. (2019). An Exploration of Acquisition and Mean Functions in Variational Bayesian Monte Carlo. In *Proc. Machine Learning Research* 96: 1-10. 1st Symposium on Advances in Approximate Bayesian Inference, Montréal, Canada. ([paper in PMLR](http://proceedings.mlr.press/v96/acerbi19a.html))
+
+### BibTeX
+
 ```
 @article{acerbi2018variational,
   title={{V}ariational {B}ayesian {M}onte {C}arlo},
@@ -157,25 +175,16 @@ Work related to VBMC has been presented at seminars in Oxford (UK), Bristol (UK)
   pages={8211--8222},
   year={2020}
 }
+
+@article{acerbi2019exploration,
+  title={An Exploration of Acquisition and Mean Functions in {V}ariational {B}ayesian {M}onte {C}arlo},
+  author={Acerbi, Luigi},
+  journal={PMLR},
+  volume={96},
+  pages={1--10},
+  year={2019}
+}
 ```
-
-Please cite both references if you use VBMC in your work (the 2018 paper introduced the framework, and the 2020 paper includes a number of major improvements, including but not limited to support for noisy likelihoods). You can cite VBMC in your work with something along the lines of
-
-> We estimated approximate posterior distibutions and approximate lower bounds to the model evidence of our models using Variational Bayesian Monte Carlo (VBMC; Acerbi, 2018, 2020). VBMC combines variational inference and active-sampling Bayesian quadrature to perform approximate Bayesian inference in a sample-efficient manner.
-
-Besides formal citations, you can demonstrate your appreciation for VBMC in the following ways:
-
-- *Star* the VBMC repository on GitHub;
-- [Follow me on Twitter](https://twitter.com/AcerbiLuigi) for updates about VBMC and other projects I am involved with;
-- Tell me about your model-fitting problem and your experience with VBMC (positive or negative) at <luigi.acerbi@helsinki.fi> (putting  'VBMC' in the subject of the email).
-
-You may also want to check out [Bayesian Adaptive Direct Search](https://github.com/lacerbi/bads) (BADS), our method for fast Bayesian optimization.
-
-### Additional references
-
-3. Acerbi, L. (2019). An Exploration of Acquisition and Mean Functions in Variational Bayesian Monte Carlo. In *Proc. Machine Learning Research* 96: 1-10. 1st Symposium on Advances in Approximate Bayesian Inference, Montréal, Canada. ([paper in PMLR](http://proceedings.mlr.press/v96/acerbi19a.html))
-
-
 ### Acknowledgments
 
 The ongoing Python port is being supported by the Academy of Finland Flagship programme: [Finnish Centre for Artificial Intelligence (FCAI)](https://fcai.fi/).
