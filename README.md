@@ -107,7 +107,7 @@ OPTIONS.SpecifyTargetNoise = true;
 [VP,ELBO,ELBO_SD] = vbmc(FUN,X0,LB,UB,PLB,PUB,OPTIONS);
 ```
 
-For more information, see the [VBMC FAQ](https://github.com/lacerbi/vbmc/wiki#noisy-target-function) and Example 5 in the [VBMC tutorial](https://github.com/lacerbi/vbmc/blob/master/vbmc_examples.m).
+For more information, see the [VBMC FAQ](https://github.com/lacerbi/vbmc/wiki#noisy-target-function) and Example 6 in the [VBMC tutorial](https://github.com/lacerbi/vbmc/blob/master/vbmc_examples.m).
 
 In the figure below, we show the difference in performance between the original VBMC (old) and VBMC v1.0 (new) when dealing with noisy target evaluations.
 
