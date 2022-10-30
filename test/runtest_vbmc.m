@@ -97,7 +97,7 @@ fprintf('=======================================================================
 fprintf('\n');
 
 if failed == 0
-    display('VBMC is working correctly. See vbmc_examples.m for usage examples; check out the <a href="https://github.com/acerbilab/bads">VBMC website</a>;'); 
+    display('VBMC is working correctly. See vbmc_examples.m for usage examples; check out the <a href="https://github.com/acerbilab/vbmc">VBMC website</a>;'); 
     display('consult the <a href="https://github.com/acerbilab/vbmc/wiki">online FAQ</a>; or type ''help vbmc'' for more information. Enjoy!');
 else
     display('VBMC is not working correctly. Please check the <a href="https://github.com/acerbilab/vbmc/wiki">online FAQ</a> for more information.');
