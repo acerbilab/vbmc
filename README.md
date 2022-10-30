@@ -26,7 +26,7 @@ VBMC is effective when:
 - the likelihood is at least moderately expensive to compute (say, half a second or more per evaluation);
 - the model has up to `D = 10` continuous parameters (maybe a few more, but no more than `D = 20`);
 - the target posterior distribution is continuous and reasonably smooth (see [here](https://github.com/lacerbi/vbmc/wiki#general));
-- optionally, log-likelihood evaluations may be noisy (e.g., estimated [via simulation](https://github.com/lacerbi/ibs)).
+- optionally, log-likelihood evaluations may be noisy (e.g., estimated [via simulation](https://github.com/acerbilab/ibs)).
 
 Conversely, if your model can be written analytically, you should exploit the powerful machinery of probabilistic programming frameworks such as [Stan](http://mc-stan.org/) or [PyMC3](https://docs.pymc.io/).
 
@@ -99,7 +99,7 @@ To run VBMC on a noisy problem, first you need to ensure that your target functi
 - as first output, the noisy value of the log-posterior (where the noise usually comes from a stochastic evaluation of the log-likelihood);
 - as second output, an estimate of the noise in the returned log-posterior value (expressed as standard deviation, SD).
 
-Noisy evaluations of the log-likelihood often arise from simulation-based models, for which a direct expression of the (log) likelihood is not available. We recommend [Inverse Binomial Sampling](https://github.com/lacerbi/ibs) (IBS) as a method that conveniently computes both an unbiased estimate of the log-likelihood and an estimate of its variability entirely through simulation — however VBMC is compatible with any estimation technique.
+Noisy evaluations of the log-likelihood often arise from simulation-based models, for which a direct expression of the (log) likelihood is not available. We recommend [Inverse Binomial Sampling](https://github.com/acerbilab/ibs) (IBS) as a method that conveniently computes both an unbiased estimate of the log-likelihood and an estimate of its variability entirely through simulation — however VBMC is compatible with any estimation technique.
 
 Once you have set up `fun` as above, run VBMC by specifying that the target function is noisy
 ```
