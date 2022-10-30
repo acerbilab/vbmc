@@ -57,7 +57,7 @@ function [nlogL,nlogLvar,exitflag,output] = ibslike(fun,params,respMat,designMat
 %      rmat = fun(p,NaN(Ntrials,1));            % Generate responses
 %      [nlogL,nlogLvar,pc,output] = ibslike(fun,p,rmat);
 %      nlogL_true = -log(p)*sum(rmat == 1) - log(1-p)*sum(rmat == 0);
-%      fprintf('Ground truth: %.4g, Estimate: %.4g ± %.4g.\n',nlogL_true,nlogL,sqrt(nlogLvar));
+%      fprintf('Ground truth: %.4g, Estimate: %.4g Â± %.4g.\n',nlogL_true,nlogL,sqrt(nlogLvar));
 %
 %   Reference: 
 %   van Opheusden*, B., Acerbi*, L. & Ma, W. J. (2020), "Unbiased and 
@@ -72,12 +72,12 @@ function [nlogL,nlogLvar,exitflag,output] = ibslike(fun,params,respMat,designMat
 % To be used under the terms of the MIT License 
 % (https://opensource.org/licenses/MIT).
 %
-%   Authors (copyright): Luigi Acerbi and Bas van Opheusden, 2020-2021
+%   Authors (copyright): Luigi Acerbi and Bas van Opheusden, 2020-2022
 %   e-mail: luigi.acerbi@helsinki.fi, svo@princeton.edu
 %   URL: http://luigiacerbi.com
 %   Version: 0.96
 %   Release date: Jan 21, 2021
-%   Code repository: https://github.com/lacerbi/ibs
+%   Code repository: https://github.com/acerbilab/ibs
 %--------------------------------------------------------------------------
 
 if nargin < 4; designMat = []; end
