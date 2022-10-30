@@ -108,8 +108,8 @@ function [vp,elbo,elbo_sd,exitflag,output,samples,optimState,stats,vp_train] = .
 %
 %   See VBMC_EXAMPLES for an extended tutorial with more examples. 
 %   The most recent version of the algorithm and additional documentation 
-%   can be found here: https://github.com/lacerbi/vbmc
-%   Also, check out the FAQ: https://github.com/lacerbi/vbmc/wiki
+%   can be found here: https://github.com/acerbilab/vbmc
+%   Also, check out the FAQ: https://github.com/acerbilab/vbmc/wiki
 %
 %   References (please cite both): 
 %   
@@ -124,7 +124,7 @@ function [vp,elbo,elbo_sd,exitflag,output,samples,optimState,stats,vp_train] = .
 %   3) Acerbi, L. (2019). "An Exploration of Acquisition and Mean Functions 
 %      in Variational Bayesian Monte Carlo". In Proc. Machine Learning 
 %      Research 96: 1-10. 1st Symposium on Advances in Approximate Bayesian 
-%      Inference, Montréal, Canada.
+%      Inference, MontrÃ©al, Canada.
 %   4) van Opheusden, B.*, Acerbi, L.* & Ma, W. J. (2020). "Unbiased and 
 %      Efficient Log-Likelihood Estimation with Inverse Binomial Sampling". 
 %      PLoS Computational Biology 16(12): e1008483. (* equal contribution)
@@ -142,7 +142,7 @@ function [vp,elbo,elbo_sd,exitflag,output,samples,optimState,stats,vp_train] = .
 %   URL: http://luigiacerbi.com
 %   Version: 1.0.12
 %   Release date: Oct 26, 2022
-%   Code repository: https://github.com/lacerbi/vbmc
+%   Code repository: https://github.com/acerbilab/vbmc
 %--------------------------------------------------------------------------
 
 
