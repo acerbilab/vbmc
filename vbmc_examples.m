@@ -12,7 +12,7 @@
 %  to check that everything is working correctly.
 %
 %  For any question, check out the FAQ: 
-%  https://github.com/lacerbi/vbmc/wiki
+%  https://github.com/acerbilab/vbmc/wiki
 %
 %  See also VBMC.
 
@@ -258,7 +258,7 @@ PUB = prior_mu + sqrt(prior_var);               % Plausible upper bounds
 x0 = PLB + (PUB-PLB).*rand(1,D);    % Random point inside plausible box
 
 fprintf('  First, we run a preliminary optimization to start from a relatively high posterior density region.\n');
-fprintf('  (You may want to use <a href="https://github.com/lacerbi/bads">Bayesian Adaptive Direct Search (BADS)</a> here.)\n');
+fprintf('  (You may want to use <a href="https://github.com/acerbilab/bads">Bayesian Adaptive Direct Search (BADS)</a> here.)\n');
 
 % Here we only run it once but consider using multiple starting points.
 opt_options = [];
@@ -268,7 +268,7 @@ x0 = fminsearch(@(x) -fun(x),x0,opt_options);
 
 % Also, instead of FMINSEARCH you should use an efficient method, like BADS:
 % x0 = bads(@(x) -fun(x),x0,PLB,PUB,PLB,PUB,[],opt_options);
-% You can download BADS from here: https://github.com/lacerbi/bads
+% You can download BADS from here: https://github.com/acerbilab/bads
 
 % For demonstration purposes, we run VBMC for too short
 options = vbmc('defaults');
@@ -653,7 +653,7 @@ fprintf('\n*** Example 6: Noisy log-likelihood evaluations\n');
 fprintf('  Example application of VBMC to a scenario where the log-likelihood evaluations are noisy.\n\n');
 fprintf('  Here we show how to recover the posterior distribution for a model for which we can\n');
 fprintf('  only generate simulated data. To estimate the log-likelihood via simulation, we use\n');
-fprintf('  <a href="https://github.com/lacerbi/ibs">Inverse Binomial Sampling (IBS)</a>, but other estimation techniques can be used as well.\n');
+fprintf('  <a href="https://github.com/acerbilab/ibs">Inverse Binomial Sampling (IBS)</a>, but other estimation techniques can be used as well.\n');
 fprintf('  Importantly, IBS returns a noisy but unbiased estimate of the log-likelihood, and also\n');
 fprintf('  the uncertainty of the estimate (required by VBMC).\n');
 fprintf('  Press any key to continue.\n\n');
@@ -685,7 +685,7 @@ PUB = [log(5) 1 0.2];
 
 % We define the positive log-likelihood function via a call to IBSLIKE
 % (IBSLIKE provides a vectorized implementation of IBS for MATLAB)
-% For more information, see here: https://github.com/lacerbi/ibs
+% For more information, see here: https://github.com/acerbilab/ibs
 
 % Options for IBSLIKE
 options_ibs.Nreps = 100;            % Try and have a SD ~ 1 (and below 3)
@@ -734,4 +734,4 @@ cornerplot(Xs,{'\eta (log noise)','bias','lapse'},[eta,bias,lapse]);
 
 fprintf('  This is all for this tutorial.\n');
 fprintf('  You can read more detailed comments by opening the file ''vbmc_examples.m'' in the editor.\n\n');
-fprintf('  Type ''help vbmc'' for additional documentation on VBMC, or consult the <a href="https://github.com/lacerbi/vbmc">Github page</a> or <a href="https://github.com/lacerbi/vbmc/wiki">online FAQ</a>.\n\n');
+fprintf('  Type ''help vbmc'' for additional documentation on VBMC, or consult the <a href="https://github.com/acerbilab/vbmc">Github page</a> or <a href="https://github.com/acerbilab/vbmc/wiki">online FAQ</a>.\n\n');
