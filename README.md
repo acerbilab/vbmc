@@ -8,7 +8,7 @@
 
 ## What is it
 
-> *What if there was a model-fitting method similar to Bayesian optimization (e.g., [BADS](https://github.com/lacerbi/bads)), which, instead of returning just the optimal parameter vector, would also return its uncertainty (even better, the full posterior distribution of the parameters), and maybe even a metric than can be used for Bayesian model comparison?*
+> *What if there was a model-fitting method similar to Bayesian optimization (e.g., [BADS](https://github.com/acerbilab/bads)), which, instead of returning just the optimal parameter vector, would also return its uncertainty (even better, the full posterior distribution of the parameters), and maybe even a metric than can be used for Bayesian model comparison?*
 
 VBMC is an approximate inference method designed to fit and evaluate computational models with a limited budget of potentially noisy likelihood evaluations (e.g., for computationally expensive models). Specifically, VBMC simultaneously computes:
 - an approximate posterior distribution of the model parameters; 
@@ -16,7 +16,7 @@ VBMC is an approximate inference method designed to fit and evaluate computation
 
 Extensive benchmarks on both artificial test problems and a large number of real model-fitting problems from computational and cognitive neuroscience show that VBMC generally — and often vastly — outperforms alternative methods for sample-efficient Bayesian inference [[1,2](#references)].
 
-VBMC runs with virtually no tuning and it is very easy to set up for your problem (especially if you are already familiar with [BADS](https://github.com/lacerbi/bads), our model-fitting algorithm based on Bayesian optimization).
+VBMC runs with virtually no tuning and it is very easy to set up for your problem (especially if you are already familiar with [BADS](https://github.com/acerbilab/bads), our model-fitting algorithm based on Bayesian optimization).
 
 ### Should I use VBMC?
 
@@ -25,14 +25,14 @@ VBMC is effective when:
 - the model log-likelihood function is a black-box (e.g., the gradient is unavailable);
 - the likelihood is at least moderately expensive to compute (say, half a second or more per evaluation);
 - the model has up to `D = 10` continuous parameters (maybe a few more, but no more than `D = 20`);
-- the target posterior distribution is continuous and reasonably smooth (see [here](https://github.com/lacerbi/vbmc/wiki#general));
+- the target posterior distribution is continuous and reasonably smooth (see [here](https://github.com/acerbilab/vbmc/wiki#general));
 - optionally, log-likelihood evaluations may be noisy (e.g., estimated [via simulation](https://github.com/acerbilab/ibs)).
 
 Conversely, if your model can be written analytically, you should exploit the powerful machinery of probabilistic programming frameworks such as [Stan](http://mc-stan.org/) or [PyMC3](https://docs.pymc.io/).
 
 ## Installation
 
-[**Download the latest version of VBMC as a ZIP file**](https://github.com/lacerbi/vbmc/archive/master.zip).
+[**Download the latest version of VBMC as a ZIP file**](https://github.com/acerbilab/vbmc/archive/master.zip).
 - To install VBMC, clone or unpack the zipped repository where you want it and run the script `install.m`.
    - This will add the VBMC base folder to the MATLAB search path.
 - To see if everything works, run `vbmc('test')`.
@@ -55,19 +55,19 @@ The output parameters are:
 - `ELBO`, the (estimated) lower bound on the log model evidence;
 - `ELBO_SD`, the standard deviation of the estimate of the `ELBO` (*not* the error between the `ELBO` and the true log model evidence, which is generally unknown).
 
-The variational posterior `vp` can be manipulated with functions such as `vbmc_moments` (compute posterior mean and covariance), `vbmc_pdf` (evaluates the posterior density), `vbmc_rnd` (draw random samples), `vbmc_kldiv` (Kullback-Leibler divergence between two posteriors), `vbmc_mtv` (marginal total variation distance between two posteriors); see also [this question](https://github.com/lacerbi/vbmc/wiki#what-is-vp-and-what-do-i-do-with-it).
+The variational posterior `vp` can be manipulated with functions such as `vbmc_moments` (compute posterior mean and covariance), `vbmc_pdf` (evaluates the posterior density), `vbmc_rnd` (draw random samples), `vbmc_kldiv` (Kullback-Leibler divergence between two posteriors), `vbmc_mtv` (marginal total variation distance between two posteriors); see also [this question](https://github.com/acerbilab/vbmc/wiki#what-is-vp-and-what-do-i-do-with-it).
 
 ### Next steps
 
-- For a tutorial with many extensive usage examples, see [**vbmc_examples.m**](https://github.com/lacerbi/vbmc/blob/master/vbmc_examples.m). You can also type `help vbmc` to display the documentation.
+- For a tutorial with many extensive usage examples, see [**vbmc_examples.m**](https://github.com/acerbilab/vbmc/blob/master/vbmc_examples.m). You can also type `help vbmc` to display the documentation.
 
-- For practical recommendations, such as how to set `LB` and `UB` and the plausible bounds, and any other question, check out the FAQ on the [VBMC wiki](https://github.com/lacerbi/vbmc/wiki).
+- For practical recommendations, such as how to set `LB` and `UB` and the plausible bounds, and any other question, check out the FAQ on the [VBMC wiki](https://github.com/acerbilab/vbmc/wiki).
 
 - If you want to run VBMC on a noisy or stochastic log-likelihood, see [below](#vbmc-with-noisy-likelihoods).
 
 ### For BADS users
 
-If you already use [Bayesian Adaptive Direct Search (BADS)](https://github.com/lacerbi/bads) to fit your models, setting up VBMC on your problem should be particularly simple; see [here](https://github.com/lacerbi/vbmc/wiki#i-already-run-bads-on-my-problem-how-do-i-run-vbmc).
+If you already use [Bayesian Adaptive Direct Search (BADS)](https://github.com/acerbilab/bads) to fit your models, setting up VBMC on your problem should be particularly simple; see [here](https://github.com/acerbilab/vbmc/wiki#i-already-run-bads-on-my-problem-how-do-i-run-vbmc).
 
 ## How does it work
 
@@ -81,13 +81,13 @@ This matching process entails optimization of the *evidence lower bound* (ELBO),
 
 In each iteration, VBMC uses *active sampling* to select which points to evaluate next in order to explore the posterior landscape and reduce uncertainty in the approximation.
 
-![VBMC demo](https://github.com/lacerbi/vbmc/blob/master/docs/vbmc-demo.gif "Fig 1: VBMC demo")
+![VBMC demo](https://github.com/acerbilab/vbmc/blob/master/docs/vbmc-demo.gif "Fig 1: VBMC demo")
 
 In the figure above, we show an example VBMC run on a "banana" function. The left panel shows the ground truth for the target posterior density. In the middle panel we show VBMC at work (contour plots of the variational posterior) across iterations. Red crosses are the centers of the mixture of Gaussians used as variational posterior, whereas dots are sampled points in the training set (*black*: previously sampled points, *blue*: points sampled in the current iteration). The right panel shows a plot of the estimated ELBO vs. the true log marginal likelihood (LML).
 
 In the figure below, we show another example VBMC run on a "lumpy" distribution.
 
-![Another VBMC demo](https://github.com/lacerbi/vbmc/blob/master/docs/vbmc-demo-2.gif "Fig 2: Another VBMC demo")
+![Another VBMC demo](https://github.com/acerbilab/vbmc/blob/master/docs/vbmc-demo-2.gif "Fig 2: Another VBMC demo")
 
 See the VBMC paper for more details [[1](#references)].
 
@@ -107,16 +107,16 @@ OPTIONS.SpecifyTargetNoise = true;
 [VP,ELBO,ELBO_SD] = vbmc(FUN,X0,LB,UB,PLB,PUB,OPTIONS);
 ```
 
-For more information, see the [VBMC FAQ](https://github.com/lacerbi/vbmc/wiki#noisy-target-function) and Example 6 in the [VBMC tutorial](https://github.com/lacerbi/vbmc/blob/master/vbmc_examples.m).
+For more information, see the [VBMC FAQ](https://github.com/acerbilab/vbmc/wiki#noisy-target-function) and Example 6 in the [VBMC tutorial](https://github.com/acerbilab/vbmc/blob/master/vbmc_examples.m).
 
 In the figure below, we show the difference in performance between the original VBMC (old) and VBMC v1.0 (new) when dealing with noisy target evaluations.
 
-![VBMC2020 demo](https://github.com/lacerbi/vbmc/blob/master/docs/vbmc2020-demo.gif "Fig 3: VBMC 2020 demo")
+![VBMC2020 demo](https://github.com/acerbilab/vbmc/blob/master/docs/vbmc2020-demo.gif "Fig 3: VBMC 2020 demo")
 
 
 ## Troubleshooting
 
-The VBMC toolbox is under active development. The toolbox has been extensively tested in several benchmarks and published papers, but as with any approximate inference technique you need to double-check your results. See the FAQ for more information on [diagnostics](https://github.com/lacerbi/vbmc/wiki#troubleshooting).
+The VBMC toolbox is under active development. The toolbox has been extensively tested in several benchmarks and published papers, but as with any approximate inference technique you need to double-check your results. See the FAQ for more information on [diagnostics](https://github.com/acerbilab/vbmc/wiki#troubleshooting).
 
 If you have trouble doing something with VBMC, spot bugs or strange behavior, or you simply have some questions, please contact me at <luigi.acerbi@helsinki.fi>, putting 'VBMC' in the subject of the email.
 
@@ -130,7 +130,7 @@ However, before contacting me for this reason, please have a good look at the co
 ## Presentations
 
 Work related to VBMC has been presented at seminars in Oxford (UK), Bristol (UK), NYU (NY, USA), Helsinki (Finland), Brown University (RI, USA), NTNU (Trondheim, Norway), etc., and at several conferences. Recent presentations cover both VBMC papers (2018, 2020) and related work on simulator-based inference, with titles such as ``Practical sample-efficient Bayesian inference for models with and without likelihoods''.
-- See [here](https://github.com/lacerbi/infbench/blob/master/presentations/acerbi-einsteinml-apr2021.pdf) for slides from a talk given at the [Einstein Machine Learning group](https://einsteinmed.org/deparments/system-computational-biology/machine-learning.aspx) (Albert Einstein college of medicine, NY, USA)  in April 2021.
+- See [here](https://github.com/acerbilab/infbench/blob/master/presentations/acerbi-einsteinml-apr2021.pdf) for slides from a talk given at the [Einstein Machine Learning group](https://einsteinmed.org/deparments/system-computational-biology/machine-learning.aspx) (Albert Einstein college of medicine, NY, USA)  in April 2021.
 - See [here](https://www.youtube.com/watch?v=OslB0Q6kJBM) for an earlier recorded talk given at the [Finnish Center for Artificial Intelligence (FCAI)](https://fcai.fi/) (Helsinki, Finland) in September 2020.
 
 
@@ -149,7 +149,7 @@ Besides formal citations, you can demonstrate your appreciation for VBMC in the 
 - [Follow me on Twitter](https://twitter.com/AcerbiLuigi) for updates about VBMC and other projects I am involved with;
 - Tell me about your model-fitting problem and your experience with VBMC (positive or negative) at <luigi.acerbi@helsinki.fi> (putting  'VBMC' in the subject of the email).
 
-You may also want to check out [Bayesian Adaptive Direct Search](https://github.com/lacerbi/bads) (BADS), our method for fast Bayesian optimization.
+You may also want to check out [Bayesian Adaptive Direct Search](https://github.com/acerbilab/bads) (BADS), our method for fast Bayesian optimization.
 
 ### Additional references
 
@@ -191,4 +191,4 @@ The ongoing Python port is being supported by the Academy of Finland Flagship pr
 
 ### License
 
-VBMC is released under the terms of the [GNU General Public License v3.0](https://github.com/lacerbi/vbmc/blob/master/LICENSE.txt).
+VBMC is released under the terms of the [GNU General Public License v3.0](https://github.com/acerbilab/vbmc/blob/master/LICENSE.txt).
