@@ -191,4 +191,4 @@ The ongoing Python port is being supported by the Academy of Finland Flagship pr
 
 ### License
 
-VBMC is released under the terms of the [GNU General Public License v3.0](https://github.com/acerbilab/vbmc/blob/master/LICENSE.txt).
+VBMC is released under the terms of the [BSD 3-clause license (BSD new)](https://github.com/acerbilab/vbmc/blob/master/LICENSE).
