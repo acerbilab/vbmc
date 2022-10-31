@@ -146,8 +146,8 @@ Please cite both references if you use VBMC in your work (the 2018 paper introdu
 Besides formal citations, you can demonstrate your appreciation for VBMC in the following ways:
 
 - *Star* the VBMC repository on GitHub;
-- [Follow me on Twitter](https://twitter.com/AcerbiLuigi) for updates about VBMC and other projects I am involved with;
-- Tell me about your model-fitting problem and your experience with VBMC (positive or negative) at <luigi.acerbi@helsinki.fi> (putting  'VBMC' in the subject of the email).
+- [Follow Luigi Acerbi on Twitter](https://twitter.com/AcerbiLuigi) for updates about VBMC and other projects from the lab;
+- Tell us about your model-fitting problem and your experience with VBMC (positive or negative) in the lab [Discussions forum](https://github.com/orgs/acerbilab/discussions).
 
 You may also want to check out [Bayesian Adaptive Direct Search](https://github.com/acerbilab/bads) (BADS), our method for fast Bayesian optimization.
 
