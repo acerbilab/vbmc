@@ -16,10 +16,6 @@ Extensive benchmarks on both artificial test problems and a large number of real
 
 VBMC runs with virtually no tuning and it is very easy to set up for your problem (especially if you are already familiar with [BADS](https://github.com/acerbilab/bads), our model-fitting algorithm based on Bayesian optimization).
 
-#### Notes
-
-- VBMC is currently available only for MATLAB. A Python port, PyVBMC, is under development with support from the [Finnish Center for Artificial Intelligence FCAI](https://fcai.fi/), and will be released soon (end of 2022).
-
 ### Should I use VBMC?
 
 VBMC is effective when:
@@ -31,6 +27,10 @@ VBMC is effective when:
 - optionally, log-likelihood evaluations may be noisy (e.g., estimated [via simulation](https://github.com/acerbilab/ibs)).
 
 Conversely, if your model can be written analytically, you should exploit the powerful machinery of probabilistic programming frameworks such as [Stan](http://mc-stan.org/) or [PyMC3](https://docs.pymc.io/).
+
+#### Notes
+
+- VBMC is currently available only for MATLAB. A Python port, PyVBMC, is under development with support from the [Finnish Center for Artificial Intelligence FCAI](https://fcai.fi/), and will be released soon (end of 2022).
 
 ## Installation
 
@@ -71,7 +71,7 @@ The variational posterior `vp` can be manipulated with functions such as `vbmc_m
 
 If you already use [Bayesian Adaptive Direct Search (BADS)](https://github.com/acerbilab/bads) to fit your models, setting up VBMC on your problem should be particularly simple; see [here](https://github.com/acerbilab/vbmc/wiki#i-already-run-bads-on-my-problem-how-do-i-run-vbmc).
 
-## How does it work
+## How does it work?
 
 VBMC combines two machine learning techniques in a novel way: 
 - [variational inference](https://en.wikipedia.org/wiki/Variational_Bayesian_methods), a method to perform approximate Bayesian inference;
@@ -187,7 +187,7 @@ You may also want to check out [Bayesian Adaptive Direct Search](https://github.
 ```
 ### Acknowledgments
 
-The ongoing Python port is being supported by the Academy of Finland Flagship programme: [Finnish Centre for Artificial Intelligence (FCAI)](https://fcai.fi/).
+The ongoing Python port is being supported by the Academy of Finland Flagship programme: [Finnish Centre for Artificial Intelligence FCAI](https://fcai.fi/).
 
 ### License
 
