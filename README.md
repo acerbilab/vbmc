@@ -16,6 +16,10 @@ Extensive benchmarks on both artificial test problems and a large number of real
 
 VBMC runs with virtually no tuning and it is very easy to set up for your problem (especially if you are already familiar with [BADS](https://github.com/acerbilab/bads), our model-fitting algorithm based on Bayesian optimization).
 
+#### Notes
+
+- VBMC is currently available only for MATLAB. A Python port, PyVBMC, is under development with support from the [Finnish Center for Artificial Intelligence FCAI](https://fcai.fi/), and will be released soon (end of 2022).
+
 ### Should I use VBMC?
 
 VBMC is effective when:
@@ -116,14 +120,12 @@ In the figure below, we show the difference in performance between the original 
 
 The VBMC toolbox is under active development. The toolbox has been extensively tested in several benchmarks and published papers, but as with any approximate inference technique you need to double-check your results. See the FAQ for more information on [diagnostics](https://github.com/acerbilab/vbmc/wiki#troubleshooting).
 
-If you have trouble doing something with VBMC, spot bugs or strange behavior, or you simply have some questions, please contact me at <luigi.acerbi@helsinki.fi>, putting 'VBMC' in the subject of the email.
+If you have trouble doing something with VBMC:
 
-## VBMC for other programming languages
+- Check out the FAQ on the [VBMC wiki](https://github.com/acerbilab/vbmc/wiki);
+- Post a question in the `acerbilab` [Discussions forum](https://github.com/orgs/acerbilab/discussions).
 
-VBMC is currently available only for MATLAB. We started working on a Python version in 2021 with support from the [Finnish Center for Artificial Intelligence FCAI](https://fcai.fi/).
-
-If you are interested in helping porting VBMC to Python or another language (R, [Julia](https://julialang.org/)), please get in touch.
-However, before contacting me for this reason, please have a good look at the codebase here on GitHub, and at the papers [[1,2](#references)]. VBMC is a fairly complex piece of software, so be aware that porting it will require considerable effort and programming/computing skills.
+This project is under active development. If you find a bug, or anything that needs correction, please let us know.
 
 ## Presentations
 
