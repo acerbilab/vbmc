@@ -8,11 +8,7 @@ function [x,vp] = vbmc_mode(vp,origflag,nmax)
 %   equivalent, under a nonlinear transformation of variables.
 %
 %   X = VBMC_PDF(VP,ORIGFLAG,NMAX) performs up to NMAX optimizations from
-%   different starting points to find the mode (by default, NMAX=50). The
-%   optimizations are started from the centers of the mixture components in
-%   the variational posterior (ordered in terms of posterior density), so 
-%   the actual number of optimizations is min(K,NMAX), where K is the 
-%   number of mixture components.
+%   different starting points to find the mode (by default, NMAX=50).
 %
 %   [X,VP] = VBMC_PDF(...) returns the variational posterior with the mode 
 %   stored in the VP struct.
@@ -35,6 +31,9 @@ else
         % Start from first NMAX solutions
         [~,ord] = sort(y0_vec,'ascend');
         x0_mat = x0_mat(ord(1:nmax),:);
+    elseif nmax > vp.K
+        % Sample additional starting points
+        x0_mat = [x0_mat; vbmc_rnd(vp,nmax - vp.K,origflag)];        
     end
         
     xmin = zeros(size(x0_mat,1),vp.D);
