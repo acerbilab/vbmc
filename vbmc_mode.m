@@ -1,4 +1,4 @@
-function [x,vp] = vbmc_mode(vp,nmax,origflag)
+function [x,vp] = vbmc_mode(vp,origflag,nmax)
 %VBMC_MODE Find mode of VBMC posterior approximation.
 %   X = VBMC_PDF(VP) returns the mode of the variational posterior VP. 
 %
@@ -7,18 +7,28 @@ function [x,vp] = vbmc_mode(vp,nmax,origflag)
 %   transformed VBMC space if ORIGFLAG=0. The two modes are generally not 
 %   equivalent, under a nonlinear transformation of variables.
 %
+%   X = VBMC_PDF(VP,ORIGFLAG,NMAX) performs up to NMAX optimizations from
+%   different starting points to find the mode (by default, NMAX=50). The
+%   optimizations are started from the centers of the mixture components in
+%   the variational posterior (ordered in terms of posterior density), so 
+%   the actual number of optimizations is min(K,NMAX), where K is the 
+%   number of mixture components.
+%
 %   [X,VP] = VBMC_PDF(...) returns the variational posterior with the mode 
 %   stored in the VP struct.
 %
 %   See also VBMC, VBMC_MOMENTS, VBMC_PDF.
 
-if nargin < 2 || isempty(nmax); nmax = 20; end
-if nargin < 3 || isempty(origflag); origflag = true; end
+if nargin < 2 || isempty(origflag); origflag = true; end
+if nargin < 3 || isempty(nmax); nmax = 50; end
 
 if origflag && isfield(vp,'mode') && ~isempty(vp.mode)
     x = vp.mode;
 else    
-    x0_mat = vp.mu';
+    x0_mat = vp.mu';    
+    if origflag
+        x0_mat = warpvars_vbmc(x0_mat,'inv',vp.trinfo);
+    end
     
     if nmax < vp.K
         y0_vec = nlnpdf(x0_mat);	% First, evaluate pdf at all modes        
@@ -32,7 +42,6 @@ else
 
     for k = 1:size(x0_mat,1)
         x0 = x0_mat(k,:);
-        if origflag; x0 = warpvars_vbmc(x0,'inv',vp.trinfo); end
 
         if origflag
             opts = optimoptions('fmincon','GradObj','off','Display','off');
@@ -41,7 +50,7 @@ else
             x0 = min(max(x0,LB),UB);
             [xmin(k,:),ff(k)] = fmincon(@nlnpdf,x0,[],[],[],[],LB,UB,[],opts);        
         else
-            opts = optimoptions('fminunc','GradObj','off','Display','off');
+            opts = optimoptions('fminunc','GradObj','on','Display','off');
             [xmin(k,:),ff(k)] = fminunc(@nlnpdf,x0,opts);
         end
     end
