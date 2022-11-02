@@ -1,4 +1,4 @@
-function [y,dy] = vbmc_pdf(vp,X,origflag,logflag,transflag,df)
+function [y,dy] = vbmc_pdf(vp,X,origflag,logflag,df)
 %VBMC_PDF Probability density function of VBMC posterior approximation.
 %   Y = VBMC_PDF(VP,X) returns the probability density of the variational 
 %   posterior VP evaluated at each row of X.  Rows of the N-by-D matrix X 
@@ -7,34 +7,29 @@ function [y,dy] = vbmc_pdf(vp,X,origflag,logflag,transflag,df)
 %
 %   Y = VBMC_PDF(VP,X,ORIGFLAG) returns the value of the posterior density
 %   evaluated in the original parameter space for ORIGFLAG=1 (default), or 
-%   in the transformed VBMC space if ORIGFLAG=0.
+%   in the transformed VBMC space if ORIGFLAG=0. If ORIGFLAG=0, X is
+%   assumed to be in transformed coordinates.
 %
 %   Y = VBMC_PDF(VP,X,ORIGFLAG,LOGFLAG) returns the value of the log 
 %   posterior density if LOGFLAG=1, otherwise the posterior density for
 %   LOGFLAG=0 (default).
 %
-%   Y = VBMC_PDF(VP,X,ORIGFLAG,LOGFLAG,TRANSFLAG) for TRANSFLAG=1 assumes 
-%   that X is already specified in tranformed VBMC space. Otherwise, X is 
-%   specified in the original parameter space (default TRANSFLAG=0).
-%
-%   Y = VBMC_PDF(VP,X,ORIGFLAG,LOGFLAG,TRANSFLAG,DF) returns the probability 
-%   density of an heavy-tailed version of the variational posterior, 
-%   in which the multivariate normal components have been replaced by
-%   multivariate t-distributions with DF degrees of freedom. The default is
-%   DF=Inf, limit in which the t-distribution becomes a multivariate normal.
+%   Y = VBMC_PDF(VP,X,ORIGFLAG,LOGFLAG,DF) returns the probability density 
+%   of an heavy-tailed version of the variational posterior, in which the 
+%   multivariate normal components have been replaced by multivariate 
+%   t-distributions with DF degrees of freedom. The default is DF=Inf, 
+%   limit in which the t-distribution becomes a multivariate normal.
 %
 %   See also VBMC, VBMC_RND.
 
 if nargin < 3 || isempty(origflag); origflag = true; end
 if nargin < 4 || isempty(logflag); logflag = false; end
-if nargin < 5 || isempty(transflag); transflag = false; end
-if nargin < 6 || isempty(df); df = Inf; end
+if nargin < 5 || isempty(df); df = Inf; end
 
 gradflag = nargout > 1;     % Compute gradient
 
 % Convert points to transformed space
-if origflag && ~isempty(vp.trinfo) && ~transflag
-    % Xold = X;
+if origflag && ~isempty(vp.trinfo)
     X = warpvars_vbmc(X,'dir',vp.trinfo);
 end
 
