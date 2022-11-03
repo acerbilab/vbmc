@@ -20,7 +20,8 @@ function [x,vp] = vbmc_mode(vp,origflag,nopts)
 %     estimation) is not recommended with VBMC, since due to the underlying 
 %     representation (mixture of Gaussians) the mode of the variational
 %     posterior is a brittle and potentially unreliable estimator of the 
-%     true mode, especially if close to the boundaries of the space.
+%     mode of the target posterior, especially if it lies close to the 
+%     boundaries of the space.
 %
 %   See also VBMC, VBMC_MOMENTS, VBMC_PDF.
 
