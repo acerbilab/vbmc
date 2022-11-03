@@ -17,11 +17,10 @@ function [x,vp] = vbmc_mode(vp,origflag,nopts)
 %
 %   Note:
 %     Mode estimation (e.g., for the purpose of maximum-a-posteriori 
-%     estimation) is NOT recommended with VBMC, since due to the underlying 
+%     estimation) is not recommended with VBMC, since due to the underlying 
 %     representation (mixture of Gaussians) the mode of the variational
-%     posterior may be arbitrarily far from the mode of the target and it is
-%     a very brittle estimator, especially if the true mode is close to the 
-%     bounds of the space. Use estimates of the mode at your own risk.
+%     posterior is a brittle and potentially unreliable estimator of the 
+%     true mode, especially if close to the boundaries of the space.
 %
 %   See also VBMC, VBMC_MOMENTS, VBMC_PDF.
 
