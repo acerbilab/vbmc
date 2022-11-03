@@ -15,13 +15,18 @@ function [x,vp] = vbmc_mode(vp,origflag,nopts)
 %   [X,VP] = VBMC_PDF(...) returns the variational posterior with the mode 
 %   stored in the VP struct.
 %
-%   Note:
-%     Mode estimation (e.g., for the purpose of maximum-a-posteriori 
+%   Notes:
+%   - Mode estimation (e.g., for the purpose of maximum-a-posteriori 
 %     estimation) is not recommended with VBMC, since due to the underlying 
 %     representation (mixture of Gaussians) the mode of the variational
 %     posterior is a brittle and potentially unreliable estimator of the 
 %     mode of the target posterior, especially if it lies close to the 
 %     boundaries of the space.
+%   - Also, please keep in mind that the mode is not invariant to nonlinear 
+%     reparameterizations of the input space, so the mode in the original 
+%     space and the mode in the transformed (unconstrained) space will 
+%     generally be in different locations (even after applying the 
+%     appropriate transformations).
 %
 %   See also VBMC, VBMC_MOMENTS, VBMC_PDF.
 
