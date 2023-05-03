@@ -1,6 +1,7 @@
 # Variational Bayesian Monte Carlo (VBMC) - v1.0.12
 
-**News:** 
+**News:**
+- We released a full **Python version of VBMC** as the [PyVBMC package](https://github.com/acerbilab/pyvbmc) - check it out!
 - Added a [Presentations](#presentations) section with links to (relatively) recent slides and video recordings of VBMC related work.
 - **New paper at NeurIPS (Sep/25/2020)** The "Variational Bayesian Monte Carlo with Noisy Likelihoods" paper [[2](#references)] has been accepted at *NeurIPS* 2020! This is the second VBMC paper at *NeurIPS*. The paper is available in the [NeurIPS proceedings](https://proceedings.neurips.cc/paper/2020/hash/5d40954183d62a82257835477ccad3d2-Abstract.html) and [on arXiv](https://arxiv.org/abs/2006.08655). 
 - **Major update (Jun/16/2020)** VBMC v1.0 has been released! (see [tweeprint](https://twitter.com/AcerbiLuigi/status/1273242222385868800?s=20)) This update includes full support for noisy log-likelihood evaluations, a linear transformation of the inference space to better represent the variational posterior, and a number of tweaks to the algorithm's settings for improved performance. See the [new preprint](https://arxiv.org/abs/2006.08655) for more information [[2](#references)].
@@ -27,10 +28,6 @@ VBMC is effective when:
 - optionally, log-likelihood evaluations may be noisy (e.g., estimated [via simulation](https://github.com/acerbilab/ibs)).
 
 Conversely, if your model can be written analytically, you should exploit the powerful machinery of probabilistic programming frameworks such as [Stan](http://mc-stan.org/) or [PyMC3](https://docs.pymc.io/).
-
-#### Notes
-
-- VBMC is currently available only for MATLAB. A Python port, PyVBMC, is under development with support from the [Finnish Center for Artificial Intelligence FCAI](https://fcai.fi/), and will be released soon (end of 2022).
 
 ## Installation
 
@@ -187,7 +184,7 @@ You may also want to check out [Bayesian Adaptive Direct Search](https://github.
 ```
 ### Acknowledgments
 
-The ongoing Python port is being supported by the Academy of Finland Flagship programme: [Finnish Centre for Artificial Intelligence FCAI](https://fcai.fi/).
+The [Python port of VBMC](https://github.com/acerbilab/pyvbmc) was supported by the Academy of Finland Flagship programme: [Finnish Centre for Artificial Intelligence FCAI](https://fcai.fi/).
 
 ### License
 
